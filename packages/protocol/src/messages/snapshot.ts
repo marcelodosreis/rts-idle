@@ -1,15 +1,11 @@
 import type { EntityId, Fixed, PlayerId } from '@rts/shared'
 
-/** Unit visual archetype projected on the wire (worker/pawn baseline). */
-export type UnitKind = 'pawn' | 'warrior' | 'archer'
-
 /** A unit as projected on the wire: position in integer fixed units and owner slot. */
 export interface SnapshotUnit {
   readonly id: EntityId
   readonly x: Fixed
   readonly y: Fixed
   readonly owner: PlayerId
-  readonly kind: UnitKind
 }
 
 /** Server → client view of a completed tick. */
@@ -28,7 +24,6 @@ function isSnapshotUnit(value: unknown): boolean {
   const x = unit.x
   const y = unit.y
   const owner = unit.owner
-  const kind = unit.kind
   if (typeof id !== 'number' || !Number.isInteger(id)) {
     return false
   }
@@ -39,9 +34,6 @@ function isSnapshotUnit(value: unknown): boolean {
     return false
   }
   if (typeof owner !== 'number' || !Number.isInteger(owner)) {
-    return false
-  }
-  if (kind !== 'pawn' && kind !== 'warrior' && kind !== 'archer') {
     return false
   }
   return owner >= 0 && owner <= 3

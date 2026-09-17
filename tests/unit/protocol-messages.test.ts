@@ -27,8 +27,8 @@ describe('protocol snapshot message', () => {
     type: 'snapshot',
     tick: 7,
     units: [
-      { id: 1, x: 256, y: 512, owner: 0, kind: 'pawn' },
-      { id: 2, x: 0, y: 0, owner: 1, kind: 'pawn' }
+      { id: 1, x: 256, y: 512, owner: 0 },
+      { id: 2, x: 0, y: 0, owner: 1 }
     ]
   }
 
@@ -46,12 +46,8 @@ describe('protocol snapshot message', () => {
     expect(isSnapshotMessage({ type: 'snapshot', tick: 1.5, units: [] })).toBe(false)
     expect(isSnapshotMessage({ type: 'snapshot', tick: 1, units: '[]' })).toBe(false)
     expect(isSnapshotMessage({ type: 'snapshot', tick: 1, units: [null] })).toBe(false)
-    expect(
-      isSnapshotMessage({ type: 'snapshot', tick: 1, units: [{ id: 1, x: 1.5, y: 0, owner: 0, kind: 'pawn' }] })
-    ).toBe(false)
-    expect(
-      isSnapshotMessage({ type: 'snapshot', tick: 1, units: [{ id: 1, x: 1, y: 0, owner: 4, kind: 'pawn' }] })
-    ).toBe(false)
+    expect(isSnapshotMessage({ type: 'snapshot', tick: 1, units: [{ id: 1, x: 1.5, y: 0, owner: 0 }] })).toBe(false)
+    expect(isSnapshotMessage({ type: 'snapshot', tick: 1, units: [{ id: 1, x: 1, y: 0, owner: 4 }] })).toBe(false)
     expect(isSnapshotMessage({ type: 'error', tick: 1, units: [] })).toBe(false)
   })
 })

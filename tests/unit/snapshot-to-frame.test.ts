@@ -7,14 +7,14 @@ describe('snapshot to frame mapping', () => {
       type: 'snapshot',
       tick: 3,
       units: [
-        { id: 1, x: 100, y: 200, owner: 0, kind: 'pawn' },
-        { id: 2, x: 300, y: 400, owner: 1, kind: 'pawn' }
+        { id: 1, x: 100, y: 200, owner: 0 },
+        { id: 2, x: 300, y: 400, owner: 1 }
       ]
     })
     expect(frame.tick).toBe(3)
     expect(frame.units).toEqual([
-      { id: 1, x: 100, y: 200, owner: 0, kind: 'pawn' },
-      { id: 2, x: 300, y: 400, owner: 1, kind: 'pawn' }
+      { id: 1, x: 100, y: 200, owner: 0 },
+      { id: 2, x: 300, y: 400, owner: 1 }
     ])
   })
 

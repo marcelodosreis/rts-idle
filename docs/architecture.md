@@ -31,7 +31,6 @@ Dependency direction (enforced by `tests/architecture/package-dependencies.test.
 shared → game-data → simulation → { server, ai }
        → pathfinding ↗
        → protocol  → { server, web, renderer }
-       → game-data → { renderer, web }   (visual catalog, maps)
                     → renderer → web
 ```
 
@@ -114,5 +113,4 @@ web/src/
 - `docs/master-plan.md` — full design, phases, acceptance criteria.
 - `docs/adr/` — decisions (Context/Decision/Alternatives/Consequences/Evidence).
 - `docs/specs/` — capability map + per-module specs.
-- `docs/assets/capabilities.md` — asset inventory and integration/polish possibilities.
 - `docs/postmortems/` — every bug's root cause + regression.

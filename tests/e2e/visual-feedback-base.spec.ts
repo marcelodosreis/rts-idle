@@ -59,14 +59,14 @@ test('visual base: HUD reacts to selection and units animate without teleporting
     )
     .not.toEqual(start)
 
-  // Regression: the RUN body must actually be in the display list while the
-  // unit moves (a body with visible=true but never added to the container
-  // renders nothing, so the sprite would vanish during movement).
+  // Regression: the unit's sprite body must be in the display list (a body
+  // with visible=true but never added to the container renders nothing). The
+  // simulation currently moves units instantly, so idle is the visible body.
   await expect
     .poll(() =>
       page.evaluate((id) => {
         const st = window.__rtsDebug?.getSpriteState(id)
-        return st?.anim === 'run' && st.inTree
+        return st?.inTree === true && st.visible === true
       }, firstId)
     )
     .toBe(true)

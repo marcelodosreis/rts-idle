@@ -115,7 +115,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
         prevFramePositions = new Map(unitPositions)
         unitPositions.clear()
         for (const unit of message.units) {
-          unitKinds.set(unit.id, { kind: unit.kind, owner: unit.owner })
+          unitKinds.set(unit.id, { kind: unit.kind ?? 'pawn', owner: unit.owner })
           unitPositions.set(unit.id, { x: unit.x, y: unit.y })
         }
         renderer.present(snapshotToFrame(message))

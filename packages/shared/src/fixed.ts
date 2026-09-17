@@ -22,20 +22,6 @@ export function fixedToTiles(fixed: Fixed): number {
   return fixed / FIXED_SCALE
 }
 
-// Presentation scale (master plan §23.2 / ADR-015): one tile renders as
-// TILE_PIXELS px. These helpers convert between the deterministic fixed
-// coordinate space and render pixels. They are presentation-only conversions;
-// no gameplay decision may depend on them.
-export const TILE_PIXELS = 64
-
-export function fixedToRenderPixels(fixed: Fixed): number {
-  return fixed / (FIXED_SCALE / TILE_PIXELS)
-}
-
-export function renderPixelsToFixed(pixels: number): Fixed {
-  return pixels * (FIXED_SCALE / TILE_PIXELS)
-}
-
 export interface GridPosition {
   readonly x: Fixed
   readonly y: Fixed
