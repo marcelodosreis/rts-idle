@@ -10,10 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Lint + typecheck first. typecheck resolves workspace deps through their
-  # built `dist` types, so this job builds before typechecking on a fresh
-  # checkout, then shares the dist artifact with e2e.
-  lint-typecheck:
+  lint_typecheck:
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -30,8 +28,9 @@ jobs:
             tools/*/dist
           if-no-files-found: warn
 
-  test-unit-integration:
-    needs: lint-typecheck
+  unit_integration:
+    name: Unit & Integration Tests
+    needs: lint_typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -39,8 +38,9 @@ jobs:
       - run: pnpm run test:unit
       - run: pnpm run test:integration
 
-  test-simulation:
-    needs: test-unit-integration
+  simulation:
+    name: Simulation, Invariants & Regression Tests
+    needs: unit_integration
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -49,24 +49,19 @@ jobs:
       - run: pnpm run test:invariants
       - run: pnpm run test:regression
 
-  test-determinism:
-    needs: test-simulation
+  determinism_architecture:
+    name: Determinism & Architecture Tests
+    needs: simulation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/ci-setup
       - run: pnpm run test:determinism
-
-  test-architecture:
-    needs: test-determinism
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/ci-setup
       - run: pnpm run test:architecture
 
-  test-e2e:
-    needs: test-architecture
+  e2e:
+    name: End-to-End Tests
+    needs: determinism_architecture
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -79,8 +74,9 @@ jobs:
       - run: pnpm run test:e2e
 
   release:
+    name: Release
     if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip ci]')
-    needs: test-e2e
+    needs: e2e
     runs-on: ubuntu-latest
     permissions:
       contents: write
