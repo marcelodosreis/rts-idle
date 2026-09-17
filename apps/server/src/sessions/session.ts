@@ -1,3 +1,5 @@
+import type { SnapshotUnit } from '@rts/protocol'
+import type { PlayerId } from '@rts/shared'
 import {
   type CommandRejectedError,
   createSimulation,
@@ -16,6 +18,10 @@ export interface SessionResult {
   readonly rejected: readonly CommandRejectedError[]
 }
 
+/**
+ * Authoritative game session: the only path through which the transport can
+ * submit commands and observe the running simulation (single-writer boundary).
+ */
 export class GameSession {
   private simulation: SimulationHost
   private readonly pending: ScheduledCommand[] = []
@@ -32,7 +38,7 @@ export class GameSession {
     return new GameSession(simulationFromSnapshot(snapshot))
   }
 
-  submit(asPlayerId: number, commands: readonly ScheduledCommand[]): void {
+  submit(asPlayerId: PlayerId, commands: readonly ScheduledCommand[]): void {
     for (const command of commands) {
       if (command.playerId !== asPlayerId) {
         throw new Error(`GameSession: player ${asPlayerId} cannot submit commands for player ${command.playerId}`)
@@ -55,7 +61,7 @@ export class GameSession {
     return this.simulation.hashState()
   }
 
-  projectUnits(): readonly { readonly id: number; readonly x: number; readonly y: number; readonly owner: number }[] {
+  projectUnits(): readonly SnapshotUnit[] {
     const world = this.simulation.inspectState().world
     const positions = world.store(Position)
     const owners = world.store(Owner)
@@ -70,6 +76,6 @@ export class GameSession {
   }
 
   identity(): RulesIdentity {
-    return this.simulation.inspectState().identity
+    return this.simulation.rulesIdentity()
   }
 }

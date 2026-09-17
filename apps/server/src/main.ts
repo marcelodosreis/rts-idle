@@ -1,16 +1,10 @@
 import { createServer } from 'node:http'
+import { type ErrorMessage, isMoveMessage, type SnapshotMessage } from '@rts/protocol'
 import { WebSocketServer } from 'ws'
 import { createDemoSession } from './demo.js'
 
 const PORT = Number(process.env.PORT ?? 8080)
 const TICK_MS = 50
-
-interface MoveMessage {
-  readonly type: 'MOVE'
-  readonly unitIds: readonly number[]
-  readonly x: number
-  readonly y: number
-}
 
 const httpServer = createServer((req, res) => {
   if (req.url === '/health') {
@@ -31,11 +25,21 @@ wss.on('connection', (ws) => {
   const session = createDemoSession()
   let sequence = 1
 
-  const send = (): void => {
-    const units = session.projectUnits()
-    const message = JSON.stringify({ type: 'snapshot', tick: session.snapshot().tick, units })
+  const sendError = (message: string): void => {
+    const error: ErrorMessage = { type: 'error', message }
     if (ws.readyState === ws.OPEN) {
-      ws.send(message)
+      ws.send(JSON.stringify(error))
+    }
+  }
+
+  const send = (): void => {
+    const message: SnapshotMessage = {
+      type: 'snapshot',
+      tick: session.snapshot().tick,
+      units: session.projectUnits()
+    }
+    if (ws.readyState === ws.OPEN) {
+      ws.send(JSON.stringify(message))
     }
   }
 
@@ -46,9 +50,16 @@ wss.on('connection', (ws) => {
   }, TICK_MS)
 
   ws.on('message', (raw) => {
+    let parsed: unknown
     try {
-      const message = JSON.parse(raw.toString()) as MoveMessage
-      if (message.type === 'MOVE') {
+      parsed = JSON.parse(raw.toString())
+    } catch {
+      sendError('invalid JSON')
+      return
+    }
+    if (isMoveMessage(parsed)) {
+      const message = parsed
+      try {
         session.submit(0, [
           {
             tick: session.snapshot().tick + 1,
@@ -57,9 +68,9 @@ wss.on('connection', (ws) => {
             intent: { type: 'MOVE', payload: { unitIds: message.unitIds, x: message.x, y: message.y } }
           }
         ])
+      } catch (error) {
+        sendError(error instanceof Error ? error.message : String(error))
       }
-    } catch (error) {
-      ws.send(JSON.stringify({ type: 'error', message: error instanceof Error ? error.message : String(error) }))
     }
   })
 

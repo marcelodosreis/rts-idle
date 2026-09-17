@@ -1,30 +1,32 @@
-import { allocateEntityId, START_ENTITY_ID } from '@rts/shared'
-import type { RulesIdentity } from '@rts/simulation'
-import { createWorld, Owner, Position } from '@rts/simulation'
+import { allocateEntityId, type Fixed, type PlayerId, START_ENTITY_ID, tilesToFixed } from '@rts/shared'
+import { createRulesIdentity, createWorld, Owner, Position, type RulesIdentity } from '@rts/simulation'
 import { GameSession } from './sessions/session.js'
 
-export const DEMO_IDENTITY: RulesIdentity = {
-  simulationVersion: '0.1.0',
-  rulesetVersion: 'demo',
-  rulesetHash: 'demo',
-  mapId: 'demo',
-  mapHash: 'demo'
+export const DEMO_IDENTITY: RulesIdentity = createRulesIdentity('demo')
+
+interface DemoSpawn {
+  readonly owner: PlayerId
+  readonly x: Fixed
+  readonly y: Fixed
 }
+
+// Spawn positions authored in tiles and converted to fixed units. The demo map
+// is 192 tiles wide; player 1 starts in the far-right corner, mirrored.
+const DEMO_SPAWNS: readonly DemoSpawn[] = [
+  { owner: 0, x: tilesToFixed(8), y: tilesToFixed(8) },
+  { owner: 0, x: tilesToFixed(9), y: tilesToFixed(8) },
+  { owner: 0, x: tilesToFixed(8), y: tilesToFixed(9) },
+  { owner: 0, x: tilesToFixed(9), y: tilesToFixed(9) },
+  { owner: 1, x: tilesToFixed(180), y: tilesToFixed(8) },
+  { owner: 1, x: tilesToFixed(181), y: tilesToFixed(8) },
+  { owner: 1, x: tilesToFixed(180), y: tilesToFixed(9) },
+  { owner: 1, x: tilesToFixed(181), y: tilesToFixed(9) }
+]
 
 export function createDemoSession(): GameSession {
   const world = createWorld()
   let next = START_ENTITY_ID
-  const spawns: readonly { readonly owner: number; readonly x: number; readonly y: number }[] = [
-    { owner: 0, x: 2048, y: 2048 },
-    { owner: 0, x: 2304, y: 2048 },
-    { owner: 0, x: 2048, y: 2304 },
-    { owner: 0, x: 2304, y: 2304 },
-    { owner: 1, x: 46080, y: 2048 },
-    { owner: 1, x: 46336, y: 2048 },
-    { owner: 1, x: 46080, y: 2304 },
-    { owner: 1, x: 46336, y: 2304 }
-  ]
-  for (const spawn of spawns) {
+  for (const spawn of DEMO_SPAWNS) {
     const allocated = allocateEntityId(next)
     next = allocated.nextEntityId
     world.createEntity(allocated.id)
