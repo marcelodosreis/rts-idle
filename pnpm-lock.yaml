@@ -23,6 +23,30 @@ importers:
       '@playwright/test':
         specifier: ^1.50.0
         version: 1.63.0
+      '@rts/ai':
+        specifier: workspace:*
+        version: link:packages/ai
+      '@rts/audio':
+        specifier: workspace:*
+        version: link:packages/audio
+      '@rts/game-data':
+        specifier: workspace:*
+        version: link:packages/game-data
+      '@rts/pathfinding':
+        specifier: workspace:*
+        version: link:packages/pathfinding
+      '@rts/protocol':
+        specifier: workspace:*
+        version: link:packages/protocol
+      '@rts/renderer':
+        specifier: workspace:*
+        version: link:packages/renderer
+      '@rts/server':
+        specifier: workspace:*
+        version: link:apps/server
+      '@rts/shared':
+        specifier: workspace:*
+        version: link:packages/shared
       '@rts/simulation':
         specifier: workspace:*
         version: link:packages/simulation
@@ -102,6 +126,9 @@ importers:
       '@rts/renderer':
         specifier: workspace:*
         version: link:../../packages/renderer
+      '@rts/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       react:
         specifier: ^19.0.0
         version: 19.3.0

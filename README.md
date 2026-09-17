@@ -55,13 +55,21 @@ Prerequisites: Node ≥ 24, pnpm ≥ 10.
 ```bash
 pnpm install
 
+# Run the whole app locally (authoritative server + browser app, one command).
+# Logs are prefixed [@rts/server] / [@rts/web]; Ctrl+C stops both.
+pnpm dev
+
+# Or run the two dev servers in separate terminals:
+pnpm --filter @rts/server dev   # authoritative WS server on :8080
+pnpm --filter @rts/web dev      # Vite app on :5173
+
 pnpm run typecheck
 pnpm run lint
 pnpm run test:unit
 pnpm run build
 
-# Browser dev server (Vite)
-pnpm --filter @rts/web dev
+# Full local validation gate (typecheck + lint + all suites + build):
+pnpm run verify
 ```
 
 ### E2E (Playwright)
@@ -81,6 +89,8 @@ sudo env "PATH=$PATH" pnpm exec playwright install-deps chromium
 
 | Command | Purpose |
 |---|---|
+| `pnpm dev` | Run server + web locally together (one command, prefixed logs) |
+| `pnpm run verify` | Full local gate: typecheck, lint, all suites, build |
 | `pnpm run typecheck` | `tsc --noEmit` across all packages |
 | `pnpm run lint` / `lint:fix` | Biome check / check + fix |
 | `pnpm run test:*` | unit, integration, simulation, determinism, invariants, regression, architecture, e2e |
@@ -108,6 +118,9 @@ A feature is **done** only when its acceptance criteria are demonstrated by obje
 
 ## Documentation
 
+- `docs/engineering-standard.md` — engineering source of truth: modules, cohesion,
+  naming, typing, math clarity, testing, determinism, Definition of Done, self-audit.
+- `docs/architecture.md` — current module layout, package boundaries, shared concepts.
 - `docs/master-plan.md` — architecture, contracts, phases, acceptance criteria, risks.
 - `docs/specs/` — capability map and per-module specs.
 - `docs/adr/` — architectural decisions (Context / Decision / Alternatives / Consequences / Evidence).
