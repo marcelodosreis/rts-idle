@@ -4,12 +4,13 @@ import { useMatchSession } from './useMatchSession'
 
 export function MatchScreen() {
   const hostRef = useRef<HTMLDivElement | null>(null)
-  const { status, unitCount, selectionUnits, resources } = useMatchSession(hostRef)
+  const { status, unitCount, tick, selectionUnits, resources } = useMatchSession(hostRef)
 
   return (
     <MatchHud
       status={status}
       unitCount={unitCount}
+      tick={tick}
       selection={selectionUnits}
       resources={resources}
       hostRef={hostRef}

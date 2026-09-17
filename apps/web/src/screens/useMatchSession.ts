@@ -4,9 +4,9 @@ import { fixedToRenderPixels, renderPixelsToFixed, TILE_PIXELS } from '@rts/shar
 import { type RefObject, useEffect, useState } from 'react'
 import { type ConnectionHandlers, connectMatch, type MatchConnection, type SnapshotMessage } from '../client/connection'
 import { snapshotToFrame } from '../client/snapshot-to-frame'
-import type { HudSelectionUnit } from '../hud/MatchHud'
+import type { HudSelectionUnit } from '../hud/types'
 
-const WORLD_TILES = 192
+const WORLD_TILES = 32
 const WORLD_PX = WORLD_TILES * TILE_PIXELS
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'ws://localhost:8080'
 const PLAYER_BASE_CENTER_FIXED = { x: 2048, y: 2048 }
@@ -18,6 +18,13 @@ const PLAYER_BASE_CENTER = {
 interface RtsDebug {
   getPositions(): Record<string, { readonly x: number; readonly y: number }>
   getAnimationFrame(id: number): number | null
+  getSpriteState(id: number): {
+    readonly visible: boolean
+    readonly frame: number | null
+    readonly anim: 'idle' | 'run' | 'fallback'
+    readonly inTree: boolean
+    readonly facing: number
+  } | null
   getSelection(): readonly number[]
   worldToScreen(x: number, y: number): { readonly x: number; readonly y: number }
   getZoom(): number
@@ -36,6 +43,7 @@ export interface MatchSessionState {
   readonly status: string
   readonly unitCount: number
   readonly selectedCount: number
+  readonly tick: number
   readonly selectionUnits: readonly HudSelectionUnit[]
   readonly resources: {
     readonly mineral: number
@@ -54,6 +62,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
   const [status, setStatus] = useState('connecting')
   const [unitCount, setUnitCount] = useState(0)
   const [selectedCount, setSelectedCount] = useState(0)
+  const [tick, setTick] = useState(0)
   const [selectionUnits, setSelectionUnits] = useState<readonly HudSelectionUnit[]>([])
   const [resources] = useState<MatchSessionState['resources']>(null)
 
@@ -101,6 +110,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     const handlers: ConnectionHandlers = {
       onSnapshot: (message: SnapshotMessage) => {
         lastTick = message.tick
+        setTick(message.tick)
         setUnitCount(message.units.length)
         prevFramePositions = new Map(unitPositions)
         unitPositions.clear()
@@ -144,6 +154,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
             return out
           },
           getAnimationFrame: (id) => renderer.getUnitAnimationFrame(id),
+          getSpriteState: (id) => renderer.getUnitSpriteState(id),
           getSelection: () => renderer.getSelection(),
           worldToScreen: (x, y) => renderer.worldToScreen(fixedToRenderPixels(x), fixedToRenderPixels(y)),
           getZoom: () => renderer.getZoom(),
@@ -163,5 +174,5 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     }
   }, [hostRef])
 
-  return { status, unitCount, selectedCount, selectionUnits, resources }
+  return { status, unitCount, selectedCount, tick, selectionUnits, resources }
 }
