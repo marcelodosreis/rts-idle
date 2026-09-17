@@ -1,12 +1,16 @@
 import type { MapDefinition } from '@rts/game-data'
 import type { PointData } from 'pixi.js'
 
-/** A unit as rendered: id, integer fixed-unit position, owner slot. */
+/** Unit visual archetype: maps to a sprite set in the asset catalog. */
+export type UnitKind = 'pawn' | 'warrior' | 'archer'
+
+/** A unit as rendered: id, integer fixed-unit position, owner slot, sprite kind. */
 export interface RenderUnit {
   readonly id: number
   readonly x: number
   readonly y: number
   readonly owner: number
+  readonly kind?: UnitKind
 }
 
 /** A completed tick ready for presentation. */

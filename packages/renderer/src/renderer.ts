@@ -76,9 +76,10 @@ export class PixiRenderer implements GameRenderer {
     selectionRect.eventMode = 'none'
     app.stage.addChild(selectionRect)
 
-    const units = new UnitLayer(viewport, (id) => {
+    const units = new UnitLayer(viewport, this.assets, (id) => {
       this.callbacks.onUnitSelected?.(id)
     })
+    units.preloadShadow()
     const selection = new SelectionController({
       viewport,
       units,

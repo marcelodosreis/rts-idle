@@ -71,7 +71,7 @@ export class GameSession {
       if (pos === undefined || owner === undefined) {
         throw new Error(`GameSession: entity ${id} is missing position or owner`)
       }
-      return { id, x: pos.x, y: pos.y, owner: owner.owner }
+      return { id, x: pos.x, y: pos.y, owner: owner.owner, kind: 'pawn' }
     })
   }
 
