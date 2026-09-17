@@ -19,7 +19,7 @@ jobs:
       - run: pnpm run lint
       - run: pnpm run build
       - run: pnpm run typecheck
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: dist
           path: |
@@ -66,7 +66,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/ci-setup
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: dist
           path: .
