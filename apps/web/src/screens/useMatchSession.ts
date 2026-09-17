@@ -4,6 +4,7 @@ import { fixedToRenderPixels, renderPixelsToFixed, TILE_PIXELS } from '@rts/shar
 import { type RefObject, useEffect, useState } from 'react'
 import { type ConnectionHandlers, connectMatch, type MatchConnection, type SnapshotMessage } from '../client/connection'
 import { snapshotToFrame } from '../client/snapshot-to-frame'
+import type { HudSelectionUnit } from '../hud/MatchHud'
 
 const WORLD_TILES = 192
 const WORLD_PX = WORLD_TILES * TILE_PIXELS
@@ -34,6 +35,13 @@ export interface MatchSessionState {
   readonly status: string
   readonly unitCount: number
   readonly selectedCount: number
+  readonly selectionUnits: readonly HudSelectionUnit[]
+  readonly resources: {
+    readonly mineral: number
+    readonly energy: number
+    readonly supply: number
+    readonly supplyCap: number
+  } | null
 }
 
 /**
@@ -45,6 +53,8 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
   const [status, setStatus] = useState('connecting')
   const [unitCount, setUnitCount] = useState(0)
   const [selectedCount, setSelectedCount] = useState(0)
+  const [selectionUnits, setSelectionUnits] = useState<readonly HudSelectionUnit[]>([])
+  const [resources] = useState<MatchSessionState['resources']>(null)
 
   useEffect(() => {
     const host = hostRef.current
@@ -62,18 +72,45 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     })
     let selection = new Set<number>()
     let lastTick = 0
+    const unitKinds = new Map<number, { readonly kind: HudSelectionUnit['kind']; readonly owner: number }>()
+    const unitPositions = new Map<number, { readonly x: number; readonly y: number }>()
+    let prevFramePositions = new Map<number, { readonly x: number; readonly y: number }>()
 
     const updateSelection = (ids: readonly number[]): void => {
       selection = new Set(ids)
       setSelectedCount(selection.size)
       renderer.setSelection(ids)
+      const units: HudSelectionUnit[] = []
+      for (const id of [...selection].sort((a, b) => a - b)) {
+        const kind = unitKinds.get(id)
+        const current = unitPositions.get(id)
+        const previous = prevFramePositions.get(id)
+        if (kind !== undefined && current !== undefined) {
+          units.push({
+            id,
+            kind: kind.kind,
+            owner: kind.owner,
+            moving: previous !== undefined && (previous.x !== current.x || previous.y !== current.y)
+          })
+        }
+      }
+      setSelectionUnits(units)
     }
 
     const handlers: ConnectionHandlers = {
       onSnapshot: (message: SnapshotMessage) => {
         lastTick = message.tick
         setUnitCount(message.units.length)
+        prevFramePositions = new Map(unitPositions)
+        unitPositions.clear()
+        for (const unit of message.units) {
+          unitKinds.set(unit.id, { kind: unit.kind, owner: unit.owner })
+          unitPositions.set(unit.id, { x: unit.x, y: unit.y })
+        }
         renderer.present(snapshotToFrame(message))
+        if (selection.size > 0) {
+          updateSelection([...selection])
+        }
       },
       onOpen: () => setStatus('connected'),
       onError: (message) => setStatus(message)
@@ -124,5 +161,5 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     }
   }, [hostRef])
 
-  return { status, unitCount, selectedCount }
+  return { status, unitCount, selectedCount, selectionUnits, resources }
 }

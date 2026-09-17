@@ -130,7 +130,7 @@ export const CURATED: readonly CuratedSource[] = [
     key: 'ui.bars.smallbar_base',
     source: 'UI Elements/UI Elements/Bars/SmallBar_Base.png',
     file: 'ui/bars/smallbar_base.png',
-    kind: 'static' as const,
+    kind: 'static',
     anchorX: 0.5,
     anchorY: 0.5
   },
@@ -138,7 +138,39 @@ export const CURATED: readonly CuratedSource[] = [
     key: 'ui.bars.smallbar_fill',
     source: 'UI Elements/UI Elements/Bars/SmallBar_Fill.png',
     file: 'ui/bars/smallbar_fill.png',
-    kind: 'static' as const,
+    kind: 'static',
+    anchorX: 0.5,
+    anchorY: 0.5
+  },
+  {
+    key: 'ui.panels.wood_table',
+    source: 'UI Elements/UI Elements/Wood Table/WoodTable.png',
+    file: 'ui/panels/wood_table.png',
+    kind: 'static',
+    anchorX: 0.5,
+    anchorY: 0.5
+  },
+  {
+    key: 'ui.papers.regular',
+    source: 'UI Elements/UI Elements/Papers/RegularPaper.png',
+    file: 'ui/papers/regular.png',
+    kind: 'static',
+    anchorX: 0.5,
+    anchorY: 0.5
+  },
+  {
+    key: 'ui.buttons.big_blue',
+    source: 'UI Elements/UI Elements/Buttons/BigBlueButton_Regular.png',
+    file: 'ui/buttons/big_blue.png',
+    kind: 'static',
+    anchorX: 0.5,
+    anchorY: 0.5
+  },
+  {
+    key: 'ui.buttons.big_blue_pressed',
+    source: 'UI Elements/UI Elements/Buttons/BigBlueButton_Pressed.png',
+    file: 'ui/buttons/big_blue_pressed.png',
+    kind: 'static',
     anchorX: 0.5,
     anchorY: 0.5
   }
