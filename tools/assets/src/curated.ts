@@ -37,9 +37,9 @@ export interface CuratedSource {
 }
 
 const UNIT_ANIMS: readonly { readonly anim: string; readonly file: string; readonly duration: number }[] = [
-  { anim: 'idle', file: 'Pawn_Idle.png', duration: 120 },
+  { anim: 'idle', file: 'Pawn_Idle.png', duration: 100 },
   { anim: 'run', file: 'Pawn_Run.png', duration: 100 },
-  { anim: 'attack', file: 'Pawn_Interact Hammer.png', duration: 150 }
+  { anim: 'attack', file: 'Pawn_Interact Hammer.png', duration: 100 }
 ]
 
 function unitEntry(faction: Faction, type: string, anim: string, file: string, duration: number): CuratedSource {
@@ -60,12 +60,12 @@ export const CURATED: readonly CuratedSource[] = [
     UNIT_ANIMS.map(({ anim, file, duration }) => unitEntry(faction, 'Pawn', anim, file, duration))
   ),
   ...FACTS.flatMap((faction) => [
-    unitEntry(faction, 'Warrior', 'idle', 'Warrior_Idle.png', 120),
+    unitEntry(faction, 'Warrior', 'idle', 'Warrior_Idle.png', 100),
     unitEntry(faction, 'Warrior', 'run', 'Warrior_Run.png', 100),
-    unitEntry(faction, 'Warrior', 'attack', 'Warrior_Attack1.png', 150),
-    unitEntry(faction, 'Archer', 'idle', 'Archer_Idle.png', 120),
+    unitEntry(faction, 'Warrior', 'attack', 'Warrior_Attack1.png', 100),
+    unitEntry(faction, 'Archer', 'idle', 'Archer_Idle.png', 100),
     unitEntry(faction, 'Archer', 'run', 'Archer_Run.png', 100),
-    unitEntry(faction, 'Archer', 'attack', 'Archer_Shoot.png', 150),
+    unitEntry(faction, 'Archer', 'attack', 'Archer_Shoot.png', 100),
     {
       key: `units.${faction}.archer.arrow`,
       source: `Units/${FACTION_DIR[faction]}/Archer/Arrow.png`,
@@ -89,7 +89,7 @@ export const CURATED: readonly CuratedSource[] = [
     source: 'Terrain/Tileset/Water Foam.png',
     file: 'terrain/water/foam.png',
     kind: 'strip' as const,
-    duration: 150,
+    duration: 100,
     anchorX: 0.5,
     anchorY: 0.5
   },

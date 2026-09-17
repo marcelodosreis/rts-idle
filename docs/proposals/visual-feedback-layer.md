@@ -27,8 +27,8 @@ bars) fed by deterministic simulation events.
 
 ### Animation timing
 - Wall-clock in the renderer (presentation only). **Never** tick-synced, never
-  part of the canonical stream. Default durations: idle 120 ms, run 100 ms,
-  attack 150 ms, overridable per asset.
+  part of the canonical stream. Default frame rate: **10 fps (100 ms per
+  frame)**, overridable per asset.
 
 ### Faction colors
 - `PlayerId 0→Blue, 1→Red, 2→Purple, 3→Yellow`; Black reserved (neutral/fallback).
