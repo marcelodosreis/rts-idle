@@ -1,3 +1,4 @@
+import { createCompetitiveMap } from '@rts/game-data'
 import { type GameRenderer, PixiRenderer } from '@rts/renderer'
 import { fixedToRenderPixels, renderPixelsToFixed, TILE_PIXELS } from '@rts/shared'
 import { type RefObject, useEffect, useState } from 'react'
@@ -56,7 +57,8 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       worldHeight: WORLD_PX,
       initialZoom: 1,
       initialCenter: PLAYER_BASE_CENTER,
-      assetsUrl: '/assets'
+      assetsUrl: '/assets',
+      map: createCompetitiveMap()
     })
     let selection = new Set<number>()
     let lastTick = 0

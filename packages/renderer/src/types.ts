@@ -1,3 +1,4 @@
+import type { MapDefinition } from '@rts/game-data'
 import type { PointData } from 'pixi.js'
 
 /** A unit as rendered: id, integer fixed-unit position, owner slot. */
@@ -27,6 +28,8 @@ export interface RendererOptions {
   readonly initialCenter?: PointData
   /** Base URL for the asset manifest and sprites (empty string = no art). */
   readonly assetsUrl?: string
+  /** Map definition rendered as terrain (empty = no terrain). */
+  readonly map?: MapDefinition
 }
 
 /** Public renderer contract: mount/present/resize/dispose plus camera and selection access. */

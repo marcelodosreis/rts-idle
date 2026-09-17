@@ -3,6 +3,7 @@ import { Viewport } from 'pixi-viewport'
 import { AssetLibrary } from './assets/asset-library.js'
 import { CommandPing } from './ping.js'
 import { SelectionController } from './selection.js'
+import { TerrainLayer } from './terrain-layer.js'
 import type { GameRenderer, RendererCallbacks, RendererOptions, RenderFrame } from './types.js'
 import { UnitLayer } from './unit-layer.js'
 
@@ -21,6 +22,7 @@ export class PixiRenderer implements GameRenderer {
   private units: UnitLayer | null = null
   private selection: SelectionController | null = null
   private ping: CommandPing | null = null
+  private terrain: TerrainLayer | null = null
   private readonly options: RendererOptions
   private callbacks: RendererCallbacks = {}
   /** Presentation asset library; null when the manifest/art is unavailable. */
@@ -86,6 +88,10 @@ export class PixiRenderer implements GameRenderer {
       }
     })
     const ping = new CommandPing(viewport)
+    const terrain = new TerrainLayer(viewport, this.assets)
+    if (this.options.map !== undefined) {
+      await terrain.build(this.options.map)
+    }
 
     viewport.eventMode = 'static'
     viewport.on('pointerdown', (event) => {
@@ -108,6 +114,7 @@ export class PixiRenderer implements GameRenderer {
     this.units = units
     this.selection = selection
     this.ping = ping
+    this.terrain = terrain
   }
 
   present(frame: RenderFrame): void {
@@ -160,10 +167,12 @@ export class PixiRenderer implements GameRenderer {
       this.app = null
     }
     this.assets.destroy()
+    this.terrain?.dispose()
     this.viewport = null
     this.units = null
     this.selection = null
     this.ping = null
+    this.terrain = null
   }
 
   getUnitPositions(): ReadonlyMap<number, { readonly x: number; readonly y: number }> {

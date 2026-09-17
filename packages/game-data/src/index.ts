@@ -1,1 +1,2 @@
-export const version = '0.1.0'
+export * from './maps/competitive.js'
+export * from './maps/types.js'
