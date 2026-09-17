@@ -1,5 +1,6 @@
 import type { World } from '../ecs/world.js'
 import type { CommandRejectedError } from './commands.js'
+import type { SimulationEvent } from './events.js'
 
 export interface RulesIdentity {
   readonly simulationVersion: string
@@ -12,6 +13,8 @@ export interface RulesIdentity {
 export interface TickResult {
   readonly tick: number
   readonly rejected: readonly CommandRejectedError[]
+  /** Visual feedback events produced by this tick (step 19). */
+  readonly events: readonly SimulationEvent[]
 }
 
 export interface SimulationOptions {
