@@ -116,4 +116,10 @@ A feature is **done** only when its acceptance criteria are demonstrated by obje
 
 ## Status
 
-Phase 0 (foundation + spikes) in progress. Implemented and tested so far: deterministic primitives, minimal ECS, fixed-timestep engine, canonical hashing, snapshot/restore, minimal replay, validated MOVE commands, and the authoritative session. See `tasks/todo.md`.
+Phase 0 (foundation + spikes) **complete** (gate 9/9): deterministic core, ECS,
+fixed-timestep engine (20 t/s), canonical hashing, snapshot/restore, minimal
+replay, validated MOVE with formation, authoritative session, PixiJS renderer
+with selection/ping, benchmark + Node≡Chromium determinism, 13 ADRs, 6
+postmortems. Quality pipeline: husky + commitlint + lint-staged + biome +
+minimumReleaseAge + semantic-release. Next: Phase 1 (simulation core). See
+`tasks/todo.md`.
