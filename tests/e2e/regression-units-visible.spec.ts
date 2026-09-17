@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
+import { hasArt } from './art.js'
 
 // Regression: units were invisible after mount because the camera fit the
 // entire (huge) world into the viewport, collapsing the scale to ~0.016.
@@ -42,17 +43,19 @@ test('units are rendered at a visible zoom and inside the viewport', async ({ pa
   expect(screen.y).toBeLessThanOrEqual(rect.height)
 
   // Every unit must animate with its own sprite (regression: shared instances
-  // left all but the last unit of a kind as a bare shadow). Asset loading is
-  // slower under CI, so poll generously.
-  await expect
-    .poll(
-      () =>
-        page.evaluate(() => {
-          const debug = window.__rtsDebug!
-          const seen = debug.getPositions() ?? {}
-          return Object.keys(seen).every((id) => debug.getAnimationFrame(Number(id)) !== null)
-        }),
-      { timeout: 20_000 }
-    )
-    .toBe(true)
+  // left all but the last unit of a kind as a bare shadow). Art-dependent, so
+  // only assert when the asset manifest is served (CI has no assets).
+  if (await hasArt(page)) {
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const debug = window.__rtsDebug!
+            const seen = debug.getPositions() ?? {}
+            return Object.keys(seen).every((id) => debug.getAnimationFrame(Number(id)) !== null)
+          }),
+        { timeout: 20_000 }
+      )
+      .toBe(true)
+  }
 })

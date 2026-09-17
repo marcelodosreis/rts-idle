@@ -1,13 +1,17 @@
 import { expect, test } from '@playwright/test'
+import { hasArt } from './art.js'
 
 // E2E for the React + shadcn sprite lab (/sprites/). The page is a tab shell
 // (Browse / Terrain / Stress / Report) with a unified asset browser: sidebar
 // search + categories, central Pixi canvas, and a shadcn inspector. The debug
 // hook window.__spriteLab exposes programmatic selection + the active tab.
+// Every test needs art (the lab browses real assets), so skip when the asset
+// manifest is not served (CI has no assets; ADR-015 CI-safe-without-art).
 
 async function openLab(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/sprites/')
   await page.waitForFunction(() => window.__spriteLab !== undefined, null, { timeout: 20000 })
+  test.skip(!(await hasArt(page)), 'asset manifest not served (no art in CI)')
 }
 
 test('sprite lab mounts the browse tab with art and all assets', async ({ page }) => {

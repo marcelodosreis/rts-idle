@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
+import { hasArt } from './art.js'
 
 async function waitForUnits(page: Page) {
   await page.goto('/')
@@ -38,8 +39,11 @@ test('visual base: HUD reacts to selection and units animate without teleporting
   // The animation loop is wired when art is present; fallback is tolerated.
   // (Deterministic check: sprite is an animated one. Frame-advance assertions
   // are flaky under a throttled headless ticker — owned by the animation agent.)
+  const artAvailable = await hasArt(page)
   const frameA = await page.evaluate((id) => window.__rtsDebug?.getAnimationFrame(id) ?? null, firstId)
-  expect(frameA).not.toBeNull()
+  if (artAvailable) {
+    expect(frameA).not.toBeNull()
+  }
 
   // A MOVE animates the unit across the tilemap (position must change over time,
   // not teleport: intermediate render frames exist because interpolation runs).
@@ -61,15 +65,18 @@ test('visual base: HUD reacts to selection and units animate without teleporting
 
   // Regression: the unit's sprite body must be in the display list (a body
   // with visible=true but never added to the container renders nothing). The
-  // simulation currently moves units instantly, so idle is the visible body.
-  await expect
-    .poll(() =>
-      page.evaluate((id) => {
-        const st = window.__rtsDebug?.getSpriteState(id)
-        return st?.inTree === true && st.visible === true
-      }, firstId)
-    )
-    .toBe(true)
+  // simulation now moves units across ticks, so the run body shows while
+  // moving and idle after arrival. Art-dependent (the sprite requires art).
+  if (artAvailable) {
+    await expect
+      .poll(() =>
+        page.evaluate((id) => {
+          const st = window.__rtsDebug?.getSpriteState(id)
+          return st?.inTree === true && st.visible === true
+        }, firstId)
+      )
+      .toBe(true)
+  }
 
   // The selection panel persists and reflects the unit state through the move
   // (idle/moving; real per-tick movement lands with task A5).
