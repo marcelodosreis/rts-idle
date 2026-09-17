@@ -1,0 +1,19 @@
+packages:
+  - apps/*
+  - packages/*
+  - tools/*
+
+# Supply-chain hardening (adopted from beatswag.co): do not install packages
+# published too recently (new-version supply-chain risk). The Biome CLI is
+# excluded because it ships platform packages very frequently.
+minimumReleaseAge: 2
+minimumReleaseAgeExclude:
+  - '@biomejs/biome'
+  - '@biomejs/cli-darwin-arm64'
+  - '@biomejs/cli-darwin-x64'
+  - '@biomejs/cli-linux-arm64'
+  - '@biomejs/cli-linux-arm64-musl'
+  - '@biomejs/cli-linux-x64'
+  - '@biomejs/cli-linux-x64-musl'
+  - '@biomejs/cli-win32-arm64'
+  - '@biomejs/cli-win32-x64'

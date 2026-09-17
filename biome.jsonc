@@ -1,0 +1,122 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.14/schema.json",
+  // Ruleset adopted from beatswag.co (beat-sale) 2026-09-16, adapted to this
+  // workspace. Formatter style kept from rts-idle (single quotes, no
+  // semicolons, lineWidth 120).
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "includes": ["**", "!commitlint.config.js"]
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 120
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded",
+      "trailingCommas": "none"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "a11y": "warn",
+      "complexity": {
+        "noExcessiveCognitiveComplexity": {
+          "level": "warn",
+          "options": { "maxAllowedComplexity": 25 }
+        },
+        "noExcessiveLinesPerFunction": {
+          "level": "warn",
+          "options": { "maxLines": 250, "skipBlankLines": true, "skipIifes": true }
+        },
+        "noForEach": "warn",
+        "noImplicitCoercions": "error",
+        "noUselessFragments": "warn",
+        "noUselessTernary": "warn",
+        "useMaxParams": {
+          "level": "warn",
+          "options": { "max": 6 }
+        },
+        "useOptionalChain": "warn"
+      },
+      "correctness": {
+        "noConstructorReturn": "error",
+        "noUnreachable": "error",
+        "noUnsafeFinally": "error",
+        "noUnusedVariables": "warn",
+        "noUnusedImports": "warn",
+        "useExhaustiveDependencies": "warn",
+        "useHookAtTopLevel": "error"
+      },
+      // Deliberate exceptions to the beatswag ruleset:
+      // - noAwaitInLoops: sequential await-per-iteration is inherent to the
+      //   E2E harness (iterating seeds/counts); it is a hot-loop perf hint.
+      // - noExcessiveNestedCallbacks: Playwright `expect.poll(page.evaluate)`
+      //   nesting is inherent to the framework.
+      // - noExcessiveClassesPerFile: small tightly-coupled helper classes are
+      //   intentional (UnitSprite/PixiRenderer, ComponentStore/World,
+      //   CanonicalWriter/CanonicalReader).
+      // - noConsole: the tools/server CLI log by design.
+      "nursery": {
+        "noExcessiveNestedCallbacks": "off"
+      },
+      "performance": {
+        "noAwaitInLoops": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off",
+        "noExcessiveClassesPerFile": "off",
+        "noExcessiveLinesPerFile": {
+          "level": "warn",
+          "options": { "maxLines": 400 }
+        },
+        "noImplicitBoolean": "warn",
+        "noInferrableTypes": "warn",
+        "noNestedTernary": "warn",
+        "noParameterAssign": "error",
+        "noUselessElse": "warn",
+        "useBlockStatements": "error",
+        "useConst": "warn",
+        "useImportType": "warn",
+        "useNodejsImportProtocol": "error",
+        "useSelfClosingElements": "warn"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "warn",
+        "noConsole": "off",
+        "noDebugger": "error",
+        "noDoubleEquals": "error",
+        "noEmptyBlockStatements": "warn",
+        "noExplicitAny": "warn",
+        "noFallthroughSwitchClause": "error",
+        "noSelfCompare": "error",
+        "noShadow": "error",
+        "noTemplateCurlyInString": "warn",
+        "noVar": "error"
+      }
+    },
+    "domains": {
+      "react": "recommended",
+      "test": "recommended"
+    }
+  }
+}

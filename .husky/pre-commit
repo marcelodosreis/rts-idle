@@ -1,0 +1,28 @@
+#!/bin/sh
+
+MAX_FILES=10
+
+if [ -f "$(git rev-parse --git-path MERGE_HEAD)" ] || [ -f "$(git rev-parse --git-path CHERRY_PICK_HEAD)" ]; then
+  npx lint-staged
+  exit $?
+fi
+
+STAGED_COUNT=$(git diff --cached --name-only | wc -l)
+
+if [ "$STAGED_COUNT" -gt "$MAX_FILES" ]; then
+  echo ""
+  echo "❌ Commit blocked: you are trying to commit $STAGED_COUNT files."
+  echo "   Maximum allowed: $MAX_FILES files per commit."
+  echo ""
+  echo "💡 Tip: split your changes into smaller, focused commits."
+  echo "   Example:"
+  echo "     git add packages/simulation/src/engine.ts"
+  echo "     git commit -m 'feat(simulation): add deterministic tick loop'"
+  echo ""
+  echo "   To force the commit anyway (not recommended):"
+  echo "     git commit --no-verify"
+  echo ""
+  exit 1
+fi
+
+npx lint-staged

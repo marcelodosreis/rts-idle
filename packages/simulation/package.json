@@ -1,0 +1,32 @@
+{
+  "name": "@rts/simulation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./contracts": {
+      "types": "./dist/contracts/index.d.ts",
+      "default": "./dist/contracts/index.js"
+    },
+    "./fixtures": {
+      "types": "./dist/determinism-fixture.d.ts",
+      "default": "./dist/determinism-fixture.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@rts/shared": "workspace:*",
+    "@rts/game-data": "workspace:*",
+    "@rts/pathfinding": "workspace:*",
+    "@noble/hashes": "^1.8.0"
+  }
+}

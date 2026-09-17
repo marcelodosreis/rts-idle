@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "moduleResolution": "Bundler",
+    "module": "ESNext",
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@rts/renderer": ["../../packages/renderer/src/index.ts"],
+      "@rts/shared": ["../../packages/shared/src/index.ts"],
+      "@rts/protocol": ["../../packages/protocol/src/index.ts"],
+      "@rts/simulation": ["../../packages/simulation/src/index.ts"],
+      "@rts/simulation/fixtures": ["../../packages/simulation/src/determinism-fixture.ts"]
+    }
+  },
+  "include": ["src"]
+}

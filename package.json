@@ -1,0 +1,53 @@
+{
+  "name": "rts-idle",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Competitive browser-first RTS. Build small. Engineer large.",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@10.33.2",
+  "scripts": {
+    "prepare": "husky",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:simulation": "vitest run tests/simulation",
+    "test:determinism": "vitest run tests/determinism",
+    "test:invariants": "vitest run tests/invariants",
+    "test:regression": "vitest run tests/regression",
+    "test:architecture": "vitest run tests/architecture",
+    "test:e2e": "playwright test",
+    "build": "pnpm -r build",
+    "balance": "tsx tools/balance/src/cli.ts",
+    "benchmark": "tsx tools/benchmark/src/cli.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
+    "@commitlint/cli": "^21.0.0",
+    "@commitlint/config-conventional": "^21.0.0",
+    "@noble/hashes": "^1.8.0",
+    "@playwright/test": "^1.50.0",
+    "@rts/simulation": "workspace:*",
+    "@semantic-release/commit-analyzer": "13.0.1",
+    "@semantic-release/git": "10.0.1",
+    "@semantic-release/github": "12.0.9",
+    "@semantic-release/npm": "13.1.5",
+    "@semantic-release/release-notes-generator": "14.1.1",
+    "fast-check": "^4.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^16.0.0",
+    "semantic-release": "25.0.7",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

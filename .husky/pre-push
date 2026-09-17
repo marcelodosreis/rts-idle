@@ -1,0 +1,26 @@
+#!/bin/sh
+
+while read local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main)
+      echo ""
+      echo "❌ Push blocked: direct pushes to $(basename $remote_ref) are not allowed."
+      echo "   Use a pull request instead."
+      echo ""
+      exit 1
+      ;;
+  esac
+done
+
+echo "🔍 Checking project types before push..."
+
+pnpm run typecheck
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Push blocked: TypeScript errors found."
+  echo "   Fix the errors above before pushing."
+  echo ""
+  exit 1
+fi
+
+echo "✅ TypeScript check passed."
