@@ -30,10 +30,10 @@ window.__runRendererPerf = async (count) => {
   document.body.appendChild(host)
 
   const renderer: GameRenderer = new PixiRenderer({
-    worldWidth: 49152,
-    worldHeight: 49152,
+    worldWidth: 12288,
+    worldHeight: 12288,
     initialZoom: 0.05,
-    initialCenter: { x: 24576, y: 24576 }
+    initialCenter: { x: 6144, y: 6144 }
   })
   await renderer.mount(host, {})
 

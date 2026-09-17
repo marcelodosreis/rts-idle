@@ -76,7 +76,7 @@ export class SelectionController {
     const bottomRight = this.viewport.toWorld(x1, y1)
 
     const selected: number[] = []
-    for (const [id, position] of this.units.positions()) {
+    for (const [id, position] of this.units.positionsPixels()) {
       if (
         position.x >= topLeft.x &&
         position.x <= bottomRight.x &&

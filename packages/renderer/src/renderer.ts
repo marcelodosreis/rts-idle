@@ -62,6 +62,8 @@ export class PixiRenderer implements GameRenderer {
     viewport.setZoom(zoom)
     viewport.moveCenter(center.x, center.y)
 
+    app.ticker.add(() => this.tick())
+
     const selectionRect = new Graphics()
     selectionRect.visible = false
     selectionRect.eventMode = 'none'
@@ -107,9 +109,20 @@ export class PixiRenderer implements GameRenderer {
     if (this.viewport === null || this.units === null || this.selection === null || this.ping === null) {
       throw new Error('PixiRenderer: not mounted')
     }
-    this.units.present(frame.units)
+    this.units.present(frame.units, performance.now())
     this.selection.updateRings()
     this.ping.expireIfElapsed(Date.now())
+  }
+
+  /** Visual-loop tick: eases interpolated positions; presentation only. */
+  private tick(): void {
+    if (this.units === null || this.selection === null || this.ping === null) {
+      return
+    }
+    const now = performance.now()
+    this.units.interpolate(now)
+    this.selection.updateRings()
+    this.ping.expireIfElapsed(now)
   }
 
   setSelection(ids: readonly number[]): void {
@@ -148,7 +161,7 @@ export class PixiRenderer implements GameRenderer {
   }
 
   getUnitPositions(): ReadonlyMap<number, { readonly x: number; readonly y: number }> {
-    return this.units?.positions() ?? new Map()
+    return this.units?.fixedPositions() ?? new Map()
   }
 
   getZoom(): number {

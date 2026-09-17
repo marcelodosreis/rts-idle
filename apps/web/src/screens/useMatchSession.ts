@@ -1,13 +1,17 @@
 import { type GameRenderer, PixiRenderer } from '@rts/renderer'
-import { tilesToFixed } from '@rts/shared'
+import { fixedToRenderPixels, renderPixelsToFixed, TILE_PIXELS } from '@rts/shared'
 import { type RefObject, useEffect, useState } from 'react'
 import { type ConnectionHandlers, connectMatch, type MatchConnection, type SnapshotMessage } from '../client/connection'
 import { snapshotToFrame } from '../client/snapshot-to-frame'
 
 const WORLD_TILES = 192
-const WORLD_UNITS = tilesToFixed(WORLD_TILES)
+const WORLD_PX = WORLD_TILES * TILE_PIXELS
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'ws://localhost:8080'
-const PLAYER_BASE_CENTER = { x: 2048, y: 2048 }
+const PLAYER_BASE_CENTER_FIXED = { x: 2048, y: 2048 }
+const PLAYER_BASE_CENTER = {
+  x: fixedToRenderPixels(PLAYER_BASE_CENTER_FIXED.x),
+  y: fixedToRenderPixels(PLAYER_BASE_CENTER_FIXED.y)
+}
 
 interface RtsDebug {
   getPositions(): Record<string, { readonly x: number; readonly y: number }>
@@ -48,8 +52,8 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     }
 
     const renderer: GameRenderer = new PixiRenderer({
-      worldWidth: WORLD_UNITS,
-      worldHeight: WORLD_UNITS,
+      worldWidth: WORLD_PX,
+      worldHeight: WORLD_PX,
       initialZoom: 1,
       initialCenter: PLAYER_BASE_CENTER
     })
@@ -84,7 +88,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
         },
         onGroundCommand: (x, y) => {
           if (selection.size > 0) {
-            connection?.sendMove([...selection], Math.round(x), Math.round(y))
+            connection?.sendMove([...selection], Math.round(renderPixelsToFixed(x)), Math.round(renderPixelsToFixed(y)))
           }
         }
       })
@@ -99,10 +103,10 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
             return out
           },
           getSelection: () => renderer.getSelection(),
-          worldToScreen: (x, y) => renderer.worldToScreen(x, y),
+          worldToScreen: (x, y) => renderer.worldToScreen(fixedToRenderPixels(x), fixedToRenderPixels(y)),
           getZoom: () => renderer.getZoom(),
           getPing: () => renderer.getPing(),
-          moveCamera: (x, y) => renderer.moveCamera(x, y),
+          moveCamera: (x, y) => renderer.moveCamera(fixedToRenderPixels(x), fixedToRenderPixels(y)),
           getTick: () => lastTick
         }
       })
