@@ -1,4 +1,6 @@
-import type { CanonicalReader, CanonicalWriter } from '../canonical/encoder.js'
+import type { Fixed, PlayerId } from '@rts/shared'
+import type { CanonicalReader } from '../canonical/reader.js'
+import type { CanonicalWriter } from '../canonical/writer.js'
 
 export interface ComponentType<T> {
   readonly name: string
@@ -7,12 +9,12 @@ export interface ComponentType<T> {
 }
 
 export interface PositionData {
-  readonly x: number
-  readonly y: number
+  readonly x: Fixed
+  readonly y: Fixed
 }
 
 export interface OwnerData {
-  readonly owner: number
+  readonly owner: PlayerId
 }
 
 export const Position: ComponentType<PositionData> = {
@@ -32,6 +34,12 @@ export const Owner: ComponentType<OwnerData> = {
     writer.writeU8(value.owner)
   },
   decode(reader) {
-    return { owner: reader.readU8() }
+    const owner = reader.readU8()
+    // The canonical format only ever stores a valid slot (0-3); anything else
+    // is corruption, not a valid player.
+    if (owner === 0 || owner === 1 || owner === 2 || owner === 3) {
+      return { owner }
+    }
+    throw new Error(`Owner: invalid owner slot ${owner}`)
   }
 }

@@ -1,10 +1,20 @@
-export const version = '0.1.0'
+import { SIMULATION_VERSION } from './contracts/simulation-version.js'
 
+export const version = SIMULATION_VERSION
+
+export type { RngState } from '@rts/shared'
+export * from './commands/limits.js'
 export * from './contracts/commands.js'
+export * from './contracts/rules-identity.js'
 export * from './contracts/simulation.js'
+export * from './ecs/component-store.js'
 export * from './ecs/components.js'
+export * from './ecs/create-world.js'
 export * from './ecs/world.js'
-export * from './engine.js'
+export * from './engine/create-simulation.js'
+export * from './engine/simulation-from-snapshot.js'
+export * from './engine/simulation-host.js'
 export * from './formation.js'
+export * from './snapshot/hash.js'
 export * from './snapshot/serialize.js'
 export * from './state/state.js'

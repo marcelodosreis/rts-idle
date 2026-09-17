@@ -1,7 +1,9 @@
+import type { EntityId, Fixed, PlayerId } from '@rts/shared'
+
 export interface MovePayload {
-  readonly unitIds: readonly number[]
-  readonly x: number
-  readonly y: number
+  readonly unitIds: readonly EntityId[]
+  readonly x: Fixed
+  readonly y: Fixed
 }
 
 export type CommandIntent = {
@@ -11,7 +13,7 @@ export type CommandIntent = {
 
 export interface ScheduledCommand {
   readonly tick: number
-  readonly playerId: number
+  readonly playerId: PlayerId
   readonly sequence: number
   readonly intent: CommandIntent
 }

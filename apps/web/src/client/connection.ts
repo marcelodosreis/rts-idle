@@ -1,8 +1,6 @@
-export interface SnapshotMessage {
-  readonly type: 'snapshot'
-  readonly tick: number
-  readonly units: readonly { readonly id: number; readonly x: number; readonly y: number; readonly owner: number }[]
-}
+import { isSnapshotMessage, type SnapshotMessage } from '@rts/protocol'
+
+export type { SnapshotMessage }
 
 export interface MatchConnection {
   sendMove(unitIds: readonly number[], x: number, y: number): void
@@ -25,13 +23,14 @@ export function connectMatch(url: string, handlers: ConnectionHandlers): MatchCo
     handlers.onError?.(`failed to connect to ${url}`)
   })
   ws.addEventListener('message', (event) => {
+    let parsed: unknown
     try {
-      const message = JSON.parse(String(event.data)) as SnapshotMessage
-      if (message.type === 'snapshot') {
-        handlers.onSnapshot(message)
-      }
+      parsed = JSON.parse(String(event.data))
     } catch {
-      // ignore malformed messages
+      return // ignore malformed messages
+    }
+    if (isSnapshotMessage(parsed)) {
+      handlers.onSnapshot(parsed)
     }
   })
 

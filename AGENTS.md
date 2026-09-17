@@ -4,6 +4,16 @@ This project is an RTS idle game. It uses engineering workflow skills installed 
 `.opencode/skills/`, plus always-loaded rule packs under `.opencode/rules/`
 (borrowed from ECC) and shared checklists under `.opencode/references/`.
 
+## Entry Requirement
+
+**Read `docs/engineering-standard.md` before modifying any code.** It is the
+project's engineering source of truth (module/package rules, one-public-function
+per file, math clarity, typing, immutability, testing, determinism, Definition of
+Done, and the mandatory self-audit). `docs/architecture.md` documents the current
+module layout and boundaries. The automated barriers
+(`tests/architecture/package-dependencies.test.ts`, `public-api.test.ts`,
+`simulation-isolation.test.ts`) are enforced by CI and must stay green.
+
 ## Core Rules
 
 - If a task matches a skill, invoke it with the `skill` tool before acting.

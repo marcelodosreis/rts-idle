@@ -6,11 +6,13 @@ expected at each step. Keep this updated every time something new lands.
 ## Setup
 
 ```bash
-# Terminal 1 — authoritative demo server (auto-restarts via `tsx watch` on code changes)
-pnpm --filter @rts/server dev
+# One command: starts the authoritative server (:8080) and the Vite app (:5173)
+# in parallel. Logs are prefixed [@rts/server] / [@rts/web]; Ctrl+C stops both.
+pnpm dev
 
-# Terminal 2 — browser app (Vite hot-reloads)
-pnpm --filter @rts/web dev
+# Alternatively, in two separate terminals:
+#   pnpm --filter @rts/server dev   (auto-restarts via `tsx watch`)
+#   pnpm --filter @rts/web dev      (Vite hot-reloads)
 ```
 
 Open `http://localhost:5173`. The status line shows

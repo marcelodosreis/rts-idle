@@ -1,8 +1,16 @@
-import { sha256 } from '@noble/hashes/sha256'
 import type { RngState } from '@rts/shared'
-import { CanonicalReader, CanonicalWriter } from '../canonical/encoder.js'
-import { createWorld, type World } from '../ecs/world.js'
+import { CanonicalReader } from '../canonical/reader.js'
+import { CanonicalWriter } from '../canonical/writer.js'
+import { createWorld } from '../ecs/create-world.js'
+import type { World } from '../ecs/world.js'
 import type { GameState } from '../state/state.js'
+
+/**
+ * Canonical state serialization (ADR-002/011): explicit schema order, integers
+ * with a defined representation, entities by id, components in registration
+ * order, and a presence flag so "component absent" is distinct from a zero
+ * value. The byte layout is pinned by the golden-hash test.
+ */
 
 function writeRng(writer: CanonicalWriter, rng: RngState): void {
   writer.writeU32(rng.s0)
@@ -28,6 +36,7 @@ function writeWorld(writer: CanonicalWriter, world: World): void {
     for (const type of world.componentTypes()) {
       const value = world.store(type).get(id)
       if (value === undefined) {
+        // Presence flag 0: component absent (distinct from a zero value).
         writer.writeU8(0)
       } else {
         writer.writeU8(1)
@@ -88,21 +97,4 @@ export function deserializeState(bytes: Uint8Array): GameState {
   const nextEntityId = reader.readU32()
   const world = readWorld(reader)
   return { tick, phase, identity, seed, rng, nextEntityId, world }
-}
-
-export function hashBytes(bytes: Uint8Array): string {
-  const digest = sha256(bytes)
-  return bytesToHex(digest)
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  let out = ''
-  for (let i = 0; i < bytes.length; i += 1) {
-    out += (bytes[i] ?? 0).toString(16).padStart(2, '0')
-  }
-  return out
-}
-
-export function hashState(state: GameState): string {
-  return hashBytes(serializeState(state))
 }
