@@ -1,7 +1,10 @@
 import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
 import type { GameState } from '../state/state.js'
+import { applyHold } from './hold.js'
 import { applyMove } from './move.js'
+import { applyPatrol } from './patrol.js'
 import { validateCommandShape } from './schema.js'
+import { applyStop } from './stop.js'
 
 /**
  * Dispatches a scheduled command to its handler. Every command first validates
@@ -17,11 +20,17 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
     case 'MOVE':
       applyMove(state, command, command.intent.payload)
       return
+    case 'STOP':
+      applyStop(state, command, command.intent.payload)
+      return
+    case 'HOLD':
+      applyHold(state, command, command.intent.payload)
+      return
+    case 'PATROL':
+      applyPatrol(state, command, command.intent.payload)
+      return
     case 'ATTACK':
     case 'ATTACK_MOVE':
-    case 'STOP':
-    case 'HOLD':
-    case 'PATROL':
     case 'GATHER':
     case 'RETURN_CARGO':
     case 'BUILD':

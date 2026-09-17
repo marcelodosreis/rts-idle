@@ -3,6 +3,7 @@ import type { SimulationEvent } from '../contracts/events.js'
 import type { GameState } from '../state/state.js'
 import { applyCommandsSystem } from './commands-system.js'
 import { movementSystem } from './movement-system.js'
+import { ordersSystem } from './orders-system.js'
 
 /** Per-tick execution context handed to every system (ADR-013). */
 export interface SystemContext {
@@ -31,8 +32,8 @@ export const SYSTEM_ORDER: readonly System[] = [
   noop,
   // 2. Validate and apply scheduled commands (atomicity, §10.3).
   applyCommandsSystem,
-  // 3. Update orders and request navigation (Phase 1 orders, task A6).
-  noop,
+  // 3. Update orders and request navigation (order queue lifecycle).
+  ordersSystem,
   // 4. Run the pathfinding budget (Phase 3).
   noop,
   // 5. Resolve movement and collision (Phase 1 straight-line movement).

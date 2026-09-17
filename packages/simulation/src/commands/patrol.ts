@@ -1,4 +1,4 @@
-import type { MovePayload, ScheduledCommand } from '../contracts/commands.js'
+import type { PatrolPayload, ScheduledCommand } from '../contracts/commands.js'
 import type { Order } from '../contracts/orders.js'
 import { OrderQueue } from '../ecs/components.js'
 import { formationOffset } from '../formation.js'
@@ -6,25 +6,24 @@ import type { GameState } from '../state/state.js'
 import { requireRunning, validateOwnedSelection } from './validate.js'
 
 /**
- * Default movement speed in tiles per second until per-type stats land
- * (task A9, master plan §13).
+ * Applies a PATROL command: each selected unit alternates between two points,
+ * offset by its formation slot so a group patrols spread out. Replace by
+ * default; `append` adds to the queue (master plan §10.1).
  */
-export const DEFAULT_MOVE_SPEED_TILES_PER_SECOND = 3
-
-/**
- * Applies a MOVE command: pushes a MOVE order with each unit's formation
- * destination (the first unit goes exactly to the target). The order queue
- * accepts `replace` (default) or `append` (master plan §10.1); the orders
- * system turns the head order into movement each tick. No teleport.
- */
-export function applyMove(state: GameState, command: ScheduledCommand, payload: MovePayload): void {
+export function applyPatrol(state: GameState, command: ScheduledCommand, payload: PatrolPayload): void {
   requireRunning(state, command)
   validateOwnedSelection(state, command, payload.unitIds)
   const queues = state.world.store(OrderQueue)
   const sorted = [...payload.unitIds].sort((a, b) => a - b)
   sorted.forEach((unitId, index) => {
     const offset = formationOffset(index)
-    const order: Order = { type: 'MOVE', x: payload.x + offset.dx, y: payload.y + offset.dy }
+    const order: Order = {
+      type: 'PATROL',
+      x1: payload.x1 + offset.dx,
+      y1: payload.y1 + offset.dy,
+      x2: payload.x2 + offset.dx,
+      y2: payload.y2 + offset.dy
+    }
     const existing = queues.get(unitId)
     if (payload.mode === 'append' && existing !== undefined) {
       queues.set(unitId, { orders: [...existing.orders, order] })
