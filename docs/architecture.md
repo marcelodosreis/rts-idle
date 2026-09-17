@@ -31,6 +31,7 @@ Dependency direction (enforced by `tests/architecture/package-dependencies.test.
 shared → game-data → simulation → { server, ai }
        → pathfinding ↗
        → protocol  → { server, web, renderer }
+       → game-data → { renderer, web }   (visual catalog, maps)
                     → renderer → web
 ```
 

@@ -54,7 +54,12 @@ A mechanic is adopted only when it creates decision, counterplay, or skill expre
 
 ## Aesthetic stance
 
-The doodle aesthetic is the packaging, not the product (ADR-005). It buys cheap assets, fast iteration, and low GPU requirements. The budget it saves is reinvested in responsiveness and legibility, which are the product.
+The visual identity uses **real RTS sprites and a tileset** (ADR-015, supersedes
+ADR-005), adopted only after license validation. Art is data-driven in
+game-data (ADR-004): swapping packs is a data change. The budget saved by not
+hand-crafting assets is reinvested in responsiveness and legibility, which are
+the product. The assets exist to make combat readable, not to compete on raw
+visual fidelity.
 
 ## Design principles
 

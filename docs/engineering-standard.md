@@ -29,10 +29,10 @@
 | `protocol` | Versioned wire messages + runtime guards | `shared` |
 | `simulation` | GameState, ECS, commands, systems, snapshots | `shared`, `game-data`, `pathfinding` |
 | `ai` | Strategic/tactical decisions from observations | `shared`, `game-data`, `simulation` |
-| `renderer` | PixiJS presentation: units, selection, ping, camera | `shared`, `protocol` |
+| `renderer` | PixiJS presentation: units, selection, ping, camera, terrain, effects | `shared`, `protocol`, `game-data` |
 | `audio` | Audio cues | `shared` |
 | `server` | Rooms, sessions, authority, transport | `shared`, `simulation`, `protocol`, `ai` |
-| `web` | React screens, HUD, network client, input | `shared`, `protocol`, `renderer`, `audio` |
+| `web` | React screens, HUD, network client, input | `shared`, `protocol`, `renderer`, `audio`, `game-data` |
 | `tools/*` | Headless execution, benchmark, balance | varies; never renderer/server |
 
 **Enforcement:** `tests/architecture/package-dependencies.test.ts` scans every

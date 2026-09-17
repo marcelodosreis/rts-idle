@@ -38,8 +38,61 @@ Master plan: `docs/master-plan.md`. Specs: `docs/specs/`.
 - [x] Performance matrix executed
 - [x] Tick rate decided (ADR-009)
 
-## Phase 1 — Simulation core
-- [ ] P1.01–P1.09 (see `docs/master-plan.md`)
+## Phase 1 — Simulation core (execution plan: `tasks/plan.md`, master plan §23.2)
+
+### Sprint 0 — Docs and coordination
+- [ ] C0 master-plan + todo synced (visual parallel track §23.2)
+- [ ] C1 ledger + ADR-015 + ADR-005 superseded
+- [ ] C2 `docs/proposals/visual-feedback-layer.md`
+- [ ] C3 dependency matrix renderer/web → game-data
+
+### Sprint A — Asset organization and capabilities
+- [ ] A0.1 organize all assets (`public/assets/**`, `build-manifest`, `copy`, `.gitignore`)
+- [ ] A0.2 `docs/assets/capabilities.md`
+
+### Sprint C — Visual base (playable animated demo)
+- [ ] V1 interpolation + 1 tile = 64 px scale
+- [ ] V3 asset pipeline (manifest, loader, `createStripAnimation`)
+- [ ] V4 terrain layer (tileset + water foam + decorations)
+- [ ] V5 animated units (idle/run, flip, shadow, fallback)
+- [ ] V10a base HUD (selection panel + chrome)
+- [ ] V12a visual base e2e
+- [ ] Gate: MOVE animated over real tileset, no teleport, playable
+
+### Sprint D — Phase 1 core (P1.01–P1.03)
+- [ ] A1 P1.00 systems pipeline in frozen order + event hook
+- [ ] A2 P1.01 complete command contracts (`command-schema`)
+- [ ] A3 P1.02 atomic validate→apply pipeline (`command-atomicity`)
+- [ ] A4 movement system (speed, integer remainder, arrival)
+- [ ] A5 MOVE real per tick + migrate move-command/e2e
+- [ ] A6 P1.03 order queue + STOP/HOLD/PATROL (`order-lifecycle`)
+
+### Sprint E — HUD data + events
+- [ ] A7 P1.04 players/wallet + canonical extension + golden regen + version 0.2.0 (`player-state`)
+- [ ] A8 P1.04b SURRENDER + defeat
+- [ ] V8 snapshot/protocol hp/maxHp/kind/orderState/players/events
+- [ ] V6 event contract (attackFired/damageDealt/unitDied)
+- [ ] V10b resources/supply HUD
+
+### Sprint F — Combat + readable feedback
+- [ ] A9 P1.05 combat components + stats + ATTACK + instant damage (`basic-combat`)
+- [ ] A10 P1.05b target selection + ATTACK_MOVE + HOLD auto-attack
+- [ ] A11 P1.06 simultaneous damage and death (`simultaneous-death`)
+- [ ] V7 emit real events
+- [ ] V9 combat feedback (HP bars, streak/Arrow, damage popup, explosion)
+- [ ] V11 hostile demo scenario
+- [ ] V12b visual combat e2e
+
+### Sprint G — Closing
+- [ ] A12 P1.07 victory/draw/tick limit (`victory`)
+- [ ] A13 P1.08 central invariants (`core-invariants`)
+- [ ] A14 P1.09 expanded determinism (`core-replay`)
+- [ ] V13 `docs/simulation.md` + `docs/commands.md` + public-api
+- [ ] A0.2b capabilities.md updated
+- [ ] G1 Phase 1 gate + report + README + todo + ledger
+
+> Phase 1 dependency (master plan): Phase 0 approved. Full command contracts,
+> order queue, and complete combat rules. Visual track runs in parallel (ADR-015).
 
 ## Phase 2 — Economy and production
 - [ ] P2.01–P2.12 (see `docs/master-plan.md`)

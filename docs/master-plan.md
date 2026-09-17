@@ -1827,15 +1827,23 @@ Initial configuration:
 - No hotkey fires while a text field is focused.
 - Focus loss clears pressed keys.
 
-## 20.5. Doodle
+## 20.5. Doodle — superseded
+
+**Superseded by user decision (2026-09-17): the doodle identity is no longer the
+direction.** The visual layer uses a real RTS sprite/tileset pack (Tiny Swords),
+adopted **only after its license is validated** (golden rule: no public use
+without a license that permits it; otherwise the pack is rejected). See
+ADR-015 and `docs/assets/capabilities.md`.
+
+The goals below that are identity-neutral remain valid (legibility, factions,
+cheap rendering, no per-frame path redraws):
 
 - Simple sprite atlas.
 - Outlines and colors distinguish factions.
 - Silhouettes distinguish roles.
-- Paper texture applied economically.
 - Discreet effects.
 - Do not redraw complex paths for all units every frame.
-- Stroke randomness is visual and independent.
+- Stroke randomness is visual and independent (only relevant if hand-drawn assets return).
 
 ## 20.6. Accessibility
 
@@ -2181,6 +2189,38 @@ The slug indicated in the table determines the file and the focused command from
 
 ---
 
+## 23.2. Visual and feedback layer (parallel track)
+
+By user decision (2026-09-17), the visual/feedback layer advances **together
+with** the simulation core, not only at Phase 8/9 (ADR-015). It never changes
+the architecture core: the simulation stays portable, deterministic, and
+single-writer; the renderer is presentation-only and consumes **per-tick
+simulation events** filtered by allowed observation.
+
+Frozen contracts:
+
+- **Scale:** `1 tile = 64 render px` (`FIXED_TO_PIXEL = 1/4` of the 256-unit
+  fixed tile). All renderer coordinate conversion goes through this factor.
+- **Frame geometry:** frame cell is the square of the strip height; frame count
+  is `width / height` (validated by `tools/assets/build-manifest.ts`).
+- **Animation timing:** wall-clock in the renderer (presentation only); never
+  tick-synced, never deterministic.
+- **Faction colors:** `PlayerId 0→Blue, 1→Red, 2→Purple, 3→Yellow`
+  (Black reserved). Real per-faction art; no tint.
+- **Events (deterministic, replay-safe):** `attackFired`, `damageDealt`,
+  `unitDied` (Phase 1); `gatherTick` (Phase 2). Derived from state per tick
+  (step 19), never persisted in the canonical snapshot; carried to the client
+  as `events[]` in the snapshot message. Fog filtering arrives with Phase 3.
+- **Fallback:** if an asset fails to load, the renderer falls back to
+  placeholders so CI and tests stay green without art.
+
+Deliverables live in `docs/proposals/visual-feedback-layer.md`,
+`docs/assets/capabilities.md` (asset capability inventory), and the task
+checklists in `tasks/todo.md`. Assets are kept out of git until the pack
+license is validated (`.gitignore`: `tmp/`, `apps/web/public/assets/`).
+
+---
+
 ## Phase 0 — Foundation and spikes
 
 **Objective:** validate the central risks before real content.
@@ -2446,6 +2486,7 @@ Run after M1 to expand content on a validated foundation.
 | `performance.md` | Hardware, methodology, and baselines |
 | `game-design.md` | Rules and content |
 | `deployment.md` | Production build, variables, and operation |
+| `assets/capabilities.md` | Asset inventory and integration/polish possibilities |
 
 ## 24.2. Planned ADRs
 
@@ -2460,6 +2501,7 @@ Run after M1 to expand content on a validated foundation.
 9. Incremental A* with a deterministic budget.
 10. Replay and versioning.
 11. In-memory rooms and file-based persistence.
+12. Visual identity: real RTS sprite pack, supersedes ADR-005 (ADR-015, user decision).
 
 Format:
 
