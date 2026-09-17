@@ -68,15 +68,15 @@ Master plan: `docs/master-plan.md`. Specs: `docs/specs/`.
 - [ ] A6 P1.03 order queue + STOP/HOLD/PATROL (`order-lifecycle`)
 
 ### Sprint E — HUD data + events
-- [ ] A7 P1.04 players/wallet + canonical extension + golden regen + version 0.2.0 (`player-state`)
-- [ ] A8 P1.04b SURRENDER + defeat
+- [x] A7 P1.04 players/wallet + canonical extension + golden regen + version 0.2.0 (`player-state`)
+- [x] A8 P1.04b SURRENDER + defeat
 - [ ] V8 snapshot/protocol hp/maxHp/kind/orderState/players/events
-- [ ] V6 event contract (attackFired/damageDealt/unitDied)
+- [x] V6 event contract (attackFired/damageDealt/unitDied)
 - [ ] V10b resources/supply HUD
 
 ### Sprint F — Combat + readable feedback
-- [ ] A9 P1.05 combat components + stats + ATTACK + instant damage (`basic-combat`)
-- [ ] A10 P1.05b target selection + ATTACK_MOVE + HOLD auto-attack
+- [x] A9 P1.05 combat components + stats + ATTACK + instant damage (`basic-combat`)
+- [x] A10 P1.05b target selection + ATTACK_MOVE + HOLD auto-attack
 - [ ] A11 P1.06 simultaneous damage and death (`simultaneous-death`)
 - [ ] V7 emit real events
 - [ ] V9 combat feedback (HP bars, streak/Arrow, damage popup, explosion)
@@ -90,6 +90,9 @@ Master plan: `docs/master-plan.md`. Specs: `docs/specs/`.
 - [ ] V13 `docs/simulation.md` + `docs/commands.md` + public-api
 - [ ] A0.2b capabilities.md updated
 - [ ] G1 Phase 1 gate + report + README + todo + ledger
+
+> **PAUSED for animation/sprite agent** (see `docs/handoff-animations.md`).
+> Branch `feat/visual-core`; green: 191 vitest + 11 e2e.
 
 > Phase 1 dependency (master plan): Phase 0 approved. Full command contracts,
 > order queue, and complete combat rules. Visual track runs in parallel (ADR-015).
