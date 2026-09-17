@@ -1,4 +1,4 @@
-import type { AssetEntry, AssetKind } from './manifest-types.js'
+import type { AssetEntry, AssetKind } from '@rts/shared'
 import { pngDimensions } from './png-dimensions.js'
 
 export interface GeometryInput {

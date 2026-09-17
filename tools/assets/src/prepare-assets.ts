@@ -1,8 +1,8 @@
 import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
+import type { AssetEntry, AssetManifest } from '@rts/shared'
 import { CURATED } from './curated.js'
 import { deriveFrameGeometry } from './derive-frame-geometry.js'
-import type { AssetEntry, AssetManifest } from './manifest-types.js'
 
 export interface PrepareOptions {
   /** Vendor pack root (`tmp/tiny_swords`). */

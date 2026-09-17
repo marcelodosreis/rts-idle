@@ -1,5 +1,6 @@
 /**
- * Asset manifest types shared by the build tool and consumers.
+ * Asset manifest types — the JSON contract between the asset build tool
+ * (`tools/assets`) and the renderer (ADR-015, master plan §23.2).
  *
  * The manifest is generated output (`pnpm assets:prepare`): it describes every
  * curated PNG by its semantic key, target file, and frame geometry. Consumers

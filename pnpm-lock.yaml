@@ -74,6 +74,9 @@ importers:
       lint-staged:
         specifier: ^16.0.0
         version: 16.4.0
+      pixi.js:
+        specifier: ^8.20.1
+        version: 8.20.1
       semantic-release:
         specifier: 25.0.7
         version: 25.0.7(typescript@5.9.3)
@@ -209,6 +212,10 @@ importers:
         version: link:../shared
 
   tools/assets:
+    dependencies:
+      '@rts/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
     devDependencies:
       '@types/node':
         specifier: ^24.0.0

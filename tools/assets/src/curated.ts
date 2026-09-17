@@ -1,4 +1,4 @@
-import type { AssetKind } from './manifest-types.js'
+import type { AssetKind } from '@rts/shared'
 
 /**
  * Curated asset index: the semantic set we ship today, mapping source files in
