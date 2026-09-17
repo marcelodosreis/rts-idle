@@ -208,6 +208,12 @@ importers:
         specifier: workspace:*
         version: link:../shared
 
+  tools/assets:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.5
+
   tools/balance:
     dependencies:
       '@rts/ai':

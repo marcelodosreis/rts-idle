@@ -25,7 +25,8 @@
     "test:e2e": "playwright test",
     "build": "pnpm -r build",
     "balance": "tsx tools/balance/src/cli.ts",
-    "benchmark": "tsx tools/benchmark/src/cli.ts"
+    "benchmark": "tsx tools/benchmark/src/cli.ts",
+    "assets:prepare": "tsx tools/assets/src/cli.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
