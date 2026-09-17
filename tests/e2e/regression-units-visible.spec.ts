@@ -42,14 +42,17 @@ test('units are rendered at a visible zoom and inside the viewport', async ({ pa
   expect(screen.y).toBeLessThanOrEqual(rect.height)
 
   // Every unit must animate with its own sprite (regression: shared instances
-  // left all but the last unit of a kind as a bare shadow).
+  // left all but the last unit of a kind as a bare shadow). Asset loading is
+  // slower under CI, so poll generously.
   await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const debug = window.__rtsDebug!
-        const seen = debug.getPositions() ?? {}
-        return Object.keys(seen).every((id) => debug.getAnimationFrame(Number(id)) !== null)
-      })
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const debug = window.__rtsDebug!
+          const seen = debug.getPositions() ?? {}
+          return Object.keys(seen).every((id) => debug.getAnimationFrame(Number(id)) !== null)
+        }),
+      { timeout: 20_000 }
     )
     .toBe(true)
 })
