@@ -1,3 +1,5 @@
+import { MAX_UNITS_PER_COMMAND } from './commands/limits.js'
+
 export interface FormationOffset {
   readonly dx: number
   readonly dy: number
@@ -5,8 +7,12 @@ export interface FormationOffset {
 
 export const FORMATION_SPACING = 128
 
-const MAX_UNITS_PER_COMMAND = 256
-
+/**
+ * Builds the deterministic formation spiral: unit 0 lands on the target and
+ * each following ring is walked clockwise (right column, top row, left column,
+ * bottom row). Ring order is fixed, so the same index always yields the same
+ * offset regardless of call site (deterministic group movement).
+ */
 function buildSpiral(count: number): readonly FormationOffset[] {
   const offsets: FormationOffset[] = [{ dx: 0, dy: 0 }]
   let ring = 1
@@ -36,7 +42,7 @@ const SPIRAL = buildSpiral(MAX_UNITS_PER_COMMAND)
 export function formationOffset(index: number): FormationOffset {
   const offset = SPIRAL[index] ?? { dx: 0, dy: 0 }
   return {
-    dx: offset.dx * FORMATION_SPACING || 0,
-    dy: offset.dy * FORMATION_SPACING || 0
+    dx: (offset.dx || 0) * FORMATION_SPACING,
+    dy: (offset.dy || 0) * FORMATION_SPACING
   }
 }
