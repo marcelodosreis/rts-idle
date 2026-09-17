@@ -48,7 +48,7 @@ describe('createAnimation', () => {
     )
     expect(sprite.anchor.x).toBe(0.5)
     expect(sprite.anchor.y).toBe(1)
-    expect(sprite.animationSpeed).toBeCloseTo(1000 / 120)
+    expect(sprite.animationSpeed).toBeCloseTo(1000 / 120 / 60)
     expect(sprite.totalFrames).toBe(4)
   })
 })

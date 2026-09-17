@@ -9,6 +9,8 @@ import { UnitLayer } from './unit-layer.js'
 
 const MIN_ZOOM = 0.05
 const MAX_ZOOM = 4
+/** Canvas background is always the water color so no beige ever shows. */
+const WATER_BG = 0x47aba9
 
 /**
  * PixiJS renderer orchestrator. Owns the Application and the viewport, and
@@ -43,7 +45,7 @@ export class PixiRenderer implements GameRenderer {
     const app = new Application()
     await app.init({
       resizeTo: host,
-      background: 0xf4efe4,
+      background: WATER_BG,
       antialias: true,
       preference: 'webgl'
     })
@@ -52,8 +54,8 @@ export class PixiRenderer implements GameRenderer {
     app.canvas.addEventListener('contextmenu', (event) => event.preventDefault())
 
     const viewport = new Viewport({
-      screenWidth: host.clientWidth || 800,
-      screenHeight: host.clientHeight || 600,
+      screenWidth: app.screen.width,
+      screenHeight: app.screen.height,
       worldWidth: this.options.worldWidth,
       worldHeight: this.options.worldHeight,
       events: app.renderer.events
@@ -79,7 +81,6 @@ export class PixiRenderer implements GameRenderer {
     const units = new UnitLayer(viewport, this.assets, (id) => {
       this.callbacks.onUnitSelected?.(id)
     })
-    units.preloadShadow()
     const selection = new SelectionController({
       viewport,
       units,
@@ -187,6 +188,17 @@ export class PixiRenderer implements GameRenderer {
 
   getUnitAnimationFrame(id: number): number | null {
     return this.units?.animationFrame(id) ?? null
+  }
+
+  /** Debug: whether the unit's sprite body is visible and its current frame. */
+  getUnitSpriteState(id: number): {
+    readonly visible: boolean
+    readonly frame: number | null
+    readonly anim: 'idle' | 'run' | 'fallback'
+    readonly inTree: boolean
+    readonly facing: number
+  } | null {
+    return this.units?.spriteState(id) ?? null
   }
 
   getZoom(): number {

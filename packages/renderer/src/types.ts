@@ -47,6 +47,14 @@ export interface GameRenderer {
   getUnitPositions(): ReadonlyMap<number, { readonly x: number; readonly y: number }>
   /** Current animation frame of a unit's sprite, or `null` when in fallback. */
   getUnitAnimationFrame(id: number): number | null
+  /** Debug: whether a unit's sprite body is visible and its current frame. */
+  getUnitSpriteState(id: number): {
+    readonly visible: boolean
+    readonly frame: number | null
+    readonly anim: 'idle' | 'run' | 'fallback'
+    readonly inTree: boolean
+    readonly facing: number
+  } | null
   getZoom(): number
   getPing(): { readonly x: number; readonly y: number } | null
   moveCamera(x: number, y: number): void

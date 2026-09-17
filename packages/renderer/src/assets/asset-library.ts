@@ -27,6 +27,14 @@ export class AssetLibrary {
     return this.manifest?.assets[key] ?? null
   }
 
+  /** All manifest asset keys, for asset browsers like the sprite lab. */
+  keys(): readonly string[] {
+    if (this.manifest === null) {
+      return []
+    }
+    return Object.keys(this.manifest.assets)
+  }
+
   /** Loads (and caches) the raw texture for a manifest entry. */
   async texture(key: string): Promise<Texture | null> {
     const cached = this.textures.get(key)

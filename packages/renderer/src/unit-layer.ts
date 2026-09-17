@@ -1,5 +1,5 @@
 import { fixedToRenderPixels } from '@rts/shared'
-import { AnimatedSprite, Circle, Container, Graphics, Sprite, type Ticker } from 'pixi.js'
+import { AnimatedSprite, Circle, Container, Graphics, Texture, type Ticker } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
 import type { AssetLibrary } from './assets/asset-library.js'
 import { interpolationAlpha, lerpPoint } from './interpolation.js'
@@ -9,10 +9,8 @@ const OWNER_COLORS = [0x2e7d32, 0xc62828, 0x1565c0, 0xf9a825]
 
 /** Visual radius of a unit placeholder in render pixels (1 tile = 64 px). */
 export const UNIT_RADIUS = 20
-/** Sprite scale: 192 px unit cells render about 0.8 tile tall. */
-const SPRITE_SCALE = 0.5
-/** Vertical offset of the shadow decal below the unit's feet. */
-const SHADOW_OFFSET = 6
+/** Sprite scale: 192 px unit cells render about 0.75 tile tall (48 px). */
+const SPRITE_SCALE = 0.25
 
 const FACTION_BY_OWNER: readonly ('blue' | 'red' | 'purple' | 'yellow')[] = ['blue', 'red', 'purple', 'yellow']
 
@@ -21,9 +19,33 @@ interface UnitFrames {
   readonly run: AnimatedSprite
 }
 
+/**
+ * A private copy of a template animation. `preloadKind` caches ONE template
+ * pair per kind+faction; every unit must clone it because a Pixi display
+ * object can belong to only one container (shared instances would make only
+ * the last unit visible and couple their state/scale). Unit sprites are
+ * centered on their tile (anchor 0.5/0.5) rather than feet-anchored.
+ */
+function cloneAnimation(template: AnimatedSprite): AnimatedSprite {
+  const textures = template.textures.filter((texture): texture is Texture => texture instanceof Texture)
+  const clone = new AnimatedSprite(textures, false)
+  clone.anchor.set(0.5, 0.5)
+  clone.animationSpeed = template.animationSpeed
+  clone.play()
+  return clone
+}
+
+/** Asset key for a unit animation: kind → manifest subtype (pawn_* / warrior_* / archer_*). */
 function frameKey(owner: number, kind: UnitKind, anim: 'idle' | 'run'): string {
   const faction = FACTION_BY_OWNER[owner % FACTION_BY_OWNER.length] ?? 'blue'
-  return `units.${faction}.${kind}.${anim}`
+  switch (kind) {
+    case 'pawn':
+      return `units.${faction}.pawn.pawn_${anim}`
+    case 'warrior':
+      return `units.${faction}.warrior.warrior_${anim}`
+    case 'archer':
+      return `units.${faction}.archer.archer_${anim}`
+  }
 }
 
 class UnitSprite {
@@ -31,8 +53,11 @@ class UnitSprite {
   readonly kind: UnitKind
   readonly ownerFaction: number
   private body: AnimatedSprite | Graphics
-  private readonly fallback: Graphics
+  private readonly fallback: Graphics | null
   private frames: UnitFrames | null
+  /** Horizontal facing: 1 = right, -1 = left. Only updated while moving so
+   * idle keeps looking the way the unit last walked. */
+  private facing = 1
 
   constructor(kind: UnitKind, owner: number, frames: UnitFrames | null) {
     this.kind = kind
@@ -40,39 +65,42 @@ class UnitSprite {
     this.container = new Container()
     this.container.eventMode = 'static'
     this.container.cursor = 'pointer'
-    // Circular hit area centered just above the feet: covers the feet and the
-    // lower body, but keeps a drag starting ~25 px from a unit on empty ground
-    // (box selection) and never reaches a neighbor 64 px away.
-    this.container.hitArea = new Circle(0, -12, 26)
-    this.frames = frames
-    this.fallback = new Graphics()
-    this.fallback.circle(0, 0, UNIT_RADIUS).fill(OWNER_COLORS[owner % OWNER_COLORS.length] ?? 0x000000)
-    this.body = this.fallback
-    this.container.addChild(this.fallback)
+    // Circular hit area centered on the sprite so selection matches its bounds.
+    this.container.hitArea = new Circle(0, 0, 24)
     if (frames !== null) {
-      this.body = frames.idle
-      this.body.visible = false
-      this.container.addChild(this.body)
+      // Own private copies so this unit animates independently of its kind.
+      this.frames = { idle: cloneAnimation(frames.idle), run: cloneAnimation(frames.run) }
+      this.frames.idle.visible = false
+      this.frames.run.visible = false
+      // Both bodies must be in the display list so `setState` can reveal either.
+      this.container.addChild(this.frames.idle)
+      this.container.addChild(this.frames.run)
+      this.body = this.frames.idle
+      this.fallback = null
+    } else {
+      this.frames = null
+      this.fallback = new Graphics()
+      this.fallback.circle(0, 0, UNIT_RADIUS).fill(OWNER_COLORS[owner % OWNER_COLORS.length] ?? 0x000000)
+      this.body = this.fallback
+      this.container.addChild(this.fallback)
     }
-  }
-
-  attachShadow(texture: Sprite): void {
-    texture.anchor.set(0.5, 0.5)
-    texture.y = SHADOW_OFFSET
-    this.container.addChildAt(texture, 0)
   }
 
   /** Upgrades a placeholder sprite to animated frames once art loads. */
-  swapFrames(frames: UnitFrames): void {
+  swapFrames(template: UnitFrames): void {
     if (this.frames !== null) {
       return
     }
-    this.frames = frames
+    this.frames = { idle: cloneAnimation(template.idle), run: cloneAnimation(template.run) }
     this.frames.idle.visible = false
     this.frames.run.visible = false
-    this.container.removeChild(this.fallback)
-    this.fallback.destroy()
+    if (this.fallback !== null) {
+      this.container.removeChild(this.fallback)
+      this.fallback.destroy()
+    }
+    // Both bodies must be in the display list so `setState` can reveal either.
     this.container.addChild(this.frames.idle)
+    this.container.addChild(this.frames.run)
     this.body = this.frames.idle
   }
 
@@ -81,14 +109,20 @@ class UnitSprite {
     if (this.frames === null) {
       return
     }
+    // Only re-face while moving, so idle keeps looking the way the unit last
+    // walked instead of snapping back to the right when it stops.
+    if (moving) {
+      this.facing = facingLeft ? -1 : 1
+    }
     const next = moving ? this.frames.run : this.frames.idle
     if (this.body !== next) {
       this.body.visible = false
-      next.visible = true
-      this.body = next
     }
-    const direction = facingLeft ? -1 : 1
-    this.body.scale.set(SPRITE_SCALE * direction, SPRITE_SCALE)
+    // Always make the target visible: `swapFrames`/the constructor add idle
+    // hidden, so `body === next` alone must still reveal it.
+    next.visible = true
+    this.body = next
+    this.body.scale.set(SPRITE_SCALE * this.facing, SPRITE_SCALE)
   }
 
   setPosition(x: number, y: number): void {
@@ -109,6 +143,29 @@ class UnitSprite {
       return null
     }
     return this.body.currentFrame
+  }
+
+  /** Whether the current body (sprite or fallback) is visible. */
+  bodyVisible(): boolean {
+    return this.body.visible
+  }
+
+  /** Which animation is currently shown: `run`, `idle`, or `fallback`. */
+  stateName(): 'idle' | 'run' | 'fallback' {
+    if (this.frames === null) {
+      return 'fallback'
+    }
+    return this.body === this.frames.run ? 'run' : 'idle'
+  }
+
+  /** Whether the current body is actually in the container display list. */
+  bodyInTree(): boolean {
+    return this.container.children.includes(this.body)
+  }
+
+  /** Current horizontal facing (1 = right, -1 = left). */
+  facingNow(): number {
+    return this.facing
   }
 
   /** Advances the visible animated body (no-op for placeholder graphics). */
@@ -143,29 +200,11 @@ export class UnitLayer {
   private readonly lastFixed = new Map<number, Point>()
   private readonly framesByKind = new Map<string, UnitFrames>()
   private readonly loadState = new Map<string, 'loading' | 'loaded' | 'failed'>()
-  private shadowSprite: Sprite | null = null
 
   constructor(viewport: Viewport, library: AssetLibrary, onUnitSelected: (id: number) => void) {
     this.viewport = viewport
     this.library = library
     this.onUnitSelected = onUnitSelected
-  }
-
-  /** Preloads the shadow decal texture once (fire-and-forget). */
-  preloadShadow(): void {
-    if (this.shadowSprite !== null) {
-      return
-    }
-    void this.library.staticSprite('terrain.shadow').then((sprite) => {
-      if (sprite === null) {
-        return
-      }
-      sprite.scale.set(0.8)
-      this.shadowSprite = sprite
-      for (const unit of this.units.values()) {
-        unit.attachShadow(new Sprite(sprite.texture))
-      }
-    })
   }
 
   /** Preloads idle/run frames for a unit kind (fire-and-forget, cached). */
@@ -215,9 +254,6 @@ export class UnitLayer {
         const kind: UnitKind = unit.kind ?? 'pawn'
         const frames = this.framesFor(unit.owner, kind)
         sprite = new UnitSprite(kind, unit.owner, frames)
-        if (this.shadowSprite !== null) {
-          sprite.attachShadow(new Sprite(this.shadowSprite.texture))
-        }
         sprite.container.on('pointerdown', (event) => {
           event.stopPropagation()
           this.onUnitSelected(unit.id)
@@ -244,13 +280,16 @@ export class UnitLayer {
     this.previousTime = this.currentTime
     this.current = next
     this.currentTime = now
-    this.lastFixed.clear()
-    for (const [id, point] of this.currentFixed) {
-      this.lastFixed.set(id, point)
-    }
+    // `lastFixed` already holds the previous frame's positions (set last
+    // present), so the loop above compared current vs previous without lag.
     this.currentFixed.clear()
     for (const [id, point] of nextFixed) {
       this.currentFixed.set(id, point)
+    }
+    // Prepare `lastFixed` for the next present.
+    this.lastFixed.clear()
+    for (const [id, point] of nextFixed) {
+      this.lastFixed.set(id, point)
     }
     if (this.previous === null) {
       for (const [id, sprite] of this.units) {
@@ -328,5 +367,26 @@ export class UnitLayer {
       return null
     }
     return sprite.animationFrame()
+  }
+
+  /** Debug: is the unit's body currently visible and which frame is shown. */
+  spriteState(id: number): {
+    readonly visible: boolean
+    readonly frame: number | null
+    readonly anim: 'idle' | 'run' | 'fallback'
+    readonly inTree: boolean
+    readonly facing: number
+  } | null {
+    const sprite = this.units.get(id)
+    if (sprite === undefined) {
+      return null
+    }
+    return {
+      visible: sprite.bodyVisible(),
+      frame: sprite.animationFrame(),
+      anim: sprite.stateName(),
+      inTree: sprite.bodyInTree(),
+      facing: sprite.facingNow()
+    }
   }
 }
