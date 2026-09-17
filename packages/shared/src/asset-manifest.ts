@@ -11,7 +11,7 @@
 export type AssetKind = 'strip' | 'static' | 'tileset'
 
 export interface AssetEntry {
-  /** Semantic key, e.g. `units.blue.pawn.idle`. */
+  /** Semantic key, e.g. `units.blue.pawn.pawn_idle`. */
   readonly key: string
   /** Path relative to the assets root, e.g. `units/blue/pawn/idle.png`. */
   readonly file: string
