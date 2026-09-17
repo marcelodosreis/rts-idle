@@ -1,28 +1,15 @@
-import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
+import type { MovePayload, ScheduledCommand } from '../contracts/commands.js'
+import { CommandRejectedError } from '../contracts/commands.js'
 import { Owner, Position } from '../ecs/components.js'
 import { formationOffset } from '../formation.js'
 import type { GameState } from '../state/state.js'
-import { MAX_UNITS_PER_COMMAND } from './limits.js'
 
-/**
- * Validates a MOVE command without mutating state.
+/** Context validation for a MOVE command: every selected entity must exist and
+ * be owned by the issuer. Payload shape is validated by the schema (task A2).
  * Throws {@link CommandRejectedError} on the first violation; a rejected
  * command must leave the state untouched (command atomicity, master plan §10.3).
  */
-function validateMove(state: GameState, command: ScheduledCommand): void {
-  const payload = command.intent.payload
-
-  if (payload.unitIds.length === 0 || payload.unitIds.length > MAX_UNITS_PER_COMMAND) {
-    throw new CommandRejectedError(
-      'INVALID_PAYLOAD',
-      command,
-      `MOVE: unit count ${payload.unitIds.length} outside [1, ${MAX_UNITS_PER_COMMAND}]`
-    )
-  }
-  if (!Number.isInteger(payload.x) || !Number.isInteger(payload.y)) {
-    throw new CommandRejectedError('INVALID_PAYLOAD', command, 'MOVE: target must be integer fixed units')
-  }
-
+function validateMove(state: GameState, command: ScheduledCommand, payload: MovePayload): void {
   const owners = state.world.store(Owner)
   for (const unitId of payload.unitIds) {
     if (!state.world.hasEntity(unitId)) {
@@ -48,9 +35,8 @@ function validateMove(state: GameState, command: ScheduledCommand): void {
  * index in the id-sorted list, so the same selection always yields the same
  * destinations (deterministic group movement, master plan §15.3).
  */
-export function applyMove(state: GameState, command: ScheduledCommand): void {
-  validateMove(state, command)
-  const payload = command.intent.payload
+export function applyMove(state: GameState, command: ScheduledCommand, payload: MovePayload): void {
+  validateMove(state, command, payload)
   const positions = state.world.store(Position)
   const sorted = [...payload.unitIds].sort((a, b) => a - b)
   sorted.forEach((unitId, index) => {
