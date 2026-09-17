@@ -10,51 +10,79 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
+  lint_typecheck:
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/ci-setup
       - run: pnpm run lint
-      # Build before typecheck: emitting packages resolve workspace deps via
-      # their built `dist` types, which do not exist on a fresh checkout.
       - run: pnpm run build
       - run: pnpm run typecheck
-      - run: pnpm run test:architecture
+      - uses: actions/upload-artifact@v6
+        with:
+          name: dist
+          path: |
+            packages/*/dist
+            apps/server/dist
+            tools/*/dist
+          if-no-files-found: warn
+
+  unit_integration:
+    name: Unit & Integration Tests
+    needs: lint_typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/ci-setup
       - run: pnpm run test:unit
       - run: pnpm run test:integration
+
+  simulation:
+    name: Simulation, Invariants & Regression Tests
+    needs: unit_integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/ci-setup
       - run: pnpm run test:simulation
-      - run: pnpm run test:determinism
       - run: pnpm run test:invariants
       - run: pnpm run test:regression
+
+  determinism_architecture:
+    name: Determinism & Architecture Tests
+    needs: simulation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/ci-setup
+      - run: pnpm run test:determinism
+      - run: pnpm run test:architecture
+
+  e2e:
+    name: End-to-End Tests
+    needs: determinism_architecture
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/ci-setup
+      - uses: actions/download-artifact@v6
+        with:
+          name: dist
+          path: .
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm run test:e2e
 
   release:
+    name: Release
     if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip ci]')
-    needs: verify
+    needs: e2e
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/ci-setup
       - run: pnpm exec semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
