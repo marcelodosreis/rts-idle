@@ -1,4 +1,4 @@
-import { Application, Graphics } from 'pixi.js'
+import { Application, Graphics, type Ticker } from 'pixi.js'
 import { Viewport } from 'pixi-viewport'
 import { AssetLibrary } from './assets/asset-library.js'
 import { CommandPing } from './ping.js'
@@ -69,7 +69,7 @@ export class PixiRenderer implements GameRenderer {
     viewport.setZoom(zoom)
     viewport.moveCenter(center.x, center.y)
 
-    app.ticker.add(() => this.tick())
+    app.ticker.add((ticker) => this.tick(ticker))
 
     const selectionRect = new Graphics()
     selectionRect.visible = false
@@ -96,7 +96,11 @@ export class PixiRenderer implements GameRenderer {
 
     viewport.eventMode = 'static'
     viewport.on('pointerdown', (event) => {
-      selection.startBox(event.global)
+      // Only the left button starts a selection box; right-click is the
+      // contextual command (it also fires `rightdown` below).
+      if (event.button === 0) {
+        selection.startBox(event.global)
+      }
     })
     viewport.on('pointermove', (event) => {
       selection.updateBox(event.global)
@@ -127,12 +131,13 @@ export class PixiRenderer implements GameRenderer {
     this.ping.expireIfElapsed(Date.now())
   }
 
-  /** Visual-loop tick: eases interpolated positions; presentation only. */
-  private tick(): void {
+  /** Visual-loop tick: advances animations and eases interpolated positions. */
+  private tick(ticker: Ticker): void {
     if (this.units === null || this.selection === null || this.ping === null) {
       return
     }
     const now = performance.now()
+    this.units.advanceAnimations(ticker)
     this.units.interpolate(now)
     this.selection.updateRings()
     this.ping.expireIfElapsed(now)
@@ -178,6 +183,10 @@ export class PixiRenderer implements GameRenderer {
 
   getUnitPositions(): ReadonlyMap<number, { readonly x: number; readonly y: number }> {
     return this.units?.fixedPositions() ?? new Map()
+  }
+
+  getUnitAnimationFrame(id: number): number | null {
+    return this.units?.animationFrame(id) ?? null
   }
 
   getZoom(): number {

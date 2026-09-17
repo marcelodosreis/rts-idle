@@ -17,6 +17,7 @@ const PLAYER_BASE_CENTER = {
 
 interface RtsDebug {
   getPositions(): Record<string, { readonly x: number; readonly y: number }>
+  getAnimationFrame(id: number): number | null
   getSelection(): readonly number[]
   worldToScreen(x: number, y: number): { readonly x: number; readonly y: number }
   getZoom(): number
@@ -142,6 +143,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
             }
             return out
           },
+          getAnimationFrame: (id) => renderer.getUnitAnimationFrame(id),
           getSelection: () => renderer.getSelection(),
           worldToScreen: (x, y) => renderer.worldToScreen(fixedToRenderPixels(x), fixedToRenderPixels(y)),
           getZoom: () => renderer.getZoom(),

@@ -8,7 +8,9 @@ import { AnimatedSprite, type Texture } from 'pixi.js'
  * seconds); `duration` is in milliseconds per frame.
  */
 export function createAnimation(entry: AssetEntry, textures: Texture[]): AnimatedSprite {
-  const sprite = new AnimatedSprite(textures)
+  // autoUpdate=false: the renderer advances frames from its own visual tick so
+  // animation does not depend on Pixi's shared ticker running.
+  const sprite = new AnimatedSprite(textures, false)
   sprite.anchor.set(entry.anchorX, entry.anchorY)
   sprite.animationSpeed = 1000 / (entry.duration ?? 120)
   return sprite

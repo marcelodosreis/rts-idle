@@ -1,5 +1,5 @@
 import { fixedToRenderPixels } from '@rts/shared'
-import { type AnimatedSprite, Circle, Container, Graphics, Sprite } from 'pixi.js'
+import { AnimatedSprite, Circle, Container, Graphics, Sprite, type Ticker } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
 import type { AssetLibrary } from './assets/asset-library.js'
 import { interpolationAlpha, lerpPoint } from './interpolation.js'
@@ -101,6 +101,21 @@ class UnitSprite {
 
   destroy(): void {
     this.container.destroy()
+  }
+
+  /** Current animation frame when animated, else `null` (placeholder). */
+  animationFrame(): number | null {
+    if (this.frames === null || !(this.body instanceof AnimatedSprite)) {
+      return null
+    }
+    return this.body.currentFrame
+  }
+
+  /** Advances the visible animated body (no-op for placeholder graphics). */
+  advanceAnimation(ticker: Ticker): void {
+    if (this.body instanceof AnimatedSprite) {
+      this.body.update(ticker)
+    }
   }
 }
 
@@ -268,6 +283,13 @@ export class UnitLayer {
     }
   }
 
+  /** Advances every animated sprite's frame by the visual tick's deltaTime. */
+  advanceAnimations(ticker: Ticker): void {
+    for (const sprite of this.units.values()) {
+      sprite.advanceAnimation(ticker)
+    }
+  }
+
   has(id: number): boolean {
     return this.units.has(id)
   }
@@ -297,5 +319,14 @@ export class UnitLayer {
       out.set(id, { x: point.x, y: point.y })
     }
     return out
+  }
+
+  /** Current animation frame of a unit's sprite, or `null` in fallback mode. */
+  animationFrame(id: number): number | null {
+    const sprite = this.units.get(id)
+    if (sprite === undefined) {
+      return null
+    }
+    return sprite.animationFrame()
   }
 }

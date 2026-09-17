@@ -45,6 +45,8 @@ export interface GameRenderer {
   setSelection(ids: readonly number[]): void
   getSelection(): readonly number[]
   getUnitPositions(): ReadonlyMap<number, { readonly x: number; readonly y: number }>
+  /** Current animation frame of a unit's sprite, or `null` when in fallback. */
+  getUnitAnimationFrame(id: number): number | null
   getZoom(): number
   getPing(): { readonly x: number; readonly y: number } | null
   moveCamera(x: number, y: number): void
