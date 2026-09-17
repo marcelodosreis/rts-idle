@@ -1,5 +1,18 @@
-/** Terrain kinds drawn by the presentation layer (ADR-004 content-as-data). */
-export type MapTileKind = 'grass' | 'water' | 'rock'
+/**
+ * Terrain kinds drawn by the presentation layer (ADR-004 content-as-data).
+ * These are the canonical terrain states shared by the game and the sprite
+ * lab: `water` (impassable fill), `land` (walkable ground), and `elevated`
+ * (walkable plateau rendered with autotile cliffs). Decorations such as rocks
+ * and bushes are not terrain — they are scattered on top via `dressTerrain`.
+ */
+export type MapTileKind = 'water' | 'land' | 'elevated'
+
+/** A stair ramp cell: anchors at `(x, y)` and climbs one tile upward. */
+export interface StairEntry {
+  readonly x: number
+  readonly y: number
+  readonly direction: 'left' | 'right'
+}
 
 export interface MapDefinition {
   /** Width and height in tiles (1 tile = 64 render px, master plan §23.2). */
@@ -7,6 +20,12 @@ export interface MapDefinition {
   readonly height: number
   /** Row-major tile kinds, `width * height` entries. */
   readonly tiles: readonly MapTileKind[]
+  /** Stair ramps (presentation); empty when omitted. */
+  readonly stairs?: readonly StairEntry[]
+  /** Terrain tileset palette (color1-5); defaults to `color1`. */
+  readonly palette?: string
+  /** Deterministic decoration seed; defaults to a fixed value when omitted. */
+  readonly decorationSeed?: number
 }
 
 export interface MapPosition {
