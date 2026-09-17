@@ -31,3 +31,10 @@ export function requireRunning(state: GameState, command: ScheduledCommand): voi
     throw new CommandRejectedError('INVALID_PHASE', command, `match is ${state.phase}`)
   }
 }
+
+/** Rejects commands from a defeated player (their entities are inactive, §11.6). */
+export function requireAlive(state: GameState, command: ScheduledCommand): void {
+  if (state.players[command.playerId]?.defeated === true) {
+    throw new CommandRejectedError('INVALID_PHASE', command, `player ${command.playerId} is defeated`)
+  }
+}

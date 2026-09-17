@@ -2,6 +2,8 @@ import { createRng, START_ENTITY_ID } from '@rts/shared'
 import type { SimulationOptions } from '../contracts/simulation.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
+import type { PlayerState } from '../state/players.js'
+import { createDefaultPlayers } from '../state/players.js'
 import type { GameState } from '../state/state.js'
 import { Simulation } from './simulation.js'
 import type { SimulationHost } from './simulation-host.js'
@@ -19,6 +21,20 @@ function resolveNextEntityId(world: World): number {
   return lastId === undefined ? START_ENTITY_ID : lastId + 1
 }
 
+/** Applies per-slot overrides over the baseline player states (master plan §11.1). */
+function resolvePlayers(overrides: readonly Partial<PlayerState>[] | undefined): PlayerState[] {
+  const players = createDefaultPlayers()
+  if (overrides === undefined) {
+    return players
+  }
+  overrides.forEach((override, index) => {
+    if (index < players.length) {
+      players[index] = { ...players[index]!, ...override }
+    }
+  })
+  return players
+}
+
 export function createSimulation(options: SimulationOptions): SimulationHost {
   const rng = createRng(options.seed)
   const world = options.initialWorld ?? createWorld()
@@ -29,6 +45,7 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
     seed: options.seed,
     rng,
     nextEntityId: resolveNextEntityId(world),
+    players: resolvePlayers(options.players),
     world
   }
   return new Simulation(state)

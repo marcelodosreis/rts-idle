@@ -5,6 +5,8 @@ import { applyMove } from './move.js'
 import { applyPatrol } from './patrol.js'
 import { validateCommandShape } from './schema.js'
 import { applyStop } from './stop.js'
+import { applySurrender } from './surrender.js'
+import { requireAlive } from './validate.js'
 
 /**
  * Dispatches a scheduled command to its handler. Every command first validates
@@ -16,6 +18,7 @@ import { applyStop } from './stop.js'
  */
 export function applyCommand(state: GameState, command: ScheduledCommand): void {
   validateCommandShape(command)
+  requireAlive(state, command)
   switch (command.intent.type) {
     case 'MOVE':
       applyMove(state, command, command.intent.payload)
@@ -28,6 +31,9 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
       return
     case 'PATROL':
       applyPatrol(state, command, command.intent.payload)
+      return
+    case 'SURRENDER':
+      applySurrender(state, command)
       return
     case 'ATTACK':
     case 'ATTACK_MOVE':
@@ -42,7 +48,6 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
     case 'CANCEL_PRODUCTION':
     case 'CANCEL_RESEARCH':
     case 'USE_ABILITY':
-    case 'SURRENDER':
       throw new CommandRejectedError(
         'ORDER_NOT_SUPPORTED',
         command,

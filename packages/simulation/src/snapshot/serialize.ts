@@ -3,6 +3,7 @@ import { CanonicalReader } from '../canonical/reader.js'
 import { CanonicalWriter } from '../canonical/writer.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
+import type { PlayerState } from '../state/players.js'
 import type { GameState } from '../state/state.js'
 
 /**
@@ -62,6 +63,33 @@ function readWorld(reader: CanonicalReader): World {
   return world
 }
 
+function writePlayers(writer: CanonicalWriter, players: readonly PlayerState[]): void {
+  writer.writeLength(players.length)
+  for (const player of players) {
+    writer.writeI32(player.mineral)
+    writer.writeI32(player.energy)
+    writer.writeI32(player.supplyUsed)
+    writer.writeI32(player.supplyCap)
+    writer.writeU8(player.hasCompletedBase ? 1 : 0)
+    writer.writeU8(player.defeated ? 1 : 0)
+  }
+}
+
+function readPlayers(reader: CanonicalReader): PlayerState[] {
+  const count = reader.readLength()
+  if (count !== 4) {
+    throw new Error(`deserializeState: expected 4 players, got ${count}`)
+  }
+  return Array.from({ length: count }, () => ({
+    mineral: reader.readI32(),
+    energy: reader.readI32(),
+    supplyUsed: reader.readI32(),
+    supplyCap: reader.readI32(),
+    hasCompletedBase: reader.readU8() === 1,
+    defeated: reader.readU8() === 1
+  }))
+}
+
 export function serializeState(state: GameState): Uint8Array {
   const writer = new CanonicalWriter()
   writer.writeU32(state.tick)
@@ -74,6 +102,7 @@ export function serializeState(state: GameState): Uint8Array {
   writer.writeU32(state.seed)
   writeRng(writer, state.rng)
   writer.writeU32(state.nextEntityId)
+  writePlayers(writer, state.players)
   writeWorld(writer, state.world)
   return writer.toBytes()
 }
@@ -95,6 +124,7 @@ export function deserializeState(bytes: Uint8Array): GameState {
   const seed = reader.readU32()
   const rng = readRng(reader)
   const nextEntityId = reader.readU32()
+  const players = readPlayers(reader)
   const world = readWorld(reader)
-  return { tick, phase, identity, seed, rng, nextEntityId, world }
+  return { tick, phase, identity, seed, rng, nextEntityId, players, world }
 }
