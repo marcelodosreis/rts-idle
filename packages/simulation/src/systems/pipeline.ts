@@ -2,6 +2,7 @@ import type { CommandRejectedError, ScheduledCommand } from '../contracts/comman
 import type { SimulationEvent } from '../contracts/events.js'
 import type { GameState } from '../state/state.js'
 import { applyCommandsSystem } from './commands-system.js'
+import { movementSystem } from './movement-system.js'
 
 /** Per-tick execution context handed to every system (ADR-013). */
 export interface SystemContext {
@@ -34,8 +35,8 @@ export const SYSTEM_ORDER: readonly System[] = [
   noop,
   // 4. Run the pathfinding budget (Phase 3).
   noop,
-  // 5. Resolve movement and collision (Phase 1 straight-line, task A4/A5).
-  noop,
+  // 5. Resolve movement and collision (Phase 1 straight-line movement).
+  movementSystem,
   // 6. Gather, deposit, and repair (Phase 2).
   noop,
   // 7. Advance construction (Phase 2).

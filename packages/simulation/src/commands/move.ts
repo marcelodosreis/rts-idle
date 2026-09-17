@@ -1,22 +1,34 @@
 import type { MovePayload, ScheduledCommand } from '../contracts/commands.js'
-import { Position } from '../ecs/components.js'
+import { Movement } from '../ecs/components.js'
 import { formationOffset } from '../formation.js'
 import type { GameState } from '../state/state.js'
 import { requireRunning, validateOwnedSelection } from './validate.js'
 
 /**
- * Applies a MOVE command after validating phase, ownership, and existence
- * (context; payload shape is validated by the schema). Distributes the sorted
- * units around the target in a deterministic formation spiral so the same
- * selection always yields the same destinations (master plan §15.3).
+ * Default movement speed in tiles per second until per-type stats land
+ * (task A9, master plan §13).
+ */
+export const DEFAULT_MOVE_SPEED_TILES_PER_SECOND = 3
+
+/**
+ * Applies a MOVE command: assigns each selected unit a Movement order to its
+ * formation destination (the first unit goes exactly to the target). Units then
+ * walk there via the movement system; no teleport. Payload shape is validated
+ * by the schema; context (phase, ownership) here.
  */
 export function applyMove(state: GameState, command: ScheduledCommand, payload: MovePayload): void {
   requireRunning(state, command)
   validateOwnedSelection(state, command, payload.unitIds)
-  const positions = state.world.store(Position)
+  const movements = state.world.store(Movement)
   const sorted = [...payload.unitIds].sort((a, b) => a - b)
   sorted.forEach((unitId, index) => {
     const offset = formationOffset(index)
-    positions.set(unitId, { x: payload.x + offset.dx, y: payload.y + offset.dy })
+    movements.set(unitId, {
+      speedTilesPerSecond: DEFAULT_MOVE_SPEED_TILES_PER_SECOND,
+      destX: payload.x + offset.dx,
+      destY: payload.y + offset.dy,
+      remainderX: 0,
+      remainderY: 0
+    })
   })
 }

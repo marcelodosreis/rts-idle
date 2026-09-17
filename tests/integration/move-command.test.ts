@@ -1,10 +1,10 @@
 import { tilesToFixed } from '@rts/shared'
-import { createSimulation, Position } from '@rts/simulation'
+import { createSimulation, Movement, Position } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { buildMoveCommand, SEEDS, TEST_IDENTITY, worldWithOwners } from '../fixtures/index.js'
 
 describe('MOVE command validation', () => {
-  it('moves own units with the first unit exactly on the target', () => {
+  it('moves own units gradually and the first unit lands exactly on the target', () => {
     const sim = createSimulation({
       seed: SEEDS.integration.moveOwn,
       identity: TEST_IDENTITY,
@@ -14,9 +14,23 @@ describe('MOVE command validation', () => {
     const target = tilesToFixed(3)
 
     sim.step([buildMoveCommand(units, target, target)])
+    const afterOneTick = sim.inspectState()
+    const sorted = [...units].sort((a, b) => a - b)
+    // Real movement: one tick advances, it does not teleport.
+    expect(afterOneTick.world.store(Position).get(sorted[0]!)).not.toEqual({ x: target, y: target })
+    expect(afterOneTick.world.store(Movement).get(sorted[0]!)).toBeDefined()
+
+    let guard = 0
+    while (guard < 400) {
+      sim.step()
+      guard += 1
+      const movements = sim.inspectState().world.store(Movement)
+      if (sorted.every((id) => movements.get(id) === undefined)) {
+        break
+      }
+    }
 
     const after = sim.inspectState()
-    const sorted = [...units].sort((a, b) => a - b)
     expect(after.world.store(Position).get(sorted[0]!)).toEqual({ x: target, y: target })
     for (const unit of sorted.slice(1)) {
       expect(after.world.store(Position).get(unit)).not.toEqual({ x: target, y: target })

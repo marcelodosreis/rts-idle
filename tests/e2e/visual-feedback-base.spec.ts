@@ -38,9 +38,9 @@ test('visual base: HUD reacts to selection and units animate without teleporting
   // The animation loop is advancing when art is present; fallback is tolerated.
   const frameA = await page.evaluate((id) => window.__rtsDebug?.getAnimationFrame(id) ?? null, firstId)
   if (frameA !== null) {
-    await page.waitForTimeout(400)
-    const frameB = await page.evaluate((id) => window.__rtsDebug?.getAnimationFrame(id) ?? null, firstId)
-    expect(frameB).not.toBe(frameA)
+    await expect
+      .poll(() => page.evaluate((id) => window.__rtsDebug?.getAnimationFrame(id) ?? null, firstId), { timeout: 3000 })
+      .not.toBe(frameA)
   }
 
   // A MOVE animates the unit across the tilemap (position must change over time,
