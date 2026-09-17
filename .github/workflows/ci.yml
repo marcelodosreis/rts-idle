@@ -10,21 +10,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Each stage is its own job; jobs run strictly in sequence (needs chain).
-  lint:
+  # Lint + typecheck first. typecheck resolves workspace deps through their
+  # built `dist` types, so this job builds before typechecking on a fresh
+  # checkout, then shares the dist artifact with e2e.
+  lint-typecheck:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/ci-setup
       - run: pnpm run lint
-
-  build:
-    needs: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/ci-setup
       - run: pnpm run build
+      - run: pnpm run typecheck
       - uses: actions/upload-artifact@v4
         with:
           name: dist
@@ -34,49 +30,24 @@ jobs:
             tools/*/dist
           if-no-files-found: warn
 
-  typecheck:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/ci-setup
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: .
-      - run: pnpm run typecheck
-
-  test-architecture:
-    needs: typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/ci-setup
-      - run: pnpm run test:architecture
-
-  test-unit:
-    needs: test-architecture
+  test-unit-integration:
+    needs: lint-typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/ci-setup
       - run: pnpm run test:unit
-
-  test-integration:
-    needs: test-unit
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/ci-setup
       - run: pnpm run test:integration
 
   test-simulation:
-    needs: test-integration
+    needs: test-unit-integration
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/ci-setup
       - run: pnpm run test:simulation
+      - run: pnpm run test:invariants
+      - run: pnpm run test:regression
 
   test-determinism:
     needs: test-simulation
@@ -86,24 +57,16 @@ jobs:
       - uses: ./.github/actions/ci-setup
       - run: pnpm run test:determinism
 
-  test-invariants:
+  test-architecture:
     needs: test-determinism
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/ci-setup
-      - run: pnpm run test:invariants
-
-  test-regression:
-    needs: test-invariants
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/ci-setup
-      - run: pnpm run test:regression
+      - run: pnpm run test:architecture
 
   test-e2e:
-    needs: test-regression
+    needs: test-architecture
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
