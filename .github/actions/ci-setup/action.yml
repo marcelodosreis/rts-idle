@@ -1,0 +1,20 @@
+name: ci-setup
+description: Checkout, pnpm, Node, and install for CI jobs
+inputs:
+  install:
+    description: Install command
+    required: false
+    default: pnpm install --frozen-lockfile
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v5
+    - uses: pnpm/action-setup@v6
+      with:
+        version: 10.33.2
+    - uses: actions/setup-node@v5
+      with:
+        node-version: 24
+        cache: pnpm
+    - run: ${{ inputs.install }}
+      shell: bash

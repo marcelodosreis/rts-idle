@@ -10,51 +10,108 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
+  # Each stage is its own job; jobs run strictly in sequence (needs chain).
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/ci-setup
       - run: pnpm run lint
-      # Build before typecheck: emitting packages resolve workspace deps via
-      # their built `dist` types, which do not exist on a fresh checkout.
+
+  build:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/ci-setup
       - run: pnpm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: |
+            packages/*/dist
+            apps/server/dist
+            tools/*/dist
+          if-no-files-found: warn
+
+  typecheck:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/ci-setup
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: .
       - run: pnpm run typecheck
+
+  test-architecture:
+    needs: typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/ci-setup
       - run: pnpm run test:architecture
+
+  test-unit:
+    needs: test-architecture
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/ci-setup
       - run: pnpm run test:unit
+
+  test-integration:
+    needs: test-unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/ci-setup
       - run: pnpm run test:integration
+
+  test-simulation:
+    needs: test-integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/ci-setup
       - run: pnpm run test:simulation
+
+  test-determinism:
+    needs: test-simulation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/ci-setup
       - run: pnpm run test:determinism
+
+  test-invariants:
+    needs: test-determinism
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/ci-setup
       - run: pnpm run test:invariants
+
+  test-regression:
+    needs: test-invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/ci-setup
       - run: pnpm run test:regression
+
+  test-e2e:
+    needs: test-regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ./.github/actions/ci-setup
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: .
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm run test:e2e
 
   release:
     if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip ci]')
-    needs: verify
+    needs: test-e2e
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10.33.2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/ci-setup
       - run: pnpm exec semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
