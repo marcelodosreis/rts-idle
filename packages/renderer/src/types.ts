@@ -25,6 +25,8 @@ export interface RendererOptions {
   readonly worldHeight: number
   readonly initialZoom?: number
   readonly initialCenter?: PointData
+  /** Base URL for the asset manifest and sprites (empty string = no art). */
+  readonly assetsUrl?: string
 }
 
 /** Public renderer contract: mount/present/resize/dispose plus camera and selection access. */

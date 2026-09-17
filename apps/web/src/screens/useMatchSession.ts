@@ -55,7 +55,8 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       worldWidth: WORLD_PX,
       worldHeight: WORLD_PX,
       initialZoom: 1,
-      initialCenter: PLAYER_BASE_CENTER
+      initialCenter: PLAYER_BASE_CENTER,
+      assetsUrl: '/assets'
     })
     let selection = new Set<number>()
     let lastTick = 0

@@ -1,5 +1,6 @@
 import { Application, Graphics } from 'pixi.js'
 import { Viewport } from 'pixi-viewport'
+import { AssetLibrary } from './assets/asset-library.js'
 import { CommandPing } from './ping.js'
 import { SelectionController } from './selection.js'
 import type { GameRenderer, RendererCallbacks, RendererOptions, RenderFrame } from './types.js'
@@ -22,9 +23,12 @@ export class PixiRenderer implements GameRenderer {
   private ping: CommandPing | null = null
   private readonly options: RendererOptions
   private callbacks: RendererCallbacks = {}
+  /** Presentation asset library; null when the manifest/art is unavailable. */
+  readonly assets: AssetLibrary
 
   constructor(options: RendererOptions) {
     this.options = options
+    this.assets = new AssetLibrary(options.assetsUrl ?? '')
   }
 
   async mount(host: HTMLElement, callbacks: RendererCallbacks): Promise<void> {
@@ -32,6 +36,7 @@ export class PixiRenderer implements GameRenderer {
       throw new Error('PixiRenderer: already mounted')
     }
     this.callbacks = callbacks
+    await this.assets.load()
 
     const app = new Application()
     await app.init({
@@ -154,6 +159,7 @@ export class PixiRenderer implements GameRenderer {
       this.app.destroy(true, { children: true, texture: true })
       this.app = null
     }
+    this.assets.destroy()
     this.viewport = null
     this.units = null
     this.selection = null
