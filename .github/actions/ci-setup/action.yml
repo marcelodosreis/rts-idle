@@ -1,5 +1,5 @@
 name: ci-setup
-description: Checkout, pnpm, Node, and install for CI jobs
+description: pnpm, Node, and install for CI jobs (run actions/checkout first)
 inputs:
   install:
     description: Install command
@@ -8,7 +8,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/checkout@v5
     - uses: pnpm/action-setup@v6
       with:
         version: 10.33.2
