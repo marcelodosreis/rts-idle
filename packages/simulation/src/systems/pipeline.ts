@@ -1,6 +1,7 @@
 import type { CommandRejectedError, ScheduledCommand } from '../contracts/commands.js'
 import type { SimulationEvent } from '../contracts/events.js'
 import type { GameState } from '../state/state.js'
+import { combatSystem } from './combat-system.js'
 import { applyCommandsSystem } from './commands-system.js'
 import { movementSystem } from './movement-system.js'
 import { ordersSystem } from './orders-system.js'
@@ -48,8 +49,8 @@ export const SYSTEM_ORDER: readonly System[] = [
   noop,
   // 10. Update vision for target acquisition (Phase 1 combat, task A10).
   noop,
-  // 11. Select attacks and create damage events (Phase 1 combat, task A9).
-  noop,
+  // 11. Select attacks and create damage events (Phase 1 instant combat).
+  combatSystem,
   // 12. Advance pre-existing projectiles (Phase 3).
   noop,
   // 13. Apply accumulated damage (Phase 1, task A11).

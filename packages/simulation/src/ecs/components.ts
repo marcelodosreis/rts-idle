@@ -33,6 +33,27 @@ export interface OrderQueueData {
   readonly orders: readonly Order[]
 }
 
+/** Combat classification for targeting priority (master plan §12.2). */
+export type UnitClassKind = 'worker' | 'military' | 'building'
+
+export interface UnitClassData {
+  readonly kind: UnitClassKind
+}
+
+export interface HealthData {
+  readonly current: number
+  readonly max: number
+  readonly armor: number
+}
+
+export interface AttackData {
+  readonly damage: number
+  /** Attack range in fixed units. */
+  readonly range: Fixed
+  readonly cooldownTicks: number
+  readonly cooldownRemaining: number
+}
+
 export const Position: ComponentType<PositionData> = {
   name: 'position',
   encode(writer, value) {
@@ -148,5 +169,63 @@ export const OrderQueue: ComponentType<OrderQueueData> = {
       orders.push(readOrder(reader))
     }
     return { orders }
+  }
+}
+
+export const UnitClass: ComponentType<UnitClassData> = {
+  name: 'unit-class',
+  encode(writer, value) {
+    let tag: number
+    if (value.kind === 'worker') {
+      tag = 0
+    } else if (value.kind === 'military') {
+      tag = 1
+    } else {
+      tag = 2
+    }
+    writer.writeU8(tag)
+  },
+  decode(reader) {
+    const tag = reader.readU8()
+    if (tag === 0) {
+      return { kind: 'worker' }
+    }
+    if (tag === 1) {
+      return { kind: 'military' }
+    }
+    if (tag === 2) {
+      return { kind: 'building' }
+    }
+    throw new Error(`UnitClass: invalid kind tag ${tag}`)
+  }
+}
+
+export const Health: ComponentType<HealthData> = {
+  name: 'health',
+  encode(writer, value) {
+    writer.writeI32(value.current)
+    writer.writeI32(value.max)
+    writer.writeI32(value.armor)
+  },
+  decode(reader) {
+    return { current: reader.readI32(), max: reader.readI32(), armor: reader.readI32() }
+  }
+}
+
+export const Attack: ComponentType<AttackData> = {
+  name: 'attack',
+  encode(writer, value) {
+    writer.writeI32(value.damage)
+    writer.writeI32(value.range)
+    writer.writeI32(value.cooldownTicks)
+    writer.writeI32(value.cooldownRemaining)
+  },
+  decode(reader) {
+    return {
+      damage: reader.readI32(),
+      range: reader.readI32(),
+      cooldownTicks: reader.readI32(),
+      cooldownRemaining: reader.readI32()
+    }
   }
 }
