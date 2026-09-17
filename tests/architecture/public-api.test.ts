@@ -67,7 +67,22 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'hashState'
     ]
   ],
-  ['renderer', ['version', 'PixiRenderer']]
+  [
+    'renderer',
+    [
+      'version',
+      'PixiRenderer',
+      'autotileTile',
+      'cliffBase',
+      'stairTile',
+      'gridToMapDefinition',
+      'mapDefinitionToGrid',
+      'dressTerrain',
+      'DEFAULT_DRESSING_VARIANTS',
+      'DEFAULT_DRESSING_COUNTS',
+      'DRESSING_ASSET_KEYS'
+    ]
+  ]
 ]
 
 const NAMESPACES: Record<string, Record<string, unknown>> = {
