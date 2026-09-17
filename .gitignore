@@ -14,3 +14,6 @@ test-results/
 
 # husky generated shims
 /.husky/_
+# license-pending asset sources and curated copies
+/tmp/
+/apps/web/public/assets/
