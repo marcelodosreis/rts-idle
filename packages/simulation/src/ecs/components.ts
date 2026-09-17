@@ -17,6 +17,17 @@ export interface OwnerData {
   readonly owner: PlayerId
 }
 
+export interface MovementData {
+  /** Movement speed in tiles per second (integer). */
+  readonly speedTilesPerSecond: number
+  readonly destX: Fixed
+  readonly destY: Fixed
+  /** Fractional x remainder in sub-units (0..MOVEMENT_SUB-1). */
+  readonly remainderX: number
+  /** Fractional y remainder in sub-units (0..MOVEMENT_SUB-1). */
+  readonly remainderY: number
+}
+
 export const Position: ComponentType<PositionData> = {
   name: 'position',
   encode(writer, value) {
@@ -41,5 +52,25 @@ export const Owner: ComponentType<OwnerData> = {
       return { owner }
     }
     throw new Error(`Owner: invalid owner slot ${owner}`)
+  }
+}
+
+export const Movement: ComponentType<MovementData> = {
+  name: 'movement',
+  encode(writer, value) {
+    writer.writeI32(value.speedTilesPerSecond)
+    writer.writeI32(value.destX)
+    writer.writeI32(value.destY)
+    writer.writeI32(value.remainderX)
+    writer.writeI32(value.remainderY)
+  },
+  decode(reader) {
+    return {
+      speedTilesPerSecond: reader.readI32(),
+      destX: reader.readI32(),
+      destY: reader.readI32(),
+      remainderX: reader.readI32(),
+      remainderY: reader.readI32()
+    }
   }
 }
