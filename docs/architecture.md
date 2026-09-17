@@ -114,4 +114,5 @@ web/src/
 - `docs/master-plan.md` — full design, phases, acceptance criteria.
 - `docs/adr/` — decisions (Context/Decision/Alternatives/Consequences/Evidence).
 - `docs/specs/` — capability map + per-module specs.
+- `docs/assets/capabilities.md` — asset inventory and integration/polish possibilities.
 - `docs/postmortems/` — every bug's root cause + regression.
