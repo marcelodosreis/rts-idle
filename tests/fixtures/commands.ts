@@ -53,6 +53,23 @@ export function buildSurrenderCommand(options: MoveCommandOptions = {}): Schedul
   }
 }
 
+/** Builds an ATTACK scheduled command on an explicit target. */
+export function buildAttackCommand(
+  unitIds: readonly number[],
+  targetId: number,
+  options: MoveCommandOptions = {}
+): ScheduledCommand {
+  return {
+    tick: options.tick ?? 1,
+    playerId: options.playerId ?? 0,
+    sequence: options.sequence ?? 1,
+    intent: {
+      type: 'ATTACK',
+      payload: { unitIds, targetId, ...(options.mode !== undefined ? { mode: options.mode } : {}) }
+    }
+  }
+}
+
 /** Builds a PATROL scheduled command between two points. */
 export function buildPatrolCommand(
   unitIds: readonly number[],
