@@ -1,6 +1,7 @@
 import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
 import type { GameState } from '../state/state.js'
 import { applyAttack } from './attack.js'
+import { applyAttackMove } from './attack-move.js'
 import { applyHold } from './hold.js'
 import { applyMove } from './move.js'
 import { applyPatrol } from './patrol.js'
@@ -36,10 +37,12 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
     case 'ATTACK':
       applyAttack(state, command, command.intent.payload)
       return
+    case 'ATTACK_MOVE':
+      applyAttackMove(state, command, command.intent.payload)
+      return
     case 'SURRENDER':
       applySurrender(state, command)
       return
-    case 'ATTACK_MOVE':
     case 'GATHER':
     case 'RETURN_CARGO':
     case 'BUILD':

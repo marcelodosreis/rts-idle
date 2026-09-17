@@ -70,6 +70,24 @@ export function buildAttackCommand(
   }
 }
 
+/** Builds an ATTACK_MOVE scheduled command toward a point. */
+export function buildAttackMoveCommand(
+  unitIds: readonly number[],
+  x: number,
+  y: number,
+  options: MoveCommandOptions = {}
+): ScheduledCommand {
+  return {
+    tick: options.tick ?? 1,
+    playerId: options.playerId ?? 0,
+    sequence: options.sequence ?? 1,
+    intent: {
+      type: 'ATTACK_MOVE',
+      payload: { unitIds, x, y, ...(options.mode !== undefined ? { mode: options.mode } : {}) }
+    }
+  }
+}
+
 /** Builds a PATROL scheduled command between two points. */
 export function buildPatrolCommand(
   unitIds: readonly number[],
