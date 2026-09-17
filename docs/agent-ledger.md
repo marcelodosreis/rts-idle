@@ -7,6 +7,7 @@ Claim a file before editing it. Mark it `done` when finished. Never edit a file 
 | `README.md` | Philosophy agent | done | Core philosophy opening; removed content-specific and AI claims |
 | `AGENTS.md` | Philosophy agent | done | Added Agent Coordination section |
 | `docs/agent-ledger.md` | Philosophy agent | done | Created |
+| `.releaserc.json` | Implementation agent | done | Every commit type triggers a release: added `refactor`/`test`/`build`/`style`/`revert` → patch (user decision, "PD fazer") |
 | `docs/adr/*` | Philosophy agent | done | ADR-001..008 written (all accepted; 007 approved) |
 | `docs/game-design.md` | Philosophy agent | done | Created + Playable releases section added |
 | `docs/proposals/m0-playable-core.md` | Philosophy agent | done | Created — approved |
