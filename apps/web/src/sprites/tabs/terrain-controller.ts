@@ -1,5 +1,5 @@
 // biome-ignore lint/style/noExcessiveLinesPerFile: terrain playground controller (draw + state + render)
-import type { MapDefinition } from '@rts/game-data'
+import type { DecorationPlacement, MapDefinition } from '@rts/game-data'
 import {
   type AutoTileTerrain,
   autotileTile,
@@ -9,12 +9,14 @@ import {
   type DressingKind,
   enforceWaterBorder,
   gridToMapDefinition,
+  type ManualDecoration,
   mapDefinitionToGrid
 } from '@rts/renderer'
 import { Container, Graphics, Sprite } from 'pixi.js'
 import { Viewport } from 'pixi-viewport'
 import { createSectionApp, removeApp } from '../lab/app.js'
 import type { SectionContext } from '../sections/types.js'
+import { type Cell, cellFromLocal } from './terrain-geometry.js'
 
 const SIZE = 32
 const TILE = 64
@@ -27,14 +29,14 @@ const CORNER_COLOR = 0xd6cfbc
 /** Canvas background is always the water color so no beige ever shows. */
 const WATER_BG = 0x47aba9
 
-export type PaintMode = AutoTileTerrain | 'left' | 'right' | 'eraser' | 'bush'
+export type PaintMode = AutoTileTerrain | 'left' | 'right' | 'eraser' | 'decor'
 export type MatrixMode = 'flat' | 'elevated' | 'cliff'
 export type EditorTab = 'terrain' | 'decorations'
 
 export interface LevelSnapshot {
   readonly grid: readonly (readonly AutoTileTerrain[])[]
   readonly stairs: readonly [string, 'left' | 'right'][]
-  readonly decorations: readonly [string, { readonly kind: 'bush'; readonly variant: number }][]
+  readonly decorations: readonly [string, ManualDecoration][]
 }
 
 export const PALETTES: readonly string[] = ['color1', 'color2', 'color3', 'color4', 'color5']
@@ -130,6 +132,7 @@ export interface TerrainState {
   readonly editorTab: EditorTab
   readonly selectedDecoKind: DressingKind | null
   readonly selectedVariant: number
+  readonly showGrid: boolean
   readonly undoStack: readonly LevelSnapshot[]
   readonly redoStack: readonly LevelSnapshot[]
 }
@@ -146,6 +149,7 @@ export const DEFAULT_TERRAIN_STATE: TerrainState = {
   editorTab: 'terrain',
   selectedDecoKind: null,
   selectedVariant: 0,
+  showGrid: true,
   undoStack: [],
   redoStack: []
 }
@@ -161,7 +165,9 @@ export const DEFAULT_TERRAIN_STATE: TerrainState = {
 export async function createTerrainController(
   host: HTMLElement,
   ctx: SectionContext,
-  onReadout: (text: string) => void
+  onReadout: (text: string) => void,
+  onCursor: (cell: Cell | null) => void,
+  onChange: () => void
 ): Promise<TerrainController> {
   const hostRect = host.getBoundingClientRect()
   const hostWidth = Math.max(320, Math.round(hostRect.width) || 800)
@@ -209,10 +215,16 @@ export async function createTerrainController(
   // Center the grid inside the water area.
   worldContainer.x = (waterWidth - GRID_PX) / 2
   worldContainer.y = (waterHeight - GRID_PX) / 2
-  const hitContainer = new Container()
+  const gridGraphics = new Graphics()
+  const highlightGraphics = new Graphics()
   const matrixContainer = new Container()
   matrixContainer.visible = false
-  worldContainer.addChild(scene.container, hitContainer, matrixContainer)
+  // A single invisible plane handles all pointer input; grid and highlight are
+  // two overlays. No per-cell hit areas are rebuilt on paint.
+  const hitPlane = new Graphics().rect(0, 0, GRID_PX, GRID_PX).fill(0xffffff)
+  hitPlane.alpha = 0
+  hitPlane.eventMode = 'static'
+  worldContainer.addChild(scene.container, gridGraphics, highlightGraphics, matrixContainer, hitPlane)
   viewport.addChild(worldContainer)
 
   const resetCamera = (): void => {
@@ -223,7 +235,8 @@ export async function createTerrainController(
 
   const grid = parseGrid(INITIAL)
   const stairs = new Map<string, 'left' | 'right'>(INITIAL_STAIRS)
-  const decorations = new Map<string, { readonly kind: 'bush'; readonly variant: number }>()
+  const decorations = new Map<string, ManualDecoration>()
+  let hoveredCell: Cell | null = null
   let state: TerrainState = { ...DEFAULT_TERRAIN_STATE }
 
   const snapshot = (): LevelSnapshot => ({
@@ -276,8 +289,13 @@ export async function createTerrainController(
   const setMatrix = (matrixKind: MatrixMode | null): void => {
     const visible = matrixKind === null
     scene.container.visible = visible
-    hitContainer.visible = visible
+    gridGraphics.visible = visible && state.showGrid
+    highlightGraphics.visible = visible
+    hitPlane.visible = visible
     matrixContainer.visible = !visible
+    if (!visible) {
+      onCursor(null)
+    }
     const height = matrixKind === null ? hostHeight : Math.round(MATRIX_HEIGHT * fitScale)
     app.renderer.resize(appWidth, height)
     viewport.resize(appWidth, height)
@@ -311,54 +329,92 @@ export async function createTerrainController(
     }
   }
 
-  const drawHits = (): void => {
-    clear(hitContainer)
-    for (let y = 0; y < SIZE; y += 1) {
-      for (let x = 0; x < SIZE; x += 1) {
-        const hit = new Graphics().rect(0, 0, TILE, TILE).fill(0xffffff)
-        hit.alpha = 0
-        hit.position.set(x * TILE, y * TILE)
-        hit.eventMode = 'static'
-        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: paint handler groups all tool branches
-        hit.on('pointerdown', () => {
-          // The map border is always water: painting there is a no-op.
-          if (x === 0 || y === 0 || x === SIZE - 1 || y === SIZE - 1) {
-            onReadout(cellReadout(x, y))
-            return
-          }
-          pushSnapshot()
-          if (state.paint === 'eraser') {
-            grid[y]![x] = 'water'
-            stairs.delete(`${x},${y}`)
-            stairs.delete(`${x},${y + 1}`)
-            decorations.delete(`${x},${y}`)
-          } else if (state.paint === 'bush') {
-            const kind = grid[y]?.[x]
-            if (kind === 'land' || kind === 'elevated') {
-              if (decorations.has(`${x},${y}`)) {
-                decorations.delete(`${x},${y}`)
-              } else {
-                decorations.set(`${x},${y}`, { kind: 'bush', variant: state.selectedVariant })
-              }
-            }
-          } else if (state.paint === 'left' || state.paint === 'right') {
-            stairs.set(`${x},${y}`, state.paint)
-          } else {
-            grid[y]![x] = state.paint
-            stairs.delete(`${x},${y}`)
-            stairs.delete(`${x},${y + 1}`)
-            decorations.delete(`${x},${y}`)
-          }
-          renderGrid()
-          onReadout(cellReadout(x, y))
-        })
-        hit.on('pointerover', () => {
-          onReadout(cellReadout(x, y))
-        })
-        hitContainer.addChild(hit)
-      }
+  const drawGrid = (): void => {
+    gridGraphics.clear()
+    for (let i = 0; i <= SIZE; i += 1) {
+      const p = i * TILE
+      gridGraphics.moveTo(p, 0).lineTo(p, GRID_PX)
+      gridGraphics.moveTo(0, p).lineTo(GRID_PX, p)
     }
+    gridGraphics.stroke({ width: 1, color: 0xffffff, alpha: 0.18 })
   }
+
+  const updateGridVisibility = (): void => {
+    gridGraphics.visible = state.matrixKind === null && state.showGrid
+  }
+
+  const updateHighlight = (cell: Cell | null): void => {
+    hoveredCell = cell
+    highlightGraphics.clear()
+    if (cell === null || state.matrixKind !== null) {
+      return
+    }
+    highlightGraphics
+      .rect(cell.x * TILE, cell.y * TILE, TILE, TILE)
+      .fill({ color: 0xffffff, alpha: 0.08 })
+      .stroke({ width: 2, color: 0xffffff, alpha: 0.9 })
+  }
+
+  const paintCell = (x: number, y: number): void => {
+    // The map border is always water: painting there is a no-op.
+    if (x === 0 || y === 0 || x === SIZE - 1 || y === SIZE - 1) {
+      onReadout(`cell (${x},${y}) is the locked water border — cannot paint`)
+      return
+    }
+    pushSnapshot()
+    if (state.paint === 'eraser') {
+      grid[y]![x] = 'water'
+      stairs.delete(`${x},${y}`)
+      stairs.delete(`${x},${y + 1}`)
+      decorations.delete(`${x},${y}`)
+    } else if (state.paint === 'decor') {
+      const kind = state.selectedDecoKind
+      if (kind !== null) {
+        if (decorations.has(`${x},${y}`)) {
+          decorations.delete(`${x},${y}`)
+        } else {
+          decorations.set(`${x},${y}`, { kind, variant: state.selectedVariant })
+        }
+      }
+    } else if (state.paint === 'left' || state.paint === 'right') {
+      stairs.set(`${x},${y}`, state.paint)
+    } else {
+      grid[y]![x] = state.paint
+      stairs.delete(`${x},${y}`)
+      stairs.delete(`${x},${y + 1}`)
+      decorations.delete(`${x},${y}`)
+    }
+    renderGrid()
+    onReadout(cellReadout(x, y))
+    onChange()
+  }
+
+  const cellFromEvent = (event: { getLocalPosition: (target: Container) => { x: number; y: number } }): Cell | null => {
+    const local = event.getLocalPosition(worldContainer)
+    return cellFromLocal(local.x, local.y, SIZE, TILE)
+  }
+
+  hitPlane.on('pointermove', (event) => {
+    const cell = cellFromEvent(event)
+    updateHighlight(cell)
+    onCursor(cell)
+    if (cell !== null) {
+      onReadout(cellReadout(cell.x, cell.y))
+    }
+  })
+  hitPlane.on('pointerout', () => {
+    updateHighlight(null)
+    onCursor(null)
+  })
+  hitPlane.on('pointerdown', (event) => {
+    if (state.matrixKind !== null) {
+      return
+    }
+    const cell = cellFromEvent(event)
+    if (cell !== null) {
+      paintCell(cell.x, cell.y)
+    }
+  })
 
   const renderGrid = (): void => {
     scene.render(
@@ -370,8 +426,11 @@ export async function createTerrainController(
       },
       decorations
     )
-    drawHits()
+    updateGridVisibility()
+    updateHighlight(hoveredCell)
   }
+
+  drawGrid()
 
   const maskNeighbor = (bit: string): AutoTileTerrain => (bit === '1' ? 'land' : 'water')
 
@@ -491,6 +550,7 @@ export async function createTerrainController(
     stairs.clear()
     decorations.clear()
     renderGrid()
+    onChange()
   }
 
   renderGrid()
@@ -542,12 +602,26 @@ export async function createTerrainController(
         }
       }
       renderGrid()
+      onChange()
     },
     exportMapDefinition(): MapDefinition {
+      const placements: DecorationPlacement[] = []
+      for (const [key, value] of decorations) {
+        const parts = key.split(',')
+        placements.push({
+          x: Number(parts[0] ?? 0),
+          y: Number(parts[1] ?? 0),
+          kind: value.kind,
+          variant: value.variant
+        })
+      }
+      const counts = Object.fromEntries(Object.entries(state.dressingCounts).filter(([, count]) => count > 0))
       return gridToMapDefinition(grid, {
         stairs: [...stairs.entries()],
         palette: state.palette,
-        decorationSeed: state.dressingSeed
+        decorationSeed: state.dressingSeed,
+        ...(placements.length > 0 ? { decorations: placements } : {}),
+        ...(Object.keys(counts).length > 0 ? { decorationCounts: counts } : {})
       })
     },
     importMapDefinition(map: MapDefinition): void {
@@ -561,6 +635,13 @@ export async function createTerrainController(
       for (const [key, value] of conversion.stairs) {
         stairs.set(key, value)
       }
+      decorations.clear()
+      for (const decoration of conversion.decorations) {
+        decorations.set(`${decoration.x},${decoration.y}`, {
+          kind: decoration.kind,
+          variant: decoration.variant ?? 0
+        })
+      }
       if (map.palette !== undefined) {
         state = { ...state, palette: map.palette }
         void scene.setPalette(map.palette)
@@ -568,7 +649,17 @@ export async function createTerrainController(
       if (map.decorationSeed !== undefined) {
         state = { ...state, dressingSeed: map.decorationSeed }
       }
+      if (map.decorationCounts !== undefined) {
+        const merged = { ...state.dressingCounts }
+        for (const [kind, count] of Object.entries(map.decorationCounts)) {
+          if (count !== undefined) {
+            merged[kind as DressingKind] = count
+          }
+        }
+        state = { ...state, dressingCounts: merged }
+      }
       renderGrid()
+      onChange()
     },
     undo(): LevelSnapshot | null {
       if (state.undoStack.length === 0) {
@@ -582,6 +673,7 @@ export async function createTerrainController(
         redoStack: [...state.redoStack, currentSnap]
       }
       restoreSnapshot(prev)
+      onChange()
       return prev
     },
     redo(): LevelSnapshot | null {
@@ -596,6 +688,7 @@ export async function createTerrainController(
         undoStack: [...state.undoStack, currentSnap]
       }
       restoreSnapshot(next)
+      onChange()
       return next
     },
     pushSnapshot,
@@ -616,7 +709,7 @@ export async function createTerrainController(
 export interface LevelData {
   readonly grid: readonly (readonly AutoTileTerrain[])[]
   readonly stairs: readonly [string, 'left' | 'right'][]
-  readonly decorations?: readonly [string, { readonly kind: 'bush'; readonly variant: number }][]
+  readonly decorations?: readonly [string, ManualDecoration][]
 }
 
 export interface TerrainController {
