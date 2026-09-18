@@ -40,5 +40,8 @@ tick (see `docs/simulation.md`).
 ## Transport
 
 The browser transport (`packages/protocol`) validates incoming messages before
-they reach the server (`isMoveMessage`). The server projects snapshots back with
-`hp/maxHp`, `kind`, `orderState`, `players`, and per-tick `events[]`.
+they reach the server: a generic `command` message carries the shared
+`CommandIntent` (`isCommandMessage`); the legacy `MOVE` message is still
+accepted. The server projects snapshots back with `hp/maxHp`, `kind`,
+`orderState`, `players`, `phase`, and per-tick `events[]`. The command intent
+type lives in `@rts/shared` so protocol and simulation share one definition.

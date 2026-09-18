@@ -13,7 +13,8 @@ The deterministic core. This document is the operational reference for
 - The canonical byte format and the state hash are pinned by
   `tests/simulation/hash-golden.test.ts` and the determinism suites. Changing
   the format is a deliberate act (regen the golden).
-- `SIMULATION_VERSION` is `0.2.0` (players/wallet joined the canonical state).
+- `SIMULATION_VERSION` is `0.3.0` (players/wallet and Kind joined the canonical
+  state during Phase 1).
 
 ## Single writer
 
@@ -48,6 +49,8 @@ Registered in `createWorld()` in this order (part of the canonical schema):
 - `Orders` — the per-unit order queue.
 - `Health` — current/max hit points.
 - `Combat` — damage, range (tiles), cooldown (ticks), remaining cooldown.
+- `Kind` — unit archetype (`pawn` / `warrior` / `archer`), driven by
+  `data/unit-stats.ts` per-role combat stats.
 
 ## Commands
 

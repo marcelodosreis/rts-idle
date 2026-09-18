@@ -9,13 +9,13 @@ import { describe, expect, it } from 'vitest'
 // and this list documents them.
 //
 // @rts/shared types: Fixed, GridPosition, EntityId, PlayerId, RngState, RngResult, RngIntResult,
-//   SimulationEvent
-// @rts/protocol types: MoveMessage, SnapshotMessage, SnapshotUnit, SnapshotPlayer, OrderState,
-//   UnitKind, ErrorMessage
-// @rts/simulation types: MovePayload, CommandIntent, ScheduledCommand, CommandErrorCode, Order,
-//   RulesIdentity, TickResult, SimulationOptions, ComponentType, PositionData, OwnerData,
-//   MovementData, OrdersData, HealthData, CombatData, SimulationHost, SimulationSnapshot,
-//   FormationOffset, GameState, PlayerState, UnitCombatStats
+//   SimulationEvent, CommandIntent, MovePayload, UnitKind
+// @rts/protocol types: MoveMessage, CommandMessage, SnapshotMessage, SnapshotUnit, SnapshotPlayer,
+//   OrderState, ErrorMessage
+// @rts/simulation types: ScheduledCommand, CommandErrorCode, Order, RulesIdentity, TickResult,
+//   SimulationOptions, ComponentType, PositionData, OwnerData, MovementData, OrdersData, HealthData,
+//   CombatData, KindData, SimulationHost, SimulationSnapshot, FormationOffset, GameState, PlayerState,
+//   UnitCombatStats
 // @rts/renderer types: GameRenderer, RenderFrame, RenderUnit, RenderPlayer, RendererOptions,
 //   RendererCallbacks
 
@@ -48,7 +48,7 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'UINT32_MAX'
     ]
   ],
-  ['protocol', ['version', 'isMoveMessage', 'isSnapshotMessage', 'isErrorMessage']],
+  ['protocol', ['version', 'isCommandMessage', 'isMoveMessage', 'isSnapshotMessage', 'isErrorMessage']],
   [
     'simulation',
     [
@@ -63,6 +63,7 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'Orders',
       'Health',
       'Combat',
+      'Kind',
       'ComponentStore',
       'World',
       'createWorld',
@@ -75,6 +76,8 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'hashBytes',
       'hashState',
       'UNIT_COMBAT_STATS',
+      'UNIT_STATS_BY_KIND',
+      'unitStatsFor',
       'SYSTEM_PIPELINE',
       'runSystems',
       'checkInvariants',

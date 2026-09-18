@@ -157,9 +157,13 @@ What the game consumed in the Phase 1 simulation/visual pass:
 
 - **Unit sprite contract** — `units.{faction}.{kind}.{subtype}` resolves
   `idle`/`run` for every kind and `attack` via a per-kind subtype mapping
-  (warrior → `attack`, archer → `shoot`, pawn → falls back to `interact`).
-  Unit sprites are cloned per unit, flipped by direction, and scaled at
-  `SPRITE_SCALE = 0.25`.
+  (warrior → `attack`, archer → `shoot`, pawn → `interact_axe` as a temporary
+  melee swing). Unit sprites are cloned per unit, flipped by direction, and
+  scaled at `SPRITE_SCALE = 0.25`.
+- **Per-role combat stats** — the simulation authors stats per kind
+  (`data/unit-stats.ts`): warrior 150 hp / 15 dmg / melee, archer 60 hp / 8 dmg
+  / range 3, pawn 100 hp / 10 dmg / melee. The mixed demo scenario pits melee
+  vs ranged to demonstrate range and durability trade-offs.
 - **Combat feedback (V9)** — the renderer consumes the deterministic per-tick
   events and the extended snapshot:
   - HP bars overhead (green/yellow/red by ratio), shown only when damaged
