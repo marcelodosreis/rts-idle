@@ -8,9 +8,28 @@ describe('snapshot to frame mapping', () => {
       tick: 3,
       phase: 'RUNNING',
       units: [
-        { id: 1, x: 100, y: 200, owner: 0, kind: 'pawn', hp: 90, maxHp: 100, orderState: 'attacking' },
+        {
+          id: 1,
+          x: 100,
+          y: 200,
+          owner: 0,
+          kind: 'pawn',
+          hp: 90,
+          maxHp: 100,
+          orderState: 'attacking',
+          economy: {
+            phase: 'gathering',
+            cargoAmount: 3,
+            cargoCapacity: 10,
+            progressTicks: 12,
+            progressMax: 20,
+            nodeId: 4
+          }
+        },
         { id: 2, x: 300, y: 400, owner: 1 }
       ],
+      bases: [{ id: 3, x: 500, y: 600, owner: 0 }],
+      mineralNodes: [{ id: 4, x: 700, y: 800, remaining: 25 }],
       players: [
         { id: 0, defeated: false, gold: 0 },
         { id: 1, defeated: true, gold: 5 }
@@ -19,9 +38,28 @@ describe('snapshot to frame mapping', () => {
     })
     expect(frame.tick).toBe(3)
     expect(frame.units).toEqual([
-      { id: 1, x: 100, y: 200, owner: 0, kind: 'pawn', hp: 90, maxHp: 100, orderState: 'attacking' },
+      {
+        id: 1,
+        x: 100,
+        y: 200,
+        owner: 0,
+        kind: 'pawn',
+        hp: 90,
+        maxHp: 100,
+        orderState: 'attacking',
+        economy: {
+          phase: 'gathering',
+          cargoAmount: 3,
+          cargoCapacity: 10,
+          progressTicks: 12,
+          progressMax: 20,
+          nodeId: 4
+        }
+      },
       { id: 2, x: 300, y: 400, owner: 1, kind: 'pawn', hp: undefined, maxHp: undefined, orderState: undefined }
     ])
+    expect(frame.bases).toEqual([{ id: 3, x: 500, y: 600, owner: 0 }])
+    expect(frame.mineralNodes).toEqual([{ id: 4, x: 700, y: 800, remaining: 25 }])
     expect(frame.players).toEqual([
       { id: 0, defeated: false, gold: 0 },
       { id: 1, defeated: true, gold: 5 }
@@ -31,10 +69,21 @@ describe('snapshot to frame mapping', () => {
 
   it('maps an empty snapshot', () => {
     expect(
-      snapshotToFrame({ type: 'snapshot', tick: 0, phase: 'FINISHED', units: [], players: [], events: [] })
+      snapshotToFrame({
+        type: 'snapshot',
+        tick: 0,
+        phase: 'FINISHED',
+        units: [],
+        bases: [],
+        mineralNodes: [],
+        players: [],
+        events: []
+      })
     ).toEqual({
       tick: 0,
       units: [],
+      bases: [],
+      mineralNodes: [],
       players: [],
       events: []
     })

@@ -1,6 +1,7 @@
 import { GameSession } from '@rts/server'
-import { createRulesIdentity, Health, Position } from '@rts/simulation'
+import { Base, createRulesIdentity, createWorld, Health, Kind, MineralNode, Owner, Position } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
+import { createDemoSession } from '../../apps/server/src/demo.js'
 import { SEEDS, worldWithCombatUnits } from '../fixtures/index.js'
 
 function combatSession(seed: number) {
@@ -14,6 +15,60 @@ function combatSession(seed: number) {
 }
 
 describe('game session commands', () => {
+  it('seeds a running economy scenario with one Worker, two Bases, and one Mineral Node', () => {
+    const session = createDemoSession('economy', 'passive')
+
+    expect(session.projectUnits()).toHaveLength(1)
+    expect(session.projectUnits()[0]).toEqual(expect.objectContaining({ owner: 0, kind: 'pawn' }))
+    expect(session.projectBases()).toHaveLength(2)
+    expect(session.projectBases()).toEqual(expect.arrayContaining([expect.objectContaining({ owner: 0 })]))
+    expect(session.projectMineralNodes()).toEqual([expect.objectContaining({ remaining: 3000 })])
+    const worker = session.projectUnits()[0]!
+    const node = session.projectMineralNodes()[0]!
+    session.submit(0, [
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'GATHER', payload: { unitIds: [worker.id], nodeId: node.id } }
+      }
+    ])
+    expect(session.advance().rejected).toEqual([])
+    expect(session.projectUnits()[0]!.x).not.toBe(worker.x)
+    expect(session.projectUnits()[0]!.economy).toEqual(
+      expect.objectContaining({ phase: 'to_node', cargoAmount: 0, cargoCapacity: 10, progressMax: 20, nodeId: node.id })
+    )
+    for (let tick = 0; tick < 100 && session.projectUnits()[0]!.economy?.phase !== 'gathering'; tick += 1) {
+      session.advance()
+    }
+    expect(session.projectUnits()[0]!.economy).toEqual(expect.objectContaining({ phase: 'gathering' }))
+    expect(session.phase()).toBe('RUNNING')
+  })
+
+  it('projects units, Bases, and Mineral Nodes as distinct observations', () => {
+    const world = createWorld()
+    world.createEntity(1)
+    world.store(Position).set(1, { x: 0, y: 0 })
+    world.store(Owner).set(1, { owner: 0 })
+    world.store(Kind).set(1, 'pawn')
+    world.createEntity(2)
+    world.store(Position).set(2, { x: 256, y: 0 })
+    world.store(Owner).set(2, { owner: 0 })
+    world.store(Base).set(2, {})
+    world.createEntity(3)
+    world.store(Position).set(3, { x: 512, y: 0 })
+    world.store(MineralNode).set(3, { remaining: 25 })
+    const session = GameSession.create({
+      seed: SEEDS.integration.session,
+      identity: createRulesIdentity('session-test'),
+      initialWorld: world
+    })
+
+    expect(session.projectUnits()).toEqual([expect.objectContaining({ id: 1, x: 0, y: 0, owner: 0, kind: 'pawn' })])
+    expect(session.projectBases()).toEqual([{ id: 2, x: 256, y: 0, owner: 0 }])
+    expect(session.projectMineralNodes()).toEqual([{ id: 3, x: 512, y: 0, remaining: 25 }])
+  })
+
   it('accepts an ATTACK command and projects the damage', () => {
     const { session, ids } = combatSession(SEEDS.integration.moveOwn)
     session.submit(0, [
