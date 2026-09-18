@@ -6,10 +6,38 @@ export interface MovePayload {
   readonly y: Fixed
 }
 
-export type CommandIntent = {
-  readonly type: 'MOVE'
-  readonly payload: MovePayload
+export interface StopPayload {
+  readonly unitIds: readonly EntityId[]
 }
+
+export interface HoldPayload {
+  readonly unitIds: readonly EntityId[]
+}
+
+export interface PatrolPayload {
+  readonly unitIds: readonly EntityId[]
+  readonly x: Fixed
+  readonly y: Fixed
+}
+
+export interface AttackPayload {
+  readonly unitIds: readonly EntityId[]
+  readonly targetId: EntityId
+}
+
+export interface AttackMovePayload {
+  readonly unitIds: readonly EntityId[]
+  readonly x: Fixed
+  readonly y: Fixed
+}
+
+export type CommandIntent =
+  | { readonly type: 'MOVE'; readonly payload: MovePayload }
+  | { readonly type: 'STOP'; readonly payload: StopPayload }
+  | { readonly type: 'HOLD'; readonly payload: HoldPayload }
+  | { readonly type: 'PATROL'; readonly payload: PatrolPayload }
+  | { readonly type: 'ATTACK'; readonly payload: AttackPayload }
+  | { readonly type: 'ATTACK_MOVE'; readonly payload: AttackMovePayload }
 
 export interface ScheduledCommand {
   readonly tick: number

@@ -13,6 +13,9 @@ export const UNIT_SPEED_TILES_PER_SECOND = 4
  * command must leave the state untouched (command atomicity, master plan §10.3).
  */
 function validateMove(state: GameState, command: ScheduledCommand): void {
+  if (command.intent.type !== 'MOVE') {
+    throw new CommandRejectedError('INVALID_PAYLOAD', command, 'MOVE: wrong intent type')
+  }
   const payload = command.intent.payload
 
   if (payload.unitIds.length === 0 || payload.unitIds.length > MAX_UNITS_PER_COMMAND) {
@@ -55,6 +58,9 @@ function validateMove(state: GameState, command: ScheduledCommand): void {
  */
 export function applyMove(state: GameState, command: ScheduledCommand): void {
   validateMove(state, command)
+  if (command.intent.type !== 'MOVE') {
+    return
+  }
   const payload = command.intent.payload
   const positions = state.world.store(Position)
   const movements = state.world.store(Movement)

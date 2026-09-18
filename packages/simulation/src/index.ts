@@ -5,6 +5,7 @@ export const version = SIMULATION_VERSION
 export type { RngState } from '@rts/shared'
 export * from './commands/limits.js'
 export * from './contracts/commands.js'
+export * from './contracts/orders.js'
 export * from './contracts/rules-identity.js'
 export * from './contracts/simulation.js'
 export * from './ecs/component-store.js'
