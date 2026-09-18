@@ -4,7 +4,7 @@ import type { Viewport } from 'pixi-viewport'
 import type { AssetLibrary } from './assets/asset-library.js'
 import { interpolationAlpha, lerpPoint } from './interpolation.js'
 import type { RenderUnit, UnitKind } from './types.js'
-import { FACTION_BY_OWNER, frameKey, type UnitFrames, UnitSprite } from './unit-sprite.js'
+import { FACTION_BY_OWNER, frameKey, UNIT_RADIUS, type UnitFrames, UnitSprite } from './unit-sprite.js'
 
 interface Point {
   readonly x: number
@@ -196,6 +196,25 @@ export class UnitLayer {
       out.set(id, sprite.position())
     }
     return out
+  }
+
+  /**
+   * Topmost unit within a small radius of a world point (render pixels), or
+   * `null`. Later-spawned containers sit on top, so the last match wins —
+   * this mirrors what the player sees and is used for right-click targeting.
+   */
+  unitAt(x: number, y: number): number | null {
+    const threshold = UNIT_RADIUS * UNIT_RADIUS
+    let topmost: number | null = null
+    for (const [id, sprite] of this.units) {
+      const position = sprite.position()
+      const dx = position.x - x
+      const dy = position.y - y
+      if (dx * dx + dy * dy <= threshold) {
+        topmost = id
+      }
+    }
+    return topmost
   }
 
   /** Authoritative fixed-unit positions of the latest frame (for debug/e2e). */

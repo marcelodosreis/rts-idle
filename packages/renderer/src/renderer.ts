@@ -116,8 +116,14 @@ export class PixiRenderer implements GameRenderer {
     })
     viewport.on('rightdown', (event) => {
       const world = viewport.toWorld(event.global.x, event.global.y)
-      ping.show(world.x, world.y)
-      this.callbacks.onGroundCommand?.(world.x, world.y)
+      const hit = units.unitAt(world.x, world.y)
+      if (hit !== null) {
+        // Right-click on a unit targets it (attack); the ground ping is skipped.
+        this.callbacks.onUnitCommand?.(hit)
+      } else {
+        ping.show(world.x, world.y)
+        this.callbacks.onGroundCommand?.(world.x, world.y)
+      }
     })
 
     this.app = app

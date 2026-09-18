@@ -39,6 +39,8 @@ export interface RendererCallbacks {
   readonly onUnitSelected?: (id: number) => void
   readonly onBoxSelected?: (ids: readonly number[]) => void
   readonly onGroundCommand?: (worldX: number, worldY: number) => void
+  /** Right-click landed on a unit (used for attack targeting). */
+  readonly onUnitCommand?: (id: number) => void
 }
 
 export interface RendererOptions {
