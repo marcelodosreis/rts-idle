@@ -13,7 +13,11 @@ const MAX = 10000
 const MIN_ZOOM = 0.05
 const MAX_ZOOM = 8
 
-export function StressView() {
+export function StressView({
+  onControllerReady
+}: {
+  readonly onControllerReady?: (controller: { readonly pause: () => void; readonly resume: () => void } | null) => void
+} = {}) {
   const ctx = useLabContext()
   const hostRef = useRef<HTMLDivElement | null>(null)
   const apiRef = useRef<{ spawn: (n: number) => Promise<void>; resetCamera: () => void } | null>(null)
@@ -43,6 +47,10 @@ export function StressView() {
 
     void (async () => {
       const app = await createSectionApp(host, VIEW_H)
+      onControllerReady?.({
+        pause: () => app.ticker.stop(),
+        resume: () => app.ticker.start()
+      })
       world = new Container()
       viewport = new Viewport({
         screenWidth: app.screen.width,
@@ -102,7 +110,8 @@ export function StressView() {
             continue
           }
           const sprite = new AnimatedSprite([...frames], false)
-          sprite.animationSpeed = 8 / 60
+          const entry = ctx.assets.entry(key)
+          sprite.animationSpeed = 1000 / (entry?.duration ?? 100) / 60
           sprite.scale.set(Math.min(0.4, cell / 96))
           sprite.position.set((i % perRow) * cell + cell / 2, Math.floor(i / perRow) * cell + cell / 2)
           sprite.play()
@@ -145,11 +154,12 @@ export function StressView() {
       stopTicker()
       destroyApp()
       clearReportTimer()
+      onControllerReady?.(null)
       for (const s of sprites) {
         s.destroy()
       }
     }
-  }, [ctx])
+  }, [ctx, onControllerReady])
 
   // Spawn whenever the slider changes.
   useEffect(() => {

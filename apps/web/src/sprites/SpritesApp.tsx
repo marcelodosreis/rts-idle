@@ -7,6 +7,8 @@ import { SpriteLabContext } from './lab-context'
 import { useAssetLibrary } from './use-asset-library'
 import { type SpritesTab, useSpritesTab } from './use-sprites-tab'
 
+type Pauseable = { readonly pause: () => void; readonly resume: () => void }
+
 const BrowseView = lazy(() => import('./browse/BrowseView').then((m) => ({ default: m.BrowseView })))
 const TerrainView = lazy(() => import('./tabs/TerrainView').then((m) => ({ default: m.TerrainView })))
 const StressView = lazy(() => import('./tabs/StressView').then((m) => ({ default: m.StressView })))
@@ -48,7 +50,7 @@ function Header({
             <Switch checked={filterChecked} onCheckedChange={onFilterToggle} aria-label="texture filter" />
             <span className="w-12 font-mono text-[11px]">{getFilterMode()}</span>
           </label>
-          <Button variant="outline" size="sm" asChild className="h-7 text-xs">
+          <Button variant="outline" size="sm" asChild={true} className="h-7 text-xs">
             <a href="/">Back to game</a>
           </Button>
         </div>
@@ -63,6 +65,9 @@ export function SpritesApp() {
   const [filterChecked, setFilterChecked] = useState(true)
   const browseRef = useRef<((key: string) => void) | null>(null)
   const pendingBrowse = useRef<string | null>(null)
+  const prevTab = useRef<SpritesTab>(tab)
+  const levelCtrl = useRef<Pauseable | null>(null)
+  const stressCtrl = useRef<Pauseable | null>(null)
 
   const onFilterToggle = useCallback((checked: boolean): void => {
     setFilterChecked(checked)
@@ -94,6 +99,26 @@ export function SpritesApp() {
     }
   }, [])
 
+  // Pause/resume PIXI apps when switching tabs.
+  useEffect(() => {
+    const prev = prevTab.current
+    if (prev === tab) {
+      return
+    }
+    prevTab.current = tab
+    const getCtrl = (t: SpritesTab): Pauseable | null => {
+      if (t === 'level') {
+        return levelCtrl.current
+      }
+      if (t === 'stress') {
+        return stressCtrl.current
+      }
+      return null
+    }
+    getCtrl(prev)?.pause()
+    getCtrl(tab)?.resume()
+  }, [tab])
+
   if (ctx === null) {
     return (
       <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Loading assets…</div>
@@ -119,12 +144,20 @@ export function SpritesApp() {
           </TabsContent>
           <TabsContent value="level">
             <Suspense fallback={<p className="text-sm text-muted-foreground">loading…</p>}>
-              <TerrainView />
+              <TerrainView
+                onControllerReady={(c) => {
+                  levelCtrl.current = c
+                }}
+              />
             </Suspense>
           </TabsContent>
           <TabsContent value="stress">
             <Suspense fallback={<p className="text-sm text-muted-foreground">loading…</p>}>
-              <StressView />
+              <StressView
+                onControllerReady={(c) => {
+                  stressCtrl.current = c
+                }}
+              />
             </Suspense>
           </TabsContent>
           <TabsContent value="report">

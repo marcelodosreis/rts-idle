@@ -1,12 +1,19 @@
+// biome-ignore lint/style/noExcessiveLinesPerFile: level editor toolbar (single cohesive UI)
 import type { MapDefinition } from '@rts/game-data'
+import type { DressingKind } from '@rts/renderer'
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { check, registerChecks } from '../lab/checks.js'
 import { useLabContext } from '../lab-context'
 import {
   createTerrainController,
   DEFAULT_TERRAIN_STATE,
+  DRESSING_KINDS,
+  type EditorTab,
   type LevelData,
   type MatrixMode,
   PALETTES,
@@ -15,14 +22,37 @@ import {
   type TerrainState
 } from './terrain-controller.js'
 
-const PAINT_MODES: readonly { readonly value: PaintMode; readonly label: string; readonly icon: string }[] = [
-  { value: 'land', label: 'Grass', icon: '🌿' },
-  { value: 'water', label: 'Water', icon: '💧' },
-  { value: 'elevated', label: 'High', icon: '⛰️' },
-  { value: 'left', label: 'Stair ↙', icon: '🪜' },
-  { value: 'right', label: 'Stair ↘', icon: '🪜' },
-  { value: 'eraser', label: 'Eraser', icon: '🧹' }
+/* ── Brush definitions ─────────────────────────────────────────────── */
+
+interface BrushDef {
+  readonly value: PaintMode
+  readonly label: string
+  readonly icon: string
+  readonly shortcut?: string
+  readonly beta?: boolean
+}
+
+const TERRAIN_BRUSHES: readonly BrushDef[] = [
+  { value: 'land', label: 'Grass', icon: '🌿', shortcut: '1' },
+  { value: 'water', label: 'Water', icon: '💧', shortcut: '2' },
+  { value: 'eraser', label: 'Eraser', icon: '🧹', shortcut: '3' },
+  { value: 'elevated', label: 'High', icon: '⛰️', shortcut: '4', beta: true },
+  { value: 'left', label: 'Stair ↙', icon: '🪜', beta: true },
+  { value: 'right', label: 'Stair ↘', icon: '🪜', beta: true }
 ]
+
+const DECO_ICONS: Readonly<Record<DressingKind, string>> = {
+  bush: '🌿',
+  tree: '🌳',
+  rock: '🪨',
+  cloud: '☁️',
+  water_rock: '💎',
+  gold: '✨',
+  gold_stone: '🪨',
+  wood: '🪵',
+  meat: '🥩',
+  sheep: '🐑'
+}
 
 const MATRIX_MODES: readonly { readonly value: MatrixMode; readonly label: string }[] = [
   { value: 'flat', label: 'Flat 16-mask' },
@@ -30,43 +60,242 @@ const MATRIX_MODES: readonly { readonly value: MatrixMode; readonly label: strin
   { value: 'cliff', label: 'Cliff-base' }
 ]
 
-function ToolButton({
-  mode,
+const ALL_BRUSHES: readonly BrushDef[] = [...TERRAIN_BRUSHES]
+
+/* ── Sub-components ────────────────────────────────────────────────── */
+
+function BrushButton({
+  brush,
   active,
   onClick
 }: {
-  readonly mode: (typeof PAINT_MODES)[number]
+  readonly brush: BrushDef
   readonly active: boolean
   readonly onClick: () => void
 }) {
-  return (
+  const content = (
     <button
       type="button"
-      className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-2 text-xs transition-all ${
+      className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-[11px] transition-all ${
         active ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/50 text-muted-foreground hover:bg-muted'
       }`}
       onClick={onClick}
     >
-      <span className="text-base">{mode.icon}</span>
-      <span className="leading-tight">{mode.label}</span>
+      <span className="text-sm">{brush.icon}</span>
+      <span className="leading-tight">{brush.label}</span>
+      {brush.beta === true && (
+        <span className="rounded bg-yellow-500/20 px-1 py-px text-[7px] font-semibold text-yellow-600 dark:text-yellow-400">
+          WIP
+        </span>
+      )}
     </button>
+  )
+
+  if (brush.shortcut === undefined) {
+    return content
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild={true}>{content}</TooltipTrigger>
+      <TooltipContent side="right">
+        {brush.label} <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-[10px]">{brush.shortcut}</kbd>
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
-function StatusBar({ state, readout }: { readonly state: TerrainState; readonly readout: string }) {
-  const activeTool = PAINT_MODES.find((m) => m.value === state.paint)
+const AVAILABLE_DECO_KINDS: readonly DressingKind[] = ['bush']
+
+function DecoKindGrid({
+  selected,
+  onSelect
+}: {
+  readonly selected: DressingKind | null
+  readonly onSelect: (kind: DressingKind) => void
+}) {
+  const buttonClass = (_kind: DressingKind, available: boolean, isSelected: boolean): string => {
+    if (isSelected) {
+      return 'bg-primary text-primary-foreground shadow-sm'
+    }
+    if (available) {
+      return 'bg-muted/50 text-muted-foreground hover:bg-muted'
+    }
+    return 'cursor-not-allowed bg-muted/30 text-muted-foreground/40'
+  }
+
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-border/50 bg-card px-3 py-1.5 text-[11px]">
+    <div className="grid grid-cols-3 gap-1">
+      {DRESSING_KINDS.map((dk) => {
+        const available = AVAILABLE_DECO_KINDS.includes(dk.kind)
+        return (
+          <button
+            key={dk.kind}
+            type="button"
+            disabled={!available}
+            className={`flex flex-col items-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] transition-all ${buttonClass(dk.kind, available, selected === dk.kind)}`}
+            onClick={() => {
+              if (available) {
+                onSelect(dk.kind)
+              }
+            }}
+          >
+            <span className="text-sm">{DECO_ICONS[dk.kind]}</span>
+            <span className="leading-tight">{dk.label}</span>
+            {!available && <span className="text-[7px] text-muted-foreground/50">soon</span>}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function VariantPicker({
+  kind,
+  selectedVariant,
+  onSelect
+}: {
+  readonly kind: DressingKind
+  readonly selectedVariant: number
+  readonly onSelect: (variant: number) => void
+}) {
+  const dk = DRESSING_KINDS.find((d) => d.kind === kind)
+  if (dk === undefined) {
+    return null
+  }
+  return (
+    <div className="mt-2">
+      <div className="mb-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        {dk.label} variants
+      </div>
+      <div className="grid grid-cols-4 gap-1">
+        {dk.keys.map((key, i) => (
+          <button
+            key={key}
+            type="button"
+            className={`flex h-8 items-center justify-center rounded-md text-[10px] font-medium transition-all ${
+              selectedVariant === i
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+            }`}
+            onClick={() => onSelect(i)}
+          >
+            v{i}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function HistoryButtons({
+  controller,
+  onStateChange
+}: {
+  readonly controller: TerrainController | null
+  readonly onStateChange: (patch: Partial<TerrainState>) => void
+}) {
+  const handleUndo = useCallback((): void => {
+    const snap = controller?.undo()
+    if (snap !== null && snap !== undefined) {
+      onStateChange({})
+    }
+  }, [controller, onStateChange])
+
+  const handleRedo = useCallback((): void => {
+    const snap = controller?.redo()
+    if (snap !== null && snap !== undefined) {
+      onStateChange({})
+    }
+  }, [controller, onStateChange])
+
+  return (
+    <div className="flex items-center gap-1">
+      <Tooltip>
+        <TooltipTrigger asChild={true}>
+          <Button variant="outline" size="sm" className="h-7 w-7 p-0 text-xs" onClick={handleUndo}>
+            ↶
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          Undo <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-[10px]">Ctrl+Z</kbd>
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild={true}>
+          <Button variant="outline" size="sm" className="h-7 w-7 p-0 text-xs" onClick={handleRedo}>
+            ↷
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          Redo <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-[10px]">Ctrl+Shift+Z</kbd>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  )
+}
+
+/* ── StatusBar (top of canvas) ─────────────────────────────────────── */
+
+function StatusBar({
+  state,
+  readout,
+  onPatch
+}: {
+  readonly state: TerrainState
+  readonly readout: string
+  readonly onPatch: (patch: Partial<TerrainState>) => void
+}) {
+  const activeBrush = ALL_BRUSHES.find((m) => m.value === state.paint)
+  const activeDeco =
+    state.paint === 'bush' && state.selectedDecoKind !== null
+      ? DRESSING_KINDS.find((d) => d.kind === state.selectedDecoKind)
+      : undefined
+  const toolLabel = activeDeco !== undefined ? `${activeDeco.label} v${state.selectedVariant}` : activeBrush?.label
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-border/50 bg-card px-3 py-1.5 text-[11px]">
       <div className="flex items-center gap-1.5">
         <span className="text-muted-foreground">Tool:</span>
         <span className="font-medium text-foreground">
-          {activeTool?.icon} {activeTool?.label}
+          {activeBrush?.icon} {toolLabel}
         </span>
       </div>
       <div className="h-3 w-px bg-border/50" />
       <div className="flex items-center gap-1.5">
         <span className="text-muted-foreground">Palette:</span>
-        <span className="font-medium text-foreground">{state.palette}</span>
+        <Select value={state.palette} onValueChange={(v) => onPatch({ palette: v })}>
+          <SelectTrigger className="h-6 w-[70px] border-0 bg-transparent p-0 text-[11px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PALETTES.map((p) => (
+              <SelectItem key={p} value={p}>
+                {p}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="h-3 w-px bg-border/50" />
+      <div className="flex items-center gap-1.5">
+        <span className="text-muted-foreground">Overlay:</span>
+        <Select
+          value={state.matrixKind ?? 'off'}
+          onValueChange={(v) => onPatch({ matrixKind: (v === 'off' ? null : v) as MatrixMode | null })}
+        >
+          <SelectTrigger className="h-6 w-[80px] border-0 bg-transparent p-0 text-[11px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="off">Off</SelectItem>
+            {MATRIX_MODES.map((m) => (
+              <SelectItem key={m.value} value={m.value}>
+                {m.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       {state.matrixKind !== null && (
         <>
@@ -82,6 +311,8 @@ function StatusBar({ state, readout }: { readonly state: TerrainState; readonly 
     </div>
   )
 }
+
+/* ── Level modal ───────────────────────────────────────────────────── */
 
 function levelDataJson(controller: TerrainController, format: 'lab' | 'game'): string {
   if (format === 'game') {
@@ -143,7 +374,7 @@ function LevelModal({
       <button type="button" aria-label="Close dialog" className="absolute inset-0 cursor-default" onClick={onClose} />
       <div className="relative w-[500px] rounded-xl border border-border/50 bg-card p-4 shadow-lg">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-medium">{mode === 'export' ? '📋 Copy Level' : '📋 Paste Level'}</h3>
+          <h3 className="text-sm font-medium">{mode === 'export' ? 'Copy Level' : 'Paste Level'}</h3>
           <div className="flex items-center gap-2">
             <div className="flex gap-1 rounded-lg bg-muted/50 p-0.5">
               {formatButton('lab', 'Lab')}
@@ -180,7 +411,13 @@ function LevelModal({
   )
 }
 
-export function TerrainView() {
+/* ── Main component ────────────────────────────────────────────────── */
+
+export function TerrainView({
+  onControllerReady
+}: {
+  readonly onControllerReady?: (controller: TerrainController | null) => void
+} = {}) {
   const ctx = useLabContext()
   const hostRef = useRef<HTMLDivElement | null>(null)
   const controllerRef = useRef<TerrainController | null>(null)
@@ -200,13 +437,15 @@ export function TerrainView() {
         return
       }
       controllerRef.current = controller
+      onControllerReady?.(controller)
     })
     return () => {
       disposed = true
       controllerRef.current?.destroy()
       controllerRef.current = null
+      onControllerReady?.(null)
     }
-  }, [ctx])
+  }, [ctx, onControllerReady])
 
   useEffect(() => {
     controllerRef.current?.setState(state)
@@ -218,6 +457,76 @@ export function TerrainView() {
     })
   }, [ctx])
 
+  /* ── Keyboard shortcuts ────────────────────────────────────────── */
+  useEffect(() => {
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: keyboard shortcut dispatcher
+    const handler = (e: KeyboardEvent): void => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return
+      }
+      const ctrl = e.ctrlKey || e.metaKey
+
+      // Undo/Redo
+      if (ctrl && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        const snap = controllerRef.current?.undo()
+        if (snap !== null && snap !== undefined) {
+          setState((prev) => ({ ...prev }))
+        }
+        return
+      }
+      if (ctrl && e.key === 'z' && e.shiftKey) {
+        e.preventDefault()
+        const snap = controllerRef.current?.redo()
+        if (snap !== null && snap !== undefined) {
+          setState((prev) => ({ ...prev }))
+        }
+        return
+      }
+
+      // Terrain shortcuts
+      if (e.key === '1') {
+        setState((prev) => ({ ...prev, paint: 'land', editorTab: 'terrain' }))
+        return
+      }
+      if (e.key === '2') {
+        setState((prev) => ({ ...prev, paint: 'water', editorTab: 'terrain' }))
+        return
+      }
+      if (e.key === '3') {
+        setState((prev) => ({ ...prev, paint: 'eraser', editorTab: 'terrain' }))
+        return
+      }
+      if (e.key === '4') {
+        setState((prev) => ({ ...prev, paint: 'elevated', editorTab: 'terrain' }))
+        return
+      }
+
+      // Tab shortcuts
+      if (e.key === 't' || e.key === 'T') {
+        setState((prev) => ({ ...prev, editorTab: 'terrain' }))
+        return
+      }
+      if (e.key === 'd' || e.key === 'D') {
+        setState((prev) => ({ ...prev, editorTab: 'decorations' }))
+        return
+      }
+
+      // Escape
+      if (e.key === 'Escape') {
+        setState((prev) => ({
+          ...prev,
+          paint: 'land',
+          editorTab: 'terrain',
+          selectedDecoKind: null
+        }))
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
+  /* ── Callbacks ─────────────────────────────────────────────────── */
   const set = useCallback((patch: Partial<TerrainState>): void => {
     setState((prev) => ({ ...prev, ...patch }))
   }, [])
@@ -252,108 +561,122 @@ export function TerrainView() {
     }
   }, [])
 
+  const selectDecoKind = useCallback(
+    (kind: DressingKind): void => {
+      set({ paint: 'bush', selectedDecoKind: kind, selectedVariant: 0, editorTab: 'decorations' })
+    },
+    [set]
+  )
+
+  /* ── Sidebar ───────────────────────────────────────────────────── */
   return (
     <div className="mt-3 flex flex-col gap-3 xl:h-[calc(100vh-140px)] xl:flex-row">
       {/* Left toolbar */}
-      <div className="flex w-full shrink-0 flex-col gap-2 rounded-xl border border-border/50 bg-card p-2 xl:w-[160px]">
-        {/* Tools */}
-        <div className="px-1 pb-1">
-          <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Brush</div>
-          <div className="grid grid-cols-3 gap-1 xl:grid-cols-2">
-            {PAINT_MODES.map((mode) => (
-              <ToolButton
-                key={mode.value}
-                mode={mode}
-                active={state.paint === mode.value}
-                onClick={() => set({ paint: mode.value })}
-              />
-            ))}
+      <div className="flex w-full shrink-0 flex-col gap-2 rounded-xl border border-border/50 bg-card p-2 xl:w-[200px]">
+        <Tabs
+          value={state.editorTab}
+          onValueChange={(v) => set({ editorTab: v as EditorTab })}
+          className="flex flex-1 flex-col gap-2"
+        >
+          <TabsList className="w-full">
+            <Tooltip>
+              <TooltipTrigger asChild={true}>
+                <TabsTrigger value="terrain" className="flex-1 text-[11px]">
+                  Terrain
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                Terrain <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-[10px]">T</kbd>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild={true}>
+                <TabsTrigger value="decorations" className="flex-1 text-[11px]">
+                  Decor
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                Decorations <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-[10px]">D</kbd>
+              </TooltipContent>
+            </Tooltip>
+          </TabsList>
+
+          {/* ── Terrain tab ─────────────────────────────────────────── */}
+          <TabsContent value="terrain" className="mt-0 flex-1">
+            <ScrollArea className="h-full">
+              <div className="grid grid-cols-3 gap-1 pr-2">
+                {TERRAIN_BRUSHES.map((brush) => (
+                  <BrushButton
+                    key={brush.value}
+                    brush={brush}
+                    active={state.paint === brush.value}
+                    onClick={() => set({ paint: brush.value })}
+                  />
+                ))}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          {/* ── Decorations tab ─────────────────────────────────────── */}
+          <TabsContent value="decorations" className="mt-0 flex-1">
+            <ScrollArea className="h-full">
+              <div className="pr-2">
+                <DecoKindGrid selected={state.selectedDecoKind} onSelect={selectDecoKind} />
+                {state.selectedDecoKind !== null && (
+                  <VariantPicker
+                    kind={state.selectedDecoKind}
+                    selectedVariant={state.selectedVariant}
+                    onSelect={(v) => set({ selectedVariant: v })}
+                  />
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
+
+        <div className="h-px bg-border/50" />
+
+        {/* ── Footer ─────────────────────────────────────────────────── */}
+        <div className="flex flex-col gap-2 px-1">
+          {/* Undo/Redo */}
+          <div className="flex items-center justify-between">
+            <HistoryButtons controller={controllerRef.current} onStateChange={set} />
           </div>
-        </div>
 
-        <div className="h-px bg-border/50" />
+          <div className="h-px bg-border/50" />
 
-        {/* Palette */}
-        <div className="px-1">
-          <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Palette</div>
-          <Select value={state.palette} onValueChange={(v) => set({ palette: v })}>
-            <SelectTrigger className="h-8 w-full text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PALETTES.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+          {/* Import/Export */}
+          <div className="flex gap-1">
+            <Button variant="outline" size="sm" onClick={handleExport} className="flex-1 text-[11px]">
+              Export
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleImport} className="flex-1 text-[11px]">
+              Import
+            </Button>
+          </div>
 
-        <div className="h-px bg-border/50" />
+          <div className="h-px bg-border/50" />
 
-        {/* Matrix overlay */}
-        <div className="px-1">
-          <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Overlay</div>
-          <Select
-            value={state.matrixKind ?? 'off'}
-            onValueChange={(v) => set({ matrixKind: (v === 'off' ? null : v) as MatrixMode | null })}
-          >
-            <SelectTrigger className="h-8 w-full text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="off">Off</SelectItem>
-              {MATRIX_MODES.map((m) => (
-                <SelectItem key={m.value} value={m.value}>
-                  {m.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex-1" />
-
-        {/* Import/Export */}
-        <div className="flex flex-col gap-1 px-1">
-          <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Level</div>
-          <Button variant="outline" size="sm" onClick={handleExport} className="w-full text-xs">
-            Export
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleImport} className="w-full text-xs">
-            Import
-          </Button>
-        </div>
-
-        <div className="h-px bg-border/50" />
-
-        {/* Camera */}
-        <div className="flex flex-col gap-1 px-1">
-          <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Camera</div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => controllerRef.current?.resetCamera()}
-            className="w-full text-xs"
-          >
-            Fit view
-          </Button>
-        </div>
-
-        <div className="h-px bg-border/50" />
-
-        {/* Reset */}
-        <div className="px-1">
-          <Button variant="destructive" size="sm" onClick={reset} className="w-full text-xs">
-            Reset Canvas
-          </Button>
+          {/* Camera + Reset */}
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => controllerRef.current?.resetCamera()}
+              className="flex-1 text-[11px]"
+            >
+              Fit
+            </Button>
+            <Button variant="destructive" size="sm" onClick={reset} className="flex-1 text-[11px]">
+              Reset
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Canvas area */}
       <div className="flex h-[55vh] min-h-0 min-w-0 flex-1 flex-col gap-2 xl:h-auto">
-        <StatusBar state={state} readout={readout} />
+        <StatusBar state={state} readout={readout} onPatch={set} />
         <div ref={hostRef} className="min-h-0 flex-1 rounded-xl border border-border/50 bg-background" />
       </div>
 
