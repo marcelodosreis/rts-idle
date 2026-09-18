@@ -49,6 +49,9 @@ async function visibleUnitIds(page: Page) {
 }
 
 test('box-selected units arrive spread out instead of stacked', async ({ page }) => {
+  // The default 6v6 random demo is too volatile for a box-select regression;
+  // use the small 2v2 scenario where the squads settle into a stable cluster.
+  await page.goto('/?scenario=2v2')
   const positions = await waitForUnits(page)
   const ids = await visibleUnitIds(page)
   expect(ids.length).toBeGreaterThanOrEqual(2)

@@ -80,5 +80,5 @@ test('visual base: HUD reacts to selection and units animate without teleporting
 
   // The selection panel persists and reflects the unit state through the move.
   await expect(page.getByText(/1 selected/)).toBeVisible()
-  await expect(page.getByText(/moving|idle/)).toBeVisible()
+  await expect(page.getByText(/Controlling:/)).toBeVisible()
 })

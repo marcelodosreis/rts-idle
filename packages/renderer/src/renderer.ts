@@ -150,6 +150,10 @@ export class PixiRenderer implements GameRenderer {
     for (const event of frame.events ?? []) {
       if (event.type === 'attackFired') {
         this.units.beginAttack(event.attackerId, now)
+        const target = frame.units.find((unit) => unit.id === event.targetId)
+        if (target !== undefined) {
+          this.units.faceToward(event.attackerId, target.x)
+        }
       }
     }
     for (const unit of frame.units) {

@@ -1,4 +1,4 @@
-import { type Fixed, type PlayerId, tilesToFixed, type UnitKind } from '@rts/shared'
+import { createRng, type Fixed, type PlayerId, rngNextInt, tilesToFixed, type UnitKind } from '@rts/shared'
 
 export interface DemoSpawn {
   readonly owner: PlayerId
@@ -23,6 +23,51 @@ const PAWN: UnitKind = 'pawn'
 const WARRIOR: UnitKind = 'warrior'
 const ARCHER: UnitKind = 'archer'
 
+/** Demo seed — shared with `demo.ts`; keeps every scenario deterministic. */
+export const DEMO_SEED = 123456
+
+const KINDS: readonly UnitKind[] = [PAWN, WARRIOR, ARCHER]
+
+/** Deterministic kind assignment (seeded, so replays stay stable). */
+function randomKinds(count: number, seed: number): UnitKind[] {
+  const rng = createRng(seed)
+  const kinds: UnitKind[] = []
+  for (let i = 0; i < count; i += 1) {
+    kinds.push(KINDS[rngNextInt(rng, KINDS.length).value]!)
+  }
+  return kinds
+}
+
+const RANDOM_UNITS_PER_SIDE = 6
+
+/**
+ * Default scenario: six units per side with kinds randomized across the three
+ * available archetypes. Blue sits in the top-left block, red is mirrored around
+ * the map center; each blue unit is paired with its red counterpart, so the
+ * squads march and fight wherever they meet.
+ */
+function randomScenario(): DemoScenario {
+  const blueKinds = randomKinds(RANDOM_UNITS_PER_SIDE, DEMO_SEED)
+  const redKinds = randomKinds(RANDOM_UNITS_PER_SIDE, DEMO_SEED + 1)
+  const spawns: DemoSpawn[] = []
+  const attacks: (readonly [number, number])[] = []
+  // Blue block first, then the mirrored red block, so pair `i` attacks `i + 6`.
+  for (let i = 0; i < RANDOM_UNITS_PER_SIDE; i += 1) {
+    const bx = 4 + (i % 3)
+    const by = 4 + Math.floor(i / 3)
+    spawns.push({ owner: 0, kind: blueKinds[i]!, ...tile(bx, by) })
+  }
+  for (let i = 0; i < RANDOM_UNITS_PER_SIDE; i += 1) {
+    const bx = 4 + (i % 3)
+    const by = 4 + Math.floor(i / 3)
+    spawns.push({ owner: 1, kind: redKinds[i]!, ...tile(12 - bx, 12 - by) })
+  }
+  for (let i = 0; i < RANDOM_UNITS_PER_SIDE; i += 1) {
+    attacks.push([i, i + RANDOM_UNITS_PER_SIDE], [i + RANDOM_UNITS_PER_SIDE, i])
+  }
+  return { id: '6v6', label: '6v6 random', spawns, attacks }
+}
+
 /**
  * Demo scenario catalog. Every scenario spawns each faction in its own spot
  * and arms mutual ATTACK orders, so the squads march toward one another and
@@ -30,6 +75,7 @@ const ARCHER: UnitKind = 'archer'
  * the camera's home tile (8).
  */
 export const DEMO_SCENARIOS: readonly DemoScenario[] = [
+  randomScenario(),
   {
     id: '2v2',
     label: '2v2',

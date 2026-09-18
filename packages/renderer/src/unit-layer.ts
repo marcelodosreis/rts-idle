@@ -4,7 +4,7 @@ import type { Viewport } from 'pixi-viewport'
 import type { AssetLibrary } from './assets/asset-library.js'
 import { interpolationAlpha, lerpPoint } from './interpolation.js'
 import type { RenderUnit, UnitKind } from './types.js'
-import { FACTION_BY_OWNER, frameKey, UNIT_RADIUS, type UnitFrames, UnitSprite } from './unit-sprite.js'
+import { FACTION_BY_OWNER, frameKey, TARGET_RADIUS, type UnitFrames, UnitSprite } from './unit-sprite.js'
 
 interface Point {
   readonly x: number
@@ -205,12 +205,13 @@ export class UnitLayer {
   }
 
   /**
-   * Topmost unit within a small radius of a world point (render pixels), or
-   * `null`. Later-spawned containers sit on top, so the last match wins —
-   * this mirrors what the player sees and is used for right-click targeting.
+   * Topmost unit within the target hit radius of a world point (render
+   * pixels), or `null`. Later-spawned containers sit on top, so the last match
+   * wins — this mirrors what the player sees and is used for right-click
+   * targeting (the bigger sprite, not the selection ring).
    */
   unitAt(x: number, y: number): number | null {
-    const threshold = UNIT_RADIUS * UNIT_RADIUS
+    const threshold = TARGET_RADIUS * TARGET_RADIUS
     let topmost: number | null = null
     for (const [id, sprite] of this.units) {
       const position = sprite.position()
@@ -221,6 +222,14 @@ export class UnitLayer {
       }
     }
     return topmost
+  }
+
+  /** Flips a unit to face the fixed x of its attack target (never fights back to front). */
+  faceToward(id: number, targetFixedX: number): void {
+    const sprite = this.units.get(id)
+    if (sprite !== undefined) {
+      sprite.faceToward(fixedToRenderPixels(targetFixedX))
+    }
   }
 
   /** Authoritative fixed-unit positions of the latest frame (for debug/e2e). */

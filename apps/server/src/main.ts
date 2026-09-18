@@ -19,7 +19,7 @@ const httpServer = createServer((req, res) => {
 
 const wss = new WebSocketServer({ server: httpServer })
 
-/** Reads the `?scenario=` query from the WS upgrade request (defaults to 2v2). */
+/** Reads the `?scenario=` query from the WS upgrade request (defaults to 6v6). */
 function requestedScenario(requestUrl: string | undefined): string | undefined {
   if (requestUrl === undefined) {
     return undefined
@@ -27,11 +27,20 @@ function requestedScenario(requestUrl: string | undefined): string | undefined {
   return new URL(requestUrl, 'http://localhost').searchParams.get('scenario') ?? undefined
 }
 
+/** Reads `?aggression=`; anything other than `passive` is offensive. */
+function requestedAggression(requestUrl: string | undefined): 'offensive' | 'passive' {
+  if (requestUrl === undefined) {
+    return 'offensive'
+  }
+  const value = new URL(requestUrl, 'http://localhost').searchParams.get('aggression')
+  return value === 'passive' ? 'passive' : 'offensive'
+}
+
 wss.on('connection', (ws, request) => {
   // Each client gets its own isolated match. This mirrors the future
   // rooms architecture and keeps concurrent clients from mutating each
   // other's state (test isolation is a hard requirement).
-  const session = createDemoSession(requestedScenario(request.url))
+  const session = createDemoSession(requestedScenario(request.url), requestedAggression(request.url))
   let sequence = 1
 
   const sendError = (message: string): void => {

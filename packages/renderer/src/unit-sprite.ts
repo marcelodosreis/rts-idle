@@ -4,12 +4,17 @@ import type { UnitKind } from './types.js'
 
 const OWNER_COLORS = [0x2e7d32, 0xc62828, 0x1565c0, 0xf9a825]
 
-/** Visual radius of a unit placeholder in render pixels (1 tile = 64 px). */
+/** Visual radius of a unit placeholder / selection ring (1 tile = 64 px). */
 export const UNIT_RADIUS = 28
-/** Sprite scale: 192 px unit cells render about 1.1 tiles tall (72 px). */
-const SPRITE_SCALE = 0.375
+/** Click hit radius: must stay small so a box-drag starting near a unit still
+ * lands on empty ground and opens the selection box. */
+export const CLICK_RADIUS = 28
+/** Right-click target hit radius matching the larger sprite (selection ring stays UNIT_RADIUS). */
+export const TARGET_RADIUS = 44
+/** Sprite scale: 192 px unit cells render about 1.5 tiles tall (96 px). */
+const SPRITE_SCALE = 0.5
 /** Height of the overhead health bar above the unit in render pixels. */
-const HP_BAR_OFFSET_Y = -42
+const HP_BAR_OFFSET_Y = -54
 
 export const FACTION_BY_OWNER: readonly ('blue' | 'red' | 'purple' | 'yellow')[] = ['blue', 'red', 'purple', 'yellow']
 
@@ -80,7 +85,7 @@ export class UnitSprite {
     this.container.eventMode = 'static'
     this.container.cursor = 'pointer'
     // Circular hit area centered on the sprite so selection matches its bounds.
-    this.container.hitArea = new Circle(0, 0, 30)
+    this.container.hitArea = new Circle(0, 0, CLICK_RADIUS)
     if (frames !== null) {
       // Own private copies so this unit animates independently of its kind.
       this.frames = {
@@ -177,6 +182,15 @@ export class UnitSprite {
     // Restart the swing from the first frame so every attack plays a full
     // cycle instead of resuming wherever the loop happened to be.
     this.frames?.attack?.gotoAndPlay(0)
+  }
+
+  /**
+   * Flips the sprite to face an x position (world render pixels). Used when a
+   * unit fires so it never attacks from behind, even while standing.
+   */
+  faceToward(targetRenderX: number): void {
+    this.facing = this.container.position.x < targetRenderX ? 1 : -1
+    this.body.scale.set(SPRITE_SCALE * this.facing, SPRITE_SCALE)
   }
 
   /**
