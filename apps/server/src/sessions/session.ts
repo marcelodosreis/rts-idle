@@ -87,6 +87,11 @@ export class GameSession {
     return this.simulation.exportSnapshot()
   }
 
+  /** Current match phase ('RUNNING' or 'FINISHED'), projected for the client. */
+  phase(): 'RUNNING' | 'FINISHED' {
+    return this.simulation.inspectState().phase
+  }
+
   hashState(): string {
     return this.simulation.hashState()
   }
