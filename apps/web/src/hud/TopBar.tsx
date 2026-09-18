@@ -62,7 +62,7 @@ export function TopBar({
   onChangeScenario,
   onToggleAggression
 }: TopBarProps) {
-  const supply = resources === null ? '—' : `${resources.supply}/${resources.supplyCap}`
+  const supply = resources === null ? '0/0' : `${resources.supply}/${resources.supplyCap}`
   return (
     <header className="relative flex min-h-14 shrink-0 items-center justify-center border-b bg-card/70 px-4 py-2 backdrop-blur">
       <div className="absolute left-4 flex max-w-[52vw] flex-wrap items-center gap-x-4 gap-y-1.5">
@@ -111,10 +111,10 @@ export function TopBar({
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
         <StatChip
           label="Mineral"
-          value={resources === null ? '—' : String(resources.mineral)}
+          value={resources === null ? '0' : String(resources.mineral)}
           dotClass="bg-amber-400"
         />
-        <StatChip label="Energy" value={resources === null ? '—' : String(resources.energy)} dotClass="bg-sky-400" />
+        <StatChip label="Energy" value={resources === null ? '0' : String(resources.energy)} dotClass="bg-sky-400" />
         <StatChip label="Supply" value={supply} dotClass="bg-emerald-400" />
 
         <Separator orientation="vertical" className="hidden h-5 lg:flex" />

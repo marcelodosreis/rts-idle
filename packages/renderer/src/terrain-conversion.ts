@@ -85,9 +85,13 @@ export function mapDefinitionToGrid(map: MapDefinition): GridConversion {
   for (let y = 0; y < map.height; y += 1) {
     const row: AutoTileTerrain[] = []
     for (let x = 0; x < map.width; x += 1) {
-      row.push(map.tiles[y * map.width + x] ?? 'water')
+      const raw = map.tiles[y * map.width + x] ?? 'water'
+      // Flatten elevated terrain to land — cliffs/stairs are not ready for gameplay.
+      row.push(raw === 'elevated' ? 'land' : raw)
     }
     grid.push(row)
   }
-  return { grid: enforceWaterBorder(grid), stairs: entriesToStairs(map.stairs ?? []) }
+  // Stairs are disabled: always return an empty map so the terrain scene
+  // never renders stair ramps or cliff bases.
+  return { grid: enforceWaterBorder(grid), stairs: new Map() }
 }
