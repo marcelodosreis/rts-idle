@@ -1,17 +1,10 @@
 import { expect, type Page, test } from '@playwright/test'
+import { selectFirstByOwner, settleUnits } from './settle.js'
 
 // Regression: MOVE was silently rejected whenever the right-click produced
 // fractional world coordinates (any real browser pointer event after pan/zoom).
 // The demo transport never surfaced the rejection, so units never moved.
 // See docs/postmortems/2026-09-16-move-rejected-fractional-coordinates.md
-
-async function waitForUnits(page: Page) {
-  await page.goto('/')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
-  const positions = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})
-  expect(Object.keys(positions).length).toBeGreaterThan(0)
-  return positions
-}
 
 async function canvasRect(page: Page) {
   return page.evaluate(() => {
@@ -24,29 +17,26 @@ async function canvasRect(page: Page) {
   })
 }
 
-async function worldToPage(page: Page, x: number, y: number) {
-  const rect = await canvasRect(page)
-  const screen = await page.evaluate(([wx, wy]) => window.__rtsDebug!.worldToScreen(wx, wy), [x, y] as const)
-  return { x: rect.left + screen.x, y: rect.top + screen.y }
-}
-
 test('a MOVE with fractional world coordinates still moves the unit', async ({ page }) => {
-  const positions = await waitForUnits(page)
-  const firstId = Object.keys(positions)[0]!
-  const start = positions[firstId]!
-
-  // Select the unit with a real click.
-  const unitScreen = await worldToPage(page, start.x, start.y)
-  await page.mouse.click(unitScreen.x, unitScreen.y)
+  // The small 2v2 scenario keeps the battlefield stable for the click flow.
+  await page.goto('/?scenario=2v2')
+  await settleUnits(page)
+  // Select an owned unit by id: a mouse click can land on an overlapping enemy,
+  // whose MOVE the server would reject (NOT_OWNER).
+  const selectedId = await selectFirstByOwner(page, 0)
+  const point = await page.evaluate((id) => window.__rtsDebug?.getPositions()[String(id)] ?? null, selectedId)
+  const start = { x: point!.x, y: point!.y }
 
   // Offset the camera by a fractional amount — exactly what happens after real
   // panning/zooming. From then on, integer pixel clicks map to fractional world
   // coordinates, which is what a real browser produces.
   await page.evaluate(() => window.__rtsDebug!.moveCamera(2048.5, 2048.5))
 
-  // Real right-click at integer screen pixels → fractional world target.
+  // Real right-click at integer screen pixels near a canvas corner → fractional
+  // world target on open ground (the engaged cluster sits near the center, so a
+  // corner is guaranteed to be empty).
   const rect = await canvasRect(page)
-  const target = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+  const target = { x: rect.left + 30, y: rect.top + rect.height - 30 }
   await page.mouse.click(target.x, target.y, { button: 'right' })
 
   // The command reached the renderer (ping) and the server accepted it (move).
@@ -56,7 +46,7 @@ test('a MOVE with fractional world coordinates still moves the unit', async ({ p
       page.evaluate((id) => {
         const p = window.__rtsDebug?.getPositions()[String(id)]
         return p === undefined ? null : p
-      }, firstId)
+      }, selectedId)
     )
     .not.toEqual(start)
 })

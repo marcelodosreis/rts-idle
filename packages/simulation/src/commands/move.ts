@@ -1,49 +1,11 @@
-import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
-import { Movement, Owner, Position } from '../ecs/components.js'
+import type { ScheduledCommand } from '../contracts/commands.js'
+import { Movement, Orders, Position } from '../ecs/components.js'
 import { formationOffset } from '../formation.js'
 import type { GameState } from '../state/state.js'
-import { MAX_UNITS_PER_COMMAND } from './limits.js'
+import { validateIntegerTarget, validateOwnedUnits } from './validate-units.js'
 
 /** Default movement speed for units without authored stats (tiles per second). */
 export const UNIT_SPEED_TILES_PER_SECOND = 4
-
-/**
- * Validates a MOVE command without mutating state.
- * Throws {@link CommandRejectedError} on the first violation; a rejected
- * command must leave the state untouched (command atomicity, master plan §10.3).
- */
-function validateMove(state: GameState, command: ScheduledCommand): void {
-  const payload = command.intent.payload
-
-  if (payload.unitIds.length === 0 || payload.unitIds.length > MAX_UNITS_PER_COMMAND) {
-    throw new CommandRejectedError(
-      'INVALID_PAYLOAD',
-      command,
-      `MOVE: unit count ${payload.unitIds.length} outside [1, ${MAX_UNITS_PER_COMMAND}]`
-    )
-  }
-  if (!Number.isInteger(payload.x) || !Number.isInteger(payload.y)) {
-    throw new CommandRejectedError('INVALID_PAYLOAD', command, 'MOVE: target must be integer fixed units')
-  }
-
-  const owners = state.world.store(Owner)
-  for (const unitId of payload.unitIds) {
-    if (!state.world.hasEntity(unitId)) {
-      throw new CommandRejectedError('ENTITY_UNAVAILABLE', command, `MOVE: entity ${unitId} does not exist`)
-    }
-    const owner = owners.get(unitId)
-    if (owner === undefined) {
-      throw new CommandRejectedError('ENTITY_UNAVAILABLE', command, `MOVE: entity ${unitId} is not ownable`)
-    }
-    if (owner.owner !== command.playerId) {
-      throw new CommandRejectedError(
-        'NOT_OWNER',
-        command,
-        `MOVE: player ${command.playerId} does not own entity ${unitId}`
-      )
-    }
-  }
-}
 
 /**
  * Applies a MOVE command: distributes the sorted units around the target in a
@@ -54,12 +16,20 @@ function validateMove(state: GameState, command: ScheduledCommand): void {
  * one tick at a time via the movement system.
  */
 export function applyMove(state: GameState, command: ScheduledCommand): void {
-  validateMove(state, command)
+  if (command.intent.type !== 'MOVE') {
+    throw new Error('applyMove: expected a MOVE command')
+  }
   const payload = command.intent.payload
+  validateOwnedUnits(state, command, payload.unitIds)
+  validateIntegerTarget(command, payload.x, payload.y)
   const positions = state.world.store(Position)
   const movements = state.world.store(Movement)
+  const orders = state.world.store(Orders)
   const sorted = [...payload.unitIds].sort((a, b) => a - b)
   sorted.forEach((unitId, index) => {
+    // A MOVE replaces any standing order for the unit (order replacement,
+    // master plan P1.03).
+    orders.delete(unitId)
     const offset = formationOffset(index)
     const destX = payload.x + offset.dx
     const destY = payload.y + offset.dy

@@ -1,9 +1,9 @@
-import type { RngState } from '@rts/shared'
+import type { PlayerId, RngState } from '@rts/shared'
 import { CanonicalReader } from '../canonical/reader.js'
 import { CanonicalWriter } from '../canonical/writer.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
-import type { GameState } from '../state/state.js'
+import type { GameState, PlayerState } from '../state/state.js'
 
 /**
  * Canonical state serialization (ADR-002/011): explicit schema order, integers
@@ -62,6 +62,33 @@ function readWorld(reader: CanonicalReader): World {
   return world
 }
 
+function writePlayers(writer: CanonicalWriter, players: readonly PlayerState[]): void {
+  writer.writeLength(players.length)
+  for (const player of players) {
+    writer.writeU8(player.id)
+    writer.writeU8(player.defeated ? 1 : 0)
+    writer.writeI32(player.gold)
+  }
+}
+
+function readPlayers(reader: CanonicalReader): PlayerState[] {
+  const count = reader.readLength()
+  const players: PlayerState[] = []
+  for (let i = 0; i < count; i += 1) {
+    const slot = reader.readU8()
+    // Only the four competitive slots are valid; the guard below narrows the
+    // slot to PlayerId (0-3) so the cast is safe.
+    if (slot > 3) {
+      throw new Error(`readPlayers: invalid player slot ${slot}`)
+    }
+    const id = slot as PlayerId
+    const defeated = reader.readU8() === 1
+    const gold = reader.readI32()
+    players.push({ id, defeated, gold })
+  }
+  return players
+}
+
 export function serializeState(state: GameState): Uint8Array {
   const writer = new CanonicalWriter()
   writer.writeU32(state.tick)
@@ -74,6 +101,7 @@ export function serializeState(state: GameState): Uint8Array {
   writer.writeU32(state.seed)
   writeRng(writer, state.rng)
   writer.writeU32(state.nextEntityId)
+  writePlayers(writer, state.players)
   writeWorld(writer, state.world)
   return writer.toBytes()
 }
@@ -95,6 +123,7 @@ export function deserializeState(bytes: Uint8Array): GameState {
   const seed = reader.readU32()
   const rng = readRng(reader)
   const nextEntityId = reader.readU32()
+  const players = readPlayers(reader)
   const world = readWorld(reader)
-  return { tick, phase, identity, seed, rng, nextEntityId, world }
+  return { tick, phase, identity, seed, rng, nextEntityId, players, world, events: [], pendingDamage: new Map() }
 }

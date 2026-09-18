@@ -1,6 +1,7 @@
 import { Application, Graphics, type Ticker } from 'pixi.js'
 import { Viewport } from 'pixi-viewport'
 import { AssetLibrary } from './assets/asset-library.js'
+import { EffectsLayer } from './effects-layer.js'
 import { CommandPing } from './ping.js'
 import { SelectionController } from './selection.js'
 import { TerrainLayer } from './terrain-layer.js'
@@ -24,6 +25,7 @@ export class PixiRenderer implements GameRenderer {
   private units: UnitLayer | null = null
   private selection: SelectionController | null = null
   private ping: CommandPing | null = null
+  private effects: EffectsLayer | null = null
   private terrain: TerrainLayer | null = null
   private readonly options: RendererOptions
   private callbacks: RendererCallbacks = {}
@@ -90,6 +92,7 @@ export class PixiRenderer implements GameRenderer {
       }
     })
     const ping = new CommandPing(viewport)
+    const effects = new EffectsLayer(viewport)
     const terrain = new TerrainLayer(viewport, this.assets)
     if (this.options.map !== undefined) {
       await terrain.build(this.options.map)
@@ -111,8 +114,14 @@ export class PixiRenderer implements GameRenderer {
     })
     viewport.on('rightdown', (event) => {
       const world = viewport.toWorld(event.global.x, event.global.y)
-      ping.show(world.x, world.y)
-      this.callbacks.onGroundCommand?.(world.x, world.y)
+      const hit = units.unitAt(world.x, world.y)
+      if (hit !== null) {
+        // Right-click on a unit targets it (attack); the ground ping is skipped.
+        this.callbacks.onUnitCommand?.(hit)
+      } else {
+        ping.show(world.x, world.y)
+        this.callbacks.onGroundCommand?.(world.x, world.y)
+      }
     })
 
     this.app = app
@@ -120,21 +129,42 @@ export class PixiRenderer implements GameRenderer {
     this.units = units
     this.selection = selection
     this.ping = ping
+    this.effects = effects
     this.terrain = terrain
   }
 
   present(frame: RenderFrame): void {
-    if (this.viewport === null || this.units === null || this.selection === null || this.ping === null) {
+    if (
+      this.viewport === null ||
+      this.units === null ||
+      this.selection === null ||
+      this.ping === null ||
+      this.effects === null
+    ) {
       throw new Error('PixiRenderer: not mounted')
     }
-    this.units.present(frame.units, performance.now())
+    const now = performance.now()
+    this.units.present(frame.units, now)
     this.selection.updateRings()
     this.ping.expireIfElapsed(Date.now())
+    for (const event of frame.events ?? []) {
+      if (event.type === 'attackFired') {
+        this.units.beginAttack(event.attackerId, now)
+        const target = frame.units.find((unit) => unit.id === event.targetId)
+        if (target !== undefined) {
+          this.units.faceToward(event.attackerId, target.x)
+        }
+      }
+    }
+    for (const unit of frame.units) {
+      this.effects.trackPosition(unit.id, unit.x, unit.y)
+    }
+    this.effects.handleEvents(frame.events ?? [], now)
   }
 
   /** Visual-loop tick: advances animations and eases interpolated positions. */
   private tick(ticker: Ticker): void {
-    if (this.units === null || this.selection === null || this.ping === null) {
+    if (this.units === null || this.selection === null || this.ping === null || this.effects === null) {
       return
     }
     const now = performance.now()
@@ -142,6 +172,7 @@ export class PixiRenderer implements GameRenderer {
     this.units.interpolate(now)
     this.selection.updateRings()
     this.ping.expireIfElapsed(now)
+    this.effects.tick(now)
   }
 
   setSelection(ids: readonly number[]): void {
@@ -179,6 +210,7 @@ export class PixiRenderer implements GameRenderer {
     this.units = null
     this.selection = null
     this.ping = null
+    this.effects = null
     this.terrain = null
   }
 
@@ -190,11 +222,16 @@ export class PixiRenderer implements GameRenderer {
     return this.units?.animationFrame(id) ?? null
   }
 
+  /** Last reported health of a unit (drives the overhead HP bar), or `null`. */
+  getUnitHealth(id: number): { readonly current: number; readonly max: number } | null {
+    return this.units?.health(id) ?? null
+  }
+
   /** Debug: whether the unit's sprite body is visible and its current frame. */
   getUnitSpriteState(id: number): {
     readonly visible: boolean
     readonly frame: number | null
-    readonly anim: 'idle' | 'run' | 'fallback'
+    readonly anim: 'idle' | 'run' | 'attack' | 'fallback'
     readonly inTree: boolean
     readonly facing: number
   } | null {

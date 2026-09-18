@@ -1,6 +1,8 @@
 export const version = '0.1.0'
 
 export * from './asset-manifest.js'
+export * from './commands.js'
+export * from './events.js'
 export * from './fixed.js'
 export * from './ids.js'
 export * from './players.js'
@@ -10,3 +12,4 @@ export * from './rng/next-rng-int.js'
 export * from './rng/rng-state.js'
 export * from './rng/rotate-left.js'
 export * from './rng/splitmix32.js'
+export * from './unit-kind.js'

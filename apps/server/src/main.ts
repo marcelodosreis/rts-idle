@@ -1,5 +1,6 @@
 import { createServer } from 'node:http'
-import { type ErrorMessage, isMoveMessage, type SnapshotMessage } from '@rts/protocol'
+import { type ErrorMessage, isCommandMessage, isMoveMessage, type SnapshotMessage } from '@rts/protocol'
+import type { CommandIntent, SimulationEvent } from '@rts/shared'
 import { WebSocketServer } from 'ws'
 import { createDemoSession } from './demo.js'
 
@@ -18,11 +19,28 @@ const httpServer = createServer((req, res) => {
 
 const wss = new WebSocketServer({ server: httpServer })
 
-wss.on('connection', (ws) => {
+/** Reads the `?scenario=` query from the WS upgrade request (defaults to 6v6). */
+function requestedScenario(requestUrl: string | undefined): string | undefined {
+  if (requestUrl === undefined) {
+    return undefined
+  }
+  return new URL(requestUrl, 'http://localhost').searchParams.get('scenario') ?? undefined
+}
+
+/** Reads `?aggression=`; anything other than `passive` is offensive. */
+function requestedAggression(requestUrl: string | undefined): 'offensive' | 'passive' {
+  if (requestUrl === undefined) {
+    return 'offensive'
+  }
+  const value = new URL(requestUrl, 'http://localhost').searchParams.get('aggression')
+  return value === 'passive' ? 'passive' : 'offensive'
+}
+
+wss.on('connection', (ws, request) => {
   // Each client gets its own isolated match. This mirrors the future
   // rooms architecture and keeps concurrent clients from mutating each
   // other's state (test isolation is a hard requirement).
-  const session = createDemoSession()
+  const session = createDemoSession(requestedScenario(request.url), requestedAggression(request.url))
   let sequence = 1
 
   const sendError = (message: string): void => {
@@ -32,21 +50,29 @@ wss.on('connection', (ws) => {
     }
   }
 
-  const send = (): void => {
+  const send = (events: readonly SimulationEvent[]): void => {
     const message: SnapshotMessage = {
       type: 'snapshot',
       tick: session.snapshot().tick,
-      units: session.projectUnits()
+      phase: session.phase(),
+      units: session.projectUnits(),
+      players: session.projectPlayers(),
+      events
     }
     if (ws.readyState === ws.OPEN) {
       ws.send(JSON.stringify(message))
     }
   }
 
-  send()
+  /** Schedules the next command for the demo player (player 0) on the next tick. */
+  const schedule = (intent: CommandIntent): void => {
+    session.submit(0, [{ tick: session.snapshot().tick + 1, playerId: 0, sequence: sequence++, intent }])
+  }
+
+  send([])
   const timer = setInterval(() => {
-    session.advance()
-    send()
+    const result = session.advance()
+    send(result.events)
   }, TICK_MS)
 
   ws.on('message', (raw) => {
@@ -57,20 +83,15 @@ wss.on('connection', (ws) => {
       sendError('invalid JSON')
       return
     }
-    if (isMoveMessage(parsed)) {
-      const message = parsed
-      try {
-        session.submit(0, [
-          {
-            tick: session.snapshot().tick + 1,
-            playerId: 0,
-            sequence: sequence++,
-            intent: { type: 'MOVE', payload: { unitIds: message.unitIds, x: message.x, y: message.y } }
-          }
-        ])
-      } catch (error) {
-        sendError(error instanceof Error ? error.message : String(error))
+    try {
+      if (isCommandMessage(parsed)) {
+        schedule(parsed.intent)
+      } else if (isMoveMessage(parsed)) {
+        // Legacy MOVE transport: keep working for old clients and fixtures.
+        schedule({ type: 'MOVE', payload: { unitIds: parsed.unitIds, x: parsed.x, y: parsed.y } })
       }
+    } catch (error) {
+      sendError(error instanceof Error ? error.message : String(error))
     }
   })
 

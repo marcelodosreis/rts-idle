@@ -1,8 +1,9 @@
 import type { MapDefinition } from '@rts/game-data'
+import type { OrderState } from '@rts/protocol'
+import type { PlayerId, SimulationEvent, UnitKind } from '@rts/shared'
 import type { PointData } from 'pixi.js'
 
-/** Unit visual archetype: maps to a sprite set in the asset catalog. */
-export type UnitKind = 'pawn' | 'warrior' | 'archer'
+export type { UnitKind } from '@rts/shared'
 
 /** A unit as rendered: id, integer fixed-unit position, owner slot, sprite kind. */
 export interface RenderUnit {
@@ -11,18 +12,35 @@ export interface RenderUnit {
   readonly y: number
   readonly owner: number
   readonly kind?: UnitKind
+  /** Current/maximum health, present when the unit is combat-capable. */
+  readonly hp?: number
+  readonly maxHp?: number
+  /** Authoritative behavior state from the simulation (drives idle/run). */
+  readonly orderState?: OrderState
+}
+
+/** A competitive slot for the HUD (defeated state, wallet). */
+export interface RenderPlayer {
+  readonly id: PlayerId
+  readonly defeated: boolean
+  readonly gold: number
 }
 
 /** A completed tick ready for presentation. */
 export interface RenderFrame {
   readonly tick: number
   readonly units: readonly RenderUnit[]
+  readonly players?: readonly RenderPlayer[]
+  /** Per-tick deterministic events that drive combat feedback. */
+  readonly events?: readonly SimulationEvent[]
 }
 
 export interface RendererCallbacks {
   readonly onUnitSelected?: (id: number) => void
   readonly onBoxSelected?: (ids: readonly number[]) => void
   readonly onGroundCommand?: (worldX: number, worldY: number) => void
+  /** Right-click landed on a unit (used for attack targeting). */
+  readonly onUnitCommand?: (id: number) => void
 }
 
 export interface RendererOptions {
@@ -47,11 +65,13 @@ export interface GameRenderer {
   getUnitPositions(): ReadonlyMap<number, { readonly x: number; readonly y: number }>
   /** Current animation frame of a unit's sprite, or `null` when in fallback. */
   getUnitAnimationFrame(id: number): number | null
+  /** Last reported health of a unit (drives the overhead HP bar), or `null`. */
+  getUnitHealth(id: number): { readonly current: number; readonly max: number } | null
   /** Debug: whether a unit's sprite body is visible and its current frame. */
   getUnitSpriteState(id: number): {
     readonly visible: boolean
     readonly frame: number | null
-    readonly anim: 'idle' | 'run' | 'fallback'
+    readonly anim: 'idle' | 'run' | 'attack' | 'fallback'
     readonly inTree: boolean
     readonly facing: number
   } | null

@@ -38,16 +38,22 @@ shared → game-data → simulation → { server, ai }
 
 ```text
 simulation/src/
-  contracts/     Public types: commands, rules identity, simulation options,
-                 SIMULATION_VERSION, createRulesIdentity
-  commands/      apply-command.ts (dispatch), move.ts (validate + apply),
-                 limits.ts (MAX_UNITS_PER_COMMAND)
+  contracts/     Public types: commands, orders, rules identity, simulation
+                 options, SIMULATION_VERSION, createRulesIdentity
+  commands/      apply-command.ts (dispatch) + one handler per command
+                 (move, stop, hold, patrol, attack, attack-move, surrender),
+                 validate-units.ts (shared atomic validation), limits.ts
+  data/          unit-stats.ts (authored per-kind combat stats)
   engine/        create-simulation.ts, simulation-from-snapshot.ts,
                  simulation-host.ts (contract), simulation.ts (the class)
   ecs/           component-store.ts, components.ts, world.ts, create-world.ts
   canonical/     writer.ts, reader.ts, utf8.ts, error.ts
   snapshot/      serialize.ts (state codec), hash.ts (SHA-256 + hex)
-  state/         state.ts (GameState, Phase)
+  state/         state.ts (GameState, players, Phase)
+  systems/       pipeline.ts (frozen order), orders-system, movement-system,
+                 movement-step, combat-system, death-system, victory-system,
+                 events.ts
+  invariants/    check-invariants.ts (runs last, never mutates)
   formation.ts   Deterministic formation spiral
   determinism-fixture.ts   Browser/benchmark determinism fixture (`./fixtures`)
 ```
@@ -58,7 +64,7 @@ Invariants:
   `commands/apply-command.ts`, which validates before writing (atomicity).
 - The canonical byte format (ADR-002/011) is pinned by
   `tests/simulation/hash-golden.test.ts`.
-- `SimulationHost` is the single public entry point; ECS and systems are not
+- `SimulationHost` is the single public entry point; ECS internals are not
   exported for mutation.
 
 ## Renderer layout
@@ -67,9 +73,13 @@ Invariants:
 renderer/src/
   types.ts       Public contract: GameRenderer, RenderFrame, RenderUnit, options
   renderer.ts    PixiRenderer orchestrator (Application + viewport + wiring)
-  unit-layer.ts  Unit sprite lifecycle + positions
+  unit-layer.ts  Unit lifecycle + positions + interpolation
+  unit-sprite.ts One unit's sprite: idle/run/attack frames, HP bar, facing
+  effects-layer.ts  Combat feedback: streaks, damage popups, explosions
+  hp-bar.ts      Pure health-bar math (ratio, color, fill width)
   selection.ts   Box selection + selection rings + selection set
   ping.ts        Right-click command ping
+  terrain-*      Terrain tileset/autotile/dressing presentation
 ```
 
 The renderer never computes gameplay; it presents frames and reports

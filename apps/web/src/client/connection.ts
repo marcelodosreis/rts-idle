@@ -1,8 +1,10 @@
 import { isSnapshotMessage, type SnapshotMessage } from '@rts/protocol'
+import type { CommandIntent } from '@rts/shared'
 
 export type { SnapshotMessage }
 
 export interface MatchConnection {
+  sendCommand(intent: CommandIntent): void
   sendMove(unitIds: readonly number[], x: number, y: number): void
   close(): void
 }
@@ -34,11 +36,18 @@ export function connectMatch(url: string, handlers: ConnectionHandlers): MatchCo
     }
   })
 
+  const send = (payload: string): void => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(payload)
+    }
+  }
+
   return {
+    sendCommand(intent) {
+      send(JSON.stringify({ type: 'command', intent }))
+    },
     sendMove(unitIds, x, y) {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'MOVE', unitIds, x, y }))
-      }
+      send(JSON.stringify({ type: 'MOVE', unitIds, x, y }))
     },
     close() {
       ws.close()

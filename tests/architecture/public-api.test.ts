@@ -8,12 +8,16 @@ import { describe, expect, it } from 'vitest'
 // runtime; they are enforced by the consumer typechecks (server, web, tools)
 // and this list documents them.
 //
-// @rts/shared types: Fixed, GridPosition, EntityId, PlayerId, RngState, RngResult, RngIntResult
-// @rts/protocol types: MoveMessage, SnapshotMessage, SnapshotUnit, ErrorMessage
-// @rts/simulation types: MovePayload, CommandIntent, ScheduledCommand, CommandErrorCode,
-//   RulesIdentity, TickResult, SimulationOptions, ComponentType, PositionData, OwnerData,
-//   SimulationHost, SimulationSnapshot, FormationOffset, GameState
-// @rts/renderer types: GameRenderer, RenderFrame, RenderUnit, RendererOptions, RendererCallbacks
+// @rts/shared types: Fixed, GridPosition, EntityId, PlayerId, RngState, RngResult, RngIntResult,
+//   SimulationEvent, CommandIntent, MovePayload, UnitKind
+// @rts/protocol types: MoveMessage, CommandMessage, SnapshotMessage, SnapshotUnit, SnapshotPlayer,
+//   OrderState, ErrorMessage
+// @rts/simulation types: ScheduledCommand, CommandErrorCode, Order, RulesIdentity, TickResult,
+//   SimulationOptions, ComponentType, PositionData, OwnerData, MovementData, OrdersData, HealthData,
+//   CombatData, KindData, SimulationHost, SimulationSnapshot, FormationOffset, GameState, PlayerState,
+//   UnitCombatStats
+// @rts/renderer types: GameRenderer, RenderFrame, RenderUnit, RenderPlayer, RendererOptions,
+//   RendererCallbacks
 
 import * as protocol from '@rts/protocol'
 import * as renderer from '@rts/renderer'
@@ -44,16 +48,22 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'UINT32_MAX'
     ]
   ],
-  ['protocol', ['version', 'isMoveMessage', 'isSnapshotMessage', 'isErrorMessage']],
+  ['protocol', ['version', 'isCommandMessage', 'isMoveMessage', 'isSnapshotMessage', 'isErrorMessage']],
   [
     'simulation',
     [
       'version',
       'MAX_UNITS_PER_COMMAND',
+      'MAX_ORDER_QUEUE_DEPTH',
       'createRulesIdentity',
       'CommandRejectedError',
       'Position',
       'Owner',
+      'Movement',
+      'Orders',
+      'Health',
+      'Combat',
+      'Kind',
       'ComponentStore',
       'World',
       'createWorld',
@@ -64,7 +74,14 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'serializeState',
       'deserializeState',
       'hashBytes',
-      'hashState'
+      'hashState',
+      'UNIT_COMBAT_STATS',
+      'UNIT_STATS_BY_KIND',
+      'unitStatsFor',
+      'SYSTEM_PIPELINE',
+      'runSystems',
+      'checkInvariants',
+      'InvariantError'
     ]
   ],
   [

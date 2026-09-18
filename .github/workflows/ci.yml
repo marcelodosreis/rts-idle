@@ -39,13 +39,15 @@ jobs:
       - run: pnpm run test:integration
 
   simulation:
-    name: Simulation, Invariants & Regression Tests
+    name: Simulation, Contracts, Orders, Invariants & Regression Tests
     needs: unit_integration
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/ci-setup
       - run: pnpm run test:simulation
+      - run: pnpm run test:contracts
+      - run: pnpm run test:orders
       - run: pnpm run test:invariants
       - run: pnpm run test:regression
 

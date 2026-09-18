@@ -5,7 +5,7 @@ import type { RulesIdentity, TickResult } from '../contracts/simulation.js'
 import { hashBytes, hashState } from '../snapshot/hash.js'
 import { deserializeState, serializeState } from '../snapshot/serialize.js'
 import type { GameState } from '../state/state.js'
-import { movementSystem } from '../systems/movement-system.js'
+import { runSystems } from '../systems/pipeline.js'
 import type { SimulationHost, SimulationSnapshot } from './simulation-host.js'
 
 /**
@@ -23,7 +23,9 @@ export class Simulation implements SimulationHost {
   step(commands: readonly ScheduledCommand[] = []): TickResult {
     this.state = {
       ...this.state,
-      tick: this.state.tick + 1
+      tick: this.state.tick + 1,
+      events: [],
+      pendingDamage: new Map()
     }
     const rejected: CommandRejectedError[] = []
     for (const command of commands) {
@@ -37,8 +39,8 @@ export class Simulation implements SimulationHost {
         }
       }
     }
-    movementSystem(this.state)
-    return { tick: this.state.tick, rejected }
+    runSystems(this.state)
+    return { tick: this.state.tick, rejected, events: [...this.state.events] }
   }
 
   exportSnapshot(): SimulationSnapshot {

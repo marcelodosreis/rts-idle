@@ -1,10 +1,17 @@
-import { createRng, START_ENTITY_ID } from '@rts/shared'
+import { createRng, type PlayerId, START_ENTITY_ID } from '@rts/shared'
 import type { SimulationOptions } from '../contracts/simulation.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
-import type { GameState } from '../state/state.js'
+import type { GameState, PlayerState } from '../state/state.js'
 import { Simulation } from './simulation.js'
 import type { SimulationHost } from './simulation-host.js'
+
+/** The four competitive player slots, initialized undefeated with an empty wallet. */
+const PLAYER_SLOTS: readonly PlayerId[] = [0, 1, 2, 3]
+
+function createPlayers(): PlayerState[] {
+  return PLAYER_SLOTS.map((id) => ({ id, defeated: false, gold: 0 }))
+}
 
 /**
  * Resolves the next free entity id from an initial world.
@@ -29,7 +36,10 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
     seed: options.seed,
     rng,
     nextEntityId: resolveNextEntityId(world),
-    world
+    players: createPlayers(),
+    world,
+    events: [],
+    pendingDamage: new Map()
   }
   return new Simulation(state)
 }

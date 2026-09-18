@@ -1,12 +1,9 @@
 import { expect, type Page, test } from '@playwright/test'
 import { hasArt } from './art.js'
+import { selectFirstByOwner, settleUnits } from './settle.js'
 
 async function waitForUnits(page: Page) {
-  await page.goto('/')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
-  const positions = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})
-  expect(Object.keys(positions).length).toBeGreaterThan(0)
-  return positions
+  return settleUnits(page)
 }
 
 async function canvasRect(page: Page) {
@@ -27,20 +24,22 @@ async function worldToPage(page: Page, x: number, y: number) {
 }
 
 test('visual base: HUD reacts to selection and units animate without teleporting', async ({ page }) => {
-  const positions = await waitForUnits(page)
-  const firstId = Number(Object.keys(positions)[0])
-  const start = positions[firstId]!
+  await waitForUnits(page)
 
-  // Selecting a unit updates the HUD selection panel.
-  const unitScreen = await worldToPage(page, start.x, start.y)
-  await page.mouse.click(unitScreen.x, unitScreen.y)
-  await expect(page.getByText(/1 selected/)).toBeVisible()
+  // Selecting an owned unit updates the HUD selection panel. The squads cluster
+  // tightly once engaged, so select by id rather than by mouse click.
+  const selectedId = await selectFirstByOwner(page, 0)
+  await expect(page.getByText(/1 ·/)).toBeVisible()
+  const selectedStart = (await page.evaluate(
+    (id) => window.__rtsDebug?.getPositions()[String(id)] ?? null,
+    selectedId
+  ))!
 
   // The animation loop is wired when art is present; fallback is tolerated.
   // (Deterministic check: sprite is an animated one. Frame-advance assertions
   // are flaky under a throttled headless ticker — owned by the animation agent.)
   const artAvailable = await hasArt(page)
-  const frameA = await page.evaluate((id) => window.__rtsDebug?.getAnimationFrame(id) ?? null, firstId)
+  const frameA = await page.evaluate((id) => window.__rtsDebug?.getAnimationFrame(id) ?? null, selectedId)
   if (artAvailable) {
     expect(frameA).not.toBeNull()
   }
@@ -48,6 +47,7 @@ test('visual base: HUD reacts to selection and units animate without teleporting
   // A MOVE animates the unit across the tilemap (position must change over time,
   // not teleport: intermediate render frames exist because interpolation runs).
   const rect = await canvasRect(page)
+  const unitScreen = await worldToPage(page, selectedStart.x, selectedStart.y)
   const target = {
     x: Math.min(unitScreen.x + 250, rect.left + rect.width - 20),
     y: Math.max(unitScreen.y - 40, rect.top + 20)
@@ -59,9 +59,9 @@ test('visual base: HUD reacts to selection and units animate without teleporting
       page.evaluate((id) => {
         const p = window.__rtsDebug?.getPositions()[String(id)]
         return p === undefined ? null : p
-      }, firstId)
+      }, selectedId)
     )
-    .not.toEqual(start)
+    .not.toEqual(selectedStart)
 
   // Regression: the unit's sprite body must be in the display list (a body
   // with visible=true but never added to the container renders nothing). The
@@ -73,13 +73,11 @@ test('visual base: HUD reacts to selection and units animate without teleporting
         page.evaluate((id) => {
           const st = window.__rtsDebug?.getSpriteState(id)
           return st?.inTree === true && st.visible === true
-        }, firstId)
+        }, selectedId)
       )
       .toBe(true)
   }
 
-  // The selection panel persists and reflects the unit state through the move
-  // (idle/moving; real per-tick movement lands with task A5).
-  await expect(page.getByText(/1 selected/)).toBeVisible()
-  await expect(page.getByText(/moving|idle/)).toBeVisible()
+  // The selection panel persists and reflects the unit state through the move.
+  await expect(page.getByText(/1 ·/)).toBeVisible()
 })

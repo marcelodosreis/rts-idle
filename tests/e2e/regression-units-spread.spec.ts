@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
+import { settleUnits } from './settle.js'
 
 // Regression: moving several units to one point stacked them at identical
 // coordinates, so they looked like a single unit. Destinations must be
@@ -6,11 +7,7 @@ import { expect, type Page, test } from '@playwright/test'
 // See docs/postmortems/2026-09-16-units-stacked-at-target.md
 
 async function waitForUnits(page: Page) {
-  await page.goto('/')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
-  const positions = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})
-  expect(Object.keys(positions).length).toBeGreaterThan(0)
-  return positions
+  return settleUnits(page)
 }
 
 async function canvasRect(page: Page) {
@@ -52,6 +49,9 @@ async function visibleUnitIds(page: Page) {
 }
 
 test('box-selected units arrive spread out instead of stacked', async ({ page }) => {
+  // The default 6v6 random demo is too volatile for a box-select regression;
+  // use the small 2v2 scenario where the squads settle into a stable cluster.
+  await page.goto('/?scenario=2v2')
   const positions = await waitForUnits(page)
   const ids = await visibleUnitIds(page)
   expect(ids.length).toBeGreaterThanOrEqual(2)

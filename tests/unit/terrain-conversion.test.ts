@@ -62,13 +62,13 @@ describe('enforceWaterBorder', () => {
 })
 
 describe('mapDefinitionToGrid', () => {
-  it('converts a flat tile list back to a 2D grid', () => {
+  it('converts a flat tile list back to a 2D grid, flattening elevated to land', () => {
     const map = gridToMapDefinition(grid(['www', 'wew', 'www']))
     const conversion = mapDefinitionToGrid(map)
-    expect(conversion.grid).toEqual(grid(['www', 'wew', 'www']))
+    expect(conversion.grid).toEqual(grid(['www', 'wlw', 'www']))
   })
 
-  it('converts typed stairs back to a "x,y" keyed map', () => {
+  it('drops stairs (disabled for gameplay)', () => {
     const map = gridToMapDefinition(grid(['ll', 'll']), {
       stairs: [
         ['1,0', 'left'],
@@ -76,15 +76,12 @@ describe('mapDefinitionToGrid', () => {
       ]
     })
     const conversion = mapDefinitionToGrid(map)
-    expect([...conversion.stairs.entries()]).toEqual([
-      ['1,0', 'left'],
-      ['0,1', 'right']
-    ])
+    expect(conversion.stairs.size).toBe(0)
   })
 })
 
 describe('grid ↔ map round-trip', () => {
-  it('preserves grid, stairs, palette and seed', () => {
+  it('preserves grid (elevated flattened), drops stairs, preserves palette and seed', () => {
     const original = grid(['wwww', 'weew', 'wllw', 'wwww'])
     const stairs: [string, 'left' | 'right'][] = [
       ['1,1', 'left'],
@@ -92,8 +89,8 @@ describe('grid ↔ map round-trip', () => {
     ]
     const map = gridToMapDefinition(original, { stairs, palette: 'color5', decorationSeed: 7 })
     const conversion = mapDefinitionToGrid(map)
-    expect(conversion.grid).toEqual(original)
-    expect([...conversion.stairs.entries()]).toEqual(stairs)
+    expect(conversion.grid).toEqual(grid(['wwww', 'wllw', 'wllw', 'wwww']))
+    expect(conversion.stairs.size).toBe(0)
     expect(map.palette).toBe('color5')
     expect(map.decorationSeed).toBe(7)
   })
