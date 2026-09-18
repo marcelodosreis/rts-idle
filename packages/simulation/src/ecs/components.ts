@@ -1,4 +1,4 @@
-import type { Fixed, PlayerId } from '@rts/shared'
+import type { Fixed, PlayerId, UnitKind } from '@rts/shared'
 import type { CanonicalReader } from '../canonical/reader.js'
 import type { CanonicalWriter } from '../canonical/writer.js'
 import type { Order } from '../contracts/orders.js'
@@ -191,6 +191,45 @@ export const Combat: ComponentType<CombatData> = {
       rangeTiles: reader.readI32(),
       cooldownTicks: reader.readI32(),
       cooldownRemaining: reader.readI32()
+    }
+  }
+}
+
+export type KindData = UnitKind
+
+// Kind tags in the canonical stream. The numeric values are part of the schema;
+// reordering them changes serialized bytes and the golden hash.
+const KIND_TAG_PAWN = 0
+const KIND_TAG_WARRIOR = 1
+const KIND_TAG_ARCHER = 2
+
+export const Kind: ComponentType<KindData> = {
+  name: 'kind',
+  encode(writer, value) {
+    switch (value) {
+      case 'pawn':
+        writer.writeU8(KIND_TAG_PAWN)
+        return
+      case 'warrior':
+        writer.writeU8(KIND_TAG_WARRIOR)
+        return
+      case 'archer':
+        writer.writeU8(KIND_TAG_ARCHER)
+        return
+    }
+  },
+  decode(reader) {
+    const tag = reader.readU8()
+    switch (tag) {
+      case KIND_TAG_PAWN:
+        return 'pawn'
+      case KIND_TAG_WARRIOR:
+        return 'warrior'
+      case KIND_TAG_ARCHER:
+        return 'archer'
+      default:
+        // A bad tag is corruption, not a valid unit kind.
+        throw new Error(`Kind: invalid kind tag ${tag}`)
     }
   }
 }

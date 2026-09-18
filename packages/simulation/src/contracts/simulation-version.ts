@@ -3,5 +3,6 @@
  * version, used in RulesIdentity and the package `version` export.
  *
  * 0.2.0: players/wallet + SURRENDER joined the canonical state (Phase 1).
+ * 0.3.0: the Kind component joined the canonical state (Phase 1).
  */
-export const SIMULATION_VERSION = '0.2.0'
+export const SIMULATION_VERSION = '0.3.0'
