@@ -1,0 +1,142 @@
+import { type Fixed, type PlayerId, tilesToFixed, type UnitKind } from '@rts/shared'
+
+export interface DemoSpawn {
+  readonly owner: PlayerId
+  readonly kind: UnitKind
+  readonly x: Fixed
+  readonly y: Fixed
+}
+
+export interface DemoScenario {
+  readonly id: string
+  readonly label: string
+  readonly spawns: readonly DemoSpawn[]
+  /** Engagement pairs: index of the attacking spawn → index of its target. */
+  readonly attacks: readonly (readonly [number, number])[]
+}
+
+function tile(x: number, y: number): { readonly x: Fixed; readonly y: Fixed } {
+  return { x: tilesToFixed(x), y: tilesToFixed(y) }
+}
+
+const PAWN: UnitKind = 'pawn'
+const WARRIOR: UnitKind = 'warrior'
+const ARCHER: UnitKind = 'archer'
+
+/**
+ * Demo scenario catalog. Every scenario spawns each faction in its own spot
+ * and arms mutual ATTACK orders, so the squads march toward one another and
+ * fight where they meet. Coordinates stay within the 32-tile map, centered on
+ * the camera's home tile (8).
+ */
+export const DEMO_SCENARIOS: readonly DemoScenario[] = [
+  {
+    id: '2v2',
+    label: '2v2',
+    spawns: [
+      { owner: 0, kind: PAWN, ...tile(5, 5) },
+      { owner: 0, kind: PAWN, ...tile(6, 5) },
+      { owner: 1, kind: PAWN, ...tile(11, 11) },
+      { owner: 1, kind: PAWN, ...tile(10, 11) }
+    ],
+    attacks: [
+      [0, 2],
+      [1, 3],
+      [2, 0],
+      [3, 1]
+    ]
+  },
+  {
+    id: '4v4',
+    label: '4v4',
+    spawns: [
+      { owner: 0, kind: PAWN, ...tile(5, 5) },
+      { owner: 0, kind: PAWN, ...tile(6, 5) },
+      { owner: 0, kind: PAWN, ...tile(5, 6) },
+      { owner: 0, kind: PAWN, ...tile(6, 6) },
+      { owner: 1, kind: PAWN, ...tile(11, 11) },
+      { owner: 1, kind: PAWN, ...tile(10, 11) },
+      { owner: 1, kind: PAWN, ...tile(11, 10) },
+      { owner: 1, kind: PAWN, ...tile(10, 10) }
+    ],
+    attacks: [
+      [0, 4],
+      [1, 5],
+      [2, 6],
+      [3, 7],
+      [4, 0],
+      [5, 1],
+      [6, 2],
+      [7, 3]
+    ]
+  },
+  {
+    id: 'mixed',
+    label: 'Melee vs ranged',
+    spawns: [
+      { owner: 0, kind: WARRIOR, ...tile(5, 5) },
+      { owner: 0, kind: ARCHER, ...tile(6, 5) },
+      { owner: 1, kind: WARRIOR, ...tile(11, 11) },
+      { owner: 1, kind: ARCHER, ...tile(10, 11) }
+    ],
+    attacks: [
+      [0, 2],
+      [1, 3],
+      [2, 0],
+      [3, 1]
+    ]
+  },
+  {
+    id: 'ffa',
+    label: 'Free for all',
+    spawns: [
+      { owner: 0, kind: PAWN, ...tile(5, 5) },
+      { owner: 1, kind: PAWN, ...tile(11, 5) },
+      { owner: 2, kind: PAWN, ...tile(5, 11) },
+      { owner: 3, kind: PAWN, ...tile(11, 11) }
+    ],
+    attacks: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 0]
+    ]
+  },
+  {
+    id: 'win',
+    label: 'Overwhelming force',
+    spawns: [
+      { owner: 0, kind: PAWN, ...tile(5, 5) },
+      { owner: 0, kind: PAWN, ...tile(6, 5) },
+      { owner: 0, kind: PAWN, ...tile(5, 6) },
+      { owner: 1, kind: PAWN, ...tile(11, 11) }
+    ],
+    attacks: [
+      [0, 3],
+      [1, 3],
+      [2, 3],
+      [3, 0]
+    ]
+  },
+  {
+    id: 'defeat',
+    label: 'Against the odds',
+    spawns: [
+      { owner: 0, kind: PAWN, ...tile(11, 11) },
+      { owner: 1, kind: PAWN, ...tile(5, 5) },
+      { owner: 1, kind: PAWN, ...tile(6, 5) },
+      { owner: 1, kind: PAWN, ...tile(5, 6) }
+    ],
+    attacks: [
+      [0, 1],
+      [1, 0],
+      [2, 0],
+      [3, 0]
+    ]
+  }
+]
+
+/** Resolves a scenario id to its definition (defaults to the first scenario). */
+export function scenarioById(id: string | undefined): DemoScenario {
+  return DEMO_SCENARIOS.find((scenario) => scenario.id === id) ?? DEMO_SCENARIOS[0]!
+}

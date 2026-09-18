@@ -12,10 +12,13 @@ export function MatchScreen() {
     resources,
     commandMode,
     matchResult,
+    scenario,
+    scenarios,
     arm,
     issueOrder,
     surrender,
-    newMatch
+    newMatch,
+    changeScenario
   } = useMatchSession(hostRef)
 
   return (
@@ -28,11 +31,14 @@ export function MatchScreen() {
       hostRef={hostRef}
       commandMode={commandMode}
       matchResult={matchResult}
+      scenario={scenario}
+      scenarios={scenarios}
       onStop={() => issueOrder('STOP')}
       onHold={() => issueOrder('HOLD')}
       onSurrender={surrender}
       onArm={arm}
       onNewMatch={newMatch}
+      onChangeScenario={changeScenario}
     />
   )
 }

@@ -19,11 +19,19 @@ const httpServer = createServer((req, res) => {
 
 const wss = new WebSocketServer({ server: httpServer })
 
-wss.on('connection', (ws) => {
+/** Reads the `?scenario=` query from the WS upgrade request (defaults to 2v2). */
+function requestedScenario(requestUrl: string | undefined): string | undefined {
+  if (requestUrl === undefined) {
+    return undefined
+  }
+  return new URL(requestUrl, 'http://localhost').searchParams.get('scenario') ?? undefined
+}
+
+wss.on('connection', (ws, request) => {
   // Each client gets its own isolated match. This mirrors the future
   // rooms architecture and keeps concurrent clients from mutating each
   // other's state (test isolation is a hard requirement).
-  const session = createDemoSession()
+  const session = createDemoSession(requestedScenario(request.url))
   let sequence = 1
 
   const sendError = (message: string): void => {

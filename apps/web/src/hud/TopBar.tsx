@@ -1,3 +1,4 @@
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import type { HudResources } from './types'
 
@@ -7,6 +8,9 @@ interface TopBarProps {
   readonly selectedCount: number
   readonly tick: number
   readonly resources: HudResources | null
+  readonly scenario: string
+  readonly scenarios: readonly string[]
+  readonly onChangeScenario: (id: string) => void
 }
 
 function StatChip({
@@ -37,7 +41,16 @@ function statusDot(status: string): string {
   return 'bg-amber-500'
 }
 
-export function TopBar({ status, unitCount, selectedCount, tick, resources }: TopBarProps) {
+export function TopBar({
+  status,
+  unitCount,
+  selectedCount,
+  tick,
+  resources,
+  scenario,
+  scenarios,
+  onChangeScenario
+}: TopBarProps) {
   const supply = resources === null ? '—' : `${resources.supply}/${resources.supplyCap}`
   return (
     <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-4 gap-y-1.5 border-b bg-card/70 px-4 py-2 backdrop-blur">
@@ -56,6 +69,19 @@ export function TopBar({ status, unitCount, selectedCount, tick, resources }: To
         status: {status}
       </span>
       <span className="text-xs tabular-nums text-muted-foreground">tick {tick}</span>
+
+      <Select value={scenario} onValueChange={onChangeScenario}>
+        <SelectTrigger aria-label="scenario" className="h-8 w-44 text-xs">
+          <SelectValue placeholder="scenario" />
+        </SelectTrigger>
+        <SelectContent>
+          {scenarios.map((id) => (
+            <SelectItem key={id} value={id} className="text-xs">
+              {id}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <div className="flex-1" />
 

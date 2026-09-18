@@ -10,7 +10,11 @@ import { type CommandMode, useCommandModes } from '../hud/useCommandModes'
 
 const WORLD_TILES = 32
 const WORLD_PX = WORLD_TILES * TILE_PIXELS
-const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'ws://localhost:8080'
+/** Demo scenario catalog ids, mirroring `apps/server/src/demo/scenarios.ts`. */
+const DEMO_SCENARIO_IDS = ['2v2', '4v4', 'mixed', 'ffa', 'win', 'defeat'] as const
+const SCENARIO = (new URLSearchParams(window.location.search).get('scenario') ??
+  '2v2') as (typeof DEMO_SCENARIO_IDS)[number]
+const SERVER_URL = `${import.meta.env.VITE_SERVER_URL ?? 'ws://localhost:8080'}?scenario=${SCENARIO}`
 const PLAYER_BASE_CENTER_FIXED = { x: 2048, y: 2048 }
 const PLAYER_BASE_CENTER = {
   x: fixedToRenderPixels(PLAYER_BASE_CENTER_FIXED.x),
@@ -57,6 +61,8 @@ export interface MatchSessionState {
   readonly commandMode: CommandMode
   /** 'victory' | 'defeat' | 'draw' once the match is finished, else null. */
   readonly matchResult: 'victory' | 'defeat' | 'draw' | null
+  readonly scenario: string
+  readonly scenarios: readonly string[]
   arm(mode: Exclude<CommandMode, 'none'>): void
   issueOrder(
     type: 'STOP' | 'HOLD' | 'PATROL' | 'ATTACK_MOVE',
@@ -64,6 +70,7 @@ export interface MatchSessionState {
   ): void
   surrender(): void
   newMatch(): void
+  changeScenario(id: string): void
 }
 
 /** The human player is always the demo's player 0. */
@@ -255,6 +262,8 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     resources,
     commandMode: commandModes.mode,
     matchResult,
+    scenario: SCENARIO,
+    scenarios: DEMO_SCENARIO_IDS,
     arm: commandModes.arm,
     issueOrder: (type, target) => {
       const connection = connectionRef.current
@@ -285,6 +294,9 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     },
     newMatch: () => {
       window.location.reload()
+    },
+    changeScenario: (id) => {
+      window.location.search = `?scenario=${id}`
     }
   }
 }

@@ -1,70 +1,51 @@
-import { allocateEntityId, type Fixed, type PlayerId, START_ENTITY_ID, tilesToFixed } from '@rts/shared'
+import { allocateEntityId, START_ENTITY_ID } from '@rts/shared'
 import {
   Combat,
   createRulesIdentity,
   createWorld,
   Health,
+  Kind,
   Orders,
   Owner,
   Position,
   type RulesIdentity,
-  UNIT_COMBAT_STATS
+  unitStatsFor
 } from '@rts/simulation'
+import { scenarioById } from './demo/scenarios.js'
 import { GameSession } from './sessions/session.js'
 
 export const DEMO_IDENTITY: RulesIdentity = createRulesIdentity('demo')
 
-interface DemoSpawn {
-  readonly owner: PlayerId
-  readonly x: Fixed
-  readonly y: Fixed
-}
-
-// Two compact 2x2 squads 1 tile apart: blue top-left, red bottom-right. Each
-// unit is within its attack range of the paired enemy on the diagonal-facing
-// tile, so the squads fight in place (no chase). The cluster spans 2 tiles,
-// which fits the 454px match canvas comfortably with room for selection-box
-// margins — the e2e box-select specs cover every unit.
-const DEMO_SPAWNS: readonly DemoSpawn[] = [
-  { owner: 0, x: tilesToFixed(8), y: tilesToFixed(8) },
-  { owner: 0, x: tilesToFixed(9), y: tilesToFixed(8) },
-  { owner: 1, x: tilesToFixed(8), y: tilesToFixed(9) },
-  { owner: 1, x: tilesToFixed(9), y: tilesToFixed(9) }
-]
-
-const BLUE_UNITS = 2
-
 /**
- * Hostile demo: two mirrored squads with combat stats that immediately engage
- * each other (blue `i` is ordered to attack red `i` and vice versa). The player
- * is player 0 and can override the standing ATTACK orders with a MOVE command.
+ * Hostile demo: each faction spawns in its own spot with combat stats and
+ * mutual ATTACK orders, so the squads march toward one another and fight where
+ * they meet. The player is player 0 and can override the standing ATTACK
+ * orders with any command (MOVE replaces them, STOP/HOLD cancel, etc.).
  */
-export function createDemoSession(): GameSession {
+export function createDemoSession(scenarioId: string | undefined = '2v2'): GameSession {
+  const scenario = scenarioById(scenarioId)
   const world = createWorld()
   let next = START_ENTITY_ID
   const ids: number[] = []
-  for (const spawn of DEMO_SPAWNS) {
+  for (const spawn of scenario.spawns) {
     const allocated = allocateEntityId(next)
     next = allocated.nextEntityId
+    const stats = unitStatsFor(spawn.kind)
     world.createEntity(allocated.id)
     world.store(Position).set(allocated.id, { x: spawn.x, y: spawn.y })
     world.store(Owner).set(allocated.id, { owner: spawn.owner })
-    world.store(Health).set(allocated.id, {
-      current: UNIT_COMBAT_STATS.maxHp,
-      max: UNIT_COMBAT_STATS.maxHp
-    })
+    world.store(Kind).set(allocated.id, spawn.kind)
+    world.store(Health).set(allocated.id, { current: stats.maxHp, max: stats.maxHp })
     world.store(Combat).set(allocated.id, {
-      damage: UNIT_COMBAT_STATS.damage,
-      rangeTiles: UNIT_COMBAT_STATS.rangeTiles,
-      cooldownTicks: UNIT_COMBAT_STATS.cooldownTicks,
+      damage: stats.damage,
+      rangeTiles: stats.rangeTiles,
+      cooldownTicks: stats.cooldownTicks,
       cooldownRemaining: 0
     })
     ids.push(allocated.id)
   }
-  // Deterministic mutual engagement across factions.
-  for (let i = 0; i < BLUE_UNITS; i += 1) {
-    world.store(Orders).set(ids[i]!, { queue: [{ type: 'ATTACK', targetId: ids[i + BLUE_UNITS]! }] })
-    world.store(Orders).set(ids[i + BLUE_UNITS]!, { queue: [{ type: 'ATTACK', targetId: ids[i]! }] })
+  for (const [attacker, target] of scenario.attacks) {
+    world.store(Orders).set(ids[attacker]!, { queue: [{ type: 'ATTACK', targetId: ids[target]! }] })
   }
   return GameSession.create({ seed: 123456, identity: DEMO_IDENTITY, initialWorld: world })
 }

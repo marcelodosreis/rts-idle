@@ -18,11 +18,14 @@ export interface MatchHudProps {
   readonly hostRef: RefObject<HTMLDivElement | null>
   readonly commandMode: CommandMode
   readonly matchResult: 'victory' | 'defeat' | 'draw' | null
+  readonly scenario: string
+  readonly scenarios: readonly string[]
   readonly onStop: () => void
   readonly onHold: () => void
   readonly onSurrender: () => void
   readonly onArm: (mode: 'patrol' | 'attack_move' | 'attack') => void
   readonly onNewMatch: () => void
+  readonly onChangeScenario: (id: string) => void
 }
 
 /**
@@ -40,11 +43,14 @@ export function MatchHud({
   hostRef,
   commandMode,
   matchResult,
+  scenario,
+  scenarios,
   onStop,
   onHold,
   onSurrender,
   onArm,
-  onNewMatch
+  onNewMatch,
+  onChangeScenario
 }: MatchHudProps) {
   return (
     <div className="relative flex h-screen flex-col overflow-hidden bg-background text-foreground">
@@ -54,6 +60,9 @@ export function MatchHud({
         selectedCount={selection.length}
         tick={tick}
         resources={resources}
+        scenario={scenario}
+        scenarios={scenarios}
+        onChangeScenario={onChangeScenario}
       />
       <main className="grid min-h-0 flex-1 place-items-center p-4">
         <div
