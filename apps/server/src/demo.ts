@@ -20,20 +20,19 @@ interface DemoSpawn {
   readonly y: Fixed
 }
 
-// Spawn positions authored in tiles and converted to fixed units. The demo map
-// is 32 tiles wide; player 1 starts in the far-right corner, mirrored.
+// Two compact 2x2 squads 1 tile apart: blue top-left, red bottom-right. Each
+// unit is within its attack range of the paired enemy on the diagonal-facing
+// tile, so the squads fight in place (no chase). The cluster spans 2 tiles,
+// which fits the 454px match canvas comfortably with room for selection-box
+// margins — the e2e box-select specs cover every unit.
 const DEMO_SPAWNS: readonly DemoSpawn[] = [
   { owner: 0, x: tilesToFixed(8), y: tilesToFixed(8) },
   { owner: 0, x: tilesToFixed(9), y: tilesToFixed(8) },
-  { owner: 0, x: tilesToFixed(8), y: tilesToFixed(9) },
-  { owner: 0, x: tilesToFixed(9), y: tilesToFixed(9) },
-  { owner: 1, x: tilesToFixed(23), y: tilesToFixed(23) },
-  { owner: 1, x: tilesToFixed(24), y: tilesToFixed(23) },
-  { owner: 1, x: tilesToFixed(23), y: tilesToFixed(24) },
-  { owner: 1, x: tilesToFixed(24), y: tilesToFixed(24) }
+  { owner: 1, x: tilesToFixed(8), y: tilesToFixed(9) },
+  { owner: 1, x: tilesToFixed(9), y: tilesToFixed(9) }
 ]
 
-const BLUE_UNITS = 4
+const BLUE_UNITS = 2
 
 /**
  * Hostile demo: two mirrored squads with combat stats that immediately engage
