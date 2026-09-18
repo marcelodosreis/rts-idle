@@ -20,12 +20,14 @@ export interface MatchHudProps {
   readonly matchResult: 'victory' | 'defeat' | 'draw' | null
   readonly scenario: string
   readonly scenarios: readonly string[]
+  readonly aggression: 'offensive' | 'passive'
   readonly onStop: () => void
   readonly onHold: () => void
   readonly onSurrender: () => void
   readonly onArm: (mode: 'patrol' | 'attack_move' | 'attack') => void
   readonly onNewMatch: () => void
   readonly onChangeScenario: (id: string) => void
+  readonly onToggleAggression: () => void
 }
 
 /**
@@ -45,12 +47,14 @@ export function MatchHud({
   matchResult,
   scenario,
   scenarios,
+  aggression,
   onStop,
   onHold,
   onSurrender,
   onArm,
   onNewMatch,
-  onChangeScenario
+  onChangeScenario,
+  onToggleAggression
 }: MatchHudProps) {
   return (
     <div className="relative flex h-screen flex-col overflow-hidden bg-background text-foreground">
@@ -62,7 +66,9 @@ export function MatchHud({
         resources={resources}
         scenario={scenario}
         scenarios={scenarios}
+        aggression={aggression}
         onChangeScenario={onChangeScenario}
+        onToggleAggression={onToggleAggression}
       />
       <main className="grid min-h-0 flex-1 place-items-center p-4">
         <div
@@ -70,7 +76,7 @@ export function MatchHud({
           className="aspect-square h-full max-w-full overflow-hidden rounded-xl border border-border/50 shadow-2xl"
         />
       </main>
-      <footer className="flex h-32 shrink-0 items-stretch gap-3 border-t bg-card/70 p-3 backdrop-blur">
+      <footer className="flex h-40 shrink-0 items-stretch justify-center gap-3 border-t bg-card/70 p-3 backdrop-blur">
         <SelectionPanel selection={selection} />
         <CommandBar
           disabled={selection.length === 0}

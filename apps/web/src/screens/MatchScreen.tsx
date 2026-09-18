@@ -14,11 +14,13 @@ export function MatchScreen() {
     matchResult,
     scenario,
     scenarios,
+    aggression,
     arm,
     issueOrder,
     surrender,
     newMatch,
-    changeScenario
+    changeScenario,
+    setAggression
   } = useMatchSession(hostRef)
 
   return (
@@ -33,12 +35,14 @@ export function MatchScreen() {
       matchResult={matchResult}
       scenario={scenario}
       scenarios={scenarios}
+      aggression={aggression}
       onStop={() => issueOrder('STOP')}
       onHold={() => issueOrder('HOLD')}
       onSurrender={surrender}
       onArm={arm}
       onNewMatch={newMatch}
       onChangeScenario={changeScenario}
+      onToggleAggression={() => setAggression(aggression === 'offensive' ? 'passive' : 'offensive')}
     />
   )
 }

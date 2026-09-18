@@ -11,10 +11,13 @@ import { type CommandMode, useCommandModes } from '../hud/useCommandModes'
 const WORLD_TILES = 32
 const WORLD_PX = WORLD_TILES * TILE_PIXELS
 /** Demo scenario catalog ids, mirroring `apps/server/src/demo/scenarios.ts`. */
-const DEMO_SCENARIO_IDS = ['2v2', '4v4', 'mixed', 'ffa', 'win', 'defeat'] as const
+const DEMO_SCENARIO_IDS = ['6v6', '2v2', '4v4', 'mixed', 'ffa', 'win', 'defeat'] as const
 const SCENARIO = (new URLSearchParams(window.location.search).get('scenario') ??
-  '2v2') as (typeof DEMO_SCENARIO_IDS)[number]
-const SERVER_URL = `${import.meta.env.VITE_SERVER_URL ?? 'ws://localhost:8080'}?scenario=${SCENARIO}`
+  '6v6') as (typeof DEMO_SCENARIO_IDS)[number]
+const AGGRESSION = (new URLSearchParams(window.location.search).get('aggression') ?? 'offensive') as
+  | 'offensive'
+  | 'passive'
+const SERVER_URL = `${import.meta.env.VITE_SERVER_URL ?? 'ws://localhost:8080'}?scenario=${SCENARIO}&aggression=${AGGRESSION}`
 const PLAYER_BASE_CENTER_FIXED = { x: 2048, y: 2048 }
 const PLAYER_BASE_CENTER = {
   x: fixedToRenderPixels(PLAYER_BASE_CENTER_FIXED.x),
@@ -65,6 +68,7 @@ export interface MatchSessionState {
   readonly matchResult: 'victory' | 'defeat' | 'draw' | null
   readonly scenario: string
   readonly scenarios: readonly string[]
+  readonly aggression: 'offensive' | 'passive'
   arm(mode: Exclude<CommandMode, 'none'>): void
   issueOrder(
     type: 'STOP' | 'HOLD' | 'PATROL' | 'ATTACK_MOVE',
@@ -73,6 +77,7 @@ export interface MatchSessionState {
   surrender(): void
   newMatch(): void
   changeScenario(id: string): void
+  setAggression(value: 'offensive' | 'passive'): void
 }
 
 /** The human player is always the demo's player 0. */
@@ -113,7 +118,10 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     let selection = new Set<number>()
     let lastTick = 0
     let matchEnded = false
-    const unitKinds = new Map<number, { readonly kind: HudSelectionUnit['kind']; readonly owner: number }>()
+    const unitKinds = new Map<
+      number,
+      { readonly kind: HudSelectionUnit['kind']; readonly owner: number; readonly hp?: number; readonly maxHp?: number }
+    >()
     const unitOwners = new Map<number, number>()
     const unitPositions = new Map<number, { readonly x: number; readonly y: number }>()
     let prevFramePositions = new Map<number, { readonly x: number; readonly y: number }>()
@@ -134,7 +142,8 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
             id,
             kind: kind.kind,
             owner: kind.owner,
-            moving: previous !== undefined && (previous.x !== current.x || previous.y !== current.y)
+            moving: previous !== undefined && (previous.x !== current.x || previous.y !== current.y),
+            ...(kind.hp === undefined ? {} : { hp: kind.hp, maxHp: kind.maxHp })
           })
         }
       }
@@ -188,7 +197,11 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
         unitPositions.clear()
         unitOwners.clear()
         for (const unit of message.units) {
-          unitKinds.set(unit.id, { kind: unit.kind ?? 'pawn', owner: unit.owner })
+          unitKinds.set(unit.id, {
+            kind: unit.kind ?? 'pawn',
+            owner: unit.owner,
+            ...(unit.hp === undefined ? {} : { hp: unit.hp, maxHp: unit.maxHp })
+          })
           unitOwners.set(unit.id, unit.owner)
           unitPositions.set(unit.id, { x: unit.x, y: unit.y })
         }
@@ -274,6 +287,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     matchResult,
     scenario: SCENARIO,
     scenarios: DEMO_SCENARIO_IDS,
+    aggression: AGGRESSION,
     arm: commandModes.arm,
     issueOrder: (type, target) => {
       const connection = connectionRef.current
@@ -306,7 +320,10 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       window.location.reload()
     },
     changeScenario: (id) => {
-      window.location.search = `?scenario=${id}`
+      window.location.search = `?scenario=${id}&aggression=${AGGRESSION}`
+    },
+    setAggression: (value) => {
+      window.location.search = `?scenario=${SCENARIO}&aggression=${value}`
     }
   }
 }
