@@ -76,7 +76,8 @@ pnpm run verify
 
 ```bash
 pnpm exec playwright install chromium
-pnpm run test:e2e
+pnpm run test:e2e:focused tests/e2e/<target>.spec.ts --list
+pnpm run test:e2e:focused tests/e2e/<target>.spec.ts
 ```
 
 On WSL2/Linux, system libraries may be required (Playwright needs sudo; make sure the pnpm in your nvm PATH is visible to it):
@@ -91,6 +92,11 @@ sudo env "PATH=$PATH" pnpm exec playwright install-deps chromium
 |---|---|
 | `pnpm dev` | Run server + web locally together (one command, prefixed logs) |
 | `pnpm run verify` | Full local gate: typecheck, lint, all suites, build |
+| `pnpm run verify:fast` | Typecheck, lint, and unit tests for quick iteration |
+| `pnpm run verify:simulation` | Simulation, contracts, orders, determinism, architecture, invariants, regression |
+| `pnpm run verify:browser` | Build and explicitly scoped Chromium E2E gate |
+| `pnpm run test:e2e:focused <file>` | Run one E2E target; use `--list` first to confirm test count |
+| `pnpm run test:e2e -- --project=chromium` | Explicitly scoped full Chromium E2E gate |
 | `pnpm run typecheck` | `tsc --noEmit` across all packages |
 | `pnpm run lint` / `lint:fix` | Biome check / check + fix |
 | `pnpm run test:*` | unit, integration, simulation, contracts, orders, determinism, invariants, regression, architecture, e2e |

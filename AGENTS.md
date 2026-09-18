@@ -8,8 +8,8 @@ This project is an RTS idle game. It uses engineering workflow skills installed 
 
 **Start with `CURRENT_STATE.md`** for minimal operational context.
 **Follow `AI_EXECUTION_PROTOCOL.md`** for workflow.
-**Read `docs/engineering-standard.md`** only when modifying code that touches
-engineering invariants (simulation core, serialization, pipeline order).
+**Read `docs/engineering-standard.md` before modifying code.** It remains the
+project's engineering source of truth.
 
 `docs/architecture.md` documents the current module layout and boundaries.
 The automated barriers (`tests/architecture/package-dependencies.test.ts`,
@@ -92,22 +92,9 @@ Every bug or malfunction — reported by a user, found by a test, fuzz, or code 
 
 A bug fix without a postmortem and a regression test is not done. See `docs/master-plan.md` §39 and §71.
 
-## Agent Coordination
+## Repository Hygiene
 
-Multiple agents work on this repo. Before editing any file, check `docs/agent-ledger.md`, claim the file, and never edit a file another agent has marked as in-flight.
-
-File ownership:
-
-| Area | Owner |
-|---|---|
-| `docs/adr/**`, `docs/game-design.md`, `docs/proposals/**`, `docs/agent-ledger.md` | Philosophy agent |
-| `packages/**`, `apps/**`, `tools/**`, `tests/**`, `tasks/todo.md`, `.github/**` | Implementation agent |
-| `master-plan.md` | Shared — structural edits only via a coordinated pass flagged in the ledger |
-| `AGENTS.md`, `README.md` | Any agent, but claim in the ledger first |
-
-Rules:
-
-- Claim a file in `docs/agent-ledger.md` before editing; mark it `done` when finished.
-- Never edit a file another agent has claimed as in-flight.
+- Inspect `git status --short` before editing and preserve existing changes.
+- Limit edits to files directly required by the task.
+- Review `git diff --check` and the final diff before completion.
 - All documentation and new content is written in English.
-- Recommendations that cross territory (e.g. implementation tooling) are noted in the ledger, not applied directly.
