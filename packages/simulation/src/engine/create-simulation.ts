@@ -29,7 +29,8 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
     seed: options.seed,
     rng,
     nextEntityId: resolveNextEntityId(world),
-    world
+    world,
+    events: []
   }
   return new Simulation(state)
 }

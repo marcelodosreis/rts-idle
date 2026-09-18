@@ -96,5 +96,5 @@ export function deserializeState(bytes: Uint8Array): GameState {
   const rng = readRng(reader)
   const nextEntityId = reader.readU32()
   const world = readWorld(reader)
-  return { tick, phase, identity, seed, rng, nextEntityId, world }
+  return { tick, phase, identity, seed, rng, nextEntityId, world, events: [] }
 }

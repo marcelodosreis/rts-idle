@@ -1,4 +1,5 @@
 import type { World } from '../ecs/world.js'
+import type { SimulationEvent } from '../systems/events.js'
 import type { CommandRejectedError } from './commands.js'
 
 export interface RulesIdentity {
@@ -12,6 +13,7 @@ export interface RulesIdentity {
 export interface TickResult {
   readonly tick: number
   readonly rejected: readonly CommandRejectedError[]
+  readonly events: readonly SimulationEvent[]
 }
 
 export interface SimulationOptions {
