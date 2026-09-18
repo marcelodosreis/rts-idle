@@ -28,7 +28,7 @@ export interface DamageAccumulation {
 
 export interface GameState {
   readonly tick: number
-  readonly phase: Phase
+  phase: Phase
   readonly identity: RulesIdentity
   readonly seed: number
   readonly rng: RngState

@@ -3,6 +3,7 @@ import { combatSystem } from './combat-system.js'
 import { deathSystem } from './death-system.js'
 import { movementSystem } from './movement-system.js'
 import { ordersSystem } from './orders-system.js'
+import { victorySystem } from './victory-system.js'
 
 /**
  * Frozen system order (ADR-013). Order is part of the deterministic contract:
@@ -15,7 +16,8 @@ export const SYSTEM_PIPELINE: readonly { readonly name: string; readonly system:
     { name: 'orders', system: ordersSystem },
     { name: 'movement', system: movementSystem },
     { name: 'combat', system: combatSystem },
-    { name: 'death', system: deathSystem }
+    { name: 'death', system: deathSystem },
+    { name: 'victory', system: victorySystem }
   ])
 
 /** Runs the simulation systems in frozen order for one tick. */
