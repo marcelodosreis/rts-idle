@@ -56,6 +56,10 @@ VS-01B Playable Economy Integration is complete, including visible mining/carryi
 Architecture evolution is tracked in `docs/rfc/RFC-001-technology-substitutability.md`
 (Proposed; no implementation started).
 
+Deployment and environments are tracked in
+`docs/rfc/RFC-002-deployment-and-environments.md` (Proposed; target Render free,
+Docker same-origin monolith, `staging` + `main`).
+
 ## Engineering Invariants
 
 - Simulation imports nothing from UI/transport/platform (enforced by tests)

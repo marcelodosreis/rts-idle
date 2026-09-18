@@ -100,6 +100,23 @@ RFC: `docs/rfc/RFC-001-technology-substitutability.md` (Proposed).
 | RFC-001-PR5 | Authority × projection in server | pending | RFC-001-PR4 | server, simulation, protocol | integration, architecture, e2e |
 | RFC-001-PR6 | Content/scenarios out of server | pending | RFC-001-PR5 | game-data, simulation, server | integration, architecture |
 
+## Deployment (RFC-002)
+
+RFC: `docs/rfc/RFC-002-deployment-and-environments.md` (Proposed).
+Target: Render Hobby (free), Docker same-origin monolith, `staging` + `main`.
+
+| ID | Title | Status | Dependencies | Packages | Validation |
+|----|-------|--------|-------------|----------|------------|
+| DEPLOY-001 | Same-origin WebSocket URL in client | pending | — | web | unit, e2e |
+| DEPLOY-002 | Server static serving + MPA routes + cache headers | pending | — | server | integration, e2e |
+| DEPLOY-003 | Server hardening: SIGTERM, WS_ORIGIN, connection cap, backpressure | pending | — | server | unit, integration |
+| DEPLOY-004 | Multi-stage Dockerfile + `.dockerignore` + local smoke | pending | DEPLOY-002 | root | docker build/run |
+| DEPLOY-005 | `render.yaml` Blueprint + `staging` branch | pending | DEPLOY-004 | infra | blueprint validate, manual deploy |
+| DEPLOY-006 | Client reconnect/backoff + cold-start UX | pending | DEPLOY-001 | web | e2e |
+| DEPLOY-007 | CI deploy gating + secrets | pending | DEPLOY-005 | infra | end-to-end deploy |
+| DEPLOY-008 | Deployment docs + env docs | pending | DEPLOY-005 | docs | review |
+| DEPLOY-009 | Snapshot bandwidth optimization (deferred) | pending | — | protocol, simulation, server | determinism, e2e |
+
 ## Validation Levels
 
 | Level | When | Commands |
