@@ -143,7 +143,9 @@ Phase 1 (simulation core) **complete**: frozen systems pipeline with per-tick
 events, full command contracts + atomicity, order queue (STOP/HOLD/PATROL),
 players/wallet + surrender, instant combat (ATTACK/ATTACK_MOVE/HOLD auto-attack)
 with simultaneous death, victory/draw/tick-limit, central invariants, expanded
-determinism. The visual track delivers a hostile demo with overhead HP bars,
-attack streaks, damage popups, death explosions, and attack animations. The
-client demonstrates commands, combat feedback, and a playable match. Next:
-Phase 2 (economy and production). See `tasks/todo.md`.
+determinism. The visual track delivers a hostile demo where factions march from
+their corners and fight, with overhead HP bars, attack streaks, damage popups,
+death explosions, and attack animations. The client issues the full command set
+(command bar + contextual right-click), shows a Victory/Defeat/Draw overlay, and
+switches demo scenarios (2v2, 4v4, melee-vs-ranged, free-for-all, win/defeat).
+Next: Phase 2 (economy and production). See `tasks/todo.md`.
