@@ -23,6 +23,7 @@ const PLAYER_BASE_CENTER = {
 
 interface RtsDebug {
   getPositions(): Record<string, { readonly x: number; readonly y: number }>
+  getUnitOwners(): Record<string, number>
   getAnimationFrame(id: number): number | null
   getUnitHealth(id: number): { readonly current: number; readonly max: number } | null
   getSpriteState(id: number): {
@@ -33,6 +34,7 @@ interface RtsDebug {
     readonly facing: number
   } | null
   getSelection(): readonly number[]
+  setSelection(ids: readonly number[]): void
   worldToScreen(x: number, y: number): { readonly x: number; readonly y: number }
   getZoom(): number
   getPing(): { readonly x: number; readonly y: number } | null
@@ -230,10 +232,18 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
             }
             return out
           },
+          getUnitOwners: () => {
+            const out: Record<string, number> = {}
+            for (const [id, owner] of unitOwners) {
+              out[String(id)] = owner
+            }
+            return out
+          },
           getAnimationFrame: (id) => renderer.getUnitAnimationFrame(id),
           getUnitHealth: (id) => renderer.getUnitHealth(id),
           getSpriteState: (id) => renderer.getUnitSpriteState(id),
           getSelection: () => renderer.getSelection(),
+          setSelection: (ids) => updateSelection(ids),
           worldToScreen: (x, y) => renderer.worldToScreen(fixedToRenderPixels(x), fixedToRenderPixels(y)),
           getZoom: () => renderer.getZoom(),
           getPing: () => renderer.getPing(),

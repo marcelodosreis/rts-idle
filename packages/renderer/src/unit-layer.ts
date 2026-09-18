@@ -88,6 +88,11 @@ export class UnitLayer {
         sprite = new UnitSprite(kind, unit.owner, frames)
         sprite.container.on('pointerdown', (event) => {
           event.stopPropagation()
+          // Only the left button selects; right-click targets for commands and
+          // must not silently change the selection.
+          if (event.button !== 0) {
+            return
+          }
           this.onUnitSelected(unit.id)
         })
         this.viewport.addChild(sprite.container)
