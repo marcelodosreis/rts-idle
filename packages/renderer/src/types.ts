@@ -1,9 +1,8 @@
 import type { MapDefinition } from '@rts/game-data'
-import type { PlayerId, SimulationEvent } from '@rts/shared'
+import type { PlayerId, SimulationEvent, UnitKind } from '@rts/shared'
 import type { PointData } from 'pixi.js'
 
-/** Unit visual archetype: maps to a sprite set in the asset catalog. */
-export type UnitKind = 'pawn' | 'warrior' | 'archer'
+export type { UnitKind } from '@rts/shared'
 
 /** A unit as rendered: id, integer fixed-unit position, owner slot, sprite kind. */
 export interface RenderUnit {

@@ -1,7 +1,4 @@
-import type { EntityId, Fixed, PlayerId, SimulationEvent } from '@rts/shared'
-
-/** Unit archetype on the wire; maps to a sprite set (defaults to `pawn`). */
-export type UnitKind = 'pawn' | 'warrior' | 'archer'
+import type { EntityId, Fixed, PlayerId, SimulationEvent, UnitKind } from '@rts/shared'
 
 /** High-level unit behavior for the renderer (drives idle/run/attack). */
 export type OrderState = 'idle' | 'moving' | 'attacking' | 'hold' | 'patrol' | 'attack_move'

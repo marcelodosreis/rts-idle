@@ -4,6 +4,7 @@ import {
   type CommandRejectedError,
   createSimulation,
   Health,
+  Kind,
   Movement,
   type Order,
   Orders,
@@ -101,6 +102,7 @@ export class GameSession {
     const positions = world.store(Position)
     const owners = world.store(Owner)
     const healths = world.store(Health)
+    const kinds = world.store(Kind)
     const orders = world.store(Orders)
     const movements = world.store(Movement)
     return world.aliveIds().map((id) => {
@@ -116,7 +118,7 @@ export class GameSession {
         x: pos.x,
         y: pos.y,
         owner: owner.owner,
-        kind: 'pawn',
+        kind: kinds.get(id) ?? 'pawn',
         orderState: deriveOrderState(front, movements.get(id) !== undefined),
         ...(health === undefined ? {} : { hp: health.current, maxHp: health.max })
       }
