@@ -69,6 +69,8 @@ export class UnitSprite {
   private facing = 1
   /** Wall-clock timestamp until which the attack animation is shown. */
   private attackUntil = 0
+  /** Last reported health, for the debug hook and e2e assertions. */
+  private healthNow: { readonly current: number; readonly max: number } | null = null
 
   constructor(kind: UnitKind, owner: number, frames: UnitFrames | null) {
     this.kind = kind
@@ -173,14 +175,21 @@ export class UnitSprite {
     this.attackUntil = until
   }
 
+  /** Last reported health, or `null` when the unit is not combat-capable. */
+  health(): { readonly current: number; readonly max: number } | null {
+    return this.healthNow
+  }
+
   /** Updates the overhead health bar; hidden when full or health is unknown. */
   setHealth(current: number | undefined, max: number | undefined): void {
     if (current === undefined || max === undefined || max <= 0) {
+      this.healthNow = null
       if (this.hpBar.visible) {
         this.hpBar.visible = false
       }
       return
     }
+    this.healthNow = { current, max }
     const ratio = hpRatio(current, max)
     if (current >= max) {
       this.hpBar.visible = false

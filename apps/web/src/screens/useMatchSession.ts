@@ -18,6 +18,7 @@ const PLAYER_BASE_CENTER = {
 interface RtsDebug {
   getPositions(): Record<string, { readonly x: number; readonly y: number }>
   getAnimationFrame(id: number): number | null
+  getUnitHealth(id: number): { readonly current: number; readonly max: number } | null
   getSpriteState(id: number): {
     readonly visible: boolean
     readonly frame: number | null
@@ -155,6 +156,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
             return out
           },
           getAnimationFrame: (id) => renderer.getUnitAnimationFrame(id),
+          getUnitHealth: (id) => renderer.getUnitHealth(id),
           getSpriteState: (id) => renderer.getUnitSpriteState(id),
           getSelection: () => renderer.getSelection(),
           worldToScreen: (x, y) => renderer.worldToScreen(fixedToRenderPixels(x), fixedToRenderPixels(y)),

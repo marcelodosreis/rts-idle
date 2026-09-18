@@ -61,6 +61,8 @@ export interface GameRenderer {
   getUnitPositions(): ReadonlyMap<number, { readonly x: number; readonly y: number }>
   /** Current animation frame of a unit's sprite, or `null` when in fallback. */
   getUnitAnimationFrame(id: number): number | null
+  /** Last reported health of a unit (drives the overhead HP bar), or `null`. */
+  getUnitHealth(id: number): { readonly current: number; readonly max: number } | null
   /** Debug: whether a unit's sprite body is visible and its current frame. */
   getUnitSpriteState(id: number): {
     readonly visible: boolean

@@ -214,6 +214,11 @@ export class PixiRenderer implements GameRenderer {
     return this.units?.animationFrame(id) ?? null
   }
 
+  /** Last reported health of a unit (drives the overhead HP bar), or `null`. */
+  getUnitHealth(id: number): { readonly current: number; readonly max: number } | null {
+    return this.units?.health(id) ?? null
+  }
+
   /** Debug: whether the unit's sprite body is visible and its current frame. */
   getUnitSpriteState(id: number): {
     readonly visible: boolean

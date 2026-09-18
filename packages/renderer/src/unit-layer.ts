@@ -210,6 +210,15 @@ export class UnitLayer {
     return sprite.animationFrame()
   }
 
+  /** Last reported health of a unit, or `null` when unknown. */
+  health(id: number): { readonly current: number; readonly max: number } | null {
+    const sprite = this.units.get(id)
+    if (sprite === undefined) {
+      return null
+    }
+    return sprite.health()
+  }
+
   /** Debug: is the unit's body currently visible and which frame is shown. */
   spriteState(id: number): {
     readonly visible: boolean
