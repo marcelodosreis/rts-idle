@@ -14,7 +14,7 @@ export const TARGET_RADIUS = 44
 /** Sprite scale: 192 px unit cells render about 1.5 tiles tall (96 px). */
 const SPRITE_SCALE = 0.5
 /** Height of the overhead health bar above the unit in render pixels. */
-const HP_BAR_OFFSET_Y = -54
+const HP_BAR_OFFSET_Y = -34
 
 export const FACTION_BY_OWNER: readonly ('blue' | 'red' | 'purple' | 'yellow')[] = ['blue', 'red', 'purple', 'yellow']
 
