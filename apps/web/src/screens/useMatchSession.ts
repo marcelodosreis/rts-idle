@@ -11,7 +11,7 @@ import { type CommandMode, useCommandModes } from '../hud/useCommandModes'
 const WORLD_TILES = 32
 const WORLD_PX = WORLD_TILES * TILE_PIXELS
 /** Demo scenario catalog ids, mirroring `apps/server/src/demo/scenarios.ts`. */
-const DEMO_SCENARIO_IDS = ['6v6', '2v2', '4v4', 'mixed', 'ffa', 'win', 'defeat'] as const
+const DEMO_SCENARIO_IDS = ['6v6', '4v4', 'ffa', 'win', 'defeat'] as const
 const SCENARIO = (new URLSearchParams(window.location.search).get('scenario') ??
   '6v6') as (typeof DEMO_SCENARIO_IDS)[number]
 const AGGRESSION = (new URLSearchParams(window.location.search).get('aggression') ?? 'offensive') as

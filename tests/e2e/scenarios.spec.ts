@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { settleUnits } from './settle.js'
 
-test('the default 6v6 random scenario spawns twelve units', async ({ page }) => {
+test('the default 6v6 scenario spawns twelve units', async ({ page }) => {
   await page.goto('/')
   const positions = await settleUnits(page)
   expect(Object.keys(positions).length).toBe(12)
@@ -39,9 +39,9 @@ test('switching the scenario in the top bar reloads into the new match', async (
   expect(Object.keys(await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})).length).toBe(12)
 
   await page.getByRole('combobox', { name: 'scenario' }).click()
-  await page.getByRole('option', { name: 'mixed' }).click()
+  await page.getByRole('option', { name: '4v4' }).click()
 
-  await expect.poll(() => page.url()).toContain('scenario=mixed')
+  await expect.poll(() => page.url()).toContain('scenario=4v4')
   const positions = await settleUnits(page)
-  expect(Object.keys(positions).length).toBe(4)
+  expect(Object.keys(positions).length).toBe(8)
 })
