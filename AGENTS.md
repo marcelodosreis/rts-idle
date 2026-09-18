@@ -6,13 +6,17 @@ This project is an RTS idle game. It uses engineering workflow skills installed 
 
 ## Entry Requirement
 
-**Read `docs/engineering-standard.md` before modifying any code.** It is the
-project's engineering source of truth (module/package rules, one-public-function
-per file, math clarity, typing, immutability, testing, determinism, Definition of
-Done, and the mandatory self-audit). `docs/architecture.md` documents the current
-module layout and boundaries. The automated barriers
-(`tests/architecture/package-dependencies.test.ts`, `public-api.test.ts`,
-`simulation-isolation.test.ts`) are enforced by CI and must stay green.
+**Start with `CURRENT_STATE.md`** for minimal operational context.
+**Follow `AI_EXECUTION_PROTOCOL.md`** for workflow.
+**Read `docs/engineering-standard.md`** only when modifying code that touches
+engineering invariants (simulation core, serialization, pipeline order).
+
+`docs/architecture.md` documents the current module layout and boundaries.
+The automated barriers (`tests/architecture/package-dependencies.test.ts`,
+`public-api.test.ts`, `simulation-isolation.test.ts`) are enforced by CI
+and must stay green.
+
+For context navigation, see `docs/ai/CONTEXT_MAP.md`.
 
 ## Core Rules
 
@@ -21,6 +25,8 @@ module layout and boundaries. The automated barriers
 - Follow the skill workflow strictly; do not partially apply it.
 - Never skip required steps such as spec, plan, or test when a skill demands them.
 - Project files live directly at the repo root — do not nest the project in subfolders.
+- For task breakdown, see `docs/ai/TASK_INDEX.md`.
+- For task template, see `docs/ai/TASK_PACKET_TEMPLATE.md`.
 
 ## Intent → Skill Mapping
 
