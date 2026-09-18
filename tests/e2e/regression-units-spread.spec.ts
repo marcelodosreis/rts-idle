@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
+import { settleUnits } from './settle.js'
 
 // Regression: moving several units to one point stacked them at identical
 // coordinates, so they looked like a single unit. Destinations must be
@@ -6,11 +7,7 @@ import { expect, type Page, test } from '@playwright/test'
 // See docs/postmortems/2026-09-16-units-stacked-at-target.md
 
 async function waitForUnits(page: Page) {
-  await page.goto('/')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
-  const positions = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})
-  expect(Object.keys(positions).length).toBeGreaterThan(0)
-  return positions
+  return settleUnits(page)
 }
 
 async function canvasRect(page: Page) {

@@ -1,12 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-
-async function waitForUnits(page: Page) {
-  await page.goto('/')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
-  const positions = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})
-  expect(Object.keys(positions).length).toBeGreaterThan(0)
-  return positions
-}
+import { selectFirstByOwner, settleUnits } from './settle.js'
 
 async function canvasRect(page: Page) {
   return page.evaluate(() => {
@@ -26,16 +19,15 @@ async function worldToPage(page: Page, x: number, y: number) {
 }
 
 test('selecting a unit and right-clicking moves it through the server', async ({ page }) => {
-  const positions = await waitForUnits(page)
-  const firstId = Object.keys(positions)[0]!
-  const start = positions[firstId]!
+  await settleUnits(page)
+  // The squads cluster tightly once engaged, so select an owned unit by id
+  // (a mouse click can land on an overlapping enemy, which the server rejects).
+  const selectedId = await selectFirstByOwner(page, 0)
+  const start = await page.evaluate((id) => window.__rtsDebug?.getPositions()[String(id)] ?? null, selectedId)
+  expect(start).not.toBeNull()
 
-  // Select the unit with a real click on its sprite.
-  const unitScreen = await worldToPage(page, start.x, start.y)
-  await page.mouse.click(unitScreen.x, unitScreen.y)
-
-  // Right-click at a point that is guaranteed inside the canvas and away from the unit.
   const rect = await canvasRect(page)
+  const unitScreen = await worldToPage(page, start!.x, start!.y)
   const targetScreen = {
     x: Math.min(unitScreen.x + 250, rect.left + rect.width - 20),
     y: Math.max(unitScreen.y - 40, rect.top + 20)
@@ -48,7 +40,7 @@ test('selecting a unit and right-clicking moves it through the server', async ({
       page.evaluate((id) => {
         const p = window.__rtsDebug?.getPositions()[String(id)]
         return p === undefined ? null : p
-      }, firstId)
+      }, selectedId)
     )
     .not.toEqual(start)
 })
