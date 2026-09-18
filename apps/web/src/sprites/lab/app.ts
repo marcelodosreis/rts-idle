@@ -52,6 +52,11 @@ export function setHostPaused(host: HTMLElement, paused: boolean): void {
   }
 }
 
+/** Removes a section app from the global tracking set. */
+export function removeApp(app: Application): void {
+  apps.delete(app)
+}
+
 /** Registers a texture source so the global toggle controls it. */
 export function trackTextureSource(source: TextureSource): void {
   textureSources.add(source)
@@ -82,6 +87,9 @@ export async function createSectionApp(host: HTMLElement, height: number): Promi
   if (appsPaused) {
     app.ticker.stop()
   }
+  // Keep the app ticker active so AnimatedSprites update at 60 fps (matches the game).
+  // biome-ignore lint/suspicious/noEmptyBlockStatements: intentional no-op to keep ticker alive
+  app.ticker.add(() => {})
   host.appendChild(app.canvas)
   return app
 }

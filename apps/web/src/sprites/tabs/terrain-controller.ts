@@ -13,7 +13,7 @@ import {
 } from '@rts/renderer'
 import { Container, Graphics, Sprite } from 'pixi.js'
 import { Viewport } from 'pixi-viewport'
-import { createSectionApp } from '../lab/app.js'
+import { createSectionApp, removeApp } from '../lab/app.js'
 import type { SectionContext } from '../sections/types.js'
 
 const SIZE = 32
@@ -27,8 +27,15 @@ const CORNER_COLOR = 0xd6cfbc
 /** Canvas background is always the water color so no beige ever shows. */
 const WATER_BG = 0x47aba9
 
-export type PaintMode = AutoTileTerrain | 'left' | 'right' | 'eraser'
+export type PaintMode = AutoTileTerrain | 'left' | 'right' | 'eraser' | 'bush'
 export type MatrixMode = 'flat' | 'elevated' | 'cliff'
+export type EditorTab = 'terrain' | 'decorations'
+
+export interface LevelSnapshot {
+  readonly grid: readonly (readonly AutoTileTerrain[])[]
+  readonly stairs: readonly [string, 'left' | 'right'][]
+  readonly decorations: readonly [string, { readonly kind: 'bush'; readonly variant: number }][]
+}
 
 export const PALETTES: readonly string[] = ['color1', 'color2', 'color3', 'color4', 'color5']
 
@@ -120,6 +127,11 @@ export interface TerrainState {
   readonly matrixKind: MatrixMode | null
   readonly dressingSeed: number
   readonly dressingCounts: Readonly<Record<DressingKind, number>>
+  readonly editorTab: EditorTab
+  readonly selectedDecoKind: DressingKind | null
+  readonly selectedVariant: number
+  readonly undoStack: readonly LevelSnapshot[]
+  readonly redoStack: readonly LevelSnapshot[]
 }
 
 export const DEFAULT_TERRAIN_STATE: TerrainState = {
@@ -130,7 +142,12 @@ export const DEFAULT_TERRAIN_STATE: TerrainState = {
   paused: false,
   matrixKind: null,
   dressingSeed: 1,
-  dressingCounts: Object.fromEntries(DRESSING_KINDS.map((d) => [d.kind, 0])) as Record<DressingKind, number>
+  dressingCounts: Object.fromEntries(DRESSING_KINDS.map((d) => [d.kind, 0])) as Record<DressingKind, number>,
+  editorTab: 'terrain',
+  selectedDecoKind: null,
+  selectedVariant: 0,
+  undoStack: [],
+  redoStack: []
 }
 
 /**
@@ -206,7 +223,40 @@ export async function createTerrainController(
 
   const grid = parseGrid(INITIAL)
   const stairs = new Map<string, 'left' | 'right'>(INITIAL_STAIRS)
+  const decorations = new Map<string, { readonly kind: 'bush'; readonly variant: number }>()
   let state: TerrainState = { ...DEFAULT_TERRAIN_STATE }
+
+  const snapshot = (): LevelSnapshot => ({
+    grid: grid.map((row) => [...row]),
+    stairs: [...stairs.entries()],
+    decorations: [...decorations.entries()]
+  })
+
+  const restoreSnapshot = (snap: LevelSnapshot): void => {
+    for (let y = 0; y < SIZE; y += 1) {
+      for (let x = 0; x < SIZE; x += 1) {
+        grid[y]![x] = snap.grid[y]?.[x] ?? 'water'
+      }
+    }
+    stairs.clear()
+    for (const [key, value] of snap.stairs) {
+      stairs.set(key, value)
+    }
+    decorations.clear()
+    for (const [key, value] of snap.decorations) {
+      decorations.set(key, value)
+    }
+    renderGrid()
+  }
+
+  const pushSnapshot = (): void => {
+    const snap = snapshot()
+    state = {
+      ...state,
+      undoStack: [...state.undoStack, snap].slice(-50),
+      redoStack: []
+    }
+  }
 
   const matrixTileSprite = (index: number): Container => {
     const texture = scene.tileTexture(index)
@@ -269,22 +319,35 @@ export async function createTerrainController(
         hit.alpha = 0
         hit.position.set(x * TILE, y * TILE)
         hit.eventMode = 'static'
+        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: paint handler groups all tool branches
         hit.on('pointerdown', () => {
           // The map border is always water: painting there is a no-op.
           if (x === 0 || y === 0 || x === SIZE - 1 || y === SIZE - 1) {
             onReadout(cellReadout(x, y))
             return
           }
+          pushSnapshot()
           if (state.paint === 'eraser') {
             grid[y]![x] = 'water'
             stairs.delete(`${x},${y}`)
             stairs.delete(`${x},${y + 1}`)
+            decorations.delete(`${x},${y}`)
+          } else if (state.paint === 'bush') {
+            const kind = grid[y]?.[x]
+            if (kind === 'land' || kind === 'elevated') {
+              if (decorations.has(`${x},${y}`)) {
+                decorations.delete(`${x},${y}`)
+              } else {
+                decorations.set(`${x},${y}`, { kind: 'bush', variant: state.selectedVariant })
+              }
+            }
           } else if (state.paint === 'left' || state.paint === 'right') {
             stairs.set(`${x},${y}`, state.paint)
           } else {
             grid[y]![x] = state.paint
             stairs.delete(`${x},${y}`)
             stairs.delete(`${x},${y + 1}`)
+            decorations.delete(`${x},${y}`)
           }
           renderGrid()
           onReadout(cellReadout(x, y))
@@ -298,10 +361,15 @@ export async function createTerrainController(
   }
 
   const renderGrid = (): void => {
-    scene.render(grid, stairs, {
-      seed: state.dressingSeed,
-      counts: state.dressingCounts
-    })
+    scene.render(
+      grid,
+      stairs,
+      {
+        seed: state.dressingSeed,
+        counts: state.dressingCounts
+      },
+      decorations
+    )
     drawHits()
   }
 
@@ -421,6 +489,7 @@ export async function createTerrainController(
       }
     }
     stairs.clear()
+    decorations.clear()
     renderGrid()
   }
 
@@ -443,6 +512,7 @@ export async function createTerrainController(
       for (const [key, dir] of INITIAL_STAIRS) {
         stairs.set(key, dir)
       }
+      decorations.clear()
       renderGrid()
     },
     setMatrix,
@@ -450,7 +520,8 @@ export async function createTerrainController(
     exportLevel(): LevelData {
       return {
         grid: grid.map((row) => [...row]),
-        stairs: [...stairs.entries()]
+        stairs: [...stairs.entries()],
+        decorations: [...decorations.entries()]
       }
     },
     importLevel(data: LevelData): void {
@@ -463,6 +534,12 @@ export async function createTerrainController(
       stairs.clear()
       for (const [key, value] of data.stairs) {
         stairs.set(key, value)
+      }
+      decorations.clear()
+      if (data.decorations !== undefined) {
+        for (const [key, value] of data.decorations) {
+          decorations.set(key, value)
+        }
       }
       renderGrid()
     },
@@ -493,8 +570,44 @@ export async function createTerrainController(
       }
       renderGrid()
     },
+    undo(): LevelSnapshot | null {
+      if (state.undoStack.length === 0) {
+        return null
+      }
+      const currentSnap = snapshot()
+      const prev = state.undoStack[state.undoStack.length - 1]!
+      state = {
+        ...state,
+        undoStack: state.undoStack.slice(0, -1),
+        redoStack: [...state.redoStack, currentSnap]
+      }
+      restoreSnapshot(prev)
+      return prev
+    },
+    redo(): LevelSnapshot | null {
+      if (state.redoStack.length === 0) {
+        return null
+      }
+      const currentSnap = snapshot()
+      const next = state.redoStack[state.redoStack.length - 1]!
+      state = {
+        ...state,
+        redoStack: state.redoStack.slice(0, -1),
+        undoStack: [...state.undoStack, currentSnap]
+      }
+      restoreSnapshot(next)
+      return next
+    },
+    pushSnapshot,
+    pause(): void {
+      app.ticker.stop()
+    },
+    resume(): void {
+      app.ticker.start()
+    },
     destroy(): void {
       scene.destroy()
+      removeApp(app)
       app.destroy()
     }
   }
@@ -503,6 +616,7 @@ export async function createTerrainController(
 export interface LevelData {
   readonly grid: readonly (readonly AutoTileTerrain[])[]
   readonly stairs: readonly [string, 'left' | 'right'][]
+  readonly decorations?: readonly [string, { readonly kind: 'bush'; readonly variant: number }][]
 }
 
 export interface TerrainController {
@@ -515,4 +629,9 @@ export interface TerrainController {
   exportMapDefinition(): MapDefinition
   importMapDefinition(map: MapDefinition): void
   destroy(): void
+  pause(): void
+  resume(): void
+  undo(): LevelSnapshot | null
+  redo(): LevelSnapshot | null
+  pushSnapshot(): void
 }

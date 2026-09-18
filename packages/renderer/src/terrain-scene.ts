@@ -42,7 +42,8 @@ export interface TerrainScene {
   render(
     grid: readonly (readonly AutoTileTerrain[])[],
     stairs: ReadonlyMap<string, 'left' | 'right'>,
-    dressing: TerrainSceneDressing
+    dressing: TerrainSceneDressing,
+    manualDecorations?: ReadonlyMap<string, { readonly kind: 'bush'; readonly variant: number }>
   ): void
   setPalette(palette: string): Promise<void>
   setPaused(paused: boolean): void
@@ -200,21 +201,22 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
     }
   }
 
-  const dressingTexture = async (kind: DressingKind, variant: number): Promise<Texture | null> => {
+  const dressingFrames = async (kind: DressingKind, variant: number): Promise<readonly Texture[]> => {
     const keys = DRESSING_ASSET_KEYS[kind]
     const key = keys[variant % keys.length]
     if (key === undefined) {
-      return null
+      return []
     }
     const entry = assets.entry(key)
     if (entry === null) {
-      return null
+      return []
     }
     if (entry.kind === 'strip') {
       const frames = await assets.stripTextures(key)
-      return frames?.[0] ?? null
+      return frames ?? []
     }
-    return assets.texture(key)
+    const tex = await assets.texture(key)
+    return tex !== null ? [tex] : []
   }
 
   const drawDressing = async (
@@ -230,17 +232,63 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
       counts: counts as Record<DressingKind, number>,
       variants: DEFAULT_DRESSING_VARIANTS
     })
+    let frameIndex = 0
     for (const item of items) {
-      const texture = await dressingTexture(item.kind, item.variant)
-      if (texture === null) {
+      const frames = await dressingFrames(item.kind, item.variant)
+      if (frames.length === 0) {
         continue
       }
-      const sprite = new Sprite(texture)
       const scaleMultiplier = item.kind === 'cloud' ? 1.5 : 1
-      sprite.width = TILE * scaleMultiplier
-      sprite.scale.y = sprite.scale.x
-      sprite.position.set(item.x * TILE + (TILE - sprite.width) / 2, item.y * TILE + TILE - sprite.height)
-      dressingContainer.addChild(sprite)
+      if (frames.length > 1) {
+        const sprite = new AnimatedSprite([...frames])
+        sprite.animationSpeed = FOAM_FPS / 60
+        sprite.width = TILE * scaleMultiplier
+        sprite.scale.y = sprite.scale.x
+        sprite.position.set(item.x * TILE + (TILE - sprite.width) / 2, item.y * TILE + TILE - sprite.height)
+        sprite.gotoAndPlay(frameIndex % frames.length)
+        dressingContainer.addChild(sprite)
+      } else {
+        const sprite = new Sprite(frames[0])
+        sprite.width = TILE * scaleMultiplier
+        sprite.scale.y = sprite.scale.x
+        sprite.position.set(item.x * TILE + (TILE - sprite.width) / 2, item.y * TILE + TILE - sprite.height)
+        dressingContainer.addChild(sprite)
+      }
+      frameIndex += 1
+    }
+  }
+
+  const drawManualDecorations = async (
+    decorations: ReadonlyMap<string, { readonly kind: 'bush'; readonly variant: number }>
+  ): Promise<void> => {
+    if (decorations.size === 0) {
+      return
+    }
+    let frameIndex = 0
+    for (const [key, entry] of decorations) {
+      const parts = key.split(',')
+      const x = Number(parts[0] ?? 0)
+      const y = Number(parts[1] ?? 0)
+      const frames = await dressingFrames(entry.kind, entry.variant)
+      if (frames.length === 0) {
+        continue
+      }
+      if (frames.length > 1) {
+        const sprite = new AnimatedSprite([...frames])
+        sprite.animationSpeed = FOAM_FPS / 60
+        sprite.width = TILE
+        sprite.scale.y = sprite.scale.x
+        sprite.position.set(x * TILE + (TILE - sprite.width) / 2, y * TILE + TILE - sprite.height)
+        sprite.gotoAndPlay(frameIndex % frames.length)
+        dressingContainer.addChild(sprite)
+      } else {
+        const sprite = new Sprite(frames[0])
+        sprite.width = TILE
+        sprite.scale.y = sprite.scale.x
+        sprite.position.set(x * TILE + (TILE - sprite.width) / 2, y * TILE + TILE - sprite.height)
+        dressingContainer.addChild(sprite)
+      }
+      frameIndex += 1
     }
   }
 
@@ -248,14 +296,16 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
     readonly grid: readonly (readonly AutoTileTerrain[])[]
     readonly stairs: ReadonlyMap<string, 'left' | 'right'>
     readonly dressing: TerrainSceneDressing
+    readonly manualDecorations: ReadonlyMap<string, { readonly kind: 'bush'; readonly variant: number }>
   } | null = null
 
   const render = (
     grid: readonly (readonly AutoTileTerrain[])[],
     stairs: ReadonlyMap<string, 'left' | 'right'>,
-    dressing: TerrainSceneDressing
+    dressing: TerrainSceneDressing,
+    manualDecorations: ReadonlyMap<string, { readonly kind: 'bush'; readonly variant: number }> = new Map()
   ): void => {
-    lastRender = { grid, stairs, dressing }
+    lastRender = { grid, stairs, dressing, manualDecorations }
     drawWater(grid)
     drawFoam(grid)
     clear(gridContainer)
@@ -270,6 +320,7 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
     }
     drawStairs(overlayContainer, stairs)
     void drawDressing(grid, dressing)
+    void drawManualDecorations(manualDecorations)
   }
 
   const setPalette = async (next: string): Promise<void> => {
@@ -279,7 +330,7 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
     palette = next
     atlas = await assets.tileTextures(`terrain.tileset.${palette}`)
     if (lastRender !== null) {
-      render(lastRender.grid, lastRender.stairs, lastRender.dressing)
+      render(lastRender.grid, lastRender.stairs, lastRender.dressing, lastRender.manualDecorations)
     }
   }
 
