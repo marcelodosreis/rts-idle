@@ -1,4 +1,4 @@
-import { isErrorMessage, isMoveMessage, isSnapshotMessage } from '@rts/protocol'
+import { isCommandMessage, isErrorMessage, isMoveMessage, isSnapshotMessage } from '@rts/protocol'
 import { describe, expect, it } from 'vitest'
 
 describe('protocol MOVE message', () => {
@@ -22,10 +22,45 @@ describe('protocol MOVE message', () => {
   })
 })
 
+describe('protocol command message', () => {
+  it('accepts every command intent', () => {
+    const commands = [
+      { type: 'command', intent: { type: 'MOVE', payload: { unitIds: [1, 2], x: 100, y: 200 } } },
+      { type: 'command', intent: { type: 'STOP', payload: { unitIds: [1] } } },
+      { type: 'command', intent: { type: 'HOLD', payload: { unitIds: [1] } } },
+      { type: 'command', intent: { type: 'PATROL', payload: { unitIds: [1], x: 100, y: 200 } } },
+      { type: 'command', intent: { type: 'ATTACK', payload: { unitIds: [1], targetId: 5 } } },
+      { type: 'command', intent: { type: 'ATTACK_MOVE', payload: { unitIds: [1], x: 100, y: 200 } } },
+      { type: 'command', intent: { type: 'SURRENDER', payload: {} } }
+    ]
+    for (const message of commands) {
+      expect(isCommandMessage(message)).toBe(true)
+    }
+  })
+
+  it('rejects non-conforming command payloads', () => {
+    expect(isCommandMessage(null)).toBe(false)
+    expect(isCommandMessage({ type: 'command' })).toBe(false)
+    expect(isCommandMessage({ type: 'MOVE', unitIds: [1], x: 0, y: 0 })).toBe(false)
+    expect(
+      isCommandMessage({ type: 'command', intent: { type: 'MOVE', payload: { unitIds: [1], x: 0.5, y: 0 } } })
+    ).toBe(false)
+    expect(isCommandMessage({ type: 'command', intent: { type: 'MOVE', payload: { unitIds: '1', x: 0, y: 0 } } })).toBe(
+      false
+    )
+    expect(
+      isCommandMessage({ type: 'command', intent: { type: 'ATTACK', payload: { unitIds: [1], targetId: 2.5 } } })
+    ).toBe(false)
+    expect(isCommandMessage({ type: 'command', intent: { type: 'SURRENDER', payload: { unitIds: [1] } } })).toBe(false)
+    expect(isCommandMessage({ type: 'command', intent: { type: 'FLY', payload: {} } })).toBe(false)
+  })
+})
+
 describe('protocol snapshot message', () => {
   const valid = {
     type: 'snapshot',
     tick: 7,
+    phase: 'RUNNING' as const,
     units: [
       { id: 1, x: 256, y: 512, owner: 0, kind: 'pawn', hp: 90, maxHp: 100, orderState: 'attacking' },
       { id: 2, x: 0, y: 0, owner: 1 }
@@ -41,8 +76,14 @@ describe('protocol snapshot message', () => {
     expect(isSnapshotMessage(valid)).toBe(true)
   })
 
+  it('accepts a finished snapshot', () => {
+    expect(isSnapshotMessage({ ...valid, phase: 'FINISHED' })).toBe(true)
+  })
+
   it('accepts a snapshot with no units', () => {
-    expect(isSnapshotMessage({ type: 'snapshot', tick: 0, units: [], players: [], events: [] })).toBe(true)
+    expect(isSnapshotMessage({ type: 'snapshot', tick: 0, phase: 'RUNNING', units: [], players: [], events: [] })).toBe(
+      true
+    )
   })
 
   it('accepts a unit with optional combat fields omitted', () => {
@@ -50,6 +91,7 @@ describe('protocol snapshot message', () => {
       isSnapshotMessage({
         type: 'snapshot',
         tick: 0,
+        phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0 }],
         players: [],
         events: []
@@ -57,11 +99,12 @@ describe('protocol snapshot message', () => {
     ).toBe(true)
   })
 
-  it('rejects unknown kinds and order states', () => {
+  it('rejects unknown kinds, order states, and phases', () => {
     expect(
       isSnapshotMessage({
         type: 'snapshot',
         tick: 1,
+        phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0, kind: 'zeppelin' }],
         players: [],
         events: []
@@ -71,30 +114,50 @@ describe('protocol snapshot message', () => {
       isSnapshotMessage({
         type: 'snapshot',
         tick: 1,
+        phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0, orderState: 'flying' }],
         players: [],
         events: []
       })
     ).toBe(false)
+    expect(isSnapshotMessage({ type: 'snapshot', tick: 1, phase: 'PAUSED', units: [], players: [], events: [] })).toBe(
+      false
+    )
   })
 
   it('rejects malformed players and events', () => {
-    expect(isSnapshotMessage({ type: 'snapshot', tick: 1, units: [], players: [null], events: [] })).toBe(false)
-    expect(isSnapshotMessage({ type: 'snapshot', tick: 1, units: [], players: [], events: [{ type: 'nope' }] })).toBe(
-      false
-    )
+    expect(
+      isSnapshotMessage({ type: 'snapshot', tick: 1, phase: 'RUNNING', units: [], players: [null], events: [] })
+    ).toBe(false)
+    expect(
+      isSnapshotMessage({
+        type: 'snapshot',
+        tick: 1,
+        phase: 'RUNNING',
+        units: [],
+        players: [],
+        events: [{ type: 'nope' }]
+      })
+    ).toBe(false)
   })
 
   it('rejects non-conforming payloads', () => {
     expect(isSnapshotMessage(null)).toBe(false)
     expect(isSnapshotMessage({ type: 'snapshot', tick: 1 })).toBe(false)
-    expect(isSnapshotMessage({ type: 'snapshot', tick: 1.5, units: [], players: [], events: [] })).toBe(false)
-    expect(isSnapshotMessage({ type: 'snapshot', tick: 1, units: '[]', players: [], events: [] })).toBe(false)
-    expect(isSnapshotMessage({ type: 'snapshot', tick: 1, units: [null], players: [], events: [] })).toBe(false)
+    expect(
+      isSnapshotMessage({ type: 'snapshot', tick: 1.5, phase: 'RUNNING', units: [], players: [], events: [] })
+    ).toBe(false)
+    expect(
+      isSnapshotMessage({ type: 'snapshot', tick: 1, phase: 'RUNNING', units: '[]', players: [], events: [] })
+    ).toBe(false)
+    expect(
+      isSnapshotMessage({ type: 'snapshot', tick: 1, phase: 'RUNNING', units: [null], players: [], events: [] })
+    ).toBe(false)
     expect(
       isSnapshotMessage({
         type: 'snapshot',
         tick: 1,
+        phase: 'RUNNING',
         units: [{ id: 1, x: 1.5, y: 0, owner: 0 }],
         players: [],
         events: []
@@ -104,12 +167,15 @@ describe('protocol snapshot message', () => {
       isSnapshotMessage({
         type: 'snapshot',
         tick: 1,
+        phase: 'RUNNING',
         units: [{ id: 1, x: 1, y: 0, owner: 4 }],
         players: [],
         events: []
       })
     ).toBe(false)
-    expect(isSnapshotMessage({ type: 'error', tick: 1, units: [], players: [], events: [] })).toBe(false)
+    expect(isSnapshotMessage({ type: 'error', tick: 1, phase: 'RUNNING', units: [], players: [], events: [] })).toBe(
+      false
+    )
   })
 })
 

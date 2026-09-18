@@ -29,6 +29,7 @@ export interface SnapshotPlayer {
 export interface SnapshotMessage {
   readonly type: 'snapshot'
   readonly tick: number
+  readonly phase: 'RUNNING' | 'FINISHED'
   readonly units: readonly SnapshotUnit[]
   readonly players: readonly SnapshotPlayer[]
   readonly events: readonly SimulationEvent[]
@@ -135,6 +136,7 @@ export function isSnapshotMessage(value: unknown): value is SnapshotMessage {
   return (
     message.type === 'snapshot' &&
     Number.isInteger(message.tick) &&
+    (message.phase === 'RUNNING' || message.phase === 'FINISHED') &&
     Array.isArray(message.units) &&
     message.units.every(isSnapshotUnit) &&
     Array.isArray(message.players) &&

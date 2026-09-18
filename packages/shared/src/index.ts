@@ -1,6 +1,7 @@
 export const version = '0.1.0'
 
 export * from './asset-manifest.js'
+export * from './commands.js'
 export * from './events.js'
 export * from './fixed.js'
 export * from './ids.js'
