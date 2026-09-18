@@ -1,6 +1,7 @@
 import { Application, Graphics, type Ticker } from 'pixi.js'
 import { Viewport } from 'pixi-viewport'
 import { AssetLibrary } from './assets/asset-library.js'
+import { EffectsLayer } from './effects-layer.js'
 import { CommandPing } from './ping.js'
 import { SelectionController } from './selection.js'
 import { TerrainLayer } from './terrain-layer.js'
@@ -11,6 +12,8 @@ const MIN_ZOOM = 0.05
 const MAX_ZOOM = 4
 /** Canvas background is always the water color so no beige ever shows. */
 const WATER_BG = 0x47aba9
+/** How long a unit shows its attack animation after firing (wall clock). */
+const ATTACK_ANIM_MS = 150
 
 /**
  * PixiJS renderer orchestrator. Owns the Application and the viewport, and
@@ -24,6 +27,7 @@ export class PixiRenderer implements GameRenderer {
   private units: UnitLayer | null = null
   private selection: SelectionController | null = null
   private ping: CommandPing | null = null
+  private effects: EffectsLayer | null = null
   private terrain: TerrainLayer | null = null
   private readonly options: RendererOptions
   private callbacks: RendererCallbacks = {}
@@ -90,6 +94,7 @@ export class PixiRenderer implements GameRenderer {
       }
     })
     const ping = new CommandPing(viewport)
+    const effects = new EffectsLayer(viewport)
     const terrain = new TerrainLayer(viewport, this.assets)
     if (this.options.map !== undefined) {
       await terrain.build(this.options.map)
@@ -120,21 +125,38 @@ export class PixiRenderer implements GameRenderer {
     this.units = units
     this.selection = selection
     this.ping = ping
+    this.effects = effects
     this.terrain = terrain
   }
 
   present(frame: RenderFrame): void {
-    if (this.viewport === null || this.units === null || this.selection === null || this.ping === null) {
+    if (
+      this.viewport === null ||
+      this.units === null ||
+      this.selection === null ||
+      this.ping === null ||
+      this.effects === null
+    ) {
       throw new Error('PixiRenderer: not mounted')
     }
-    this.units.present(frame.units, performance.now())
+    const now = performance.now()
+    this.units.present(frame.units, now)
     this.selection.updateRings()
     this.ping.expireIfElapsed(Date.now())
+    for (const event of frame.events ?? []) {
+      if (event.type === 'attackFired') {
+        this.units.beginAttack(event.attackerId, now + ATTACK_ANIM_MS)
+      }
+    }
+    for (const unit of frame.units) {
+      this.effects.trackPosition(unit.id, unit.x, unit.y)
+    }
+    this.effects.handleEvents(frame.events ?? [], now)
   }
 
   /** Visual-loop tick: advances animations and eases interpolated positions. */
   private tick(ticker: Ticker): void {
-    if (this.units === null || this.selection === null || this.ping === null) {
+    if (this.units === null || this.selection === null || this.ping === null || this.effects === null) {
       return
     }
     const now = performance.now()
@@ -142,6 +164,7 @@ export class PixiRenderer implements GameRenderer {
     this.units.interpolate(now)
     this.selection.updateRings()
     this.ping.expireIfElapsed(now)
+    this.effects.tick(now)
   }
 
   setSelection(ids: readonly number[]): void {
@@ -179,6 +202,7 @@ export class PixiRenderer implements GameRenderer {
     this.units = null
     this.selection = null
     this.ping = null
+    this.effects = null
     this.terrain = null
   }
 
@@ -194,7 +218,7 @@ export class PixiRenderer implements GameRenderer {
   getUnitSpriteState(id: number): {
     readonly visible: boolean
     readonly frame: number | null
-    readonly anim: 'idle' | 'run' | 'fallback'
+    readonly anim: 'idle' | 'run' | 'attack' | 'fallback'
     readonly inTree: boolean
     readonly facing: number
   } | null {

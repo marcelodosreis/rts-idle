@@ -1,7 +1,7 @@
 import { Graphics, type PointData } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
 import type { UnitLayer } from './unit-layer.js'
-import { UNIT_RADIUS } from './unit-layer.js'
+import { UNIT_RADIUS } from './unit-sprite.js'
 
 const SELECTION_COLOR = 0xfbc02d
 const BOX_FILL_COLOR = 0x1565c0

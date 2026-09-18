@@ -65,7 +65,7 @@ export interface GameRenderer {
   getUnitSpriteState(id: number): {
     readonly visible: boolean
     readonly frame: number | null
-    readonly anim: 'idle' | 'run' | 'fallback'
+    readonly anim: 'idle' | 'run' | 'attack' | 'fallback'
     readonly inTree: boolean
     readonly facing: number
   } | null
