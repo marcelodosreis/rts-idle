@@ -2,7 +2,7 @@
 
 Status: **paused mid-execution** (user decision). Tree is **green** on branch
 `feat/visual-core`: **191 vitest + 11 e2e pass**, typecheck/lint/build clean.
-Run `pnpm verify` to confirm.
+Run `pnpm run verify` to confirm.
 
 Two agents will work here: (1) the **animation/sprite agent** (now), then (2)
 the **Phase 1 continuation** (Sprints F–G).
@@ -56,7 +56,8 @@ already verified or flagged during the visual sprint.
   `shared/fixed.ts` conversions — the continuation depends on them.
 - Keep the package dependency matrix green (`renderer → game-data` is allowed).
 - Assets stay out of git until the pack license is validated.
-- After changes: `pnpm verify` + `pnpm exec playwright test` all green.
+- After changes: `pnpm run verify` plus the focused E2E target; use the full
+  Chromium gate for the final browser handoff.
 
 ---
 
@@ -89,8 +90,9 @@ surrender, combat A9/A10).
 
 ### Rules
 - 1 commit per task, ≤10 files (husky gate). Conventional commits, lower-case
-  subject. Claim files in `docs/agent-ledger.md`.
+  subject. Inspect the working tree before editing and keep the handoff diff scoped.
 - Regen the golden hash deliberately whenever the canonical format changes
   (components, players); `SIMULATION_VERSION` is already `0.2.0`.
-- Verify: focused vitest → `pnpm verify` → `pnpm exec playwright test`.
+- Verify: focused vitest → `pnpm run verify` → focused E2E, then full Chromium
+  E2E only for the final handoff.
 - License gate: no art commits until validated.

@@ -13,8 +13,8 @@ The deterministic core. This document is the operational reference for
 - The canonical byte format and the state hash are pinned by
   `tests/simulation/hash-golden.test.ts` and the determinism suites. Changing
   the format is a deliberate act (regen the golden).
-- `SIMULATION_VERSION` is `0.3.0` (players/wallet and Kind joined the canonical
-  state during Phase 1).
+- `SIMULATION_VERSION` is `0.4.0` (Economy v0 components and GATHER orders
+  joined the canonical state).
 
 ## Single writer
 
@@ -31,10 +31,11 @@ The pipeline order is part of the deterministic contract:
 |---|---|---|
 | 1 | `orders` | Advance the per-unit order queue (PATROL leg rotation) |
 | 2 | `movement` | Advance units toward their destination (integer remainder) |
-| 3 | `combat` | Resolve attack intent; accumulate damage in the per-tick buffer |
-| 4 | `death` | Apply the damage buffer simultaneously; remove the dead, clear refs |
-| 5 | `victory` | Decide win/draw/tick-limit; mark losers defeated |
-| 6 | `invariants` | Validate the state (never mutates, throws on violation) |
+| 3 | `economy` | Gather minerals, return cargo, and deposit using post-movement positions |
+| 4 | `combat` | Resolve attack intent; accumulate damage in the per-tick buffer |
+| 5 | `death` | Apply the damage buffer simultaneously; remove the dead, clear refs |
+| 6 | `victory` | Decide win/draw/tick-limit; mark losers defeated |
+| 7 | `invariants` | Validate the state (never mutates, throws on violation) |
 
 Appending a step is a deliberate change; reordering is forbidden
 (`tests/simulation/pipeline-order.test.ts`).
@@ -51,6 +52,9 @@ Registered in `createWorld()` in this order (part of the canonical schema):
 - `Combat` — damage, range (tiles), cooldown (ticks), remaining cooldown.
 - `Kind` — unit archetype (`pawn` / `warrior` / `archer`), driven by
   `data/unit-stats.ts` per-role combat stats.
+- `MineralNode` — remaining mineral amount.
+- `Base` — marker for an owned deposit point.
+- `Cargo` — a Worker's carried mineral amount and capacity.
 
 ## Commands
 
@@ -74,6 +78,15 @@ finishes when one player remains (win), nobody remains (draw), or the tick
 limit is reached (5000 ticks ≈ 4 minutes at 20/s). `phase` becomes `FINISHED`
 and is a deterministic flag — the tick keeps advancing so consumers see
 liveness.
+
+## Economy v0
+
+`GATHER` is valid for owned pawn Workers with Cargo and a live Mineral Node.
+Workers move through the existing straight-line Movement component, collect one
+mineral per 20 uncontested ticks up to capacity 10, then return to the nearest
+owned Base (distance, then entity id). `PlayerState.gold` is the internal v0
+mineral wallet and changes only on deposit. Nodes, cargo, order phase/progress,
+and wallet balances are canonical; a dead Worker loses its Cargo component.
 
 ## Serialization
 

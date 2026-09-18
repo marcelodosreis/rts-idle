@@ -10,7 +10,8 @@ Filtered replica of the state, RTS input, PixiJS + pixi-viewport renderer, HUD, 
 
 ```bash
 pnpm run dev
-pnpm run test:e2e
+pnpm run test:e2e:focused tests/e2e/<target>.spec.ts --list
+pnpm run test:e2e:focused tests/e2e/<target>.spec.ts
 pnpm run build
 ```
 

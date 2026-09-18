@@ -19,7 +19,8 @@ replays. This document is the operational reference; the math lives in
   (`SYSTEM_PIPELINE`, ADR-013); reordering is forbidden and asserted by a test.
 - **Deterministic iteration.** Systems iterate `world.aliveIds()` (sorted by
   id) and pick targets by strictly-lower distance, so ties resolve to the
-  lowest id.
+  lowest id. Economy uses the same ordering for node contention and Base
+  distance ties.
 - **Frozen schema.** The canonical byte format (component registration order,
   presence flags, tags) is pinned by `tests/simulation/hash-golden.test.ts`.
   Changing it requires a deliberate `SIMULATION_VERSION` bump and golden regen.
@@ -34,6 +35,6 @@ replays. This document is the operational reference; the math lives in
 
 ## Compatibility
 
-`SIMULATION_VERSION` is the tag on every state. It is `0.3.0` (players/wallet,
-then Kind joined the canonical state in Phase 1). A mismatch in rules identity
-means the states are not interchangeable.
+`SIMULATION_VERSION` is the tag on every state. It is `0.4.0` (Economy v0
+components and GATHER order state joined the canonical stream). A mismatch in
+rules identity means the states are not interchangeable.

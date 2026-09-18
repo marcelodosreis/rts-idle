@@ -75,7 +75,7 @@ The deepening passes are the existing phases 1–3, re-applied to a core that is
 - Add a milestone to §2 and a phase block (M0) after Phase 0 in §23.
 - Reorder phase 1–3 delivery so each deepening pass keeps the game playable.
 - Gate M0 is added to the Phase 0 gate checklist.
-- This is a **coordinated pass**: `docs/master-plan.md` is shared territory (see `docs/agent-ledger.md`) and must be flagged before the tables are rewritten.
+- This is a **coordinated pass**: `docs/master-plan.md` is shared territory and must be reviewed before the tables are rewritten.
 
 ## Open questions for approval
 

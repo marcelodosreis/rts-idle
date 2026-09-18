@@ -10,7 +10,8 @@ Rooms with four slots, the Room lifecycle, match authority, WebSocket transport,
 
 ```bash
 pnpm run test:integration
-pnpm run test:e2e
+pnpm run test:e2e:focused tests/e2e/<target>.spec.ts --list
+pnpm run test:e2e:focused tests/e2e/<target>.spec.ts
 pnpm run build
 ```
 
