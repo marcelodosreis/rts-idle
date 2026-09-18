@@ -5,12 +5,27 @@ export interface DemoSpawn {
   readonly kind: UnitKind
   readonly x: Fixed
   readonly y: Fixed
+  readonly worker?: boolean
+}
+
+export interface DemoBaseSpawn {
+  readonly owner: PlayerId
+  readonly x: Fixed
+  readonly y: Fixed
+}
+
+export interface DemoMineralNodeSpawn {
+  readonly x: Fixed
+  readonly y: Fixed
+  readonly remaining: number
 }
 
 export interface DemoScenario {
   readonly id: string
   readonly label: string
   readonly spawns: readonly DemoSpawn[]
+  readonly bases?: readonly DemoBaseSpawn[]
+  readonly mineralNodes?: readonly DemoMineralNodeSpawn[]
   /** Engagement pairs: index of the attacking spawn → index of its target. */
   readonly attacks: readonly (readonly [number, number])[]
   /**
@@ -70,6 +85,17 @@ function defaultScenario(): DemoScenario {
  */
 export const DEMO_SCENARIOS: readonly DemoScenario[] = [
   defaultScenario(),
+  {
+    id: 'economy',
+    label: 'Economy',
+    spawns: [{ owner: 0, kind: PAWN, worker: true, ...tile(7, 8) }],
+    bases: [
+      { owner: 0, ...tile(6, 8) },
+      { owner: 1, ...tile(24, 24) }
+    ],
+    mineralNodes: [{ remaining: 3000, ...tile(10, 8) }],
+    attacks: []
+  },
   {
     id: '2v2',
     label: '2v2',

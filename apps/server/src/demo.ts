@@ -1,10 +1,14 @@
 import { allocateEntityId, START_ENTITY_ID } from '@rts/shared'
 import {
+  Base,
+  Cargo,
   Combat,
   createRulesIdentity,
   createWorld,
   Health,
   Kind,
+  MINERAL_CARGO_CAPACITY,
+  MineralNode,
   Orders,
   Owner,
   Position,
@@ -46,7 +50,25 @@ export function createDemoSession(
       cooldownTicks: stats.cooldownTicks,
       cooldownRemaining: 0
     })
+    if (spawn.worker === true) {
+      world.store(Cargo).set(allocated.id, { amount: 0, capacity: MINERAL_CARGO_CAPACITY })
+    }
     ids.push(allocated.id)
+  }
+  for (const base of scenario.bases ?? []) {
+    const allocated = allocateEntityId(next)
+    next = allocated.nextEntityId
+    world.createEntity(allocated.id)
+    world.store(Position).set(allocated.id, { x: base.x, y: base.y })
+    world.store(Owner).set(allocated.id, { owner: base.owner })
+    world.store(Base).set(allocated.id, {})
+  }
+  for (const node of scenario.mineralNodes ?? []) {
+    const allocated = allocateEntityId(next)
+    next = allocated.nextEntityId
+    world.createEntity(allocated.id)
+    world.store(Position).set(allocated.id, { x: node.x, y: node.y })
+    world.store(MineralNode).set(allocated.id, { remaining: node.remaining })
   }
   for (const [attacker, target] of scenario.attacks) {
     // The player's units start idle in interactive scenarios; cinematic
