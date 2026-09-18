@@ -9,6 +9,9 @@ import { validateOwnedUnits } from './validate-units.js'
  * within range. Clears movement so the unit stays where it is.
  */
 export function applyHold(state: GameState, command: ScheduledCommand): void {
+  if (command.intent.type !== 'HOLD') {
+    throw new Error('applyHold: expected a HOLD command')
+  }
   const unitIds = command.intent.payload.unitIds
   validateOwnedUnits(state, command, unitIds)
   const orders = state.world.store(Orders)

@@ -6,6 +6,7 @@ import { applyHold } from './hold.js'
 import { applyMove } from './move.js'
 import { applyPatrol } from './patrol.js'
 import { applyStop } from './stop.js'
+import { applySurrender } from './surrender.js'
 
 /**
  * Dispatches a scheduled command to its handler. Every command type validates
@@ -31,6 +32,9 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
       return
     case 'ATTACK_MOVE':
       applyAttackMove(state, command)
+      return
+    case 'SURRENDER':
+      applySurrender(state, command)
       return
   }
 }

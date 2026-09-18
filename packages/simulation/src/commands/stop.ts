@@ -9,6 +9,9 @@ import { validateOwnedUnits } from './validate-units.js'
  * mutating any unit.
  */
 export function applyStop(state: GameState, command: ScheduledCommand): void {
+  if (command.intent.type !== 'STOP') {
+    throw new Error('applyStop: expected a STOP command')
+  }
   const unitIds = command.intent.payload.unitIds
   validateOwnedUnits(state, command, unitIds)
   const orders = state.world.store(Orders)

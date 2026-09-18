@@ -31,6 +31,9 @@ export interface AttackMovePayload {
   readonly y: Fixed
 }
 
+/** SURRENDER has no payload: the issuing player concedes their own match. */
+export type SurrenderPayload = Record<string, never>
+
 export type CommandIntent =
   | { readonly type: 'MOVE'; readonly payload: MovePayload }
   | { readonly type: 'STOP'; readonly payload: StopPayload }
@@ -38,6 +41,7 @@ export type CommandIntent =
   | { readonly type: 'PATROL'; readonly payload: PatrolPayload }
   | { readonly type: 'ATTACK'; readonly payload: AttackPayload }
   | { readonly type: 'ATTACK_MOVE'; readonly payload: AttackMovePayload }
+  | { readonly type: 'SURRENDER'; readonly payload: SurrenderPayload }
 
 export interface ScheduledCommand {
   readonly tick: number
