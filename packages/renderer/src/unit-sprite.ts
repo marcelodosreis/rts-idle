@@ -5,21 +5,21 @@ import type { UnitKind } from './types.js'
 const OWNER_COLORS = [0x2e7d32, 0xc62828, 0x1565c0, 0xf9a825]
 
 /** Visual radius of a unit placeholder in render pixels (1 tile = 64 px). */
-export const UNIT_RADIUS = 20
-/** Sprite scale: 192 px unit cells render about 0.75 tile tall (48 px). */
-const SPRITE_SCALE = 0.25
+export const UNIT_RADIUS = 28
+/** Sprite scale: 192 px unit cells render about 1.1 tiles tall (72 px). */
+const SPRITE_SCALE = 0.375
 /** Height of the overhead health bar above the unit in render pixels. */
-const HP_BAR_OFFSET_Y = -28
+const HP_BAR_OFFSET_Y = -42
 
 export const FACTION_BY_OWNER: readonly ('blue' | 'red' | 'purple' | 'yellow')[] = ['blue', 'red', 'purple', 'yellow']
 
 /**
  * Attack-animation subtype per kind: the curated pack names them differently
- * (warrior_attack, archer_shoot). Pawns have no attack pose, so they reuse the
- * axe "interact" swing as a temporary melee animation instead of standing idle
- * (swap for a real pose when the pack gains one).
+ * (warrior_attack1/attack2, archer_shoot). Pawns have no attack pose, so they
+ * reuse the axe "interact" swing as a temporary melee animation instead of
+ * standing idle (swap for a real pose when the pack gains one).
  */
-const ATTACK_SUBTYPE: Record<UnitKind, string> = { pawn: 'interact_axe', warrior: 'attack', archer: 'shoot' }
+const ATTACK_SUBTYPE: Record<UnitKind, string> = { pawn: 'interact_axe', warrior: 'attack1', archer: 'shoot' }
 
 export interface UnitFrames {
   readonly idle: AnimatedSprite
@@ -80,7 +80,7 @@ export class UnitSprite {
     this.container.eventMode = 'static'
     this.container.cursor = 'pointer'
     // Circular hit area centered on the sprite so selection matches its bounds.
-    this.container.hitArea = new Circle(0, 0, 24)
+    this.container.hitArea = new Circle(0, 0, 30)
     if (frames !== null) {
       // Own private copies so this unit animates independently of its kind.
       this.frames = {
@@ -174,6 +174,19 @@ export class UnitSprite {
   /** Starts the attack animation for `until` (wall clock, presentation only). */
   beginAttack(until: number): void {
     this.attackUntil = until
+    // Restart the swing from the first frame so every attack plays a full
+    // cycle instead of resuming wherever the loop happened to be.
+    this.frames?.attack?.gotoAndPlay(0)
+  }
+
+  /**
+   * Nominal wall-clock duration of one full attack cycle in milliseconds
+   * (frames × 100 ms/frame from the manifest), or 0 when there is no attack
+   * animation to show.
+   */
+  attackCycleMs(): number {
+    const attack = this.frames?.attack
+    return attack === undefined || attack === null ? 0 : attack.totalFrames * 100
   }
 
   /** Last reported health, or `null` when the unit is not combat-capable. */

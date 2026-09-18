@@ -12,8 +12,6 @@ const MIN_ZOOM = 0.05
 const MAX_ZOOM = 4
 /** Canvas background is always the water color so no beige ever shows. */
 const WATER_BG = 0x47aba9
-/** How long a unit shows its attack animation after firing (wall clock). */
-const ATTACK_ANIM_MS = 150
 
 /**
  * PixiJS renderer orchestrator. Owns the Application and the viewport, and
@@ -151,7 +149,7 @@ export class PixiRenderer implements GameRenderer {
     this.ping.expireIfElapsed(Date.now())
     for (const event of frame.events ?? []) {
       if (event.type === 'attackFired') {
-        this.units.beginAttack(event.attackerId, now + ATTACK_ANIM_MS)
+        this.units.beginAttack(event.attackerId, now)
       }
     }
     for (const unit of frame.units) {

@@ -173,11 +173,12 @@ export class UnitLayer {
     }
   }
 
-  /** Starts the attack animation for a unit (wall-clock until, presentation). */
-  beginAttack(id: number, until: number): void {
+  /** Starts the attack animation for a unit (wall-clock, presentation only). */
+  beginAttack(id: number, now: number): void {
     const sprite = this.units.get(id)
     if (sprite !== undefined) {
-      sprite.beginAttack(until)
+      const cycle = sprite.attackCycleMs()
+      sprite.beginAttack(now + (cycle > 0 ? cycle : 250))
     }
   }
 

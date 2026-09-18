@@ -47,9 +47,10 @@ function CommandGroup({ label, children }: { readonly label: string; readonly ch
 }
 
 /**
- * Action palette: immediate orders (Stop/Hold/Surrender) and pending orders
- * (Patrol/Attack-move/Attack) that await a battlefield right-click. Buttons
- * are disabled without a selection except Surrender, which always works.
+ * Action palette with at most two buttons per column: immediate orders
+ * (Stop/Hold), pending attacks (Attack/Attack-move), and movement/utility
+ * (Patrol/Surrender). Pending orders await a battlefield right-click; the
+ * armed mode is shown as a compact hint only while active.
  */
 export function CommandBar({ disabled, mode, onStop, onHold, onSurrender, onArm }: CommandBarProps) {
   return (
@@ -75,9 +76,6 @@ export function CommandBar({ disabled, mode, onStop, onHold, onSurrender, onArm 
         >
           Hold
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={onSurrender} className="w-full whitespace-nowrap">
-          Surrender
-        </Button>
       </CommandGroup>
       <CommandGroup label="Attack">
         <ArmButton label="Attack" active={mode === 'attack'} disabled={disabled} onClick={() => onArm('attack')} />
@@ -87,17 +85,24 @@ export function CommandBar({ disabled, mode, onStop, onHold, onSurrender, onArm 
           disabled={disabled}
           onClick={() => onArm('attack_move')}
         />
-        <ArmButton label="Patrol" active={mode === 'patrol'} disabled={disabled} onClick={() => onArm('patrol')} />
       </CommandGroup>
-      <div
-        className={cn(
-          'flex w-40 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-muted/30 p-2 text-center text-xs text-muted-foreground',
-          mode !== 'none' && 'border-primary/60 text-primary'
-        )}
-        aria-live="polite"
-      >
-        {mode === 'none' ? 'Right-click enemy to attack, ground to move.' : `Pick a target: ${mode}.`}
-      </div>
+      <CommandGroup label="Utility">
+        <ArmButton label="Patrol" active={mode === 'patrol'} disabled={disabled} onClick={() => onArm('patrol')} />
+        <Button type="button" variant="outline" size="sm" onClick={onSurrender} className="w-full whitespace-nowrap">
+          Surrender
+        </Button>
+      </CommandGroup>
+      {mode !== 'none' ? (
+        <div
+          className={cn(
+            'flex w-36 shrink-0 items-center justify-center rounded-xl border border-primary/60 bg-primary/10 p-2 text-center text-xs text-primary',
+            'animate-pulse'
+          )}
+          aria-live="polite"
+        >
+          Pick a target: {mode}.
+        </div>
+      ) : null}
     </div>
   )
 }
