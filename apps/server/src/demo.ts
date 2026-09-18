@@ -17,11 +17,11 @@ import { GameSession } from './sessions/session.js'
 export const DEMO_IDENTITY: RulesIdentity = createRulesIdentity('demo')
 
 /**
- * Hostile demo: each faction spawns in its own spot with combat stats and
- * mutual ATTACK orders, so the squads march toward one another and fight where
- * they meet. With `aggression = 'passive'`, the enemy side (owners ≠ 0) spawns
- * without orders and never attacks; the player (owner 0) keeps its orders so
- * the match stays controllable for testing.
+ * Hostile demo: enemies spawn in their own spot with combat stats and, in
+ * offensive mode, march to attack the player. The player's own units (owner 0)
+ * always spawn idle — they never move or attack until the player issues an
+ * order. With `aggression = 'passive'`, enemies spawn without orders too and
+ * never attack.
  */
 export function createDemoSession(
   scenarioId: string | undefined = '6v6',
@@ -49,7 +49,9 @@ export function createDemoSession(
     ids.push(allocated.id)
   }
   for (const [attacker, target] of scenario.attacks) {
-    if (aggression === 'passive' && scenario.spawns[attacker]!.owner !== 0) {
+    // The player's units start idle in interactive scenarios; cinematic
+    // scenarios (playerIdle: false) let both sides fight on their own.
+    if ((scenario.playerIdle !== false && scenario.spawns[attacker]!.owner === 0) || aggression === 'passive') {
       continue
     }
     world.store(Orders).set(ids[attacker]!, { queue: [{ type: 'ATTACK', targetId: ids[target]! }] })

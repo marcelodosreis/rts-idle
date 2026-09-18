@@ -32,11 +32,11 @@ test('a MOVE with fractional world coordinates still moves the unit', async ({ p
   // coordinates, which is what a real browser produces.
   await page.evaluate(() => window.__rtsDebug!.moveCamera(2048.5, 2048.5))
 
-  // Real right-click at integer screen pixels near the top-left corner →
-  // fractional world target on open ground (away from the engaged cluster, so
-  // the MOVE command is guaranteed to be issued).
+  // Real right-click at integer screen pixels near a canvas corner → fractional
+  // world target on open ground (the engaged cluster sits near the center, so a
+  // corner is guaranteed to be empty).
   const rect = await canvasRect(page)
-  const target = { x: rect.left + 80, y: rect.top + 80 }
+  const target = { x: rect.left + 30, y: rect.top + rect.height - 30 }
   await page.mouse.click(target.x, target.y, { button: 'right' })
 
   // The command reached the renderer (ping) and the server accepted it (move).

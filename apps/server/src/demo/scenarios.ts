@@ -13,6 +13,12 @@ export interface DemoScenario {
   readonly spawns: readonly DemoSpawn[]
   /** Engagement pairs: index of the attacking spawn → index of its target. */
   readonly attacks: readonly (readonly [number, number])[]
+  /**
+   * When true (default), the player's own units (owner 0) spawn idle and never
+   * move until ordered; only enemies march/attack. Cinematic scenarios (win /
+   * defeat) set it false so both sides fight and the result resolves itself.
+   */
+  readonly playerIdle?: boolean
 }
 
 function tile(x: number, y: number): { readonly x: Fixed; readonly y: Fixed } {
@@ -30,10 +36,13 @@ const KINDS: readonly UnitKind[] = [PAWN, WARRIOR, ARCHER]
 
 /** Deterministic kind assignment (seeded, so replays stay stable). */
 function randomKinds(count: number, seed: number): UnitKind[] {
-  const rng = createRng(seed)
+  let rng = createRng(seed)
   const kinds: UnitKind[] = []
   for (let i = 0; i < count; i += 1) {
-    kinds.push(KINDS[rngNextInt(rng, KINDS.length).value]!)
+    // rngNextInt is pure: it returns the next state instead of mutating.
+    const draw = rngNextInt(rng, KINDS.length)
+    rng = draw.nextState
+    kinds.push(KINDS[draw.value]!)
   }
   return kinds
 }
@@ -42,9 +51,9 @@ const RANDOM_UNITS_PER_SIDE = 6
 
 /**
  * Default scenario: six units per side with kinds randomized across the three
- * available archetypes. Blue sits in the top-left block, red is mirrored around
- * the map center; each blue unit is paired with its red counterpart, so the
- * squads march and fight wherever they meet.
+ * available archetypes. Blue sits in a compact block near the camera home
+ * (tile 8), red is mirrored opposite; the squads are close enough to be visible
+ * at the start, and the enemy side marches over to attack the idle player.
  */
 function randomScenario(): DemoScenario {
   const blueKinds = randomKinds(RANDOM_UNITS_PER_SIDE, DEMO_SEED)
@@ -53,14 +62,14 @@ function randomScenario(): DemoScenario {
   const attacks: (readonly [number, number])[] = []
   // Blue block first, then the mirrored red block, so pair `i` attacks `i + 6`.
   for (let i = 0; i < RANDOM_UNITS_PER_SIDE; i += 1) {
-    const bx = 4 + (i % 3)
-    const by = 4 + Math.floor(i / 3)
+    const bx = 6 + (i % 2)
+    const by = 6 + Math.floor(i / 2)
     spawns.push({ owner: 0, kind: blueKinds[i]!, ...tile(bx, by) })
   }
   for (let i = 0; i < RANDOM_UNITS_PER_SIDE; i += 1) {
-    const bx = 4 + (i % 3)
-    const by = 4 + Math.floor(i / 3)
-    spawns.push({ owner: 1, kind: redKinds[i]!, ...tile(12 - bx, 12 - by) })
+    const bx = 6 + (i % 2)
+    const by = 6 + Math.floor(i / 2)
+    spawns.push({ owner: 1, kind: redKinds[i]!, ...tile(16 - bx, 16 - by) })
   }
   for (let i = 0; i < RANDOM_UNITS_PER_SIDE; i += 1) {
     attacks.push([i, i + RANDOM_UNITS_PER_SIDE], [i + RANDOM_UNITS_PER_SIDE, i])
@@ -69,10 +78,10 @@ function randomScenario(): DemoScenario {
 }
 
 /**
- * Demo scenario catalog. Every scenario spawns each faction in its own spot
- * and arms mutual ATTACK orders, so the squads march toward one another and
- * fight where they meet. Coordinates stay within the 32-tile map, centered on
- * the camera's home tile (8).
+ * Demo scenario catalog. Each faction spawns in its own spot near the camera
+ * home, so the whole opening is visible; in offensive mode the enemy side
+ * marches to attack the idle player squad. Coordinates sit within the 32-tile
+ * map, centered on the camera's home tile (8).
  */
 export const DEMO_SCENARIOS: readonly DemoScenario[] = [
   randomScenario(),
@@ -80,10 +89,10 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
     id: '2v2',
     label: '2v2',
     spawns: [
-      { owner: 0, kind: PAWN, ...tile(5, 5) },
-      { owner: 0, kind: PAWN, ...tile(6, 5) },
-      { owner: 1, kind: PAWN, ...tile(11, 11) },
-      { owner: 1, kind: PAWN, ...tile(10, 11) }
+      { owner: 0, kind: PAWN, ...tile(6, 6) },
+      { owner: 0, kind: PAWN, ...tile(7, 6) },
+      { owner: 1, kind: PAWN, ...tile(10, 10) },
+      { owner: 1, kind: PAWN, ...tile(9, 10) }
     ],
     attacks: [
       [0, 2],
@@ -96,14 +105,14 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
     id: '4v4',
     label: '4v4',
     spawns: [
-      { owner: 0, kind: PAWN, ...tile(5, 5) },
-      { owner: 0, kind: PAWN, ...tile(6, 5) },
-      { owner: 0, kind: PAWN, ...tile(5, 6) },
       { owner: 0, kind: PAWN, ...tile(6, 6) },
-      { owner: 1, kind: PAWN, ...tile(11, 11) },
-      { owner: 1, kind: PAWN, ...tile(10, 11) },
-      { owner: 1, kind: PAWN, ...tile(11, 10) },
-      { owner: 1, kind: PAWN, ...tile(10, 10) }
+      { owner: 0, kind: PAWN, ...tile(7, 6) },
+      { owner: 0, kind: PAWN, ...tile(6, 7) },
+      { owner: 0, kind: PAWN, ...tile(7, 7) },
+      { owner: 1, kind: PAWN, ...tile(10, 10) },
+      { owner: 1, kind: PAWN, ...tile(9, 10) },
+      { owner: 1, kind: PAWN, ...tile(10, 9) },
+      { owner: 1, kind: PAWN, ...tile(9, 9) }
     ],
     attacks: [
       [0, 4],
@@ -120,10 +129,10 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
     id: 'mixed',
     label: 'Melee vs ranged',
     spawns: [
-      { owner: 0, kind: WARRIOR, ...tile(5, 5) },
-      { owner: 0, kind: ARCHER, ...tile(6, 5) },
-      { owner: 1, kind: WARRIOR, ...tile(11, 11) },
-      { owner: 1, kind: ARCHER, ...tile(10, 11) }
+      { owner: 0, kind: WARRIOR, ...tile(6, 6) },
+      { owner: 0, kind: ARCHER, ...tile(7, 6) },
+      { owner: 1, kind: WARRIOR, ...tile(10, 10) },
+      { owner: 1, kind: ARCHER, ...tile(9, 10) }
     ],
     attacks: [
       [0, 2],
@@ -136,10 +145,10 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
     id: 'ffa',
     label: 'Free for all',
     spawns: [
-      { owner: 0, kind: PAWN, ...tile(5, 5) },
-      { owner: 1, kind: PAWN, ...tile(11, 5) },
-      { owner: 2, kind: PAWN, ...tile(5, 11) },
-      { owner: 3, kind: PAWN, ...tile(11, 11) }
+      { owner: 0, kind: PAWN, ...tile(6, 6) },
+      { owner: 1, kind: PAWN, ...tile(10, 6) },
+      { owner: 2, kind: PAWN, ...tile(6, 10) },
+      { owner: 3, kind: PAWN, ...tile(10, 10) }
     ],
     attacks: [
       [0, 1],
@@ -151,11 +160,12 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
   {
     id: 'win',
     label: 'Overwhelming force',
+    playerIdle: false,
     spawns: [
-      { owner: 0, kind: PAWN, ...tile(5, 5) },
-      { owner: 0, kind: PAWN, ...tile(6, 5) },
-      { owner: 0, kind: PAWN, ...tile(5, 6) },
-      { owner: 1, kind: PAWN, ...tile(11, 11) }
+      { owner: 0, kind: PAWN, ...tile(6, 6) },
+      { owner: 0, kind: PAWN, ...tile(7, 6) },
+      { owner: 0, kind: PAWN, ...tile(6, 7) },
+      { owner: 1, kind: PAWN, ...tile(10, 10) }
     ],
     attacks: [
       [0, 3],
@@ -167,11 +177,12 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
   {
     id: 'defeat',
     label: 'Against the odds',
+    playerIdle: false,
     spawns: [
-      { owner: 0, kind: PAWN, ...tile(11, 11) },
-      { owner: 1, kind: PAWN, ...tile(5, 5) },
-      { owner: 1, kind: PAWN, ...tile(6, 5) },
-      { owner: 1, kind: PAWN, ...tile(5, 6) }
+      { owner: 0, kind: PAWN, ...tile(10, 10) },
+      { owner: 1, kind: PAWN, ...tile(6, 6) },
+      { owner: 1, kind: PAWN, ...tile(7, 6) },
+      { owner: 1, kind: PAWN, ...tile(6, 7) }
     ],
     attacks: [
       [0, 1],
