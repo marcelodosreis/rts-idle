@@ -1,5 +1,6 @@
 import { createServer } from 'node:http'
 import { type ErrorMessage, isMoveMessage, type SnapshotMessage } from '@rts/protocol'
+import type { SimulationEvent } from '@rts/shared'
 import { WebSocketServer } from 'ws'
 import { createDemoSession } from './demo.js'
 
@@ -32,21 +33,23 @@ wss.on('connection', (ws) => {
     }
   }
 
-  const send = (): void => {
+  const send = (events: readonly SimulationEvent[]): void => {
     const message: SnapshotMessage = {
       type: 'snapshot',
       tick: session.snapshot().tick,
-      units: session.projectUnits()
+      units: session.projectUnits(),
+      players: session.projectPlayers(),
+      events
     }
     if (ws.readyState === ws.OPEN) {
       ws.send(JSON.stringify(message))
     }
   }
 
-  send()
+  send([])
   const timer = setInterval(() => {
-    session.advance()
-    send()
+    const result = session.advance()
+    send(result.events)
   }, TICK_MS)
 
   ws.on('message', (raw) => {

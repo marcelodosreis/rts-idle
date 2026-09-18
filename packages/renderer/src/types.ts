@@ -1,4 +1,5 @@
 import type { MapDefinition } from '@rts/game-data'
+import type { PlayerId, SimulationEvent } from '@rts/shared'
 import type { PointData } from 'pixi.js'
 
 /** Unit visual archetype: maps to a sprite set in the asset catalog. */
@@ -11,12 +12,25 @@ export interface RenderUnit {
   readonly y: number
   readonly owner: number
   readonly kind?: UnitKind
+  /** Current/maximum health, present when the unit is combat-capable. */
+  readonly hp?: number
+  readonly maxHp?: number
+}
+
+/** A competitive slot for the HUD (defeated state, wallet). */
+export interface RenderPlayer {
+  readonly id: PlayerId
+  readonly defeated: boolean
+  readonly gold: number
 }
 
 /** A completed tick ready for presentation. */
 export interface RenderFrame {
   readonly tick: number
   readonly units: readonly RenderUnit[]
+  readonly players?: readonly RenderPlayer[]
+  /** Per-tick deterministic events that drive combat feedback. */
+  readonly events?: readonly SimulationEvent[]
 }
 
 export interface RendererCallbacks {

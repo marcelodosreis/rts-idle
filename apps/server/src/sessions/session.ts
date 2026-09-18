@@ -1,8 +1,12 @@
-import type { SnapshotUnit } from '@rts/protocol'
-import type { PlayerId } from '@rts/shared'
+import type { OrderState, SnapshotPlayer, SnapshotUnit } from '@rts/protocol'
+import type { PlayerId, SimulationEvent } from '@rts/shared'
 import {
   type CommandRejectedError,
   createSimulation,
+  Health,
+  Movement,
+  type Order,
+  Orders,
   Owner,
   Position,
   type RulesIdentity,
@@ -16,6 +20,32 @@ import {
 export interface SessionResult {
   readonly tick: number
   readonly rejected: readonly CommandRejectedError[]
+  readonly events: readonly SimulationEvent[]
+}
+
+/**
+ * Derives a unit's high-level behavior state from its front order and whether
+ * it is currently moving (drives the renderer's idle/run/attack animation).
+ * ATTACK and ATTACK_MOVE take precedence because a chasing unit is attacking
+ * even while moving.
+ */
+function deriveOrderState(front: Order | undefined, hasMovement: boolean): OrderState {
+  if (front?.type === 'ATTACK') {
+    return 'attacking'
+  }
+  if (front?.type === 'ATTACK_MOVE') {
+    return 'attack_move'
+  }
+  if (hasMovement) {
+    return 'moving'
+  }
+  if (front?.type === 'HOLD') {
+    return 'hold'
+  }
+  if (front?.type === 'PATROL') {
+    return 'patrol'
+  }
+  return 'idle'
 }
 
 /**
@@ -50,7 +80,7 @@ export class GameSession {
   advance(): SessionResult {
     const result = this.simulation.step(this.pending)
     this.pending.length = 0
-    return { tick: result.tick, rejected: result.rejected }
+    return { tick: result.tick, rejected: result.rejected, events: result.events }
   }
 
   snapshot(): SimulationSnapshot {
@@ -65,14 +95,36 @@ export class GameSession {
     const world = this.simulation.inspectState().world
     const positions = world.store(Position)
     const owners = world.store(Owner)
+    const healths = world.store(Health)
+    const orders = world.store(Orders)
+    const movements = world.store(Movement)
     return world.aliveIds().map((id) => {
       const pos = positions.get(id)
       const owner = owners.get(id)
       if (pos === undefined || owner === undefined) {
         throw new Error(`GameSession: entity ${id} is missing position or owner`)
       }
-      return { id, x: pos.x, y: pos.y, owner: owner.owner, kind: 'pawn' }
+      const health = healths.get(id)
+      const front = orders.get(id)?.queue[0]
+      const unit: SnapshotUnit = {
+        id,
+        x: pos.x,
+        y: pos.y,
+        owner: owner.owner,
+        kind: 'pawn',
+        orderState: deriveOrderState(front, movements.get(id) !== undefined),
+        ...(health === undefined ? {} : { hp: health.current, maxHp: health.max })
+      }
+      return unit
     })
+  }
+
+  projectPlayers(): readonly SnapshotPlayer[] {
+    return this.simulation.inspectState().players.map((player) => ({
+      id: player.id,
+      defeated: player.defeated,
+      gold: player.gold
+    }))
   }
 
   identity(): RulesIdentity {
