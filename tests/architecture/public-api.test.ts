@@ -9,15 +9,15 @@ import { describe, expect, it } from 'vitest'
 // and this list documents them.
 //
 // @rts/shared types: Fixed, GridPosition, EntityId, PlayerId, RngState, RngResult, RngIntResult,
-//   SimulationEvent, CommandIntent, MovePayload, UnitKind
-// @rts/protocol types: MoveMessage, CommandMessage, SnapshotMessage, SnapshotUnit, SnapshotPlayer,
-//   OrderState, ErrorMessage
+//   SimulationEvent, CommandIntent, MovePayload, GatherPayload, UnitKind
+// @rts/protocol types: MoveMessage, CommandMessage, SnapshotMessage, SnapshotUnit, SnapshotBase,
+//   SnapshotMineralNode, SnapshotPlayer, OrderState, ErrorMessage
 // @rts/simulation types: ScheduledCommand, CommandErrorCode, Order, RulesIdentity, TickResult,
 //   SimulationOptions, ComponentType, PositionData, OwnerData, MovementData, OrdersData, HealthData,
-//   CombatData, KindData, SimulationHost, SimulationSnapshot, FormationOffset, GameState, PlayerState,
-//   UnitCombatStats
-// @rts/renderer types: GameRenderer, RenderFrame, RenderUnit, RenderPlayer, RendererOptions,
-//   RendererCallbacks
+//   CombatData, KindData, MineralNodeData, BaseData, CargoData, GatherPhase, SimulationHost,
+//   SimulationSnapshot, FormationOffset, GameState, PlayerState, UnitCombatStats
+// @rts/renderer types: GameRenderer, RenderFrame, RenderUnit, RenderBase, RenderMineralNode,
+//   RenderPlayer, RendererOptions, RendererCallbacks
 
 import * as protocol from '@rts/protocol'
 import * as renderer from '@rts/renderer'
@@ -64,6 +64,9 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'Health',
       'Combat',
       'Kind',
+      'MineralNode',
+      'Base',
+      'Cargo',
       'ComponentStore',
       'World',
       'createWorld',
@@ -78,6 +81,8 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'UNIT_COMBAT_STATS',
       'UNIT_STATS_BY_KIND',
       'unitStatsFor',
+      'GATHER_TICKS_PER_MINERAL',
+      'MINERAL_CARGO_CAPACITY',
       'SYSTEM_PIPELINE',
       'runSystems',
       'checkInvariants',

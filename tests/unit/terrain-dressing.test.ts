@@ -1,3 +1,4 @@
+import type { DecorationPlacement, MapDefinition } from '@rts/game-data'
 import { type AutoTileTerrain, dressTerrain } from '@rts/renderer'
 import { describe, expect, it } from 'vitest'
 
@@ -72,5 +73,25 @@ describe('dressTerrain', () => {
       expect(item.variant).toBeGreaterThanOrEqual(0)
       expect(item.variant).toBeLessThan(8)
     }
+  })
+})
+
+// Compile-level contract for EDITOR-001: a MapDefinition accepts explicit
+// decorations and scatter counts as optional fields.
+describe('MapDefinition decoration contract', () => {
+  it('type-checks explicit decorations and decoration counts', () => {
+    const decorations: readonly DecorationPlacement[] = [
+      { x: 1, y: 2, kind: 'tree', variant: 3 },
+      { x: 4, y: 0, kind: 'gold' }
+    ]
+    const map: MapDefinition = {
+      width: 2,
+      height: 2,
+      tiles: ['water', 'water', 'water', 'land'],
+      decorations,
+      decorationCounts: { bush: 2, rock: 1 }
+    }
+    expect(map.decorations).toBe(decorations)
+    expect(map.decorationCounts).toEqual({ bush: 2, rock: 1 })
   })
 })
