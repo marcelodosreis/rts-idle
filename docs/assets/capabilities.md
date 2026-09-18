@@ -150,3 +150,24 @@ asset into a game system, validate it in the sprite lab and confirm the
 contract resolves in **Game-mapping** — the game renderer resolves
 `units.{faction}.{kind}.idle/run` today, so any key that does not match the
 pattern shows up as MISSING immediately.
+
+## 9. Phase 1 integration status (A0.2b)
+
+What the game consumed in the Phase 1 simulation/visual pass:
+
+- **Unit sprite contract** — `units.{faction}.{kind}.{subtype}` resolves
+  `idle`/`run` for every kind and `attack` via a per-kind subtype mapping
+  (warrior → `attack`, archer → `shoot`, pawn → falls back to `interact`).
+  Unit sprites are cloned per unit, flipped by direction, and scaled at
+  `SPRITE_SCALE = 0.25`.
+- **Combat feedback (V9)** — the renderer consumes the deterministic per-tick
+  events and the extended snapshot:
+  - HP bars overhead (green/yellow/red by ratio), shown only when damaged
+    (`packages/renderer/src/hp-bar.ts`).
+  - Attack streaks, floating damage numbers, and death explosions
+    (`packages/renderer/src/effects-layer.ts`).
+  - Attack animation flashes on `attackFired`.
+- **Fallback remains CI-safe** — with no art the renderer draws placeholder
+  circles; e2e tests skip art-dependent assertions when the manifest is absent.
+- The Explosion FX asset is not yet wired (death uses a procedural ring);
+  the pack's `explosion` strip is a future swap-in.

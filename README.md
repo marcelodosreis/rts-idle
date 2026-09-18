@@ -93,7 +93,7 @@ sudo env "PATH=$PATH" pnpm exec playwright install-deps chromium
 | `pnpm run verify` | Full local gate: typecheck, lint, all suites, build |
 | `pnpm run typecheck` | `tsc --noEmit` across all packages |
 | `pnpm run lint` / `lint:fix` | Biome check / check + fix |
-| `pnpm run test:*` | unit, integration, simulation, determinism, invariants, regression, architecture, e2e |
+| `pnpm run test:*` | unit, integration, simulation, contracts, orders, determinism, invariants, regression, architecture, e2e |
 | `pnpm run build` | Topological build of all packages + Vite |
 | `pnpm run replay -- <file>` | Reproduce / validate a replay |
 | `pnpm run simulate -- --games 1000` | Headless matches |
@@ -122,6 +122,8 @@ A feature is **done** only when its acceptance criteria are demonstrated by obje
   naming, typing, math clarity, testing, determinism, Definition of Done, self-audit.
 - `docs/architecture.md` — current module layout, package boundaries, shared concepts.
 - `docs/master-plan.md` — architecture, contracts, phases, acceptance criteria, risks.
+- `docs/simulation.md` — the deterministic simulation core: pipeline order, components, events, victory.
+- `docs/commands.md` — the authoritative command contract (MOVE, orders, combat, surrender).
 - `docs/assets/capabilities.md` — asset inventory and integration/polish possibilities.
 - `docs/specs/` — capability map and per-module specs.
 - `docs/adr/` — architectural decisions (Context / Decision / Alternatives / Consequences / Evidence).
@@ -135,5 +137,13 @@ fixed-timestep engine (20 t/s), canonical hashing, snapshot/restore, minimal
 replay, validated MOVE with formation, authoritative session, PixiJS renderer
 with selection/ping, benchmark + Node≡Chromium determinism, 13 ADRs, 6
 postmortems. Quality pipeline: husky + commitlint + lint-staged + biome +
-minimumReleaseAge + semantic-release. Next: Phase 1 (simulation core). See
-`tasks/todo.md`.
+minimumReleaseAge + semantic-release.
+
+Phase 1 (simulation core) **complete**: frozen systems pipeline with per-tick
+events, full command contracts + atomicity, order queue (STOP/HOLD/PATROL),
+players/wallet + surrender, instant combat (ATTACK/ATTACK_MOVE/HOLD auto-attack)
+with simultaneous death, victory/draw/tick-limit, central invariants, expanded
+determinism. The visual track delivers a hostile demo with overhead HP bars,
+attack streaks, damage popups, death explosions, and attack animations. The
+client demonstrates commands, combat feedback, and a playable match. Next:
+Phase 2 (economy and production). See `tasks/todo.md`.
