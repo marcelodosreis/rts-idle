@@ -1,5 +1,6 @@
-import type { MapDefinition, StairEntry } from '@rts/game-data'
+import type { DecorationPlacement, DressingKind, MapDefinition, StairEntry } from '@rts/game-data'
 import type { AutoTileTerrain } from './terrain-autotile.js'
+import type { ManualDecoration } from './terrain-scene.js'
 
 /**
  * Shared conversion between the sprite lab's 2D `AutoTileTerrain` grid (plus
@@ -11,12 +12,15 @@ import type { AutoTileTerrain } from './terrain-autotile.js'
 export interface GridConversion {
   readonly grid: AutoTileTerrain[][]
   readonly stairs: Map<string, 'left' | 'right'>
+  readonly decorations: readonly DecorationPlacement[]
 }
 
 export interface GridConversionOptions {
   readonly stairs?: readonly [string, 'left' | 'right'][]
   readonly palette?: string
   readonly decorationSeed?: number
+  readonly decorations?: readonly DecorationPlacement[]
+  readonly decorationCounts?: Readonly<Partial<Record<DressingKind, number>>>
 }
 
 /**
@@ -75,7 +79,9 @@ export function gridToMapDefinition(
     tiles,
     ...(options?.stairs !== undefined ? { stairs: stairsToEntries(options.stairs) } : {}),
     ...(options?.palette !== undefined ? { palette: options.palette } : {}),
-    ...(options?.decorationSeed !== undefined ? { decorationSeed: options.decorationSeed } : {})
+    ...(options?.decorationSeed !== undefined ? { decorationSeed: options.decorationSeed } : {}),
+    ...(options?.decorations !== undefined ? { decorations: options.decorations } : {}),
+    ...(options?.decorationCounts !== undefined ? { decorationCounts: options.decorationCounts } : {})
   }
 }
 
@@ -85,13 +91,55 @@ export function mapDefinitionToGrid(map: MapDefinition): GridConversion {
   for (let y = 0; y < map.height; y += 1) {
     const row: AutoTileTerrain[] = []
     for (let x = 0; x < map.width; x += 1) {
-      const raw = map.tiles[y * map.width + x] ?? 'water'
-      // Flatten elevated terrain to land — cliffs/stairs are not ready for gameplay.
-      row.push(raw === 'elevated' ? 'land' : raw)
+      row.push(map.tiles[y * map.width + x] ?? 'water')
     }
     grid.push(row)
   }
-  // Stairs are disabled: always return an empty map so the terrain scene
-  // never renders stair ramps or cliff bases.
-  return { grid: enforceWaterBorder(grid), stairs: new Map() }
+  return {
+    grid: enforceWaterBorder(grid),
+    stairs: entriesToStairs(map.stairs ?? []),
+    decorations: map.decorations ?? []
+  }
+}
+
+export interface TerrainDressingInput {
+  readonly seed: number
+  readonly counts: Readonly<Partial<Record<DressingKind, number>>>
+}
+
+export interface TerrainSceneInput {
+  readonly grid: AutoTileTerrain[][]
+  readonly stairs: Map<string, 'left' | 'right'>
+  readonly dressing: TerrainDressingInput
+  readonly decorations: ReadonlyMap<string, ManualDecoration>
+}
+
+/** Explicit placements as the `"x,y"`-keyed map `TerrainScene` renders. */
+export function decorationsToMap(decorations: readonly DecorationPlacement[]): Map<string, ManualDecoration> {
+  const map = new Map<string, ManualDecoration>()
+  for (const decoration of decorations) {
+    map.set(`${decoration.x},${decoration.y}`, {
+      kind: decoration.kind,
+      variant: decoration.variant ?? 0
+    })
+  }
+  return map
+}
+
+/**
+ * Derives the shared `TerrainScene` input from a `MapDefinition`. The game's
+ * `TerrainLayer` renders through this helper so the editor and the game share
+ * exactly one terrain path, including explicit decorations.
+ */
+export function mapToTerrainSceneInput(map: MapDefinition): TerrainSceneInput {
+  const conversion = mapDefinitionToGrid(map)
+  return {
+    grid: conversion.grid,
+    stairs: conversion.stairs,
+    dressing: {
+      seed: map.decorationSeed ?? 1,
+      counts: map.decorationCounts ?? {}
+    },
+    decorations: decorationsToMap(conversion.decorations)
+  }
 }

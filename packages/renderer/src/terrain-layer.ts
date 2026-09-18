@@ -1,7 +1,7 @@
 import type { MapDefinition } from '@rts/game-data'
 import type { Viewport } from 'pixi-viewport'
 import type { AssetLibrary } from './assets/asset-library.js'
-import { mapDefinitionToGrid } from './terrain-conversion.js'
+import { mapToTerrainSceneInput } from './terrain-conversion.js'
 import { createTerrainScene, type TerrainScene } from './terrain-scene.js'
 
 /**
@@ -26,11 +26,8 @@ export class TerrainLayer {
       this.library,
       map.palette !== undefined ? { palette: map.palette } : undefined
     )
-    const conversion = mapDefinitionToGrid(map)
-    scene.render(conversion.grid, conversion.stairs, {
-      seed: map.decorationSeed ?? 1,
-      counts: {}
-    })
+    const input = mapToTerrainSceneInput(map)
+    scene.render(input.grid, input.stairs, input.dressing, input.decorations)
     this.viewport.addChild(scene.container)
     this.scene = scene
     return true
