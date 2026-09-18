@@ -87,6 +87,34 @@ const ORDER_TAG_HOLD = 1
 const ORDER_TAG_PATROL = 2
 const ORDER_TAG_ATTACK = 3
 const ORDER_TAG_ATTACK_MOVE = 4
+const ORDER_TAG_GATHER = 5
+
+const GATHER_PHASE_TAGS = {
+  TO_NODE: 0,
+  GATHERING: 1,
+  TO_BASE: 2,
+  WAITING_FOR_BASE: 3
+} as const
+
+function writeGatherPhase(writer: CanonicalWriter, phase: Extract<Order, { type: 'GATHER' }>['phase']): void {
+  writer.writeU8(GATHER_PHASE_TAGS[phase])
+}
+
+function readGatherPhase(reader: CanonicalReader): Extract<Order, { type: 'GATHER' }>['phase'] {
+  const tag = reader.readU8()
+  switch (tag) {
+    case GATHER_PHASE_TAGS.TO_NODE:
+      return 'TO_NODE'
+    case GATHER_PHASE_TAGS.GATHERING:
+      return 'GATHERING'
+    case GATHER_PHASE_TAGS.TO_BASE:
+      return 'TO_BASE'
+    case GATHER_PHASE_TAGS.WAITING_FOR_BASE:
+      return 'WAITING_FOR_BASE'
+    default:
+      throw new Error(`Orders: invalid gather phase tag ${tag}`)
+  }
+}
 
 function writeOrder(writer: CanonicalWriter, order: Order): void {
   switch (order.type) {
@@ -110,6 +138,16 @@ function writeOrder(writer: CanonicalWriter, order: Order): void {
       writer.writeI32(order.x)
       writer.writeI32(order.y)
       return
+    case 'GATHER':
+      writer.writeU8(ORDER_TAG_GATHER)
+      writer.writeU32(order.nodeId)
+      writer.writeU8(order.baseId === null ? 0 : 1)
+      if (order.baseId !== null) {
+        writer.writeU32(order.baseId)
+      }
+      writeGatherPhase(writer, order.phase)
+      writer.writeI32(order.progressTicks)
+      return
   }
 }
 
@@ -126,6 +164,21 @@ function readOrder(reader: CanonicalReader): Order {
       return { type: 'ATTACK', targetId: reader.readU32() }
     case ORDER_TAG_ATTACK_MOVE:
       return { type: 'ATTACK_MOVE', x: reader.readI32(), y: reader.readI32() }
+    case ORDER_TAG_GATHER: {
+      const nodeId = reader.readU32()
+      const basePresent = reader.readU8()
+      if (basePresent !== 0 && basePresent !== 1) {
+        throw new Error(`Orders: invalid gather base presence ${basePresent}`)
+      }
+      const baseId = basePresent === 1 ? reader.readU32() : null
+      return {
+        type: 'GATHER',
+        nodeId,
+        baseId,
+        phase: readGatherPhase(reader),
+        progressTicks: reader.readI32()
+      }
+    }
     default:
       // A bad tag is corruption, not a valid order.
       throw new Error(`Orders: invalid order tag ${tag}`)
@@ -231,5 +284,47 @@ export const Kind: ComponentType<KindData> = {
         // A bad tag is corruption, not a valid unit kind.
         throw new Error(`Kind: invalid kind tag ${tag}`)
     }
+  }
+}
+
+export interface MineralNodeData {
+  readonly remaining: number
+}
+
+export const MineralNode: ComponentType<MineralNodeData> = {
+  name: 'mineralNode',
+  encode(writer, value) {
+    writer.writeI32(value.remaining)
+  },
+  decode(reader) {
+    return { remaining: reader.readI32() }
+  }
+}
+
+export type BaseData = Record<string, never>
+
+export const Base: ComponentType<BaseData> = {
+  name: 'base',
+  encode() {
+    // Presence in the canonical component stream fully represents this marker.
+  },
+  decode() {
+    return {}
+  }
+}
+
+export interface CargoData {
+  readonly amount: number
+  readonly capacity: number
+}
+
+export const Cargo: ComponentType<CargoData> = {
+  name: 'cargo',
+  encode(writer, value) {
+    writer.writeI32(value.amount)
+    writer.writeI32(value.capacity)
+  },
+  decode(reader) {
+    return { amount: reader.readI32(), capacity: reader.readI32() }
   }
 }
