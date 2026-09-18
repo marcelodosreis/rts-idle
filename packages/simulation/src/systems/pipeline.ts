@@ -1,5 +1,6 @@
 import type { GameState } from '../state/state.js'
 import { movementSystem } from './movement-system.js'
+import { ordersSystem } from './orders-system.js'
 
 /**
  * Frozen system order (ADR-013). Order is part of the deterministic contract:
@@ -8,7 +9,10 @@ import { movementSystem } from './movement-system.js'
  * and the systems it invokes.
  */
 export const SYSTEM_PIPELINE: readonly { readonly name: string; readonly system: (state: GameState) => void }[] =
-  Object.freeze([{ name: 'movement', system: movementSystem }])
+  Object.freeze([
+    { name: 'orders', system: ordersSystem },
+    { name: 'movement', system: movementSystem }
+  ])
 
 /** Runs the simulation systems in frozen order for one tick. */
 export function runSystems(state: GameState): void {

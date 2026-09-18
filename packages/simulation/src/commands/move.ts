@@ -1,5 +1,5 @@
 import type { ScheduledCommand } from '../contracts/commands.js'
-import { Movement, Position } from '../ecs/components.js'
+import { Movement, Orders, Position } from '../ecs/components.js'
 import { formationOffset } from '../formation.js'
 import type { GameState } from '../state/state.js'
 import { validateIntegerTarget, validateOwnedUnits } from './validate-units.js'
@@ -24,8 +24,12 @@ export function applyMove(state: GameState, command: ScheduledCommand): void {
   validateIntegerTarget(command, payload.x, payload.y)
   const positions = state.world.store(Position)
   const movements = state.world.store(Movement)
+  const orders = state.world.store(Orders)
   const sorted = [...payload.unitIds].sort((a, b) => a - b)
   sorted.forEach((unitId, index) => {
+    // A MOVE replaces any standing order for the unit (order replacement,
+    // master plan P1.03).
+    orders.delete(unitId)
     const offset = formationOffset(index)
     const destX = payload.x + offset.dx
     const destY = payload.y + offset.dy
