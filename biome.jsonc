@@ -10,7 +10,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!commitlint.config.js"]
+    "includes": ["**", "!commitlint.config.js", "!apps/web/globals.css"]
   },
   "assist": {
     "enabled": true,

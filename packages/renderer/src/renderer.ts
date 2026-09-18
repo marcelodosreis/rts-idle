@@ -1,12 +1,16 @@
-import { Application, Graphics } from 'pixi.js'
+import { Application, Graphics, type Ticker } from 'pixi.js'
 import { Viewport } from 'pixi-viewport'
+import { AssetLibrary } from './assets/asset-library.js'
 import { CommandPing } from './ping.js'
 import { SelectionController } from './selection.js'
+import { TerrainLayer } from './terrain-layer.js'
 import type { GameRenderer, RendererCallbacks, RendererOptions, RenderFrame } from './types.js'
 import { UnitLayer } from './unit-layer.js'
 
 const MIN_ZOOM = 0.05
 const MAX_ZOOM = 4
+/** Canvas background is always the water color so no beige ever shows. */
+const WATER_BG = 0x47aba9
 
 /**
  * PixiJS renderer orchestrator. Owns the Application and the viewport, and
@@ -20,11 +24,15 @@ export class PixiRenderer implements GameRenderer {
   private units: UnitLayer | null = null
   private selection: SelectionController | null = null
   private ping: CommandPing | null = null
+  private terrain: TerrainLayer | null = null
   private readonly options: RendererOptions
   private callbacks: RendererCallbacks = {}
+  /** Presentation asset library; null when the manifest/art is unavailable. */
+  readonly assets: AssetLibrary
 
   constructor(options: RendererOptions) {
     this.options = options
+    this.assets = new AssetLibrary(options.assetsUrl ?? '')
   }
 
   async mount(host: HTMLElement, callbacks: RendererCallbacks): Promise<void> {
@@ -32,11 +40,12 @@ export class PixiRenderer implements GameRenderer {
       throw new Error('PixiRenderer: already mounted')
     }
     this.callbacks = callbacks
+    await this.assets.load()
 
     const app = new Application()
     await app.init({
       resizeTo: host,
-      background: 0xf4efe4,
+      background: WATER_BG,
       antialias: true,
       preference: 'webgl'
     })
@@ -45,8 +54,8 @@ export class PixiRenderer implements GameRenderer {
     app.canvas.addEventListener('contextmenu', (event) => event.preventDefault())
 
     const viewport = new Viewport({
-      screenWidth: host.clientWidth || 800,
-      screenHeight: host.clientHeight || 600,
+      screenWidth: app.screen.width,
+      screenHeight: app.screen.height,
       worldWidth: this.options.worldWidth,
       worldHeight: this.options.worldHeight,
       events: app.renderer.events
@@ -62,12 +71,14 @@ export class PixiRenderer implements GameRenderer {
     viewport.setZoom(zoom)
     viewport.moveCenter(center.x, center.y)
 
+    app.ticker.add((ticker) => this.tick(ticker))
+
     const selectionRect = new Graphics()
     selectionRect.visible = false
     selectionRect.eventMode = 'none'
     app.stage.addChild(selectionRect)
 
-    const units = new UnitLayer(viewport, (id) => {
+    const units = new UnitLayer(viewport, this.assets, (id) => {
       this.callbacks.onUnitSelected?.(id)
     })
     const selection = new SelectionController({
@@ -79,10 +90,18 @@ export class PixiRenderer implements GameRenderer {
       }
     })
     const ping = new CommandPing(viewport)
+    const terrain = new TerrainLayer(viewport, this.assets)
+    if (this.options.map !== undefined) {
+      await terrain.build(this.options.map)
+    }
 
     viewport.eventMode = 'static'
     viewport.on('pointerdown', (event) => {
-      selection.startBox(event.global)
+      // Only the left button starts a selection box; right-click is the
+      // contextual command (it also fires `rightdown` below).
+      if (event.button === 0) {
+        selection.startBox(event.global)
+      }
     })
     viewport.on('pointermove', (event) => {
       selection.updateBox(event.global)
@@ -101,15 +120,28 @@ export class PixiRenderer implements GameRenderer {
     this.units = units
     this.selection = selection
     this.ping = ping
+    this.terrain = terrain
   }
 
   present(frame: RenderFrame): void {
     if (this.viewport === null || this.units === null || this.selection === null || this.ping === null) {
       throw new Error('PixiRenderer: not mounted')
     }
-    this.units.present(frame.units)
+    this.units.present(frame.units, performance.now())
     this.selection.updateRings()
     this.ping.expireIfElapsed(Date.now())
+  }
+
+  /** Visual-loop tick: advances animations and eases interpolated positions. */
+  private tick(ticker: Ticker): void {
+    if (this.units === null || this.selection === null || this.ping === null) {
+      return
+    }
+    const now = performance.now()
+    this.units.advanceAnimations(ticker)
+    this.units.interpolate(now)
+    this.selection.updateRings()
+    this.ping.expireIfElapsed(now)
   }
 
   setSelection(ids: readonly number[]): void {
@@ -141,14 +173,32 @@ export class PixiRenderer implements GameRenderer {
       this.app.destroy(true, { children: true, texture: true })
       this.app = null
     }
+    this.assets.destroy()
+    this.terrain?.dispose()
     this.viewport = null
     this.units = null
     this.selection = null
     this.ping = null
+    this.terrain = null
   }
 
   getUnitPositions(): ReadonlyMap<number, { readonly x: number; readonly y: number }> {
-    return this.units?.positions() ?? new Map()
+    return this.units?.fixedPositions() ?? new Map()
+  }
+
+  getUnitAnimationFrame(id: number): number | null {
+    return this.units?.animationFrame(id) ?? null
+  }
+
+  /** Debug: whether the unit's sprite body is visible and its current frame. */
+  getUnitSpriteState(id: number): {
+    readonly visible: boolean
+    readonly frame: number | null
+    readonly anim: 'idle' | 'run' | 'fallback'
+    readonly inTree: boolean
+    readonly facing: number
+  } | null {
+    return this.units?.spriteState(id) ?? null
   }
 
   getZoom(): number {

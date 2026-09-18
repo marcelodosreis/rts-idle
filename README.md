@@ -122,6 +122,7 @@ A feature is **done** only when its acceptance criteria are demonstrated by obje
   naming, typing, math clarity, testing, determinism, Definition of Done, self-audit.
 - `docs/architecture.md` — current module layout, package boundaries, shared concepts.
 - `docs/master-plan.md` — architecture, contracts, phases, acceptance criteria, risks.
+- `docs/assets/capabilities.md` — asset inventory and integration/polish possibilities.
 - `docs/specs/` — capability map and per-module specs.
 - `docs/adr/` — architectural decisions (Context / Decision / Alternatives / Consequences / Evidence).
 - `docs/postmortems/` — every bug is closed with a postmortem + permanent regression test.

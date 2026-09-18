@@ -24,7 +24,7 @@ const MODULES: readonly ModuleEntry[] = [
     allowed: ['@rts/shared', '@rts/game-data', '@rts/pathfinding']
   },
   { name: 'ai', root: 'packages/ai/src', allowed: ['@rts/shared', '@rts/game-data', '@rts/simulation'] },
-  { name: 'renderer', root: 'packages/renderer/src', allowed: ['@rts/shared', '@rts/protocol'] },
+  { name: 'renderer', root: 'packages/renderer/src', allowed: ['@rts/shared', '@rts/protocol', '@rts/game-data'] },
   { name: 'audio', root: 'packages/audio/src', allowed: ['@rts/shared'] },
   { name: 'server', root: 'apps/server/src', allowed: ['@rts/shared', '@rts/simulation', '@rts/protocol', '@rts/ai'] },
   {
@@ -32,7 +32,7 @@ const MODULES: readonly ModuleEntry[] = [
     root: 'apps/web/src',
     // det/ and perf/ are diagnostic harness pages, not the playable app.
     exclude: ['det', 'perf'],
-    allowed: ['@rts/shared', '@rts/protocol', '@rts/renderer', '@rts/audio']
+    allowed: ['@rts/shared', '@rts/protocol', '@rts/renderer', '@rts/audio', '@rts/game-data']
   },
   { name: 'benchmark', root: 'tools/benchmark/src', allowed: ['@rts/shared', '@rts/simulation'] },
   { name: 'balance', root: 'tools/balance/src', allowed: [] }

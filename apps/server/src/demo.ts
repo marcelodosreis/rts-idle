@@ -11,16 +11,16 @@ interface DemoSpawn {
 }
 
 // Spawn positions authored in tiles and converted to fixed units. The demo map
-// is 192 tiles wide; player 1 starts in the far-right corner, mirrored.
+// is 32 tiles wide; player 1 starts in the far-right corner, mirrored.
 const DEMO_SPAWNS: readonly DemoSpawn[] = [
   { owner: 0, x: tilesToFixed(8), y: tilesToFixed(8) },
   { owner: 0, x: tilesToFixed(9), y: tilesToFixed(8) },
   { owner: 0, x: tilesToFixed(8), y: tilesToFixed(9) },
   { owner: 0, x: tilesToFixed(9), y: tilesToFixed(9) },
-  { owner: 1, x: tilesToFixed(180), y: tilesToFixed(8) },
-  { owner: 1, x: tilesToFixed(181), y: tilesToFixed(8) },
-  { owner: 1, x: tilesToFixed(180), y: tilesToFixed(9) },
-  { owner: 1, x: tilesToFixed(181), y: tilesToFixed(9) }
+  { owner: 1, x: tilesToFixed(23), y: tilesToFixed(23) },
+  { owner: 1, x: tilesToFixed(24), y: tilesToFixed(23) },
+  { owner: 1, x: tilesToFixed(23), y: tilesToFixed(24) },
+  { owner: 1, x: tilesToFixed(24), y: tilesToFixed(24) }
 ]
 
 export function createDemoSession(): GameSession {

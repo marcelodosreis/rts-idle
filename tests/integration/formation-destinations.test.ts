@@ -1,6 +1,6 @@
 import { createSimulation, Position } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
-import { buildMoveCommand, SEEDS, TEST_IDENTITY, worldWithUnits } from '../fixtures/index.js'
+import { buildMoveCommand, runUntilArrived, SEEDS, TEST_IDENTITY, worldWithUnits } from '../fixtures/index.js'
 
 describe('group MOVE formation destinations', () => {
   it('spreads multiple units around the target instead of stacking', () => {
@@ -13,6 +13,7 @@ describe('group MOVE formation destinations', () => {
     const target = 10_000
 
     sim.step([buildMoveCommand(units, target, target)])
+    runUntilArrived(sim, units)
 
     const after = sim.inspectState()
     const positions = units.map((id) => after.world.store(Position).get(id))
@@ -33,6 +34,7 @@ describe('group MOVE formation destinations', () => {
     const target = 5_000
 
     sim.step([buildMoveCommand(units, target, target)])
+    runUntilArrived(sim, units)
 
     const after = sim.inspectState()
     const sorted = [...units].sort((a, b) => a - b)
@@ -54,6 +56,7 @@ describe('group MOVE formation destinations', () => {
     const unit = sim.inspectState().world.aliveIds()[0]!
 
     sim.step([buildMoveCommand([unit], 123, 456)])
+    runUntilArrived(sim, [unit])
 
     expect(sim.inspectState().world.store(Position).get(unit)).toEqual({ x: 123, y: 456 })
   })

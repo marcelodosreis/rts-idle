@@ -1,11 +1,16 @@
+import type { MapDefinition } from '@rts/game-data'
 import type { PointData } from 'pixi.js'
 
-/** A unit as rendered: id, integer fixed-unit position, owner slot. */
+/** Unit visual archetype: maps to a sprite set in the asset catalog. */
+export type UnitKind = 'pawn' | 'warrior' | 'archer'
+
+/** A unit as rendered: id, integer fixed-unit position, owner slot, sprite kind. */
 export interface RenderUnit {
   readonly id: number
   readonly x: number
   readonly y: number
   readonly owner: number
+  readonly kind?: UnitKind
 }
 
 /** A completed tick ready for presentation. */
@@ -25,6 +30,10 @@ export interface RendererOptions {
   readonly worldHeight: number
   readonly initialZoom?: number
   readonly initialCenter?: PointData
+  /** Base URL for the asset manifest and sprites (empty string = no art). */
+  readonly assetsUrl?: string
+  /** Map definition rendered as terrain (empty = no terrain). */
+  readonly map?: MapDefinition
 }
 
 /** Public renderer contract: mount/present/resize/dispose plus camera and selection access. */
@@ -36,6 +45,16 @@ export interface GameRenderer {
   setSelection(ids: readonly number[]): void
   getSelection(): readonly number[]
   getUnitPositions(): ReadonlyMap<number, { readonly x: number; readonly y: number }>
+  /** Current animation frame of a unit's sprite, or `null` when in fallback. */
+  getUnitAnimationFrame(id: number): number | null
+  /** Debug: whether a unit's sprite body is visible and its current frame. */
+  getUnitSpriteState(id: number): {
+    readonly visible: boolean
+    readonly frame: number | null
+    readonly anim: 'idle' | 'run' | 'fallback'
+    readonly inTree: boolean
+    readonly facing: number
+  } | null
   getZoom(): number
   getPing(): { readonly x: number; readonly y: number } | null
   moveCamera(x: number, y: number): void

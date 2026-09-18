@@ -8,6 +8,7 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
+      "@/*": ["src/*"],
       "@rts/renderer": ["../../packages/renderer/src/index.ts"],
       "@rts/shared": ["../../packages/shared/src/index.ts"],
       "@rts/protocol": ["../../packages/protocol/src/index.ts"],

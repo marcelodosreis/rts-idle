@@ -13,6 +13,11 @@ export default defineConfig({
       '@rts/game-data': resolve(__dirname, 'packages/game-data/src/index.ts'),
       '@rts/pathfinding': resolve(__dirname, 'packages/pathfinding/src/index.ts'),
       '@rts/simulation/contracts': resolve(__dirname, 'packages/simulation/src/contracts/index.ts'),
+      '@rts/simulation/commands/schema.js': resolve(__dirname, 'packages/simulation/src/commands/schema.ts'),
+      '@rts/simulation/systems/movement-step.js': resolve(
+        __dirname,
+        'packages/simulation/src/systems/movement-step.ts'
+      ),
       '@rts/simulation/fixtures': resolve(__dirname, 'packages/simulation/src/determinism-fixture.ts'),
       '@rts/simulation': resolve(__dirname, 'packages/simulation/src/index.ts'),
       '@rts/protocol': resolve(__dirname, 'packages/protocol/src/index.ts'),

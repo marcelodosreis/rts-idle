@@ -1,0 +1,518 @@
+// biome-ignore lint/style/noExcessiveLinesPerFile: terrain playground controller (draw + state + render)
+import type { MapDefinition } from '@rts/game-data'
+import {
+  type AutoTileTerrain,
+  autotileTile,
+  cliffBase,
+  createTerrainScene,
+  DRESSING_ASSET_KEYS,
+  type DressingKind,
+  enforceWaterBorder,
+  gridToMapDefinition,
+  mapDefinitionToGrid
+} from '@rts/renderer'
+import { Container, Graphics, Sprite } from 'pixi.js'
+import { Viewport } from 'pixi-viewport'
+import { createSectionApp } from '../lab/app.js'
+import type { SectionContext } from '../sections/types.js'
+
+const SIZE = 32
+const TILE = 64
+const GRID_PX = SIZE * TILE
+const MATRIX_SIZE = 4 * (3 * TILE + 16) + 16
+const MATRIX_HEIGHT = MATRIX_SIZE
+const GRASS_COLOR = 0x9abf6f
+const WATER_COLOR = 0x7db8d8
+const CORNER_COLOR = 0xd6cfbc
+/** Canvas background is always the water color so no beige ever shows. */
+const WATER_BG = 0x47aba9
+
+export type PaintMode = AutoTileTerrain | 'left' | 'right' | 'eraser'
+export type MatrixMode = 'flat' | 'elevated' | 'cliff'
+
+export const PALETTES: readonly string[] = ['color1', 'color2', 'color3', 'color4', 'color5']
+
+const WATER_ROW = 'w'.repeat(SIZE)
+const LAND_ROW = `w${'l'.repeat(SIZE - 2)}w`
+
+/** Default level: water border, a pond, an elevated plateau with a stair ramp,
+ * and a bottom lake — the shared base layout mirrored by the game's format. */
+export const INITIAL: readonly string[] = [
+  WATER_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  `wllwwww${'l'.repeat(24)}w`,
+  `wllwwww${'l'.repeat(24)}w`,
+  LAND_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  `w${'l'.repeat(12)}${'e'.repeat(5)}${'l'.repeat(13)}w`,
+  `w${'l'.repeat(12)}${'e'.repeat(5)}${'l'.repeat(13)}w`,
+  `w${'l'.repeat(12)}${'e'.repeat(5)}${'l'.repeat(13)}w`,
+  `w${'l'.repeat(12)}${'e'.repeat(5)}${'l'.repeat(13)}w`,
+  `w${'l'.repeat(12)}${'e'.repeat(5)}${'l'.repeat(13)}w`,
+  LAND_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  `w${'l'.repeat(25)}www${'ll'}w`,
+  `w${'l'.repeat(25)}www${'ll'}w`,
+  LAND_ROW,
+  LAND_ROW,
+  LAND_ROW,
+  WATER_ROW
+]
+export const INITIAL_STAIRS: readonly [string, 'left' | 'right'][] = [['15,17', 'left']]
+
+const DRESSING_LABELS: Readonly<Record<DressingKind, string>> = {
+  bush: 'bushes',
+  tree: 'trees',
+  rock: 'rocks',
+  cloud: 'clouds',
+  water_rock: 'water rocks',
+  gold: 'gold',
+  gold_stone: 'gold stones',
+  wood: 'wood',
+  meat: 'meat',
+  sheep: 'sheep'
+}
+
+/** Dressing kinds and their asset keys, sourced from the shared renderer. */
+export const DRESSING_KINDS: readonly {
+  readonly kind: DressingKind
+  readonly label: string
+  readonly keys: readonly string[]
+}[] = (Object.keys(DRESSING_ASSET_KEYS) as DressingKind[]).map((kind) => ({
+  kind,
+  label: DRESSING_LABELS[kind],
+  keys: DRESSING_ASSET_KEYS[kind]
+}))
+
+function parseGrid(rows: readonly string[]): AutoTileTerrain[][] {
+  return rows.map((row) =>
+    [...row].map((char): AutoTileTerrain => {
+      if (char === 'w') {
+        return 'water'
+      }
+      if (char === 'e') {
+        return 'elevated'
+      }
+      return 'land'
+    })
+  )
+}
+
+export interface TerrainState {
+  readonly palette: string
+  readonly paint: PaintMode
+  readonly staggered: boolean
+  readonly step: number
+  readonly paused: boolean
+  readonly matrixKind: MatrixMode | null
+  readonly dressingSeed: number
+  readonly dressingCounts: Readonly<Record<DressingKind, number>>
+}
+
+export const DEFAULT_TERRAIN_STATE: TerrainState = {
+  palette: 'color1',
+  paint: 'land',
+  staggered: true,
+  step: 5,
+  paused: false,
+  matrixKind: null,
+  dressingSeed: 1,
+  dressingCounts: Object.fromEntries(DRESSING_KINDS.map((d) => [d.kind, 0])) as Record<DressingKind, number>
+}
+
+/**
+ * Imperative terrain playground controller. Owns the hot-path state (grid,
+ * stairs) for performance and exposes discrete control methods + render. React
+ * drives it via a stable handle; cell paint/hover never round-trips React.
+ * Terrain visuals render through the shared `TerrainScene` so the editor looks
+ * exactly like the game.
+ */
+// biome-ignore lint/complexity/noExcessiveLinesPerFunction: imperativo agrupado (draw + estado + render) por clareza de hot path
+export async function createTerrainController(
+  host: HTMLElement,
+  ctx: SectionContext,
+  onReadout: (text: string) => void
+): Promise<TerrainController> {
+  const hostRect = host.getBoundingClientRect()
+  const hostWidth = Math.max(320, Math.round(hostRect.width) || 800)
+  const hostHeight = Math.max(320, Math.round(hostRect.height) || 600)
+  // Base zoom fits the 32×32 grid with a moderate water border; wheel zooms
+  // in/out and middle-drag pans (pixi-viewport camera).
+  const TERRAIN_OCCUPANCY = 0.8
+  const EDGE_MARGIN = 24
+  const fitScale = Math.min(
+    ((hostWidth - EDGE_MARGIN * 2) / GRID_PX) * TERRAIN_OCCUPANCY,
+    ((hostHeight - EDGE_MARGIN * 2) / GRID_PX) * TERRAIN_OCCUPANCY,
+    1
+  )
+  // Camera limits: can't zoom out below the full-map fit, can zoom in up to
+  // 8×, and the pan is clamped to the grid plus a fixed water margin.
+  const minZoom = fitScale
+  const maxZoom = fitScale * 8
+  const WATER_MARGIN = 8
+  const waterCols = SIZE + WATER_MARGIN * 2
+  const waterRows = SIZE + WATER_MARGIN * 2
+  const waterWidth = waterCols * TILE
+  const waterHeight = waterRows * TILE
+
+  const app = await createSectionApp(host, hostHeight)
+  app.renderer.background.color = WATER_BG
+  const appWidth = app.screen.width
+
+  const scene = await createTerrainScene(ctx.assets, {
+    palette: DEFAULT_TERRAIN_STATE.palette,
+    waterCols,
+    waterRows
+  })
+
+  const viewport = new Viewport({
+    screenWidth: app.screen.width,
+    screenHeight: app.screen.height,
+    worldWidth: waterWidth,
+    worldHeight: waterHeight,
+    events: app.renderer.events
+  })
+  viewport.drag({ mouseButtons: 'middle' }).wheel().clampZoom({ minScale: minZoom, maxScale: maxZoom })
+  app.stage.addChild(viewport)
+
+  const worldContainer = new Container()
+  // Center the grid inside the water area.
+  worldContainer.x = (waterWidth - GRID_PX) / 2
+  worldContainer.y = (waterHeight - GRID_PX) / 2
+  const hitContainer = new Container()
+  const matrixContainer = new Container()
+  matrixContainer.visible = false
+  worldContainer.addChild(scene.container, hitContainer, matrixContainer)
+  viewport.addChild(worldContainer)
+
+  const resetCamera = (): void => {
+    viewport.setZoom(fitScale)
+    viewport.moveCenter(waterWidth / 2, waterHeight / 2)
+  }
+  resetCamera()
+
+  const grid = parseGrid(INITIAL)
+  const stairs = new Map<string, 'left' | 'right'>(INITIAL_STAIRS)
+  let state: TerrainState = { ...DEFAULT_TERRAIN_STATE }
+
+  const matrixTileSprite = (index: number): Container => {
+    const texture = scene.tileTexture(index)
+    const sprite = new Container()
+    if (texture !== null) {
+      const frame = new Sprite(texture)
+      frame.width = TILE
+      frame.height = TILE
+      sprite.addChild(frame)
+      return sprite
+    }
+    const fallback = new Graphics().rect(0, 0, TILE, TILE).fill(GRASS_COLOR)
+    sprite.addChild(fallback)
+    return sprite
+  }
+
+  const setMatrix = (matrixKind: MatrixMode | null): void => {
+    const visible = matrixKind === null
+    scene.container.visible = visible
+    hitContainer.visible = visible
+    matrixContainer.visible = !visible
+    const height = matrixKind === null ? hostHeight : Math.round(MATRIX_HEIGHT * fitScale)
+    app.renderer.resize(appWidth, height)
+    viewport.resize(appWidth, height)
+    if (matrixKind !== null) {
+      renderMatrix(matrixKind)
+      viewport.setZoom(fitScale)
+      viewport.moveCenter(worldContainer.x + MATRIX_SIZE / 2, worldContainer.y + MATRIX_SIZE / 2)
+    } else {
+      resetCamera()
+    }
+  }
+
+  const cellReadout = (x: number, y: number): string => {
+    const stair = stairs.get(`${x},${y}`)
+    const kind = grid[y]?.[x] ?? 'water'
+    const stairNote = stair === undefined ? '' : `  stairs (${stair} ramp bottom)`
+    if (kind === 'water') {
+      return `cell (${x},${y}) = water${stairNote}`
+    }
+    const result = autotileTile(grid, x, y)
+    const base = cliffBase(grid, x, y)
+    const baseNote = base === null ? '' : `  cliff base below: #${base}`
+    return `cell (${x},${y}) = ${kind}  mask ${result.mask}  piece ${result.semanticId}  atlas #${result.atlasIndex}${stairNote}${baseNote}`
+  }
+
+  const clear = (container: Container): void => {
+    const children = [...container.children]
+    container.removeChildren(0, container.children.length)
+    for (const child of children) {
+      child.destroy()
+    }
+  }
+
+  const drawHits = (): void => {
+    clear(hitContainer)
+    for (let y = 0; y < SIZE; y += 1) {
+      for (let x = 0; x < SIZE; x += 1) {
+        const hit = new Graphics().rect(0, 0, TILE, TILE).fill(0xffffff)
+        hit.alpha = 0
+        hit.position.set(x * TILE, y * TILE)
+        hit.eventMode = 'static'
+        hit.on('pointerdown', () => {
+          // The map border is always water: painting there is a no-op.
+          if (x === 0 || y === 0 || x === SIZE - 1 || y === SIZE - 1) {
+            onReadout(cellReadout(x, y))
+            return
+          }
+          if (state.paint === 'eraser') {
+            grid[y]![x] = 'water'
+            stairs.delete(`${x},${y}`)
+            stairs.delete(`${x},${y + 1}`)
+          } else if (state.paint === 'left' || state.paint === 'right') {
+            stairs.set(`${x},${y}`, state.paint)
+          } else {
+            grid[y]![x] = state.paint
+            stairs.delete(`${x},${y}`)
+            stairs.delete(`${x},${y + 1}`)
+          }
+          renderGrid()
+          onReadout(cellReadout(x, y))
+        })
+        hit.on('pointerover', () => {
+          onReadout(cellReadout(x, y))
+        })
+        hitContainer.addChild(hit)
+      }
+    }
+  }
+
+  const renderGrid = (): void => {
+    scene.render(grid, stairs, {
+      seed: state.dressingSeed,
+      counts: state.dressingCounts
+    })
+    drawHits()
+  }
+
+  const maskNeighbor = (bit: string): AutoTileTerrain => (bit === '1' ? 'land' : 'water')
+
+  const renderMatrix = (matrixKind: MatrixMode): void => {
+    clear(matrixContainer)
+    if (matrixKind === 'cliff') {
+      renderCliffMatrix()
+      return
+    }
+    for (let mask = 0; mask < 16; mask += 1) {
+      const bits = mask.toString(2).padStart(4, '0')
+      const center: AutoTileTerrain = matrixKind === 'elevated' ? 'elevated' : 'land'
+      const panelGrid: AutoTileTerrain[][] = [
+        [center, maskNeighbor(bits.charAt(0)), center],
+        [maskNeighbor(bits.charAt(3)), center, maskNeighbor(bits.charAt(1))],
+        [center, maskNeighbor(bits.charAt(2)), center]
+      ]
+      const col = mask % 4
+      const row = Math.floor(mask / 4)
+      const panelX = col * (3 * TILE + 16) + 8
+      const panelY = row * (3 * TILE + 16) + 8
+      const cells: (AutoTileTerrain | 'corner')[] = [
+        'corner',
+        maskNeighbor(bits.charAt(0)),
+        'corner',
+        maskNeighbor(bits.charAt(3)),
+        center,
+        maskNeighbor(bits.charAt(1)),
+        'corner',
+        maskNeighbor(bits.charAt(2)),
+        'corner'
+      ]
+      for (let i = 0; i < cells.length; i += 1) {
+        const cell = cells[i] ?? 'corner'
+        const cx = panelX + (i % 3) * TILE
+        const cy = panelY + Math.floor(i / 3) * TILE
+        const rect = new Graphics()
+        let color = CORNER_COLOR
+        if (cell === 'water') {
+          color = WATER_COLOR
+        } else if (cell === 'land' || cell === 'elevated') {
+          color = GRASS_COLOR
+        }
+        rect.rect(cx, cy, TILE, TILE).fill(color)
+        matrixContainer.addChild(rect)
+      }
+      const result = autotileTile(panelGrid, 1, 1)
+      const centerTile = matrixTileSprite(result.atlasIndex ?? 0)
+      centerTile.position.set(panelX + TILE, panelY + TILE)
+      centerTile.eventMode = 'static'
+      centerTile.on('pointerover', () => {
+        onReadout(`mask ${bits}  piece ${result.semanticId}  atlas #${result.atlasIndex}`)
+      })
+      matrixContainer.addChild(centerTile)
+    }
+  }
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: cliff-case matrix renderer (4 panes)
+  const renderCliffMatrix = (): void => {
+    const cases: readonly { readonly label: string; readonly rows: readonly string[] }[] = [
+      { label: 'south land · ends open', rows: ['ellle', 'ellle', 'eeeee'] },
+      { label: 'south land · ends closed', rows: ['ellle', 'ellle', 'eeee', 'ellle'] },
+      { label: 'south water · ends open', rows: ['ellle', 'ellle', 'ewwwe'] },
+      { label: 'south water · ends closed', rows: ['ellle', 'ellle', 'eeee', 'ellle'] }
+    ]
+    for (let i = 0; i < cases.length; i += 1) {
+      const spec = cases[i]!
+      const panelGrid = parseGrid(spec.rows)
+      const col = i % 2
+      const row = Math.floor(i / 2)
+      const panelX = col * (5 * TILE + 24) + 8
+      const panelY = row * (4 * TILE + 16) + 8
+      for (let y = 0; y < 4; y += 1) {
+        for (let x = 0; x < 5; x += 1) {
+          const cell = panelGrid[y]?.[x]
+          const rect = new Graphics()
+          let color = CORNER_COLOR
+          if (cell === 'water') {
+            color = WATER_COLOR
+          } else if (cell === 'land' || cell === 'elevated') {
+            color = GRASS_COLOR
+          }
+          rect.rect(panelX + x * TILE, panelY + y * TILE, TILE, TILE).fill(color)
+          matrixContainer.addChild(rect)
+        }
+      }
+      for (let y = 0; y < 4; y += 1) {
+        for (let x = 0; x < 5; x += 1) {
+          const cell = panelGrid[y]?.[x]
+          if (cell === undefined || cell === 'water') {
+            continue
+          }
+          const piece = autotileTile(panelGrid, x, y)
+          if (piece.atlasIndex !== null) {
+            const sprite = matrixTileSprite(piece.atlasIndex)
+            sprite.position.set(panelX + x * TILE, panelY + y * TILE)
+            matrixContainer.addChild(sprite)
+          }
+          const base = cliffBase(panelGrid, x, y)
+          if (base !== null) {
+            const baseSprite = matrixTileSprite(base)
+            baseSprite.position.set(panelX + x * TILE, panelY + y * TILE + TILE)
+            matrixContainer.addChild(baseSprite)
+          }
+        }
+      }
+    }
+  }
+
+  const applyGrid = (rows: readonly string[]): void => {
+    const fresh = parseGrid(rows)
+    for (let y = 0; y < SIZE; y += 1) {
+      for (let x = 0; x < SIZE; x += 1) {
+        grid[y]![x] = fresh[y]?.[x] ?? 'water'
+      }
+    }
+    stairs.clear()
+    renderGrid()
+  }
+
+  renderGrid()
+
+  return {
+    setState(next: TerrainState): void {
+      const paletteChanged = next.palette !== state.palette
+      state = next
+      if (paletteChanged) {
+        void scene.setPalette(next.palette).then(() => {
+          renderGrid()
+        })
+        return
+      }
+      renderGrid()
+    },
+    reset(): void {
+      applyGrid(INITIAL)
+      for (const [key, dir] of INITIAL_STAIRS) {
+        stairs.set(key, dir)
+      }
+      renderGrid()
+    },
+    setMatrix,
+    resetCamera,
+    exportLevel(): LevelData {
+      return {
+        grid: grid.map((row) => [...row]),
+        stairs: [...stairs.entries()]
+      }
+    },
+    importLevel(data: LevelData): void {
+      const bordered = enforceWaterBorder(data.grid)
+      for (let y = 0; y < SIZE; y += 1) {
+        for (let x = 0; x < SIZE; x += 1) {
+          grid[y]![x] = bordered[y]?.[x] ?? 'water'
+        }
+      }
+      stairs.clear()
+      for (const [key, value] of data.stairs) {
+        stairs.set(key, value)
+      }
+      renderGrid()
+    },
+    exportMapDefinition(): MapDefinition {
+      return gridToMapDefinition(grid, {
+        stairs: [...stairs.entries()],
+        palette: state.palette,
+        decorationSeed: state.dressingSeed
+      })
+    },
+    importMapDefinition(map: MapDefinition): void {
+      const conversion = mapDefinitionToGrid(map)
+      for (let y = 0; y < SIZE; y += 1) {
+        for (let x = 0; x < SIZE; x += 1) {
+          grid[y]![x] = conversion.grid[y]?.[x] ?? 'water'
+        }
+      }
+      stairs.clear()
+      for (const [key, value] of conversion.stairs) {
+        stairs.set(key, value)
+      }
+      if (map.palette !== undefined) {
+        state = { ...state, palette: map.palette }
+        void scene.setPalette(map.palette)
+      }
+      if (map.decorationSeed !== undefined) {
+        state = { ...state, dressingSeed: map.decorationSeed }
+      }
+      renderGrid()
+    },
+    destroy(): void {
+      scene.destroy()
+      app.destroy()
+    }
+  }
+}
+
+export interface LevelData {
+  readonly grid: readonly (readonly AutoTileTerrain[])[]
+  readonly stairs: readonly [string, 'left' | 'right'][]
+}
+
+export interface TerrainController {
+  setState(next: TerrainState): void
+  reset(): void
+  setMatrix(matrixKind: MatrixMode | null): void
+  resetCamera(): void
+  exportLevel(): LevelData
+  importLevel(data: LevelData): void
+  exportMapDefinition(): MapDefinition
+  importMapDefinition(map: MapDefinition): void
+  destroy(): void
+}

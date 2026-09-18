@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
+import { hasArt } from './art.js'
 
 // Regression: units were invisible after mount because the camera fit the
 // entire (huge) world into the viewport, collapsing the scale to ~0.016.
@@ -33,10 +34,28 @@ test('units are rendered at a visible zoom and inside the viewport', async ({ pa
   expect(zoom).toBeGreaterThanOrEqual(0.9)
 
   // The unit's world position must map to a point inside the visible canvas.
+  // `worldToScreen` returns canvas-local coordinates (0..canvas size).
   const rect = await canvasRect(page)
   const screen = await page.evaluate(([x, y]) => window.__rtsDebug!.worldToScreen(x, y), [unit.x, unit.y] as const)
-  expect(screen.x).toBeGreaterThanOrEqual(rect.left)
-  expect(screen.x).toBeLessThanOrEqual(rect.left + rect.width)
-  expect(screen.y).toBeGreaterThanOrEqual(rect.top)
-  expect(screen.y).toBeLessThanOrEqual(rect.top + rect.height)
+  expect(screen.x).toBeGreaterThanOrEqual(0)
+  expect(screen.x).toBeLessThanOrEqual(rect.width)
+  expect(screen.y).toBeGreaterThanOrEqual(0)
+  expect(screen.y).toBeLessThanOrEqual(rect.height)
+
+  // Every unit must animate with its own sprite (regression: shared instances
+  // left all but the last unit of a kind as a bare shadow). Art-dependent, so
+  // only assert when the asset manifest is served (CI has no assets).
+  if (await hasArt(page)) {
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const debug = window.__rtsDebug!
+            const seen = debug.getPositions() ?? {}
+            return Object.keys(seen).every((id) => debug.getAnimationFrame(Number(id)) !== null)
+          }),
+        { timeout: 20_000 }
+      )
+      .toBe(true)
+  }
 })

@@ -1,6 +1,6 @@
 # ADR-005 — Doodle as packaging; the product is responsiveness and readable combat
 
-Status: Accepted
+Status: **Superseded** (by ADR-015, user decision 2026-09-17)
 
 ## Context
 
@@ -17,6 +17,13 @@ Competing visually with big-budget RTS is unwinnable. The project must define it
 
 - **Chasing AAA visuals**: rejected — an unwinnable war with a fraction of the budget.
 - **Minimal presentation**: rejected — for an RTS, legibility *is* the feel.
+
+## Superseded by ADR-015
+
+The doodle identity is no longer the direction (user decision 2026-09-17). The
+visual layer uses a real RTS sprite/tileset pack, license-gated and
+data-driven. The identity-neutral goals below (legibility, factions, cheap
+rendering) remain valid.
 
 ## Consequences
 

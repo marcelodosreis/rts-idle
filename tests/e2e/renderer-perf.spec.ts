@@ -7,6 +7,9 @@ import { expect, test } from '@playwright/test'
 const COUNTS = [100, 1000, 5000]
 
 test('renderer presents N units and reports frame time', async ({ page }) => {
+  // The 5000-unit case renders a rich scene; CI's headless SwiftShader is slow,
+  // so give the measurement harness a generous window (it is not a hard gate).
+  test.setTimeout(180_000)
   await page.goto('/perf.html')
 
   for (const count of COUNTS) {

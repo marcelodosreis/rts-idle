@@ -1,7 +1,7 @@
 import { tilesToFixed } from '@rts/shared'
 import { createSimulation, Position } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
-import { buildMoveCommand, SEEDS, TEST_IDENTITY, worldWithOwners } from '../fixtures/index.js'
+import { buildMoveCommand, runUntilArrived, SEEDS, TEST_IDENTITY, worldWithOwners } from '../fixtures/index.js'
 
 describe('MOVE command validation', () => {
   it('moves own units with the first unit exactly on the target', () => {
@@ -14,6 +14,7 @@ describe('MOVE command validation', () => {
     const target = tilesToFixed(3)
 
     sim.step([buildMoveCommand(units, target, target)])
+    runUntilArrived(sim, units)
 
     const after = sim.inspectState()
     const sorted = [...units].sort((a, b) => a - b)
