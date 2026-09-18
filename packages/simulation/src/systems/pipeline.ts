@@ -1,4 +1,6 @@
 import type { GameState } from '../state/state.js'
+import { combatSystem } from './combat-system.js'
+import { deathSystem } from './death-system.js'
 import { movementSystem } from './movement-system.js'
 import { ordersSystem } from './orders-system.js'
 
@@ -11,7 +13,9 @@ import { ordersSystem } from './orders-system.js'
 export const SYSTEM_PIPELINE: readonly { readonly name: string; readonly system: (state: GameState) => void }[] =
   Object.freeze([
     { name: 'orders', system: ordersSystem },
-    { name: 'movement', system: movementSystem }
+    { name: 'movement', system: movementSystem },
+    { name: 'combat', system: combatSystem },
+    { name: 'death', system: deathSystem }
   ])
 
 /** Runs the simulation systems in frozen order for one tick. */

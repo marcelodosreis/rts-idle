@@ -24,7 +24,8 @@ export class Simulation implements SimulationHost {
     this.state = {
       ...this.state,
       tick: this.state.tick + 1,
-      events: []
+      events: [],
+      pendingDamage: new Map()
     }
     const rejected: CommandRejectedError[] = []
     for (const command of commands) {

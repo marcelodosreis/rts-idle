@@ -1,4 +1,4 @@
-import type { PlayerId, RngState } from '@rts/shared'
+import type { EntityId, PlayerId, RngState } from '@rts/shared'
 import type { RulesIdentity } from '../contracts/simulation.js'
 import type { World } from '../ecs/world.js'
 import type { SimulationEvent } from '../systems/events.js'
@@ -16,6 +16,16 @@ export interface PlayerState {
   readonly gold: number
 }
 
+/**
+ * Damage accumulated against a target during a single combat step. Held in a
+ * per-tick buffer so that mutual attacks resolve simultaneously (master plan
+ * P1.06): both combatants deal damage even when each would kill the other.
+ */
+export interface DamageAccumulation {
+  readonly amount: number
+  readonly attackerId: EntityId | null
+}
+
 export interface GameState {
   readonly tick: number
   readonly phase: Phase
@@ -26,5 +36,7 @@ export interface GameState {
   readonly players: readonly PlayerState[]
   readonly world: World
   /** Transient per-tick events; never part of the canonical snapshot. */
-  readonly events: readonly SimulationEvent[]
+  readonly events: SimulationEvent[]
+  /** Transient per-tick damage buffer (combat step 13, death step 14). */
+  readonly pendingDamage: Map<EntityId, DamageAccumulation>
 }

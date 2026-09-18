@@ -125,5 +125,5 @@ export function deserializeState(bytes: Uint8Array): GameState {
   const nextEntityId = reader.readU32()
   const players = readPlayers(reader)
   const world = readWorld(reader)
-  return { tick, phase, identity, seed, rng, nextEntityId, players, world, events: [] }
+  return { tick, phase, identity, seed, rng, nextEntityId, players, world, events: [], pendingDamage: new Map() }
 }

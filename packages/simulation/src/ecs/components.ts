@@ -149,3 +149,48 @@ export const Orders: ComponentType<OrdersData> = {
     return { queue }
   }
 }
+
+export interface HealthData {
+  readonly current: number
+  readonly max: number
+}
+
+export const Health: ComponentType<HealthData> = {
+  name: 'health',
+  encode(writer, value) {
+    writer.writeI32(value.current)
+    writer.writeI32(value.max)
+  },
+  decode(reader) {
+    return { current: reader.readI32(), max: reader.readI32() }
+  }
+}
+
+export interface CombatData {
+  /** Damage dealt per attack. */
+  readonly damage: number
+  /** Attack range in tiles. */
+  readonly rangeTiles: number
+  /** Full cooldown in ticks between attacks. */
+  readonly cooldownTicks: number
+  /** Ticks remaining before the next attack is allowed. */
+  readonly cooldownRemaining: number
+}
+
+export const Combat: ComponentType<CombatData> = {
+  name: 'combat',
+  encode(writer, value) {
+    writer.writeI32(value.damage)
+    writer.writeI32(value.rangeTiles)
+    writer.writeI32(value.cooldownTicks)
+    writer.writeI32(value.cooldownRemaining)
+  },
+  decode(reader) {
+    return {
+      damage: reader.readI32(),
+      rangeTiles: reader.readI32(),
+      cooldownTicks: reader.readI32(),
+      cooldownRemaining: reader.readI32()
+    }
+  }
+}

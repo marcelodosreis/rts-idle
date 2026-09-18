@@ -38,7 +38,8 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
     nextEntityId: resolveNextEntityId(world),
     players: createPlayers(),
     world,
-    events: []
+    events: [],
+    pendingDamage: new Map()
   }
   return new Simulation(state)
 }
