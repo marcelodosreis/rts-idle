@@ -2,7 +2,6 @@ import type { MapDefinition } from '@rts/game-data'
 import type { Viewport } from 'pixi-viewport'
 import type { AssetLibrary } from './assets/asset-library.js'
 import { mapDefinitionToGrid } from './terrain-conversion.js'
-import { DEFAULT_DRESSING_COUNTS } from './terrain-dressing.js'
 import { createTerrainScene, type TerrainScene } from './terrain-scene.js'
 
 /**
@@ -30,7 +29,7 @@ export class TerrainLayer {
     const conversion = mapDefinitionToGrid(map)
     scene.render(conversion.grid, conversion.stairs, {
       seed: map.decorationSeed ?? 1,
-      counts: DEFAULT_DRESSING_COUNTS
+      counts: {}
     })
     this.viewport.addChild(scene.container)
     this.scene = scene
