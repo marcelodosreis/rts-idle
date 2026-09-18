@@ -1,4 +1,4 @@
-import { createRng, type Fixed, type PlayerId, rngNextInt, tilesToFixed, type UnitKind } from '@rts/shared'
+import { type Fixed, type PlayerId, tilesToFixed, type UnitKind } from '@rts/shared'
 
 export interface DemoSpawn {
   readonly owner: PlayerId
@@ -32,49 +32,34 @@ const ARCHER: UnitKind = 'archer'
 /** Demo seed — shared with `demo.ts`; keeps every scenario deterministic. */
 export const DEMO_SEED = 123456
 
-const KINDS: readonly UnitKind[] = [PAWN, WARRIOR, ARCHER]
-
-/** Deterministic kind assignment (seeded, so replays stay stable). */
-function randomKinds(count: number, seed: number): UnitKind[] {
-  let rng = createRng(seed)
-  const kinds: UnitKind[] = []
-  for (let i = 0; i < count; i += 1) {
-    // rngNextInt is pure: it returns the next state instead of mutating.
-    const draw = rngNextInt(rng, KINDS.length)
-    rng = draw.nextState
-    kinds.push(KINDS[draw.value]!)
-  }
-  return kinds
-}
-
-const RANDOM_UNITS_PER_SIDE = 6
+/** Six units per side, two of each archetype (pawn/warrior/archer). */
+const KINDS_PER_SIDE: readonly UnitKind[] = [PAWN, WARRIOR, ARCHER, PAWN, WARRIOR, ARCHER]
 
 /**
- * Default scenario: six units per side with kinds randomized across the three
- * available archetypes. Blue sits in a compact block near the camera home
+ * Default scenario: six units per side with two of each archetype (two pawns,
+ * two warriors, two archers), mirrored so each blue unit faces the same kind
+ * of red counterpart. Blue sits in a compact block near the camera home
  * (tile 8), red is mirrored opposite; the squads are close enough to be visible
  * at the start, and the enemy side marches over to attack the idle player.
  */
-function randomScenario(): DemoScenario {
-  const blueKinds = randomKinds(RANDOM_UNITS_PER_SIDE, DEMO_SEED)
-  const redKinds = randomKinds(RANDOM_UNITS_PER_SIDE, DEMO_SEED + 1)
+function defaultScenario(): DemoScenario {
   const spawns: DemoSpawn[] = []
   const attacks: (readonly [number, number])[] = []
   // Blue block first, then the mirrored red block, so pair `i` attacks `i + 6`.
-  for (let i = 0; i < RANDOM_UNITS_PER_SIDE; i += 1) {
+  for (let i = 0; i < KINDS_PER_SIDE.length; i += 1) {
     const bx = 6 + (i % 2)
     const by = 6 + Math.floor(i / 2)
-    spawns.push({ owner: 0, kind: blueKinds[i]!, ...tile(bx, by) })
+    spawns.push({ owner: 0, kind: KINDS_PER_SIDE[i]!, ...tile(bx, by) })
   }
-  for (let i = 0; i < RANDOM_UNITS_PER_SIDE; i += 1) {
+  for (let i = 0; i < KINDS_PER_SIDE.length; i += 1) {
     const bx = 6 + (i % 2)
     const by = 6 + Math.floor(i / 2)
-    spawns.push({ owner: 1, kind: redKinds[i]!, ...tile(16 - bx, 16 - by) })
+    spawns.push({ owner: 1, kind: KINDS_PER_SIDE[i]!, ...tile(16 - bx, 16 - by) })
   }
-  for (let i = 0; i < RANDOM_UNITS_PER_SIDE; i += 1) {
-    attacks.push([i, i + RANDOM_UNITS_PER_SIDE], [i + RANDOM_UNITS_PER_SIDE, i])
+  for (let i = 0; i < KINDS_PER_SIDE.length; i += 1) {
+    attacks.push([i, i + KINDS_PER_SIDE.length], [i + KINDS_PER_SIDE.length, i])
   }
-  return { id: '6v6', label: '6v6 random', spawns, attacks }
+  return { id: '6v6', label: '6v6', spawns, attacks }
 }
 
 /**
@@ -84,7 +69,7 @@ function randomScenario(): DemoScenario {
  * map, centered on the camera's home tile (8).
  */
 export const DEMO_SCENARIOS: readonly DemoScenario[] = [
-  randomScenario(),
+  defaultScenario(),
   {
     id: '2v2',
     label: '2v2',
