@@ -12,7 +12,15 @@ export function snapshotToFrame(message: SnapshotMessage): RenderFrame {
       owner: unit.owner,
       kind: unit.kind ?? 'pawn',
       ...(unit.orderState === undefined ? {} : { orderState: unit.orderState }),
+      ...(unit.economy === undefined ? {} : { economy: unit.economy }),
       ...(unit.hp === undefined ? {} : { hp: unit.hp, maxHp: unit.maxHp })
+    })),
+    bases: message.bases.map((base) => ({ id: base.id, x: base.x, y: base.y, owner: base.owner })),
+    mineralNodes: message.mineralNodes.map((node) => ({
+      id: node.id,
+      x: node.x,
+      y: node.y,
+      remaining: node.remaining
     })),
     players: message.players.map((player) => ({ id: player.id, defeated: player.defeated, gold: player.gold })),
     events: message.events

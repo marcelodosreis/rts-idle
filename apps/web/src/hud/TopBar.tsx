@@ -13,8 +13,10 @@ interface TopBarProps {
   readonly scenario: string
   readonly scenarios: readonly string[]
   readonly aggression: 'offensive' | 'passive'
+  readonly spritesEnabled: boolean
   readonly onChangeScenario: (id: string) => void
   readonly onToggleAggression: () => void
+  readonly onToggleSprites: () => void
 }
 
 function StatChip({
@@ -59,8 +61,10 @@ export function TopBar({
   scenario,
   scenarios,
   aggression,
+  spritesEnabled,
   onChangeScenario,
-  onToggleAggression
+  onToggleAggression,
+  onToggleSprites
 }: TopBarProps) {
   const supply = resources === null ? '0/0' : `${resources.supply}/${resources.supplyCap}`
   return (
@@ -105,6 +109,13 @@ export function TopBar({
             onCheckedChange={onToggleAggression}
             aria-label="toggle enemy aggression"
           />
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <Label htmlFor="sprites" className="text-xs text-muted-foreground">
+            Sprites
+          </Label>
+          <Switch id="sprites" checked={spritesEnabled} onCheckedChange={onToggleSprites} aria-label="toggle sprites" />
         </div>
       </div>
 

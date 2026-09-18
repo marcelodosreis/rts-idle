@@ -21,6 +21,7 @@ export interface MatchHudProps {
   readonly scenario: string
   readonly scenarios: readonly string[]
   readonly aggression: 'offensive' | 'passive'
+  readonly spritesEnabled: boolean
   readonly onStop: () => void
   readonly onHold: () => void
   readonly onSurrender: () => void
@@ -28,6 +29,7 @@ export interface MatchHudProps {
   readonly onNewMatch: () => void
   readonly onChangeScenario: (id: string) => void
   readonly onToggleAggression: () => void
+  readonly onToggleSprites: () => void
 }
 
 /**
@@ -48,13 +50,15 @@ export function MatchHud({
   scenario,
   scenarios,
   aggression,
+  spritesEnabled,
   onStop,
   onHold,
   onSurrender,
   onArm,
   onNewMatch,
   onChangeScenario,
-  onToggleAggression
+  onToggleAggression,
+  onToggleSprites
 }: MatchHudProps) {
   return (
     <div className="relative flex h-screen flex-col overflow-hidden bg-background text-foreground">
@@ -67,8 +71,10 @@ export function MatchHud({
         scenario={scenario}
         scenarios={scenarios}
         aggression={aggression}
+        spritesEnabled={spritesEnabled}
         onChangeScenario={onChangeScenario}
         onToggleAggression={onToggleAggression}
+        onToggleSprites={onToggleSprites}
       />
       <main className="grid min-h-0 flex-1 place-items-center p-4">
         <div

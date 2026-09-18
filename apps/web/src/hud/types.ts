@@ -6,6 +6,13 @@ export interface HudSelectionUnit {
   readonly moving: boolean
   readonly hp?: number
   readonly maxHp?: number
+  readonly economy?: {
+    readonly phase: 'to_node' | 'gathering' | 'to_base' | 'waiting_for_base'
+    readonly cargoAmount: number
+    readonly cargoCapacity: number
+    readonly progressTicks: number
+    readonly progressMax: number
+  }
 }
 
 export interface HudResources {
