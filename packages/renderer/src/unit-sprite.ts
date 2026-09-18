@@ -1,6 +1,8 @@
-import { AnimatedSprite, Circle, Container, Graphics, Texture, type Ticker } from 'pixi.js'
+import { AnimatedSprite, Circle, Container, Graphics, Text, Texture, type Ticker } from 'pixi.js'
 import { HP_BAR_HEIGHT, HP_BAR_WIDTH, hpColor, hpFillWidth, hpRatio } from './hp-bar.js'
-import type { UnitKind } from './types.js'
+import type { RenderUnit, UnitKind } from './types.js'
+import { drawEconomyBar, type EconomyFrames, economyAnimation, FACTION_BY_OWNER } from './unit-economy.js'
+import { FALLBACK_GLYPH, type FallbackShape } from './unit-fallback.js'
 
 const OWNER_COLORS = [0x2e7d32, 0xc62828, 0x1565c0, 0xf9a825]
 
@@ -16,7 +18,7 @@ const SPRITE_SCALE = 0.5
 /** Height of the overhead health bar above the unit in render pixels. */
 const HP_BAR_OFFSET_Y = -34
 
-export const FACTION_BY_OWNER: readonly ('blue' | 'red' | 'purple' | 'yellow')[] = ['blue', 'red', 'purple', 'yellow']
+export { FACTION_BY_OWNER } from './unit-economy.js'
 
 /**
  * Attack-animation subtype per kind: the curated pack names them differently
@@ -26,7 +28,7 @@ export const FACTION_BY_OWNER: readonly ('blue' | 'red' | 'purple' | 'yellow')[]
  */
 const ATTACK_SUBTYPE: Record<UnitKind, string> = { pawn: 'interact_axe', warrior: 'attack1', archer: 'shoot' }
 
-export interface UnitFrames {
+export interface UnitFrames extends EconomyFrames {
   readonly idle: AnimatedSprite
   readonly run: AnimatedSprite
   readonly attack: AnimatedSprite | null
@@ -46,6 +48,27 @@ function cloneAnimation(template: AnimatedSprite): AnimatedSprite {
   clone.animationSpeed = template.animationSpeed
   clone.play()
   return clone
+}
+
+function cloneUnitFrames(template: UnitFrames): UnitFrames {
+  return {
+    idle: cloneAnimation(template.idle),
+    run: cloneAnimation(template.run),
+    attack: template.attack === null ? null : cloneAnimation(template.attack),
+    gather: template.gather === null ? null : cloneAnimation(template.gather),
+    carryIdle: template.carryIdle === null ? null : cloneAnimation(template.carryIdle),
+    carryRun: template.carryRun === null ? null : cloneAnimation(template.carryRun)
+  }
+}
+
+function installFrames(container: Container, frames: UnitFrames): void {
+  const allFrames = [frames.idle, frames.run, frames.attack, frames.gather, frames.carryIdle, frames.carryRun]
+  for (const frame of allFrames) {
+    if (frame !== null) {
+      frame.visible = false
+      container.addChild(frame)
+    }
+  }
 }
 
 /** Asset key for a unit animation: kind → manifest subtype (pawn_* / warrior_* / archer_*). */
@@ -70,6 +93,8 @@ export class UnitSprite {
   private readonly fallback: Graphics | null
   private frames: UnitFrames | null
   private readonly hpBar: Graphics
+  private readonly economyBar: Graphics
+  private label: Text | null = null
   /** Horizontal facing: 1 = right, -1 = left. Only updated while moving so
    * idle keeps looking the way the unit last walked. */
   private facing = 1
@@ -88,35 +113,53 @@ export class UnitSprite {
     this.container.hitArea = new Circle(0, 0, CLICK_RADIUS)
     if (frames !== null) {
       // Own private copies so this unit animates independently of its kind.
-      this.frames = {
-        idle: cloneAnimation(frames.idle),
-        run: cloneAnimation(frames.run),
-        attack: frames.attack === null ? null : cloneAnimation(frames.attack)
-      }
-      this.frames.idle.visible = false
-      this.frames.run.visible = false
-      if (this.frames.attack !== null) {
-        this.frames.attack.visible = false
-      }
-      // All bodies must be in the display list so `setState` can reveal any.
-      this.container.addChild(this.frames.idle)
-      this.container.addChild(this.frames.run)
-      if (this.frames.attack !== null) {
-        this.container.addChild(this.frames.attack)
-      }
+      this.frames = cloneUnitFrames(frames)
+      installFrames(this.container, this.frames)
       this.body = this.frames.idle
       this.fallback = null
     } else {
       this.frames = null
+      const ownerColor = OWNER_COLORS[owner % OWNER_COLORS.length] ?? 0x000000
       this.fallback = new Graphics()
-      this.fallback.circle(0, 0, UNIT_RADIUS).fill(OWNER_COLORS[owner % OWNER_COLORS.length] ?? 0x000000)
+      const glyph = FALLBACK_GLYPH[kind]
+      switch (glyph.shape) {
+        case 'circle':
+          this.fallback.circle(0, 0, UNIT_RADIUS).fill(ownerColor)
+          this.fallback.circle(0, 0, UNIT_RADIUS).stroke({ color: 0x000000, width: 3, alpha: 0.3 })
+          break
+        case 'square':
+          this.fallback.roundRect(-22, -22, 44, 44, 6).fill(ownerColor)
+          this.fallback.roundRect(-22, -22, 44, 44, 6).stroke({ color: 0x000000, width: 3, alpha: 0.3 })
+          break
+        case 'triangle':
+          this.fallback.moveTo(0, -28).lineTo(-24, 16).lineTo(24, 16).closePath().fill(ownerColor)
+          this.fallback
+            .moveTo(0, -28)
+            .lineTo(-24, 16)
+            .lineTo(24, 16)
+            .closePath()
+            .stroke({ color: 0x000000, width: 3, alpha: 0.3 })
+          break
+      }
       this.body = this.fallback
       this.container.addChild(this.fallback)
+      this.label = new Text({
+        text: glyph.letter,
+        style: { fontSize: 22, fontWeight: 'bold', fill: 0xffffff, stroke: { color: 0x000000, width: 3 } }
+      })
+      this.label.anchor.set(0.5, 0.5)
+      this.label.eventMode = 'none'
+      this.label.resolution = 2
+      this.container.addChild(this.label)
     }
     this.hpBar = new Graphics()
     this.hpBar.visible = false
     this.hpBar.eventMode = 'none'
     this.container.addChild(this.hpBar)
+    this.economyBar = new Graphics()
+    this.economyBar.visible = false
+    this.economyBar.eventMode = 'none'
+    this.container.addChild(this.economyBar)
   }
 
   /** Upgrades a placeholder sprite to animated frames once art loads. */
@@ -124,31 +167,22 @@ export class UnitSprite {
     if (this.frames !== null) {
       return
     }
-    this.frames = {
-      idle: cloneAnimation(template.idle),
-      run: cloneAnimation(template.run),
-      attack: template.attack === null ? null : cloneAnimation(template.attack)
-    }
-    this.frames.idle.visible = false
-    this.frames.run.visible = false
-    if (this.frames.attack !== null) {
-      this.frames.attack.visible = false
-    }
+    this.frames = cloneUnitFrames(template)
     if (this.fallback !== null) {
       this.container.removeChild(this.fallback)
       this.fallback.destroy()
     }
-    // All bodies must be in the display list so `setState` can reveal any.
-    this.container.addChild(this.frames.idle)
-    this.container.addChild(this.frames.run)
-    if (this.frames.attack !== null) {
-      this.container.addChild(this.frames.attack)
+    if (this.label !== null) {
+      this.container.removeChild(this.label)
+      this.label.destroy()
+      this.label = null
     }
+    installFrames(this.container, this.frames)
     this.body = this.frames.idle
   }
 
   /** Shows idle, run, or attack by current state and flips by direction. */
-  setState(moving: boolean, facingLeft: boolean, now: number): void {
+  setState(moving: boolean, facingLeft: boolean, now: number, economy: RenderUnit['economy']): void {
     if (this.frames === null) {
       return
     }
@@ -159,7 +193,10 @@ export class UnitSprite {
     }
     const attacking = now < this.attackUntil && this.frames.attack !== null
     let next: AnimatedSprite
-    if (attacking) {
+    const economyFrame = economyAnimation(this.frames, economy?.phase, moving)
+    if (economyFrame !== null && economyFrame !== undefined) {
+      next = economyFrame
+    } else if (attacking) {
       next = this.frames.attack!
     } else if (moving) {
       next = this.frames.run
@@ -176,6 +213,10 @@ export class UnitSprite {
     this.body.scale.set(SPRITE_SCALE * this.facing, SPRITE_SCALE)
   }
 
+  setEconomyBar(economy: RenderUnit['economy']): void {
+    drawEconomyBar(this.economyBar, economy)
+  }
+
   /** Starts the attack animation for `until` (wall clock, presentation only). */
   beginAttack(until: number): void {
     this.attackUntil = until
@@ -189,6 +230,11 @@ export class UnitSprite {
    * unit fires so it never attacks from behind, even while standing.
    */
   faceToward(targetRenderX: number): void {
+    // The fallback circle has no facing, and its body must keep its drawn
+    // scale. Applying SPRITE_SCALE here shrank the placeholder on first attack.
+    if (this.frames === null) {
+      return
+    }
     this.facing = this.container.position.x < targetRenderX ? 1 : -1
     this.body.scale.set(SPRITE_SCALE * this.facing, SPRITE_SCALE)
   }
@@ -257,8 +303,8 @@ export class UnitSprite {
     return this.body.visible
   }
 
-  /** Which animation is currently shown: `run`, `idle`, `attack`, or `fallback`. */
-  stateName(): 'idle' | 'run' | 'attack' | 'fallback' {
+  /** Which animation is currently shown. */
+  stateName(): 'idle' | 'run' | 'attack' | 'gather' | 'carry_idle' | 'carry_run' | 'fallback' {
     if (this.frames === null) {
       return 'fallback'
     }
@@ -267,6 +313,15 @@ export class UnitSprite {
     }
     if (this.body === this.frames.attack) {
       return 'attack'
+    }
+    if (this.body === this.frames.gather) {
+      return 'gather'
+    }
+    if (this.body === this.frames.carryIdle) {
+      return 'carry_idle'
+    }
+    if (this.body === this.frames.carryRun) {
+      return 'carry_run'
     }
     return 'idle'
   }
@@ -279,6 +334,21 @@ export class UnitSprite {
   /** Current horizontal facing (1 = right, -1 = left). */
   facingNow(): number {
     return this.facing
+  }
+
+  /** Current horizontal scale of the visible body (for debug/e2e assertions). */
+  bodyScale(): number {
+    return this.body.scale.x
+  }
+
+  /** Glyph letter when in fallback mode, else null. */
+  glyphNow(): string | null {
+    return this.frames === null ? FALLBACK_GLYPH[this.kind].letter : null
+  }
+
+  /** Fallback shape when in fallback mode, else null. */
+  shapeNow(): FallbackShape | null {
+    return this.frames === null ? FALLBACK_GLYPH[this.kind].shape : null
   }
 
   /** Advances the visible animated body (no-op for placeholder graphics). */
