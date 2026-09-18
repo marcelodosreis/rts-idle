@@ -1,4 +1,5 @@
 import type { MapDefinition } from '@rts/game-data'
+import type { OrderState } from '@rts/protocol'
 import type { PlayerId, SimulationEvent, UnitKind } from '@rts/shared'
 import type { PointData } from 'pixi.js'
 
@@ -14,6 +15,8 @@ export interface RenderUnit {
   /** Current/maximum health, present when the unit is combat-capable. */
   readonly hp?: number
   readonly maxHp?: number
+  /** Authoritative behavior state from the simulation (drives idle/run). */
+  readonly orderState?: OrderState
 }
 
 /** A competitive slot for the HUD (defeated state, wallet). */

@@ -11,6 +11,7 @@ export function snapshotToFrame(message: SnapshotMessage): RenderFrame {
       y: unit.y,
       owner: unit.owner,
       kind: unit.kind ?? 'pawn',
+      ...(unit.orderState === undefined ? {} : { orderState: unit.orderState }),
       ...(unit.hp === undefined ? {} : { hp: unit.hp, maxHp: unit.maxHp })
     })),
     players: message.players.map((player) => ({ id: player.id, defeated: player.defeated, gold: player.gold })),

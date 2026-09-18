@@ -95,7 +95,13 @@ export class UnitLayer {
         this.preloadKind(unit.owner, kind)
       }
       const last = this.lastFixed.get(unit.id)
-      const moving = last !== undefined && (last.x !== unit.x || last.y !== unit.y)
+      // The authoritative orderState drives run/idle; the position delta covers
+      // the chase case (a unit with an ATTACK order that is still moving toward
+      // its target reports 'attacking' but is visibly running).
+      const deltaMoved = last !== undefined && (last.x !== unit.x || last.y !== unit.y)
+      const moving =
+        unit.orderState === 'moving' ||
+        ((unit.orderState === 'attacking' || unit.orderState === 'attack_move') && deltaMoved)
       sprite.setHealth(unit.hp, unit.maxHp)
       sprite.setState(moving, unit.x < (last?.x ?? unit.x), now)
       sprite.setPosition(position.x, position.y)

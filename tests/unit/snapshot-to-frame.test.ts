@@ -19,8 +19,8 @@ describe('snapshot to frame mapping', () => {
     })
     expect(frame.tick).toBe(3)
     expect(frame.units).toEqual([
-      { id: 1, x: 100, y: 200, owner: 0, kind: 'pawn', hp: 90, maxHp: 100 },
-      { id: 2, x: 300, y: 400, owner: 1, kind: 'pawn', hp: undefined, maxHp: undefined }
+      { id: 1, x: 100, y: 200, owner: 0, kind: 'pawn', hp: 90, maxHp: 100, orderState: 'attacking' },
+      { id: 2, x: 300, y: 400, owner: 1, kind: 'pawn', hp: undefined, maxHp: undefined, orderState: undefined }
     ])
     expect(frame.players).toEqual([
       { id: 0, defeated: false, gold: 0 },

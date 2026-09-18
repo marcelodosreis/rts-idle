@@ -15,10 +15,11 @@ export const FACTION_BY_OWNER: readonly ('blue' | 'red' | 'purple' | 'yellow')[]
 
 /**
  * Attack-animation subtype per kind: the curated pack names them differently
- * (warrior_attack, archer_shoot); pawns only have idle/run/interact, so the
- * attack state falls back to idle for them.
+ * (warrior_attack, archer_shoot). Pawns have no attack pose, so they reuse the
+ * axe "interact" swing as a temporary melee animation instead of standing idle
+ * (swap for a real pose when the pack gains one).
  */
-const ATTACK_SUBTYPE: Record<UnitKind, string> = { pawn: 'interact', warrior: 'attack', archer: 'shoot' }
+const ATTACK_SUBTYPE: Record<UnitKind, string> = { pawn: 'interact_axe', warrior: 'attack', archer: 'shoot' }
 
 export interface UnitFrames {
   readonly idle: AnimatedSprite
