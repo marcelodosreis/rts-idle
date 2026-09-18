@@ -60,6 +60,10 @@ Deployment and environments are tracked in
 `docs/rfc/RFC-002-deployment-and-environments.md` (Proposed; target Render free,
 Docker same-origin monolith, `staging` + `main`).
 
+Cost, scale, and architecture comparison is tracked in
+`docs/rfc/RFC-003-cost-scale-and-architecture-comparison.md` (Proposed; isolated
+sessions → delta → rooms → fog of war → 200k players).
+
 ## Engineering Invariants
 
 - Simulation imports nothing from UI/transport/platform (enforced by tests)

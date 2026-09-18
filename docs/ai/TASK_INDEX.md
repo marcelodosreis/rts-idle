@@ -117,6 +117,17 @@ Target: Render Hobby (free), Docker same-origin monolith, `staging` + `main`.
 | DEPLOY-008 | Deployment docs + env docs | pending | DEPLOY-005 | docs | review |
 | DEPLOY-009 | Snapshot bandwidth optimization (deferred) | pending | — | protocol, simulation, server | determinism, e2e |
 
+## Cost & Scale (RFC-003)
+
+RFC: `docs/rfc/RFC-003-cost-scale-and-architecture-comparison.md` (Proposed).
+
+| ID | Title | Status | Dependencies | Packages | Validation |
+|----|-------|--------|-------------|----------|------------|
+| SCALE-001 | Delta snapshots (protocol + server) | pending | — | protocol, simulation, server | determinism, integration |
+| SCALE-002 | Shared room system (matchmaking + rooms) | pending | — | server, protocol | integration, e2e |
+| SCALE-003 | Binary protocol (MessagePack) | pending | SCALE-001 | protocol | unit, integration |
+| SCALE-004 | Fog of war (filtered snapshots) | pending | SCALE-002 | simulation, protocol | unit, simulation |
+
 ## Validation Levels
 
 | Level | When | Commands |
