@@ -42,6 +42,16 @@ Playwright E2E (room-entry, selection, control-groups, context-orders, build-inp
 - Ask first: add gameplay logic to the browser; change the default graphics backend.
 - Never: compute damage, resources, victory, production, or death on the client.
 
+## HUD Responsive Layout
+
+- At 1280x800 and 1440x900 the HUD zones (top bar brand, controls, resource
+  stats; footer selection panel and command palette) must not overlap.
+- The document and footer must not overflow horizontally.
+- The battlefield canvas stays square and fully visible.
+- Controls keep their accessible names and tab order at all supported widths.
+- Supported floor: 1280px wide. Below that the HUD may compact or wrap, but
+  must never overlap or clip.
+
 ## Success Criteria
 
 - A full match is playable through the real server.

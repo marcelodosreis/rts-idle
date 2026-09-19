@@ -82,7 +82,7 @@ export function MatchHud({
           className="aspect-square h-full max-w-full overflow-hidden rounded-xl border border-border/50 shadow-2xl"
         />
       </main>
-      <footer className="flex h-40 shrink-0 items-stretch justify-center gap-3 border-t bg-card/70 p-3 backdrop-blur">
+      <footer className="flex min-h-40 shrink-0 flex-wrap items-stretch justify-center gap-3 border-t bg-card/70 p-3 backdrop-blur">
         <SelectionPanel selection={selection} />
         <CommandBar
           disabled={selection.length === 0}

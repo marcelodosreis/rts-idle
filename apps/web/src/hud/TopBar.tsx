@@ -48,9 +48,9 @@ function statusDot(status: string): string {
 }
 
 /**
- * Top bar: title/status/tick/scenario pinned to the left edge, with the stat
- * chips centered across the full width (the left group is absolutely placed so
- * the centered group is truly centered, not offset by the left content).
+ * Top bar: brand/status/tick, match controls (scenario, aggression, sprites),
+ * and resource stats. All zones live in a single wrapping flex row, so on
+ * narrow viewports they wrap to additional rows instead of overlapping.
  */
 export function TopBar({
   status,
@@ -68,8 +68,8 @@ export function TopBar({
 }: TopBarProps) {
   const supply = resources === null ? '0/0' : `${resources.supply}/${resources.supplyCap}`
   return (
-    <header className="relative flex min-h-14 shrink-0 items-center justify-center border-b bg-card/70 px-4 py-2 backdrop-blur">
-      <div className="absolute left-4 flex max-w-[52vw] flex-wrap items-center gap-x-4 gap-y-1.5">
+    <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b bg-card/70 px-4 py-2 backdrop-blur">
+      <div data-testid="hud-topbar-brand" className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
         <div className="flex items-center gap-2">
           <span aria-hidden={true} className="text-sm text-primary">
             ◆
@@ -79,13 +79,15 @@ export function TopBar({
 
         <span
           role="status"
-          className="flex items-center gap-1.5 whitespace-nowrap rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-xs"
+          className="flex min-w-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-xs"
         >
-          <span className={`size-1.5 rounded-full ${statusDot(status)}`} />
-          status: {status}
+          <span className={`size-1.5 shrink-0 rounded-full ${statusDot(status)}`} />
+          <span className="truncate">status: {status}</span>
         </span>
-        <span className="text-xs tabular-nums text-muted-foreground">tick {tick}</span>
+        <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">tick {tick}</span>
+      </div>
 
+      <div data-testid="hud-topbar-controls" className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <Select value={scenario} onValueChange={onChangeScenario}>
           <SelectTrigger aria-label="scenario" className="h-8 w-40 text-xs">
             <SelectValue placeholder="scenario" />
@@ -119,7 +121,7 @@ export function TopBar({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+      <div data-testid="hud-topbar-stats" className="flex flex-wrap items-center gap-x-4 gap-y-1.5 sm:ml-auto">
         <StatChip
           label="Mineral"
           value={resources === null ? '0' : String(resources.mineral)}

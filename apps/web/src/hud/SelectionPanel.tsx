@@ -98,7 +98,7 @@ function UnitChip({ unit }: { readonly unit: HudSelectionUnit }) {
 export function SelectionPanel({ selection }: SelectionPanelProps) {
   const activeEconomy = selection.map(economyLabel).find((label) => label !== null) ?? null
   return (
-    <Card className="flex min-h-0 w-[22rem] max-w-[34vw] flex-col overflow-hidden py-1">
+    <Card className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1">
       <CardHeader className="shrink-0 gap-0 px-2 py-0">
         <CardTitle className="text-[11px] text-muted-foreground">
           {selection.length === 0 ? 'No selection — click a unit' : `${selection.length} · ${kindSummary(selection)}`}
