@@ -9,11 +9,17 @@ const COUNTS = [100, 1000, 5000]
 test('renderer presents N units and reports frame time', async ({ page }) => {
   // The 5000-unit case renders a rich scene; CI's headless SwiftShader is slow,
   // so give the measurement harness a generous window (it is not a hard gate).
-  test.setTimeout(180_000)
+  test.setTimeout(300_000)
   await page.goto('/perf.html')
 
   for (const count of COUNTS) {
-    const result = await page.evaluate((n) => window.__runRendererPerf!(n), count)
+    // Fewer sampled frames at higher counts keeps this bounded on slow
+    // software-rendered CI runners without losing the smoke-test signal.
+    const frames = count >= 5000 ? 30 : 120
+    const result = await page.evaluate((args) => window.__runRendererPerf!(args.n, args.frames), {
+      n: count,
+      frames
+    })
     expect(result.count).toBe(count)
     expect(result.frames).toBeGreaterThan(0)
     expect(Number.isFinite(result.avgMs)).toBe(true)
