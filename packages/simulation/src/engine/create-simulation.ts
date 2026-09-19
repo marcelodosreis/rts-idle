@@ -13,6 +13,8 @@ function createPlayers(): PlayerState[] {
   return PLAYER_SLOTS.map((id) => ({ id, defeated: false, gold: 0 }))
 }
 
+const DEFAULT_MAP_BOUNDS = { width: 32, height: 32 } as const
+
 /**
  * Resolves the next free entity id from an initial world.
  *
@@ -36,7 +38,9 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
     seed: options.seed,
     rng,
     nextEntityId: resolveNextEntityId(world),
-    players: createPlayers(),
+    players:
+      options.initialPlayers === undefined ? createPlayers() : options.initialPlayers.map((player) => ({ ...player })),
+    mapBounds: options.mapBounds ?? DEFAULT_MAP_BOUNDS,
     world,
     events: [],
     pendingDamage: new Map()

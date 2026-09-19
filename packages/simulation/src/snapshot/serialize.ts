@@ -71,6 +71,27 @@ function writePlayers(writer: CanonicalWriter, players: readonly PlayerState[]):
   }
 }
 
+function writeMapBounds(writer: CanonicalWriter, bounds: GameState['mapBounds']): void {
+  writer.writeU32(bounds.width)
+  writer.writeU32(bounds.height)
+  writer.writeLength(bounds.invalidTiles?.length ?? 0)
+  for (const tile of bounds.invalidTiles ?? []) {
+    writer.writeU32(tile.x)
+    writer.writeU32(tile.y)
+  }
+}
+
+function readMapBounds(reader: CanonicalReader): GameState['mapBounds'] {
+  const width = reader.readU32()
+  const height = reader.readU32()
+  const count = reader.readLength()
+  const invalidTiles = []
+  for (let i = 0; i < count; i += 1) {
+    invalidTiles.push({ x: reader.readU32(), y: reader.readU32() })
+  }
+  return invalidTiles.length === 0 ? { width, height } : { width, height, invalidTiles }
+}
+
 function readPlayers(reader: CanonicalReader): PlayerState[] {
   const count = reader.readLength()
   const players: PlayerState[] = []
@@ -101,6 +122,7 @@ export function serializeState(state: GameState): Uint8Array {
   writer.writeU32(state.seed)
   writeRng(writer, state.rng)
   writer.writeU32(state.nextEntityId)
+  writeMapBounds(writer, state.mapBounds)
   writePlayers(writer, state.players)
   writeWorld(writer, state.world)
   return writer.toBytes()
@@ -123,7 +145,20 @@ export function deserializeState(bytes: Uint8Array): GameState {
   const seed = reader.readU32()
   const rng = readRng(reader)
   const nextEntityId = reader.readU32()
+  const mapBounds = readMapBounds(reader)
   const players = readPlayers(reader)
   const world = readWorld(reader)
-  return { tick, phase, identity, seed, rng, nextEntityId, players, world, events: [], pendingDamage: new Map() }
+  return {
+    tick,
+    phase,
+    identity,
+    seed,
+    rng,
+    nextEntityId,
+    mapBounds,
+    players,
+    world,
+    events: [],
+    pendingDamage: new Map()
+  }
 }
