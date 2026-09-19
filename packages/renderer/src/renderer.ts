@@ -55,7 +55,16 @@ export class PixiRenderer implements GameRenderer {
     })
 
     host.appendChild(app.canvas)
-    app.canvas.addEventListener('contextmenu', (event) => event.preventDefault())
+    app.canvas.addEventListener('contextmenu', (event) => {
+      event.preventDefault()
+      if (this.viewport === null || this.units === null || this.worldObjects === null || this.ping === null) {
+        return
+      }
+      const rect = app.canvas.getBoundingClientRect()
+      const globalX = event.clientX - rect.left
+      const globalY = event.clientY - rect.top
+      this.dispatchCommand(globalX, globalY)
+    })
 
     const viewport = new Viewport({
       screenWidth: app.screen.width,
@@ -116,21 +125,7 @@ export class PixiRenderer implements GameRenderer {
       selection.endBox(event.global)
     })
     viewport.on('rightdown', (event) => {
-      const world = viewport.toWorld(event.global.x, event.global.y)
-      const mineralNode = worldObjects.mineralNodeAt(world.x, world.y)
-      if (mineralNode !== null) {
-        ping.show(world.x, world.y)
-        this.callbacks.onMineralCommand?.(mineralNode)
-        return
-      }
-      const hit = units.unitAt(world.x, world.y)
-      if (hit !== null) {
-        // Right-click on a unit targets it (attack); the ground ping is skipped.
-        this.callbacks.onUnitCommand?.(hit)
-      } else {
-        ping.show(world.x, world.y)
-        this.callbacks.onGroundCommand?.(world.x, world.y)
-      }
+      this.dispatchCommand(event.global.x, event.global.y)
     })
 
     this.app = app
@@ -175,6 +170,31 @@ export class PixiRenderer implements GameRenderer {
       this.effects.trackPosition(unit.id, unit.x, unit.y)
     }
     this.effects.handleEvents(frame.events ?? [], now)
+  }
+
+  /**
+   * Routes a right-click command (attack, gather, move) to the appropriate
+   * callback based on what is under the cursor. Used by both the PixiJS
+   * `rightdown` event (mouse) and the DOM `contextmenu` event (trackpad).
+   */
+  private dispatchCommand(globalX: number, globalY: number): void {
+    if (this.viewport === null || this.units === null || this.worldObjects === null || this.ping === null) {
+      return
+    }
+    const world = this.viewport.toWorld(globalX, globalY)
+    const mineralNode = this.worldObjects.mineralNodeAt(world.x, world.y)
+    if (mineralNode !== null) {
+      this.ping.show(world.x, world.y)
+      this.callbacks.onMineralCommand?.(mineralNode)
+      return
+    }
+    const hit = this.units.unitAt(world.x, world.y)
+    if (hit !== null) {
+      this.callbacks.onUnitCommand?.(hit)
+    } else {
+      this.ping.show(world.x, world.y)
+      this.callbacks.onGroundCommand?.(world.x, world.y)
+    }
   }
 
   /** Visual-loop tick: advances animations and eases interpolated positions. */
