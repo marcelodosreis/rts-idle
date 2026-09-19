@@ -29,6 +29,19 @@ describe('snapshot to frame mapping', () => {
         { id: 2, x: 300, y: 400, owner: 1 }
       ],
       bases: [{ id: 3, x: 500, y: 600, owner: 0 }],
+      constructions: [
+        {
+          id: 5,
+          buildingType: 'BASE',
+          x: 768,
+          y: 1024,
+          owner: 0,
+          footprint: { width: 2, height: 2 },
+          status: 'FOUNDATION',
+          progressTicks: 0,
+          totalTicks: 100
+        }
+      ],
       mineralNodes: [{ id: 4, x: 700, y: 800, remaining: 25 }],
       players: [
         { id: 0, defeated: false, gold: 0 },
@@ -59,6 +72,19 @@ describe('snapshot to frame mapping', () => {
       { id: 2, x: 300, y: 400, owner: 1, kind: 'pawn', hp: undefined, maxHp: undefined, orderState: undefined }
     ])
     expect(frame.bases).toEqual([{ id: 3, x: 500, y: 600, owner: 0 }])
+    expect(frame.constructions).toEqual([
+      {
+        id: 5,
+        buildingType: 'BASE',
+        x: 768,
+        y: 1024,
+        owner: 0,
+        footprint: { width: 2, height: 2 },
+        status: 'FOUNDATION',
+        progressTicks: 0,
+        totalTicks: 100
+      }
+    ])
     expect(frame.mineralNodes).toEqual([{ id: 4, x: 700, y: 800, remaining: 25 }])
     expect(frame.players).toEqual([
       { id: 0, defeated: false, gold: 0 },

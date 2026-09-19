@@ -1,5 +1,15 @@
 import { GameSession } from '@rts/server'
-import { Base, createRulesIdentity, createWorld, Health, Kind, MineralNode, Owner, Position } from '@rts/simulation'
+import {
+  Base,
+  Construction,
+  createRulesIdentity,
+  createWorld,
+  Health,
+  Kind,
+  MineralNode,
+  Owner,
+  Position
+} from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { createDemoSession } from '../../apps/server/src/demo.js'
 import { SEEDS, worldWithCombatUnits } from '../fixtures/index.js'
@@ -15,11 +25,19 @@ function combatSession(seed: number) {
 }
 
 describe('game session commands', () => {
-  it('seeds a running economy scenario with one Worker, two Bases, and one Mineral Node', () => {
+  it('seeds the economy sandbox with four Workers, two Bases, 250 minerals, and one Mineral Node', () => {
     const session = createDemoSession('economy', 'passive')
 
-    expect(session.projectUnits()).toHaveLength(1)
-    expect(session.projectUnits()[0]).toEqual(expect.objectContaining({ owner: 0, kind: 'pawn' }))
+    expect(session.projectUnits()).toHaveLength(4)
+    expect(session.projectUnits()).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ owner: 0, kind: 'pawn' }),
+        expect.objectContaining({ owner: 0, kind: 'pawn' }),
+        expect.objectContaining({ owner: 0, kind: 'pawn' }),
+        expect.objectContaining({ owner: 0, kind: 'pawn' })
+      ])
+    )
+    expect(session.projectPlayers().find((player) => player.id === 0)?.gold).toBe(250)
     expect(session.projectBases()).toHaveLength(2)
     expect(session.projectBases()).toEqual(expect.arrayContaining([expect.objectContaining({ owner: 0 })]))
     expect(session.projectMineralNodes()).toEqual([expect.objectContaining({ remaining: 3000 })])
@@ -45,6 +63,15 @@ describe('game session commands', () => {
     expect(session.phase()).toBe('RUNNING')
   })
 
+  it('keeps the normal simulation wallet at zero outside a configured demo scenario', () => {
+    const session = GameSession.create({
+      seed: SEEDS.integration.session,
+      identity: createRulesIdentity('session-test')
+    })
+
+    expect(session.projectPlayers().find((player) => player.id === 0)?.gold).toBe(0)
+  })
+
   it('projects units, Bases, and Mineral Nodes as distinct observations', () => {
     const world = createWorld()
     world.createEntity(1)
@@ -67,6 +94,37 @@ describe('game session commands', () => {
     expect(session.projectUnits()).toEqual([expect.objectContaining({ id: 1, x: 0, y: 0, owner: 0, kind: 'pawn' })])
     expect(session.projectBases()).toEqual([{ id: 2, x: 256, y: 0, owner: 0 }])
     expect(session.projectMineralNodes()).toEqual([{ id: 3, x: 512, y: 0, remaining: 25 }])
+  })
+
+  it('projects foundations with type, footprint, status, and progress', () => {
+    const world = createWorld()
+    world.createEntity(1)
+    world.store(Position).set(1, { x: 0, y: 0 })
+    world.store(Owner).set(1, { owner: 0 })
+    world.store(Construction).set(1, {
+      buildingType: 'BARRACKS',
+      status: 'UNDER_CONSTRUCTION',
+      progressTicks: 12,
+      totalTicks: 100,
+      builderId: null,
+      footprint: { x: 0, y: 0, width: 3, height: 3 }
+    })
+    const session = GameSession.create({
+      seed: SEEDS.integration.session,
+      identity: createRulesIdentity('session-test'),
+      initialWorld: world
+    })
+    expect(session.projectConstructions()).toEqual([
+      expect.objectContaining({
+        id: 1,
+        buildingType: 'BARRACKS',
+        owner: 0,
+        footprint: { width: 3, height: 3 },
+        status: 'UNDER_CONSTRUCTION',
+        progressTicks: 12,
+        totalTicks: 100
+      })
+    ])
   })
 
   it('accepts an ATTACK command and projects the damage', () => {

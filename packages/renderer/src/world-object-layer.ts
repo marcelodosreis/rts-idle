@@ -1,9 +1,9 @@
-import { fixedToRenderPixels } from '@rts/shared'
+import { FIXED_SCALE, fixedToRenderPixels } from '@rts/shared'
 import { Graphics } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
-import type { RenderBase, RenderMineralNode } from './types.js'
+import { buildingVisualStyle, ownerColor } from './building-visual-style.js'
+import type { RenderBase, RenderBuildPreview, RenderConstruction, RenderMineralNode } from './types.js'
 
-const OWNER_COLORS = [0x2e7d32, 0xc62828, 0x1565c0, 0xf9a825]
 const BASE_WIDTH = 80
 const BASE_HEIGHT = 64
 const MINERAL_RADIUS = 30
@@ -13,35 +13,75 @@ const MINERAL_COLOR = 0xfbbf24
 export class WorldObjectLayer {
   private readonly viewport: Viewport
   private readonly bases = new Map<number, Graphics>()
+  private readonly constructions = new Map<number, Graphics>()
   private readonly mineralNodes = new Map<number, Graphics>()
   private readonly mineralNodePositions = new Map<number, { readonly x: number; readonly y: number }>()
   private readonly activeMineralNodes = new Set<number>()
+  private preview: RenderBuildPreview | null = null
 
   constructor(viewport: Viewport) {
     this.viewport = viewport
   }
 
-  present(bases: readonly RenderBase[], mineralNodes: readonly RenderMineralNode[]): void {
+  present(
+    bases: readonly RenderBase[],
+    mineralNodes: readonly RenderMineralNode[],
+    constructions: readonly RenderConstruction[] = []
+  ): void {
+    const constructionIds = new Set(constructions.map((construction) => construction.id))
     const seenBases = new Set<number>()
     for (const base of bases) {
+      if (constructionIds.has(base.id)) {
+        continue
+      }
       seenBases.add(base.id)
       let graphic = this.bases.get(base.id)
       if (graphic === undefined) {
         graphic = new Graphics()
-        graphic.rect(-BASE_WIDTH / 2, -BASE_HEIGHT / 2, BASE_WIDTH, BASE_HEIGHT)
-        graphic.fill({ color: OWNER_COLORS[base.owner % OWNER_COLORS.length] ?? 0x64748b, alpha: 0.8 })
-        graphic.stroke({ color: 0xf8fafc, width: 4 })
-        graphic.moveTo(-BASE_WIDTH / 2, -BASE_HEIGHT / 2)
-        graphic.lineTo(0, -BASE_HEIGHT / 2 - 22)
-        graphic.lineTo(BASE_WIDTH / 2, -BASE_HEIGHT / 2)
-        graphic.stroke({ color: 0xf8fafc, width: 4 })
         graphic.eventMode = 'none'
         this.viewport.addChild(graphic)
         this.bases.set(base.id, graphic)
       }
+      this.drawBase(graphic, base.owner)
       graphic.position.set(fixedToRenderPixels(base.x), fixedToRenderPixels(base.y))
     }
     this.removeMissing(this.bases, seenBases)
+
+    const seenConstructions = new Set<number>()
+    for (const construction of constructions) {
+      seenConstructions.add(construction.id)
+      let graphic = this.constructions.get(construction.id)
+      if (graphic === undefined) {
+        graphic = new Graphics()
+        graphic.eventMode = 'none'
+        this.viewport.addChild(graphic)
+        this.constructions.set(construction.id, graphic)
+      }
+      const style = buildingVisualStyle(construction.buildingType, construction.status, construction.owner)
+      if (style.kind === 'base') {
+        this.drawBase(graphic, construction.owner)
+      } else {
+        const width = construction.footprint.width * (FIXED_SCALE / 4)
+        const height = construction.footprint.height * (FIXED_SCALE / 4)
+        graphic.clear()
+        graphic.rect(0, 0, width, height)
+        graphic.fill({ color: style.fillColor, alpha: style.fillAlpha })
+        graphic.stroke({ color: style.strokeColor, width: 4 })
+        if (style.kind === 'barracks') {
+          graphic.rect(width * 0.2, height * 0.2, width * 0.6, height * 0.6)
+          graphic.stroke({ color: 0xf97316, width: 3 })
+        }
+      }
+      if (style.kind === 'foundation') {
+        const width = construction.footprint.width * (FIXED_SCALE / 4)
+        const height = construction.footprint.height * (FIXED_SCALE / 4)
+        const ratio = construction.progressTicks / construction.totalTicks
+        graphic.rect(0, height + 6, width * ratio, 6).fill({ color: 0x22c55e })
+        graphic.rect(0, height + 6, width, 6).stroke({ color: 0x0f172a, width: 2 })
+      }
+      graphic.position.set(fixedToRenderPixels(construction.x), fixedToRenderPixels(construction.y))
+    }
+    this.removeMissing(this.constructions, seenConstructions)
 
     const seenNodes = new Set<number>()
     this.mineralNodePositions.clear()
@@ -66,6 +106,49 @@ export class WorldObjectLayer {
       }
     }
     this.removeMissing(this.mineralNodes, seenNodes)
+    this.renderPreview()
+  }
+
+  private drawBase(graphic: Graphics, owner: number): void {
+    graphic.clear()
+    graphic.rect(-BASE_WIDTH / 2, -BASE_HEIGHT / 2, BASE_WIDTH, BASE_HEIGHT)
+    graphic.fill({ color: ownerColor(owner), alpha: 0.8 })
+    graphic.stroke({ color: 0xf8fafc, width: 4 })
+    graphic.moveTo(-BASE_WIDTH / 2, -BASE_HEIGHT / 2)
+    graphic.lineTo(0, -BASE_HEIGHT / 2 - 22)
+    graphic.lineTo(BASE_WIDTH / 2, -BASE_HEIGHT / 2)
+    graphic.stroke({ color: 0xf8fafc, width: 4 })
+  }
+
+  setBuildPreview(preview: RenderBuildPreview | null): void {
+    this.preview = preview
+    this.renderPreview()
+  }
+
+  private renderPreview(): void {
+    const id = -1
+    let graphic = this.constructions.get(id)
+    if (this.preview === null) {
+      if (graphic !== undefined) {
+        this.viewport.removeChild(graphic)
+        graphic.destroy()
+        this.constructions.delete(id)
+      }
+      return
+    }
+    if (graphic === undefined) {
+      graphic = new Graphics()
+      graphic.eventMode = 'none'
+      this.viewport.addChild(graphic)
+      this.constructions.set(id, graphic)
+    }
+    const width = this.preview.width * (FIXED_SCALE / 4)
+    const height = this.preview.height * (FIXED_SCALE / 4)
+    graphic.clear()
+    graphic.rect(0, 0, width, height)
+    graphic.fill({ color: this.preview.valid ? 0x22c55e : 0xef4444, alpha: 0.28 })
+    graphic.stroke({ color: this.preview.valid ? 0x86efac : 0xfca5a5, width: 4 })
+    graphic.position.set(fixedToRenderPixels(this.preview.x), fixedToRenderPixels(this.preview.y))
   }
 
   setActiveMineralNodes(ids: ReadonlySet<number>): void {
