@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { test } from '@playwright/test'
 import { runDeterminismFixture } from '@rts/simulation/fixtures'
 import { SEEDS } from '../fixtures/index.js'
 
@@ -8,12 +8,39 @@ import { SEEDS } from '../fixtures/index.js'
 const SEED_LIST = SEEDS.e2e.browserDeterminism
 const TICKS = 400
 
+function mismatchSummary(expected: readonly string[], actual: readonly string[]): string {
+  const mismatches = []
+  const comparedTicks = Math.max(expected.length, actual.length)
+
+  for (let tick = 0; tick < comparedTicks; tick += 1) {
+    if (expected[tick] !== actual[tick]) {
+      mismatches.push(tick)
+    }
+  }
+
+  const firstTick = mismatches[0]
+  const lastTick = mismatches[mismatches.length - 1]
+  return [
+    `Determinism mismatch: ${mismatches.length}/${comparedTicks} ticks`,
+    `first=${firstTick ?? 'none'}`,
+    `last=${lastTick ?? 'none'}`,
+    `expectedFirst=${firstTick === undefined ? 'none' : (expected[firstTick] ?? 'missing')}`,
+    `actualFirst=${firstTick === undefined ? 'none' : (actual[firstTick] ?? 'missing')}`,
+    `expectedLast=${lastTick === undefined ? 'none' : (expected[lastTick] ?? 'missing')}`,
+    `actualLast=${lastTick === undefined ? 'none' : (actual[lastTick] ?? 'missing')}`
+  ].join(' ')
+}
+
 test('simulation state hashes match between Node and Chromium', async ({ page }) => {
   await page.goto('/det.html')
 
   for (const seed of SEED_LIST) {
     const browserHashes = await page.evaluate(([s, t]) => window.__runDetFixture!(s, t), [seed, TICKS] as const)
     const nodeHashes = runDeterminismFixture(seed, TICKS)
-    expect(browserHashes).toEqual(nodeHashes)
+    const hashesMatch =
+      browserHashes.length === nodeHashes.length && browserHashes.every((hash, tick) => hash === nodeHashes[tick])
+    if (!hashesMatch) {
+      throw new Error(mismatchSummary(nodeHashes, browserHashes))
+    }
   }
 })

@@ -1,8 +1,44 @@
-import { createSimulation, Health, Position } from '@rts/simulation'
+import {
+  Cargo,
+  checkBuildingFootprints,
+  createSimulation,
+  Health,
+  Kind,
+  MineralNode,
+  Movement,
+  Orders,
+  Position
+} from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { SEEDS, TEST_IDENTITY, worldWithCombatUnits, worldWithOwners } from '../fixtures/index.js'
 
 describe('central invariants (P1.08)', () => {
+  it('accepts valid building footprints and edge-touching buildings', () => {
+    expect(() =>
+      checkBuildingFootprints({ width: 8, height: 8 }, [
+        { x: 0, y: 0, width: 2, height: 2 },
+        { x: 2, y: 0, width: 2, height: 2 }
+      ])
+    ).not.toThrow()
+  })
+
+  it.each([
+    ['out of bounds', [{ x: 7, y: 7, width: 2, height: 1 }], /OUT_OF_BOUNDS/],
+    ['invalid tile', [{ x: 1, y: 1, width: 2, height: 2 }], /INVALID_TILE/],
+    [
+      'overlap',
+      [
+        { x: 0, y: 0, width: 2, height: 2 },
+        { x: 1, y: 1, width: 2, height: 2 }
+      ],
+      /OVERLAP/
+    ]
+  ])('rejects a footprint list with %s', (_name, footprints, error) => {
+    const map =
+      _name === 'invalid tile' ? { width: 8, height: 8, invalidTiles: [{ x: 2, y: 2 }] } : { width: 8, height: 8 }
+    expect(() => checkBuildingFootprints(map, footprints)).toThrow(error)
+  })
+
   it('accepts valid states across combat', () => {
     const world = worldWithCombatUnits([0, 1])
     const ids = world.aliveIds()
@@ -80,5 +116,63 @@ describe('central invariants (P1.08)', () => {
     expect(result.rejected).toHaveLength(0)
     // After a normal tick the buffer is always cleared; a second tick is safe.
     expect(() => sim.step([])).not.toThrow()
+  })
+
+  it('rejects negative minerals in a node', () => {
+    const world = worldWithOwners([0])
+    const id = world.aliveIds()[0]!
+    world.store(MineralNode).set(id, { remaining: -1 })
+    const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
+
+    expect(() => sim.step()).toThrow(/negative mineral amount/)
+  })
+
+  it('rejects cargo outside the v0 capacity bounds', () => {
+    const world = worldWithOwners([0])
+    const id = world.aliveIds()[0]!
+    world.store(Kind).set(id, 'pawn')
+    world.store(Cargo).set(id, { amount: 11, capacity: 10 })
+    const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
+
+    expect(() => sim.step()).toThrow(/invalid cargo/)
+  })
+
+  it('rejects gather progress outside one collection interval', () => {
+    const world = worldWithOwners([0])
+    const id = world.aliveIds()[0]!
+    world.store(Kind).set(id, 'pawn')
+    world.store(Cargo).set(id, { amount: 0, capacity: 10 })
+    world.store(Orders).set(id, {
+      queue: [{ type: 'GATHER', nodeId: 99, baseId: null, phase: 'TO_NODE', progressTicks: 20 }]
+    })
+    world.store(Movement).set(id, {
+      speedTilesPerSecond: 4,
+      destX: 10_000,
+      destY: 0,
+      remainderX: 0,
+      remainderY: 0
+    })
+    const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
+
+    expect(() => sim.step()).toThrow(/invalid gather progress/)
+  })
+
+  it('rejects a gather order without Worker cargo state', () => {
+    const world = worldWithOwners([0])
+    const id = world.aliveIds()[0]!
+    world.store(Kind).set(id, 'pawn')
+    world.store(Orders).set(id, {
+      queue: [{ type: 'GATHER', nodeId: 99, baseId: null, phase: 'TO_NODE', progressTicks: 0 }]
+    })
+    world.store(Movement).set(id, {
+      speedTilesPerSecond: 4,
+      destX: 10_000,
+      destY: 0,
+      remainderX: 0,
+      remainderY: 0
+    })
+    const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
+
+    expect(() => sim.step()).toThrow(/gather order without Worker state/)
   })
 })

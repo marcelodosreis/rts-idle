@@ -19,6 +19,7 @@ be integer fixed units.
 | `PATROL` | `unitIds, x, y` | Walk back and forth between the current position and the target. |
 | `ATTACK` | `unitIds, targetId` | Acquire and attack a specific enemy (chases when out of range). |
 | `ATTACK_MOVE` | `unitIds, x, y` | Move to a destination, attacking enemies encountered en route; defend on arrival. |
+| `GATHER` | `unitIds, nodeId` | Workers repeatedly gather minerals, return to the nearest owned Base, and deposit. |
 | `SURRENDER` | — | The issuing player concedes: marked defeated, their units disband. |
 
 ## Rejection codes
@@ -33,9 +34,10 @@ be integer fixed units.
 ## Order queue
 
 `Orders` holds a small queue per unit (`MAX_ORDER_QUEUE_DEPTH = 4`). STOP clears
-it; MOVE replaces it; HOLD/ATTACK/ATTACK_MOVE set a single standing order;
-PATROL sets two alternating legs. The orders system advances the front leg each
-tick (see `docs/simulation.md`).
+it; MOVE replaces it; HOLD/ATTACK/ATTACK_MOVE/GATHER set a single standing
+order; PATROL sets two alternating legs. GATHER also stores its canonical
+travel/gather/return phase and collection progress. The systems advance the
+front order each tick (see `docs/simulation.md`).
 
 ## Transport
 
@@ -43,5 +45,7 @@ The browser transport (`packages/protocol`) validates incoming messages before
 they reach the server: a generic `command` message carries the shared
 `CommandIntent` (`isCommandMessage`); the legacy `MOVE` message is still
 accepted. The server projects snapshots back with `hp/maxHp`, `kind`,
-`orderState`, `players`, `phase`, and per-tick `events[]`. The command intent
-type lives in `@rts/shared` so protocol and simulation share one definition.
+`orderState`, optional Worker economy phase/progress/cargo, separate `bases[]`
+and `mineralNodes[]` observations, `players`, `phase`, and per-tick `events[]`.
+The command intent type lives in
+`@rts/shared` so protocol and simulation share one definition.

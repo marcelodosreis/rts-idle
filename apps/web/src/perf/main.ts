@@ -11,7 +11,7 @@ export interface RendererPerfResult {
 
 declare global {
   interface Window {
-    __runRendererPerf?: (count: number) => Promise<RendererPerfResult>
+    __runRendererPerf?: (count: number, targetFrames?: number) => Promise<RendererPerfResult>
   }
 }
 
@@ -23,7 +23,7 @@ function percentile(sorted: readonly number[], p: number): number {
   return sorted[index] ?? 0
 }
 
-window.__runRendererPerf = async (count) => {
+window.__runRendererPerf = async (count, targetFrames = 120) => {
   const host = document.createElement('div')
   host.style.width = '1280px'
   host.style.height = '720px'
@@ -44,7 +44,6 @@ window.__runRendererPerf = async (count) => {
   renderer.present({ tick: 1, units })
 
   const frames: number[] = []
-  const targetFrames = 120
   await new Promise<void>((resolve) => {
     let last = performance.now()
     let done = 0

@@ -8,34 +8,37 @@ Browser-first competitive RTS with deterministic simulation, server authority, a
 
 ## Current Milestone
 
-**Phase 1 complete.** Phase 2 (Economy and Production) is next.
+**Phase 2 in progress.** Economy v0 is implemented and exposed through a dedicated browser scenario.
 
 See `tasks/todo.md` for full phase list.
 
 ## Working Systems
 
-- ECS engine (7 components, custom, Map-based stores)
+- ECS engine (10 components, custom, Map-based stores)
 - Fixed timestep (20 ticks/s, single-writer `step()`)
 - Deterministic simulation (xoshiro128**, fixed-point, SHA-256 hashes)
-- 7 commands: MOVE, STOP, HOLD, PATROL, ATTACK, ATTACK_MOVE, SURRENDER
-- 6 pipeline systems: orders → movement → combat → death → victory → invariants
+- 8 commands: MOVE, STOP, HOLD, PATROL, ATTACK, ATTACK_MOVE, GATHER, SURRENDER
+- 7 pipeline systems: orders → movement → economy → combat → death → victory → invariants
 - 3 unit types: pawn (100hp/10dmg), warrior (150hp/15dmg), archer (60hp/8dmg/range 3)
 - Combat with simultaneous death, victory/draw/tick-limit
+- Economy v0: Worker → Mineral Node → cargo → owned Base → wallet deposit
 - Snapshot/hash/export/restore
 - PixiJS renderer (animated sprites, terrain autotile, combat effects, HP bars)
 - Unit selection (click + box), command bar, match overlay
+- Playable economy scenario with contextual GATHER, pickaxe/carry animations, progress feedback, and live Mineral HUD
 - WebSocket server (isolated per-connection sessions)
-- 280 passing tests, architecture barriers green
+- Automated suites and architecture barriers green
 
 ## Current Gameplay
 
-Player connects → gets isolated match → selects units → issues commands → fights AI-controlled enemies (pre-scripted attacks) → wins by elimination or draws at 5000 ticks.
+Player connects → gets isolated match → selects units → issues commands → fights
+pre-scripted enemies, or opens `?scenario=economy` to gather and deposit
+minerals through the authoritative command path.
 
-No economy, no building, no production, no real AI, no pathfinding, no fog of war, no multiplayer.
+No building placement, production, real AI, pathfinding, fog of war, or multiplayer.
 
 ## Current Limitations
 
-- No economy (PlayerState.gold always 0)
 - No buildings (assets exist, no system)
 - No production queue
 - No AI (enemies are pre-scripted)
@@ -48,7 +51,18 @@ No economy, no building, no production, no real AI, no pathfinding, no fog of wa
 
 ## Active Task
 
-None. Phase 1 complete, awaiting Phase 2 kickoff.
+VS-01B Playable Economy Integration is complete, including visible mining/carrying feedback. VS-02 has not started.
+
+Architecture evolution is tracked in `docs/rfc/RFC-001-technology-substitutability.md`
+(Proposed; no implementation started).
+
+Deployment and environments are tracked in
+`docs/rfc/RFC-002-deployment-and-environments.md` (Proposed; target Render free,
+Docker same-origin monolith, `staging` + `main`).
+
+Cost, scale, and architecture comparison is tracked in
+`docs/rfc/RFC-003-cost-scale-and-architecture-comparison.md` (Proposed; isolated
+sessions → delta → rooms → fog of war → 200k players).
 
 ## Engineering Invariants
 
@@ -70,7 +84,7 @@ None. Phase 1 complete, awaiting Phase 2 kickoff.
 ## Validation
 
 ```bash
-# Per-task (run after each change)
+# Iteration (after intermediate edits)
 pnpm run typecheck
 pnpm run lint
 pnpm run test:unit
@@ -81,8 +95,9 @@ pnpm run test:integration
 pnpm run test:contracts
 pnpm run test:orders
 
-# Milestone gate
+# Completion gate (at feature completion; choose E2E by changed risk)
 pnpm run verify
+pnpm run test:e2e -- --project=chromium  # browser/protocol changes, release, or CI
 ```
 
 ## Definition of Done

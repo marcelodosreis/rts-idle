@@ -4,6 +4,7 @@ export type {
   AttackMovePayload,
   AttackPayload,
   CommandIntent,
+  GatherPayload,
   HoldPayload,
   MovePayload,
   PatrolPayload,

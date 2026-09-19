@@ -2114,7 +2114,7 @@ pnpm run test:invariants
 pnpm run test:regression
 pnpm run test:architecture
 pnpm run build
-pnpm run test:e2e
+pnpm run test:e2e -- --project=chromium
 ```
 
 Focused tests:
@@ -2122,7 +2122,8 @@ Focused tests:
 ```bash
 pnpm exec vitest run tests/unit/<slug>.test.ts
 pnpm exec vitest run tests/integration/<slug>.test.ts
-pnpm exec playwright test tests/e2e/<slug>.spec.ts
+pnpm run test:e2e:focused tests/e2e/<slug>.spec.ts --list
+pnpm run test:e2e:focused tests/e2e/<slug>.spec.ts
 ```
 
 ## 22.6. CI levels

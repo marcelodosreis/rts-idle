@@ -4,6 +4,7 @@ import type { Viewport } from 'pixi-viewport'
 import type { AssetLibrary } from './assets/asset-library.js'
 import { interpolationAlpha, lerpPoint } from './interpolation.js'
 import type { RenderUnit, UnitKind } from './types.js'
+import { economyFrameKey } from './unit-economy.js'
 import { FACTION_BY_OWNER, frameKey, TARGET_RADIUS, type UnitFrames, UnitSprite } from './unit-sprite.js'
 
 interface Point {
@@ -47,8 +48,11 @@ export class UnitLayer {
     void Promise.all([
       this.library.animated(frameKey(owner, kind, 'idle')),
       this.library.animated(frameKey(owner, kind, 'run')),
-      this.library.animated(frameKey(owner, kind, 'attack'))
-    ]).then(([idle, run, attack]) => {
+      this.library.animated(frameKey(owner, kind, 'attack')),
+      kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'gather')) : Promise.resolve(null),
+      kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'carryIdle')) : Promise.resolve(null),
+      kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'carryRun')) : Promise.resolve(null)
+    ]).then(([idle, run, attack, gather, carryIdle, carryRun]) => {
       if (idle === null || run === null) {
         this.loadState.set(cacheKey, 'failed')
         return
@@ -56,7 +60,7 @@ export class UnitLayer {
       idle.play()
       run.play()
       attack?.play()
-      const frames: UnitFrames = { idle, run, attack }
+      const frames: UnitFrames = { idle, run, attack, gather, carryIdle, carryRun }
       this.framesByKind.set(cacheKey, frames)
       this.loadState.set(cacheKey, 'loaded')
       for (const sprite of this.units.values()) {
@@ -108,7 +112,8 @@ export class UnitLayer {
         unit.orderState === 'moving' ||
         ((unit.orderState === 'attacking' || unit.orderState === 'attack_move') && deltaMoved)
       sprite.setHealth(unit.hp, unit.maxHp)
-      sprite.setState(moving, unit.x < (last?.x ?? unit.x), now)
+      sprite.setState(moving, unit.x < (last?.x ?? unit.x), now, unit.economy)
+      sprite.setEconomyBar(unit.economy)
       sprite.setPosition(position.x, position.y)
     }
     for (const [id, sprite] of [...this.units]) {
@@ -263,9 +268,12 @@ export class UnitLayer {
   spriteState(id: number): {
     readonly visible: boolean
     readonly frame: number | null
-    readonly anim: 'idle' | 'run' | 'attack' | 'fallback'
+    readonly anim: 'idle' | 'run' | 'attack' | 'gather' | 'carry_idle' | 'carry_run' | 'fallback'
     readonly inTree: boolean
     readonly facing: number
+    readonly scale: number
+    readonly glyph: string | null
+    readonly shape: 'circle' | 'square' | 'triangle' | null
   } | null {
     const sprite = this.units.get(id)
     if (sprite === undefined) {
@@ -276,7 +284,10 @@ export class UnitLayer {
       frame: sprite.animationFrame(),
       anim: sprite.stateName(),
       inTree: sprite.bodyInTree(),
-      facing: sprite.facingNow()
+      facing: sprite.facingNow(),
+      scale: sprite.bodyScale(),
+      glyph: sprite.glyphNow(),
+      shape: sprite.shapeNow()
     }
   }
 }

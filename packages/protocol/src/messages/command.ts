@@ -43,6 +43,10 @@ function isCommandIntent(value: unknown): boolean {
       const p = payload as Record<string, unknown>
       return isIntegerArray(p.unitIds) && isInteger(p.targetId)
     }
+    case 'GATHER': {
+      const p = payload as Record<string, unknown>
+      return isIntegerArray(p.unitIds) && isInteger(p.nodeId)
+    }
     case 'SURRENDER':
       return Object.keys(payload).length === 0
     default:

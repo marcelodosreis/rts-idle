@@ -13,7 +13,7 @@ export type Phase = 'RUNNING' | 'FINISHED'
 export interface PlayerState {
   readonly id: PlayerId
   defeated: boolean
-  readonly gold: number
+  gold: number
 }
 
 /**

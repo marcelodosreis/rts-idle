@@ -1,10 +1,10 @@
-import { Combat, Health, Kind, Movement, Orders, Owner, Position } from './components.js'
+import { Base, Cargo, Combat, Health, Kind, MineralNode, Movement, Orders, Owner, Position } from './components.js'
 import { World } from './world.js'
 
 /**
  * Creates a world with the built-in components registered. Registration order
- * (Position, Owner, Movement, Orders, Health, Combat, Kind) is part of the
- * canonical serialization schema.
+ * (Position, Owner, Movement, Orders, Health, Combat, Kind, MineralNode, Base,
+ * Cargo) is part of the canonical serialization schema.
  */
 export function createWorld(): World {
   const world = new World()
@@ -15,5 +15,8 @@ export function createWorld(): World {
   world.registerComponent(Health)
   world.registerComponent(Combat)
   world.registerComponent(Kind)
+  world.registerComponent(MineralNode)
+  world.registerComponent(Base)
+  world.registerComponent(Cargo)
   return world
 }

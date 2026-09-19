@@ -1,38 +1,34 @@
 # Agent Orchestration
 
-## Available Agents
+## Available Agent Capabilities
 
-Located in `~/.claude/agents/`:
+Use only agents and tools provided by the active platform. Choose capabilities
+by purpose; do not assume a particular agent name, path, or provider.
 
-| Agent | Purpose | When to Use |
+| Capability | Purpose | When to Use |
 |-------|---------|-------------|
-| planner | Implementation planning | Complex features, refactoring |
-| architect | System design | Architectural decisions |
-| tdd-guide | Test-driven development | New features, bug fixes |
-| code-reviewer | Code review | After writing code |
-| security-reviewer | Security analysis | Before commits |
-| build-error-resolver | Fix build errors | When build fails |
-| e2e-runner | E2E testing | Critical user flows |
-| refactor-cleaner | Dead code cleanup | Code maintenance |
-| doc-updater | Documentation | Updating docs |
-| rust-reviewer | Rust code review | Rust projects |
-| harmonyos-app-resolver | HarmonyOS app development | HarmonyOS/ArkTS projects |
+| Planning | Implementation planning | Complex features, refactoring |
+| Architecture | System design | Architectural decisions |
+| Test guidance | Test-driven development | New features, bug fixes |
+| Code review | Quality review | After writing code |
+| Security review | Security analysis | Security-sensitive changes |
+| Build diagnosis | Fix build errors | When a build fails |
+| E2E testing | Browser-flow validation | Critical user flows |
+| Documentation | Documentation updates | Updating docs |
 
 ## Immediate Agent Usage
 
-No user prompt needed:
-1. Complex feature requests - Use **planner** agent
-2. Code just written/modified - Use **code-reviewer** agent
-3. Bug fix or new feature - Use **tdd-guide** agent
-4. Architectural decision - Use **architect** agent
+When the active platform provides a relevant capability, use it for complex
+planning, quality review, testing, debugging, or architectural decisions.
 
 ## Parallel Task Execution
 
-ALWAYS use parallel Task execution for independent operations:
+Use parallel execution only when the work is independent, the active platform
+supports it, and the results can be collected before completion:
 
 ```markdown
 # GOOD: Parallel execution
-Launch 3 agents in parallel:
+Launch available reviewers in parallel:
 1. Agent 1: Security analysis of auth module
 2. Agent 2: Performance review of cache system
 3. Agent 3: Type checking of utilities

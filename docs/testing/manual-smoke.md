@@ -41,6 +41,20 @@ marches toward the enemy, then fights in place where they meet.
 | 10 | Wait for the match to end (or Surrender) | Overlay shows **Victory / Defeat / Draw**; "New match" reloads a fresh session. |
 | 11 | Top bar **scenario** selector | Reloads into a different scenario (`2v2`, `4v4`, Melee vs ranged, Free for all, Overwhelming force, Against the odds). |
 | 12 | Middle-drag / wheel | Camera pans / zooms (0.05×–4×). |
+| 13 | Top bar **Sprites** switch | Turning it off reloads the match with fallback circles/terrain graphics; commands and simulation remain active. |
+
+## Economy scenario
+
+Open `http://localhost:5173/?scenario=economy`.
+
+| # | Action | Expected result |
+|---|---|---|
+| 1 | Left-click the Worker | The Worker gets a yellow selection ring and the selection panel reads `1 · Worker`. |
+| 2 | Right-click the amber Mineral Node | A command ping appears and the Worker travels to the node. |
+| 3 | Watch the Worker at the node | The Worker uses the pickaxe animation; an amber progress bar and `Mining N/20` status show collection progress. |
+| 4 | Wait for a full cargo | The Worker returns using the gold-carrying animation; the green cargo bar/status reaches `10/10`, then the Mineral chip changes from `0` to `10`. |
+| 5 | Continue watching | The Worker automatically starts another trip to the Mineral Node. |
+| 6 | Click **Stop** | The Worker stops, returns to idle, and the economy bar/status and node highlight disappear. |
 
 ### Console diagnostics (F12)
 
@@ -55,7 +69,7 @@ window.__rtsDebug.getZoom()          // current camera zoom
 
 ## Not implemented yet (do not expect)
 
-- Economy (gathering, production, buildings) — Phase 2.
+- Construction, production, Energy, and supply — later Phase 2 work.
 - Fog, pathfinding, projectiles — Phase 3.
 - Groups, hotkeys, minimap, full match flow — Phase 8.
 - Replay/CLI tooling — Phase 7.
@@ -69,5 +83,6 @@ and a permanent regression test before it is closed.
 
 ```bash
 pnpm run verify                    # typecheck + lint + all vitest suites + build
-pnpm exec playwright test         # browser e2e (selection, move, combat, results, scenarios)
+pnpm run test:e2e:focused tests/e2e/<target>.spec.ts --list
+pnpm run test:e2e:focused tests/e2e/<target>.spec.ts  # browser e2e target
 ```

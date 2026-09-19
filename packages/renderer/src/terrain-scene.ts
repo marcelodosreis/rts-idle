@@ -15,6 +15,15 @@ export interface TerrainSceneDressing {
   readonly counts: Readonly<Partial<Record<DressingKind, number>>>
 }
 
+/**
+ * An explicitly placed decoration, keyed by `"x,y"` in the scene's manual
+ * decoration map. `variant` is a 0-based index into `DRESSING_ASSET_KEYS`.
+ */
+export interface ManualDecoration {
+  readonly kind: DressingKind
+  readonly variant: number
+}
+
 export interface TerrainSceneOptions {
   /** Terrain tileset palette (`color1`-`color5`); defaults to `color1`. */
   readonly palette?: string
@@ -43,7 +52,7 @@ export interface TerrainScene {
     grid: readonly (readonly AutoTileTerrain[])[],
     stairs: ReadonlyMap<string, 'left' | 'right'>,
     dressing: TerrainSceneDressing,
-    manualDecorations?: ReadonlyMap<string, { readonly kind: 'bush'; readonly variant: number }>
+    manualDecorations?: ReadonlyMap<string, ManualDecoration>
   ): void
   setPalette(palette: string): Promise<void>
   setPaused(paused: boolean): void
@@ -258,9 +267,7 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
     }
   }
 
-  const drawManualDecorations = async (
-    decorations: ReadonlyMap<string, { readonly kind: 'bush'; readonly variant: number }>
-  ): Promise<void> => {
+  const drawManualDecorations = async (decorations: ReadonlyMap<string, ManualDecoration>): Promise<void> => {
     if (decorations.size === 0) {
       return
     }
@@ -296,14 +303,14 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
     readonly grid: readonly (readonly AutoTileTerrain[])[]
     readonly stairs: ReadonlyMap<string, 'left' | 'right'>
     readonly dressing: TerrainSceneDressing
-    readonly manualDecorations: ReadonlyMap<string, { readonly kind: 'bush'; readonly variant: number }>
+    readonly manualDecorations: ReadonlyMap<string, ManualDecoration>
   } | null = null
 
   const render = (
     grid: readonly (readonly AutoTileTerrain[])[],
     stairs: ReadonlyMap<string, 'left' | 'right'>,
     dressing: TerrainSceneDressing,
-    manualDecorations: ReadonlyMap<string, { readonly kind: 'bush'; readonly variant: number }> = new Map()
+    manualDecorations: ReadonlyMap<string, ManualDecoration> = new Map()
   ): void => {
     lastRender = { grid, stairs, dressing, manualDecorations }
     drawWater(grid)
@@ -319,8 +326,12 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
       }
     }
     drawStairs(overlayContainer, stairs)
-    void drawDressing(grid, dressing)
-    void drawManualDecorations(manualDecorations)
+    // Explicit placements are authoritative; scatter is the fallback.
+    if (manualDecorations.size > 0) {
+      void drawManualDecorations(manualDecorations)
+    } else {
+      void drawDressing(grid, dressing)
+    }
   }
 
   const setPalette = async (next: string): Promise<void> => {

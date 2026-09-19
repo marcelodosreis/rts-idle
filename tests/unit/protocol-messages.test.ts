@@ -65,6 +65,8 @@ describe('protocol snapshot message', () => {
       { id: 1, x: 256, y: 512, owner: 0, kind: 'pawn', hp: 90, maxHp: 100, orderState: 'attacking' },
       { id: 2, x: 0, y: 0, owner: 1 }
     ],
+    bases: [{ id: 3, x: 128, y: 256, owner: 0 }],
+    mineralNodes: [{ id: 4, x: 768, y: 256, remaining: 3000 }],
     players: [
       { id: 0, defeated: false, gold: 0 },
       { id: 1, defeated: true, gold: 5 }
@@ -81,9 +83,18 @@ describe('protocol snapshot message', () => {
   })
 
   it('accepts a snapshot with no units', () => {
-    expect(isSnapshotMessage({ type: 'snapshot', tick: 0, phase: 'RUNNING', units: [], players: [], events: [] })).toBe(
-      true
-    )
+    expect(
+      isSnapshotMessage({
+        type: 'snapshot',
+        tick: 0,
+        phase: 'RUNNING',
+        units: [],
+        bases: [],
+        mineralNodes: [],
+        players: [],
+        events: []
+      })
+    ).toBe(true)
   })
 
   it('accepts a unit with optional combat fields omitted', () => {
@@ -93,10 +104,33 @@ describe('protocol snapshot message', () => {
         tick: 0,
         phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0 }],
+        bases: [],
+        mineralNodes: [],
         players: [],
         events: []
       })
     ).toBe(true)
+  })
+
+  it('validates authoritative economy presentation state', () => {
+    const economy = {
+      phase: 'gathering',
+      cargoAmount: 3,
+      cargoCapacity: 10,
+      progressTicks: 12,
+      progressMax: 20,
+      nodeId: 4
+    }
+    expect(isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], economy }] })).toBe(true)
+    expect(
+      isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], economy: { ...economy, cargoAmount: 11 } }] })
+    ).toBe(false)
+    expect(
+      isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], economy: { ...economy, phase: 'teleporting' } }] })
+    ).toBe(false)
+    expect(
+      isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], economy: { ...economy, progressMax: 0 } }] })
+    ).toBe(false)
   })
 
   it('rejects unknown kinds, order states, and phases', () => {
@@ -106,6 +140,8 @@ describe('protocol snapshot message', () => {
         tick: 1,
         phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0, kind: 'zeppelin' }],
+        bases: [],
+        mineralNodes: [],
         players: [],
         events: []
       })
@@ -116,13 +152,33 @@ describe('protocol snapshot message', () => {
         tick: 1,
         phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0, orderState: 'flying' }],
+        bases: [],
+        mineralNodes: [],
         players: [],
         events: []
       })
     ).toBe(false)
-    expect(isSnapshotMessage({ type: 'snapshot', tick: 1, phase: 'PAUSED', units: [], players: [], events: [] })).toBe(
-      false
-    )
+    expect(
+      isSnapshotMessage({
+        type: 'snapshot',
+        tick: 1,
+        phase: 'PAUSED',
+        units: [],
+        bases: [],
+        mineralNodes: [],
+        players: [],
+        events: []
+      })
+    ).toBe(false)
+  })
+
+  it('requires and validates Base and Mineral Node projections', () => {
+    const { bases: _bases, ...withoutBases } = valid
+    const { mineralNodes: _mineralNodes, ...withoutMineralNodes } = valid
+    expect(isSnapshotMessage(withoutBases)).toBe(false)
+    expect(isSnapshotMessage(withoutMineralNodes)).toBe(false)
+    expect(isSnapshotMessage({ ...valid, bases: [{ id: 3, x: 0, y: 0, owner: 4 }] })).toBe(false)
+    expect(isSnapshotMessage({ ...valid, mineralNodes: [{ id: 4, x: 0, y: 0, remaining: -1 }] })).toBe(false)
   })
 
   it('rejects malformed players and events', () => {

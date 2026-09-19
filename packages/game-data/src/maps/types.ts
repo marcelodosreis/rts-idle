@@ -7,6 +7,36 @@
  */
 export type MapTileKind = 'water' | 'land' | 'elevated'
 
+/**
+ * Canonical decoration/resource kinds (content-as-data, ADR-004). The single
+ * source of truth shared by the map contract, the renderer's asset mapping, and
+ * the level editor's palette. The tuple is the runtime form; `DressingKind` is
+ * derived from it so the two can never drift.
+ */
+export const DRESSING_KINDS = [
+  'bush',
+  'tree',
+  'rock',
+  'cloud',
+  'water_rock',
+  'gold',
+  'gold_stone',
+  'wood',
+  'meat',
+  'sheep'
+] as const
+
+export type DressingKind = (typeof DRESSING_KINDS)[number]
+
+/** An explicitly placed decoration/resource on a map tile. */
+export interface DecorationPlacement {
+  readonly x: number
+  readonly y: number
+  readonly kind: DressingKind
+  /** 0-based variant index into the kind's curated art; defaults to 0. */
+  readonly variant?: number
+}
+
 /** A stair ramp cell: anchors at `(x, y)` and climbs one tile upward. */
 export interface StairEntry {
   readonly x: number
@@ -26,6 +56,13 @@ export interface MapDefinition {
   readonly palette?: string
   /** Deterministic decoration seed; defaults to a fixed value when omitted. */
   readonly decorationSeed?: number
+  /**
+   * Explicitly placed decorations/resources. When present and non-empty these
+   * are authoritative; otherwise `decorationCounts` scatters deterministically.
+   */
+  readonly decorations?: readonly DecorationPlacement[]
+  /** Scatter fallback: max items per kind, seeded by `decorationSeed`. */
+  readonly decorationCounts?: Readonly<Partial<Record<DressingKind, number>>>
 }
 
 export interface MapPosition {

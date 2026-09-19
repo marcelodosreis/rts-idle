@@ -41,6 +41,13 @@ describe('gridToMapDefinition', () => {
     expect(map.palette).toBe('color3')
     expect(map.decorationSeed).toBe(42)
   })
+
+  it('carries decoration counts through', () => {
+    const map = gridToMapDefinition(grid(['lll', 'lll', 'lll']), {
+      decorationCounts: { bush: 3, gold: 1 }
+    })
+    expect(map.decorationCounts).toEqual({ bush: 3, gold: 1 })
+  })
 })
 
 describe('enforceWaterBorder', () => {
@@ -62,13 +69,13 @@ describe('enforceWaterBorder', () => {
 })
 
 describe('mapDefinitionToGrid', () => {
-  it('converts a flat tile list back to a 2D grid, flattening elevated to land', () => {
+  it('converts a flat tile list back to a 2D grid, preserving elevated', () => {
     const map = gridToMapDefinition(grid(['www', 'wew', 'www']))
     const conversion = mapDefinitionToGrid(map)
-    expect(conversion.grid).toEqual(grid(['www', 'wlw', 'www']))
+    expect(conversion.grid).toEqual(grid(['www', 'wew', 'www']))
   })
 
-  it('drops stairs (disabled for gameplay)', () => {
+  it('converts typed stairs back to a "x,y" keyed map', () => {
     const map = gridToMapDefinition(grid(['ll', 'll']), {
       stairs: [
         ['1,0', 'left'],
@@ -76,28 +83,47 @@ describe('mapDefinitionToGrid', () => {
       ]
     })
     const conversion = mapDefinitionToGrid(map)
-    expect(conversion.stairs.size).toBe(0)
+    expect([...conversion.stairs.entries()]).toEqual([
+      ['1,0', 'left'],
+      ['0,1', 'right']
+    ])
+  })
+
+  it('carries explicit decorations through', () => {
+    const decorations = [{ x: 1, y: 1, kind: 'tree' as const, variant: 2 }]
+    const map = gridToMapDefinition(grid(['lll', 'lll', 'lll']), { decorations })
+    expect(mapDefinitionToGrid(map).decorations).toEqual(decorations)
   })
 })
 
 describe('grid ↔ map round-trip', () => {
-  it('preserves grid (elevated flattened), drops stairs, preserves palette and seed', () => {
+  it('preserves grid, stairs, decorations, palette and seed', () => {
     const original = grid(['wwww', 'weew', 'wllw', 'wwww'])
     const stairs: [string, 'left' | 'right'][] = [
       ['1,1', 'left'],
       ['2,2', 'right']
     ]
-    const map = gridToMapDefinition(original, { stairs, palette: 'color5', decorationSeed: 7 })
+    const decorations = [{ x: 2, y: 1, kind: 'gold' as const }]
+    const map = gridToMapDefinition(original, {
+      stairs,
+      decorations,
+      palette: 'color5',
+      decorationSeed: 7,
+      decorationCounts: { bush: 2 }
+    })
     const conversion = mapDefinitionToGrid(map)
-    expect(conversion.grid).toEqual(grid(['wwww', 'wllw', 'wllw', 'wwww']))
-    expect(conversion.stairs.size).toBe(0)
+    expect(conversion.grid).toEqual(original)
+    expect([...conversion.stairs.entries()]).toEqual(stairs)
+    expect(conversion.decorations).toEqual(decorations)
     expect(map.palette).toBe('color5')
     expect(map.decorationSeed).toBe(7)
+    expect(map.decorationCounts).toEqual({ bush: 2 })
   })
 
-  it('defaults missing stairs to an empty map', () => {
+  it('defaults missing stairs and decorations to empty', () => {
     const map = gridToMapDefinition(grid(['ll']))
     const conversion = mapDefinitionToGrid(map)
     expect(conversion.stairs.size).toBe(0)
+    expect(conversion.decorations).toEqual([])
   })
 })

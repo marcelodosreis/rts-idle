@@ -7,16 +7,15 @@ import { type ConnectionHandlers, connectMatch, type MatchConnection, type Snaps
 import { snapshotToFrame } from '../client/snapshot-to-frame'
 import type { HudSelectionUnit } from '../hud/types'
 import { type CommandMode, useCommandModes } from '../hud/useCommandModes'
+import { readPlaytestMap } from './playtest-map'
 
-const WORLD_TILES = 32
-const WORLD_PX = WORLD_TILES * TILE_PIXELS
-/** Demo scenario catalog ids, mirroring `apps/server/src/demo/scenarios.ts`. */
-const DEMO_SCENARIO_IDS = ['6v6', '4v4', 'ffa', 'win', 'defeat'] as const
+const DEMO_SCENARIO_IDS = ['6v6', 'economy', '4v4', 'ffa', 'win', 'defeat'] as const
 const SCENARIO = (new URLSearchParams(window.location.search).get('scenario') ??
   '6v6') as (typeof DEMO_SCENARIO_IDS)[number]
 const AGGRESSION = (new URLSearchParams(window.location.search).get('aggression') ?? 'offensive') as
   | 'offensive'
   | 'passive'
+const SPRITES_ENABLED = new URLSearchParams(window.location.search).get('sprites') !== 'off'
 const SERVER_URL = `${import.meta.env.VITE_SERVER_URL ?? 'ws://localhost:8080'}?scenario=${SCENARIO}&aggression=${AGGRESSION}`
 const PLAYER_BASE_CENTER_FIXED = { x: 2048, y: 2048 }
 const PLAYER_BASE_CENTER = {
@@ -32,9 +31,12 @@ interface RtsDebug {
   getSpriteState(id: number): {
     readonly visible: boolean
     readonly frame: number | null
-    readonly anim: 'idle' | 'run' | 'attack' | 'fallback'
+    readonly anim: 'idle' | 'run' | 'attack' | 'gather' | 'carry_idle' | 'carry_run' | 'fallback'
     readonly inTree: boolean
     readonly facing: number
+    readonly scale: number
+    readonly glyph: string | null
+    readonly shape: 'circle' | 'square' | 'triangle' | null
   } | null
   getSelection(): readonly number[]
   setSelection(ids: readonly number[]): void
@@ -43,6 +45,12 @@ interface RtsDebug {
   getPing(): { readonly x: number; readonly y: number } | null
   moveCamera(x: number, y: number): void
   getTick(): number
+  getMapInfo(): {
+    readonly width: number
+    readonly height: number
+    readonly decorations: number
+    readonly isPlaytest: boolean
+  }
 }
 
 declare global {
@@ -69,6 +77,7 @@ export interface MatchSessionState {
   readonly scenario: string
   readonly scenarios: readonly string[]
   readonly aggression: 'offensive' | 'passive'
+  readonly spritesEnabled: boolean
   arm(mode: Exclude<CommandMode, 'none'>): void
   issueOrder(
     type: 'STOP' | 'HOLD' | 'PATROL' | 'ATTACK_MOVE',
@@ -78,10 +87,28 @@ export interface MatchSessionState {
   newMatch(): void
   changeScenario(id: string): void
   setAggression(value: 'offensive' | 'passive'): void
+  setSpritesEnabled(value: boolean): void
 }
 
 /** The human player is always the demo's player 0. */
 const HUMAN_PLAYER = 0
+
+function resourcesForHuman(message: SnapshotMessage): MatchSessionState['resources'] {
+  const humanPlayer = message.players.find((player) => player.id === HUMAN_PLAYER)
+  if (humanPlayer === undefined) {
+    return null
+  }
+  return { mineral: humanPlayer.gold, energy: 0, supply: 0, supplyCap: 0 }
+}
+
+function unitForHud(unit: SnapshotMessage['units'][number]): Omit<HudSelectionUnit, 'id' | 'moving'> {
+  return {
+    kind: unit.kind ?? 'pawn',
+    owner: unit.owner,
+    ...(unit.hp === undefined ? {} : { hp: unit.hp, maxHp: unit.maxHp }),
+    ...(unit.economy === undefined ? {} : { economy: unit.economy })
+  }
+}
 
 /**
  * Owns the match screen lifecycle: renderer mount, server connection, snapshot
@@ -95,7 +122,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
   const [selectedCount, setSelectedCount] = useState(0)
   const [tick, setTick] = useState(0)
   const [selectionUnits, setSelectionUnits] = useState<readonly HudSelectionUnit[]>([])
-  const [resources] = useState<MatchSessionState['resources']>(null)
+  const [resources, setResources] = useState<MatchSessionState['resources']>(null)
   const [matchResult, setMatchResult] = useState<MatchSessionState['matchResult']>(null)
   const commandModes = useCommandModes()
   const connectionRef = useRef<MatchConnection | null>(null)
@@ -107,20 +134,28 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       return
     }
 
+    const playtestMap = readPlaytestMap(window.location.search, window.localStorage)
+    const map = playtestMap ?? createCompetitiveMap()
     const renderer: GameRenderer = new PixiRenderer({
-      worldWidth: WORLD_PX,
-      worldHeight: WORLD_PX,
+      worldWidth: map.width * TILE_PIXELS,
+      worldHeight: map.height * TILE_PIXELS,
       initialZoom: 1,
       initialCenter: PLAYER_BASE_CENTER,
-      assetsUrl: '/assets',
-      map: createCompetitiveMap()
+      assetsUrl: SPRITES_ENABLED ? '/assets' : '',
+      map
     })
     let selection = new Set<number>()
     let lastTick = 0
     let matchEnded = false
     const unitKinds = new Map<
       number,
-      { readonly kind: HudSelectionUnit['kind']; readonly owner: number; readonly hp?: number; readonly maxHp?: number }
+      {
+        readonly kind: HudSelectionUnit['kind']
+        readonly owner: number
+        readonly hp?: number
+        readonly maxHp?: number
+        readonly economy?: HudSelectionUnit['economy']
+      }
     >()
     const unitOwners = new Map<number, number>()
     const unitPositions = new Map<number, { readonly x: number; readonly y: number }>()
@@ -143,7 +178,8 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
             kind: kind.kind,
             owner: kind.owner,
             moving: previous !== undefined && (previous.x !== current.x || previous.y !== current.y),
-            ...(kind.hp === undefined ? {} : { hp: kind.hp, maxHp: kind.maxHp })
+            ...(kind.hp === undefined ? {} : { hp: kind.hp, maxHp: kind.maxHp }),
+            ...(kind.economy === undefined ? {} : { economy: kind.economy })
           })
         }
       }
@@ -197,14 +233,11 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
         unitPositions.clear()
         unitOwners.clear()
         for (const unit of message.units) {
-          unitKinds.set(unit.id, {
-            kind: unit.kind ?? 'pawn',
-            owner: unit.owner,
-            ...(unit.hp === undefined ? {} : { hp: unit.hp, maxHp: unit.maxHp })
-          })
+          unitKinds.set(unit.id, unitForHud(unit))
           unitOwners.set(unit.id, unit.owner)
           unitPositions.set(unit.id, { x: unit.x, y: unit.y })
         }
+        setResources(resourcesForHuman(message))
         if (!matchEnded && message.phase === 'FINISHED') {
           matchEnded = true
           const active = message.players.filter((player) => !player.defeated)
@@ -232,7 +265,14 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
           updateSelection(ids)
         },
         onGroundCommand: groundCommand,
-        onUnitCommand: unitCommand
+        onUnitCommand: unitCommand,
+        onMineralCommand: (nodeId) => {
+          if (selection.size === 0) {
+            return
+          }
+          sendCommand({ type: 'GATHER', payload: { unitIds: [...selection], nodeId } })
+          commandModes.clear()
+        }
       })
       .then(() => {
         connection = connectMatch(SERVER_URL, handlers)
@@ -261,7 +301,13 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
           getZoom: () => renderer.getZoom(),
           getPing: () => renderer.getPing(),
           moveCamera: (x, y) => renderer.moveCamera(fixedToRenderPixels(x), fixedToRenderPixels(y)),
-          getTick: () => lastTick
+          getTick: () => lastTick,
+          getMapInfo: () => ({
+            width: map.width,
+            height: map.height,
+            decorations: map.decorations?.length ?? 0,
+            isPlaytest: playtestMap !== null
+          })
         }
       })
       .catch((error: unknown) => {
@@ -288,6 +334,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     scenario: SCENARIO,
     scenarios: DEMO_SCENARIO_IDS,
     aggression: AGGRESSION,
+    spritesEnabled: SPRITES_ENABLED,
     arm: commandModes.arm,
     issueOrder: (type, target) => {
       const connection = connectionRef.current
@@ -320,10 +367,25 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       window.location.reload()
     },
     changeScenario: (id) => {
-      window.location.search = `?scenario=${id}&aggression=${AGGRESSION}`
+      const params = new URLSearchParams(window.location.search)
+      params.set('scenario', id)
+      params.set('aggression', AGGRESSION)
+      window.location.search = params.toString()
     },
     setAggression: (value) => {
-      window.location.search = `?scenario=${SCENARIO}&aggression=${value}`
+      const params = new URLSearchParams(window.location.search)
+      params.set('scenario', SCENARIO)
+      params.set('aggression', value)
+      window.location.search = params.toString()
+    },
+    setSpritesEnabled: (value) => {
+      const params = new URLSearchParams(window.location.search)
+      if (value) {
+        params.delete('sprites')
+      } else {
+        params.set('sprites', 'off')
+      }
+      window.location.search = params.toString()
     }
   }
 }

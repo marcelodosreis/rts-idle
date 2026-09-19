@@ -5,6 +5,9 @@ import type { AssetManifest } from '@rts/shared'
  * `null` (caller falls back to placeholders) on any network or parse failure.
  */
 export async function loadManifest(baseUrl: string): Promise<AssetManifest | null> {
+  if (baseUrl === '') {
+    return null
+  }
   try {
     const response = await fetch(`${baseUrl}/manifest.json`)
     if (!response.ok) {

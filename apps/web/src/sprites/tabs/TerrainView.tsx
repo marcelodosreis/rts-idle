@@ -1,12 +1,13 @@
 // biome-ignore lint/style/noExcessiveLinesPerFile: level editor toolbar (single cohesive UI)
-import type { MapDefinition } from '@rts/game-data'
 import type { DressingKind } from '@rts/renderer'
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { type ChangeEvent, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { writePlaytestMap } from '../../screens/playtest-map'
 import { check, registerChecks } from '../lab/checks.js'
 import { useLabContext } from '../lab-context'
 import {
@@ -21,6 +22,14 @@ import {
   type TerrainController,
   type TerrainState
 } from './terrain-controller.js'
+import type { Cell } from './terrain-geometry.js'
+import {
+  downloadMapJson,
+  EDITOR_STORAGE_KEY,
+  loadEditorMap,
+  parseMapJson,
+  saveEditorMap
+} from './terrain-persistence.js'
 
 /* ── Brush definitions ─────────────────────────────────────────────── */
 
@@ -105,7 +114,7 @@ function BrushButton({
   )
 }
 
-const AVAILABLE_DECO_KINDS: readonly DressingKind[] = ['bush']
+const AVAILABLE_DECO_KINDS: readonly DressingKind[] = DRESSING_KINDS.map((d) => d.kind)
 
 function DecoKindGrid({
   selected,
@@ -240,15 +249,17 @@ function HistoryButtons({
 function StatusBar({
   state,
   readout,
+  cursor,
   onPatch
 }: {
   readonly state: TerrainState
   readonly readout: string
+  readonly cursor: Cell | null
   readonly onPatch: (patch: Partial<TerrainState>) => void
 }) {
   const activeBrush = ALL_BRUSHES.find((m) => m.value === state.paint)
   const activeDeco =
-    state.paint === 'bush' && state.selectedDecoKind !== null
+    state.paint === 'decor' && state.selectedDecoKind !== null
       ? DRESSING_KINDS.find((d) => d.kind === state.selectedDecoKind)
       : undefined
   const toolLabel = activeDeco !== undefined ? `${activeDeco.label} v${state.selectedVariant}` : activeBrush?.label
@@ -306,6 +317,23 @@ function StatusBar({
           </div>
         </>
       )}
+      <div className="h-3 w-px bg-border/50" />
+      {/* biome-ignore lint/a11y/noLabelWithoutControl: o controle (Switch) está aninhado */}
+      <label className="flex items-center gap-1.5 text-muted-foreground">
+        Grid
+        <Switch
+          checked={state.showGrid}
+          onCheckedChange={(checked) => onPatch({ showGrid: checked })}
+          aria-label="toggle cell grid"
+        />
+      </label>
+      <div className="h-3 w-px bg-border/50" />
+      <div className="flex items-center gap-1.5">
+        <span className="text-muted-foreground">Cell:</span>
+        <span className="font-mono text-foreground" data-testid="cursor-cell">
+          {cursor === null ? '—' : `${cursor.x}, ${cursor.y}`}
+        </span>
+      </div>
       <div className="flex-1" />
       <span className="max-w-[300px] truncate text-muted-foreground/70">{readout}</span>
     </div>
@@ -421,8 +449,11 @@ export function TerrainView({
   const ctx = useLabContext()
   const hostRef = useRef<HTMLDivElement | null>(null)
   const controllerRef = useRef<TerrainController | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [state, setState] = useState<TerrainState>({ ...DEFAULT_TERRAIN_STATE })
   const [readout, setReadout] = useState('Middle-drag to pan · wheel to zoom · select a tool to paint.')
+  const [cursor, setCursor] = useState<Cell | null>(null)
+  const [ready, setReady] = useState(false)
   const [modal, setModal] = useState<{ mode: 'export' | 'import' } | null>(null)
 
   useEffect(() => {
@@ -431,18 +462,40 @@ export function TerrainView({
       return
     }
     let disposed = false
-    void createTerrainController(host, ctx, setReadout).then((controller) => {
+    let saveTimer: ReturnType<typeof setTimeout> | null = null
+    const scheduleAutosave = (): void => {
+      if (saveTimer !== null) {
+        clearTimeout(saveTimer)
+      }
+      saveTimer = setTimeout(() => {
+        const controller = controllerRef.current
+        if (controller !== null) {
+          saveEditorMap(window.localStorage, controller.exportMapDefinition())
+        }
+      }, 400)
+    }
+    void createTerrainController(host, ctx, setReadout, setCursor, scheduleAutosave).then((controller) => {
       if (disposed) {
         controller.destroy()
         return
       }
+      const restored = loadEditorMap(window.localStorage)
+      if (restored !== null) {
+        controller.importMapDefinition(restored)
+        setReadout('Restored your saved map.')
+      }
       controllerRef.current = controller
+      setReady(true)
       onControllerReady?.(controller)
     })
     return () => {
       disposed = true
+      if (saveTimer !== null) {
+        clearTimeout(saveTimer)
+      }
       controllerRef.current?.destroy()
       controllerRef.current = null
+      setReady(false)
       onControllerReady?.(null)
     }
   }, [ctx, onControllerReady])
@@ -546,24 +599,76 @@ export function TerrainView({
     setModal({ mode: 'import' })
   }, [])
 
-  const handleImportConfirm = useCallback((text: string): void => {
-    try {
-      const parsed = JSON.parse(text) as Record<string, unknown>
-      if (typeof parsed === 'object' && parsed !== null && 'grid' in parsed) {
-        controllerRef.current?.importLevel(parsed as unknown as LevelData)
-        setReadout('Lab level loaded!')
-      } else {
-        controllerRef.current?.importMapDefinition(parsed as unknown as MapDefinition)
-        setReadout('Game map loaded!')
-      }
-    } catch {
-      setReadout('Invalid JSON')
+  const handlePlaytest = useCallback((): void => {
+    const controller = controllerRef.current
+    if (controller === null) {
+      return
     }
+    writePlaytestMap(window.localStorage, controller.exportMapDefinition())
+    window.open('/?map=local', '_blank')
+  }, [])
+
+  const applyMapJson = useCallback((text: string, successMessage: string): boolean => {
+    const result = parseMapJson(text)
+    if (result.ok && result.map !== undefined) {
+      controllerRef.current?.importMapDefinition(result.map)
+      setReadout(successMessage)
+      return true
+    }
+    setReadout(`Invalid map: ${result.errors[0] ?? 'unknown error'}`)
+    return false
+  }, [])
+
+  const handleImportConfirm = useCallback(
+    (text: string): void => {
+      try {
+        const parsed = JSON.parse(text) as Record<string, unknown>
+        if (typeof parsed === 'object' && parsed !== null && 'grid' in parsed) {
+          controllerRef.current?.importLevel(parsed as unknown as LevelData)
+          setReadout('Lab level loaded!')
+          return
+        }
+      } catch {
+        // Fall through to the validated game-format parser for a clear error.
+      }
+      applyMapJson(text, 'Game map loaded!')
+    },
+    [applyMapJson]
+  )
+
+  const handleDownload = useCallback((): void => {
+    const controller = controllerRef.current
+    if (controller === null) {
+      return
+    }
+    downloadMapJson(controller.exportMapDefinition())
+    setReadout('Downloaded map.json')
+  }, [])
+
+  const handleUploadClick = useCallback((): void => {
+    fileInputRef.current?.click()
+  }, [])
+
+  const handleFileChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
+      const file = event.target.files?.[0]
+      event.target.value = ''
+      if (file === undefined) {
+        return
+      }
+      applyMapJson(await file.text(), `Loaded ${file.name}`)
+    },
+    [applyMapJson]
+  )
+
+  const handleClearSaved = useCallback((): void => {
+    window.localStorage.removeItem(EDITOR_STORAGE_KEY)
+    setReadout('Cleared saved map.')
   }, [])
 
   const selectDecoKind = useCallback(
     (kind: DressingKind): void => {
-      set({ paint: 'bush', selectedDecoKind: kind, selectedVariant: 0, editorTab: 'decorations' })
+      set({ paint: 'decor', selectedDecoKind: kind, selectedVariant: 0, editorTab: 'decorations' })
     },
     [set]
   )
@@ -655,6 +760,33 @@ export function TerrainView({
             </Button>
           </div>
 
+          <div className="flex gap-1">
+            <Button variant="outline" size="sm" onClick={handleDownload} className="flex-1 text-[11px]">
+              Download
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleUploadClick} className="flex-1 text-[11px]">
+              Upload
+            </Button>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="application/json,.json"
+            aria-label="upload map json"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+
+          <Button variant="ghost" size="sm" onClick={handleClearSaved} className="w-full text-[11px]">
+            Clear saved
+          </Button>
+
+          <div className="h-px bg-border/50" />
+
+          <Button variant="outline" size="sm" onClick={handlePlaytest} className="w-full text-[11px]">
+            Playtest
+          </Button>
+
           <div className="h-px bg-border/50" />
 
           {/* Camera + Reset */}
@@ -676,8 +808,13 @@ export function TerrainView({
 
       {/* Canvas area */}
       <div className="flex h-[55vh] min-h-0 min-w-0 flex-1 flex-col gap-2 xl:h-auto">
-        <StatusBar state={state} readout={readout} onPatch={set} />
-        <div ref={hostRef} className="min-h-0 flex-1 rounded-xl border border-border/50 bg-background" />
+        <StatusBar state={state} readout={readout} cursor={cursor} onPatch={set} />
+        <div
+          ref={hostRef}
+          data-testid="terrain-canvas-host"
+          data-controller-ready={ready ? 'true' : 'false'}
+          className="min-h-0 flex-1 rounded-xl border border-border/50 bg-background"
+        />
       </div>
 
       {/* Modal */}

@@ -7,6 +7,7 @@ import { SelectionController } from './selection.js'
 import { TerrainLayer } from './terrain-layer.js'
 import type { GameRenderer, RendererCallbacks, RendererOptions, RenderFrame } from './types.js'
 import { UnitLayer } from './unit-layer.js'
+import { WorldObjectLayer } from './world-object-layer.js'
 
 const MIN_ZOOM = 0.05
 const MAX_ZOOM = 4
@@ -27,6 +28,7 @@ export class PixiRenderer implements GameRenderer {
   private ping: CommandPing | null = null
   private effects: EffectsLayer | null = null
   private terrain: TerrainLayer | null = null
+  private worldObjects: WorldObjectLayer | null = null
   private readonly options: RendererOptions
   private callbacks: RendererCallbacks = {}
   /** Presentation asset library; null when the manifest/art is unavailable. */
@@ -53,7 +55,16 @@ export class PixiRenderer implements GameRenderer {
     })
 
     host.appendChild(app.canvas)
-    app.canvas.addEventListener('contextmenu', (event) => event.preventDefault())
+    app.canvas.addEventListener('contextmenu', (event) => {
+      event.preventDefault()
+      if (this.viewport === null || this.units === null || this.worldObjects === null || this.ping === null) {
+        return
+      }
+      const rect = app.canvas.getBoundingClientRect()
+      const globalX = event.clientX - rect.left
+      const globalY = event.clientY - rect.top
+      this.dispatchCommand(globalX, globalY)
+    })
 
     const viewport = new Viewport({
       screenWidth: app.screen.width,
@@ -93,6 +104,7 @@ export class PixiRenderer implements GameRenderer {
     })
     const ping = new CommandPing(viewport)
     const effects = new EffectsLayer(viewport)
+    const worldObjects = new WorldObjectLayer(viewport)
     const terrain = new TerrainLayer(viewport, this.assets)
     if (this.options.map !== undefined) {
       await terrain.build(this.options.map)
@@ -113,15 +125,7 @@ export class PixiRenderer implements GameRenderer {
       selection.endBox(event.global)
     })
     viewport.on('rightdown', (event) => {
-      const world = viewport.toWorld(event.global.x, event.global.y)
-      const hit = units.unitAt(world.x, world.y)
-      if (hit !== null) {
-        // Right-click on a unit targets it (attack); the ground ping is skipped.
-        this.callbacks.onUnitCommand?.(hit)
-      } else {
-        ping.show(world.x, world.y)
-        this.callbacks.onGroundCommand?.(world.x, world.y)
-      }
+      this.dispatchCommand(event.global.x, event.global.y)
     })
 
     this.app = app
@@ -131,6 +135,7 @@ export class PixiRenderer implements GameRenderer {
     this.ping = ping
     this.effects = effects
     this.terrain = terrain
+    this.worldObjects = worldObjects
   }
 
   present(frame: RenderFrame): void {
@@ -139,11 +144,16 @@ export class PixiRenderer implements GameRenderer {
       this.units === null ||
       this.selection === null ||
       this.ping === null ||
-      this.effects === null
+      this.effects === null ||
+      this.worldObjects === null
     ) {
       throw new Error('PixiRenderer: not mounted')
     }
     const now = performance.now()
+    this.worldObjects.present(frame.bases ?? [], frame.mineralNodes ?? [])
+    this.worldObjects.setActiveMineralNodes(
+      new Set(frame.units.flatMap((unit) => (unit.economy === undefined ? [] : [unit.economy.nodeId])))
+    )
     this.units.present(frame.units, now)
     this.selection.updateRings()
     this.ping.expireIfElapsed(Date.now())
@@ -160,6 +170,31 @@ export class PixiRenderer implements GameRenderer {
       this.effects.trackPosition(unit.id, unit.x, unit.y)
     }
     this.effects.handleEvents(frame.events ?? [], now)
+  }
+
+  /**
+   * Routes a right-click command (attack, gather, move) to the appropriate
+   * callback based on what is under the cursor. Used by both the PixiJS
+   * `rightdown` event (mouse) and the DOM `contextmenu` event (trackpad).
+   */
+  private dispatchCommand(globalX: number, globalY: number): void {
+    if (this.viewport === null || this.units === null || this.worldObjects === null || this.ping === null) {
+      return
+    }
+    const world = this.viewport.toWorld(globalX, globalY)
+    const mineralNode = this.worldObjects.mineralNodeAt(world.x, world.y)
+    if (mineralNode !== null) {
+      this.ping.show(world.x, world.y)
+      this.callbacks.onMineralCommand?.(mineralNode)
+      return
+    }
+    const hit = this.units.unitAt(world.x, world.y)
+    if (hit !== null) {
+      this.callbacks.onUnitCommand?.(hit)
+    } else {
+      this.ping.show(world.x, world.y)
+      this.callbacks.onGroundCommand?.(world.x, world.y)
+    }
   }
 
   /** Visual-loop tick: advances animations and eases interpolated positions. */
@@ -212,6 +247,7 @@ export class PixiRenderer implements GameRenderer {
     this.ping = null
     this.effects = null
     this.terrain = null
+    this.worldObjects = null
   }
 
   getUnitPositions(): ReadonlyMap<number, { readonly x: number; readonly y: number }> {
@@ -231,9 +267,12 @@ export class PixiRenderer implements GameRenderer {
   getUnitSpriteState(id: number): {
     readonly visible: boolean
     readonly frame: number | null
-    readonly anim: 'idle' | 'run' | 'attack' | 'fallback'
+    readonly anim: 'idle' | 'run' | 'attack' | 'gather' | 'carry_idle' | 'carry_run' | 'fallback'
     readonly inTree: boolean
     readonly facing: number
+    readonly scale: number
+    readonly glyph: string | null
+    readonly shape: 'circle' | 'square' | 'triangle' | null
   } | null {
     return this.units?.spriteState(id) ?? null
   }

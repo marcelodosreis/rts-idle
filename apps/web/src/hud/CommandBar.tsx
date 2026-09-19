@@ -54,7 +54,7 @@ function CommandGroup({ label, children }: { readonly label: string; readonly ch
  */
 export function CommandBar({ disabled, mode, onStop, onHold, onSurrender, onArm }: CommandBarProps) {
   return (
-    <div className="flex shrink-0 items-stretch gap-2">
+    <div className="flex flex-wrap items-stretch gap-2">
       <CommandGroup label="Orders">
         <Button
           type="button"

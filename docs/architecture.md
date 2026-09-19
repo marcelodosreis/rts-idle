@@ -43,7 +43,7 @@ simulation/src/
   commands/      apply-command.ts (dispatch) + one handler per command
                  (move, stop, hold, patrol, attack, attack-move, surrender),
                  validate-units.ts (shared atomic validation), limits.ts
-  data/          unit-stats.ts (authored per-kind combat stats)
+  data/          unit-stats.ts (combat stats), economy-rules.ts (v0 constants)
   engine/        create-simulation.ts, simulation-from-snapshot.ts,
                  simulation-host.ts (contract), simulation.ts (the class)
   ecs/           component-store.ts, components.ts, world.ts, create-world.ts
@@ -51,8 +51,8 @@ simulation/src/
   snapshot/      serialize.ts (state codec), hash.ts (SHA-256 + hex)
   state/         state.ts (GameState, players, Phase)
   systems/       pipeline.ts (frozen order), orders-system, movement-system,
-                 movement-step, combat-system, death-system, victory-system,
-                 events.ts
+                 movement-step, economy-system, combat-system, death-system,
+                 victory-system, events.ts
   invariants/    check-invariants.ts (runs last, never mutates)
   formation.ts   Deterministic formation spiral
   determinism-fixture.ts   Browser/benchmark determinism fixture (`./fixtures`)
@@ -123,4 +123,5 @@ web/src/
 - `docs/master-plan.md` — full design, phases, acceptance criteria.
 - `docs/adr/` — decisions (Context/Decision/Alternatives/Consequences/Evidence).
 - `docs/specs/` — capability map + per-module specs.
+- `docs/rfc/` — technology substitutability RFCs (tracking + incremental plan).
 - `docs/postmortems/` — every bug's root cause + regression.

@@ -1,5 +1,5 @@
 import type { MapDefinition } from '@rts/game-data'
-import type { OrderState } from '@rts/protocol'
+import type { OrderState, SnapshotEconomy } from '@rts/protocol'
 import type { PlayerId, SimulationEvent, UnitKind } from '@rts/shared'
 import type { PointData } from 'pixi.js'
 
@@ -17,6 +17,7 @@ export interface RenderUnit {
   readonly maxHp?: number
   /** Authoritative behavior state from the simulation (drives idle/run). */
   readonly orderState?: OrderState
+  readonly economy?: SnapshotEconomy
 }
 
 /** A competitive slot for the HUD (defeated state, wallet). */
@@ -26,10 +27,26 @@ export interface RenderPlayer {
   readonly gold: number
 }
 
+export interface RenderBase {
+  readonly id: number
+  readonly x: number
+  readonly y: number
+  readonly owner: number
+}
+
+export interface RenderMineralNode {
+  readonly id: number
+  readonly x: number
+  readonly y: number
+  readonly remaining: number
+}
+
 /** A completed tick ready for presentation. */
 export interface RenderFrame {
   readonly tick: number
   readonly units: readonly RenderUnit[]
+  readonly bases?: readonly RenderBase[]
+  readonly mineralNodes?: readonly RenderMineralNode[]
   readonly players?: readonly RenderPlayer[]
   /** Per-tick deterministic events that drive combat feedback. */
   readonly events?: readonly SimulationEvent[]
@@ -41,6 +58,8 @@ export interface RendererCallbacks {
   readonly onGroundCommand?: (worldX: number, worldY: number) => void
   /** Right-click landed on a unit (used for attack targeting). */
   readonly onUnitCommand?: (id: number) => void
+  /** Right-click landed on a Mineral Node (used for contextual gathering). */
+  readonly onMineralCommand?: (id: number) => void
 }
 
 export interface RendererOptions {
@@ -71,9 +90,12 @@ export interface GameRenderer {
   getUnitSpriteState(id: number): {
     readonly visible: boolean
     readonly frame: number | null
-    readonly anim: 'idle' | 'run' | 'attack' | 'fallback'
+    readonly anim: 'idle' | 'run' | 'attack' | 'gather' | 'carry_idle' | 'carry_run' | 'fallback'
     readonly inTree: boolean
     readonly facing: number
+    readonly scale: number
+    readonly glyph: string | null
+    readonly shape: 'circle' | 'square' | 'triangle' | null
   } | null
   getZoom(): number
   getPing(): { readonly x: number; readonly y: number } | null

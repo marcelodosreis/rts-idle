@@ -1,10 +1,22 @@
-import type { OrderState, SnapshotPlayer, SnapshotUnit } from '@rts/protocol'
+import type {
+  EconomyPhase,
+  OrderState,
+  SnapshotBase,
+  SnapshotEconomy,
+  SnapshotMineralNode,
+  SnapshotPlayer,
+  SnapshotUnit
+} from '@rts/protocol'
 import type { PlayerId, SimulationEvent } from '@rts/shared'
 import {
+  Base,
+  Cargo,
   type CommandRejectedError,
   createSimulation,
+  GATHER_TICKS_PER_MINERAL,
   Health,
   Kind,
+  MineralNode,
   Movement,
   type Order,
   Orders,
@@ -47,6 +59,29 @@ function deriveOrderState(front: Order | undefined, hasMovement: boolean): Order
     return 'patrol'
   }
   return 'idle'
+}
+
+function deriveEconomy(
+  front: Order | undefined,
+  cargo: { readonly amount: number; readonly capacity: number } | undefined
+): SnapshotEconomy | undefined {
+  if (front?.type !== 'GATHER' || cargo === undefined) {
+    return undefined
+  }
+  const phaseByOrder: Readonly<Record<typeof front.phase, EconomyPhase>> = {
+    TO_NODE: 'to_node',
+    GATHERING: 'gathering',
+    TO_BASE: 'to_base',
+    WAITING_FOR_BASE: 'waiting_for_base'
+  }
+  return {
+    phase: phaseByOrder[front.phase],
+    cargoAmount: cargo.amount,
+    cargoCapacity: cargo.capacity,
+    progressTicks: front.progressTicks,
+    progressMax: GATHER_TICKS_PER_MINERAL,
+    nodeId: front.nodeId
+  }
 }
 
 /**
@@ -105,25 +140,66 @@ export class GameSession {
     const kinds = world.store(Kind)
     const orders = world.store(Orders)
     const movements = world.store(Movement)
-    return world.aliveIds().map((id) => {
-      const pos = positions.get(id)
-      const owner = owners.get(id)
-      if (pos === undefined || owner === undefined) {
-        throw new Error(`GameSession: entity ${id} is missing position or owner`)
-      }
-      const health = healths.get(id)
-      const front = orders.get(id)?.queue[0]
-      const unit: SnapshotUnit = {
-        id,
-        x: pos.x,
-        y: pos.y,
-        owner: owner.owner,
-        kind: kinds.get(id) ?? 'pawn',
-        orderState: deriveOrderState(front, movements.get(id) !== undefined),
-        ...(health === undefined ? {} : { hp: health.current, maxHp: health.max })
-      }
-      return unit
-    })
+    const cargos = world.store(Cargo)
+    return world
+      .aliveIds()
+      .filter((id) => kinds.has(id))
+      .map((id) => {
+        const pos = positions.get(id)
+        const owner = owners.get(id)
+        if (pos === undefined || owner === undefined) {
+          throw new Error(`GameSession: entity ${id} is missing position or owner`)
+        }
+        const health = healths.get(id)
+        const front = orders.get(id)?.queue[0]
+        const economy = deriveEconomy(front, cargos.get(id))
+        const unit: SnapshotUnit = {
+          id,
+          x: pos.x,
+          y: pos.y,
+          owner: owner.owner,
+          kind: kinds.get(id) ?? 'pawn',
+          orderState: deriveOrderState(front, movements.get(id) !== undefined),
+          ...(economy === undefined ? {} : { economy }),
+          ...(health === undefined ? {} : { hp: health.current, maxHp: health.max })
+        }
+        return unit
+      })
+  }
+
+  projectBases(): readonly SnapshotBase[] {
+    const world = this.simulation.inspectState().world
+    const bases = world.store(Base)
+    const positions = world.store(Position)
+    const owners = world.store(Owner)
+    return world
+      .aliveIds()
+      .filter((id) => bases.has(id))
+      .map((id) => {
+        const position = positions.get(id)
+        const owner = owners.get(id)
+        if (position === undefined || owner === undefined) {
+          throw new Error(`GameSession: Base ${id} is missing position or owner`)
+        }
+        return { id, x: position.x, y: position.y, owner: owner.owner }
+      })
+  }
+
+  projectMineralNodes(): readonly SnapshotMineralNode[] {
+    const world = this.simulation.inspectState().world
+    const nodes = world.store(MineralNode)
+    const positions = world.store(Position)
+    return world
+      .aliveIds()
+      .filter((id) => nodes.has(id))
+      .map((id) => {
+        const position = positions.get(id)
+        const node = nodes.get(id)
+        if (position === undefined || node === undefined) {
+          throw new Error(`GameSession: Mineral Node ${id} is missing position or state`)
+        }
+        return { id, x: position.x, y: position.y, remaining: node.remaining }
+      })
   }
 
   projectPlayers(): readonly SnapshotPlayer[] {

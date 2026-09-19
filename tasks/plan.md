@@ -1,63 +1,182 @@
-# Implementation Plan: Unified Sprite Lab redesign (`/sprites`)
+# Implementation Plan: VS-01 Economy v0
 
 ## Overview
 
-Replaces the 9 stacked sections of the `/sprites` lab with a tabbed shell and a
-unified asset browser. The browser derives every category from the manifest (all
-446 assets always visible, including unique ones), renders each asset with the
-established lab standard (crop to visible pixels, `0.5/0.5` anchor, 1:1 native
-scale), and provides persistent navigation (sidebar + breadcrumb + prev/next +
-keyboard) so switching never loses state. Also fixes the perf-stress sprites
-that never actually animate.
+Add one deterministic, server-authoritative simulation loop: an owned pawn
+worker receives `GATHER`, walks to a mineral node, gathers into canonical cargo,
+walks to the nearest valid owned Base, deposits into the existing player wallet,
+and repeats while minerals remain. The implementation stays inside the current
+ECS/command/system architecture and deliberately excludes UI, pathfinding,
+construction, production, supply, and generalized resource abstractions.
 
-## Decisions
+Task packet: `tasks/VS-01.md`.
 
-1. Tab shell: `Browse · Terrain · Stress · Report`. Active tab persisted in
-   `location.hash`. Lazy mount per tab; destroy on unmount.
-2. Browse = 3 panes (sidebar nav / central canvas / inspector).
-3. Single selection model `{ tab, categoryPath, searchQuery, key }`; the list
-   re-renders but selection is never destroyed.
-4. `catalog.ts` auto-derives categories from the manifest (pure, unit-testable).
-5. Canvas reuses `lab/crop.ts` + `lab/player.ts` (1:1 native, visible crop).
-6. Type-specific controls in the inspector (units flip/walk/shadow, fx blend,
-   buildings variant/footprint, terrain tileset grid).
-7. Native controls + visible focus + keyboard ←/→ + `aria-live` readout.
+## Architecture Decisions
 
-## Tasks
+1. **Use existing domain vocabulary with the smallest compatibility surface.**
+   `Kind: 'pawn'` is the Worker. `PlayerState.gold` is the Economy v0 mineral
+   balance; it remains named `gold` to avoid a protocol/renderer migration that
+   adds no gameplay value.
+2. **Represent durable economy state in ECS.** Add `MineralNode { remaining }`,
+   marker `Base`, and `Cargo { amount, capacity }` components. Extend canonical
+   `Order` with `GATHER { nodeId, phase, progressTicks }`; the order records the
+   worker's resumable activity while `Movement` remains the existing
+   route-to-destination state.
+3. **Use one `GATHER` command.** The command validates the whole worker
+   selection and target before mutation, replaces current orders, and sends all
+   workers to the node position. The generic server command path already
+   schedules shared `CommandIntent`, so no client or server gameplay branch is
+   required beyond the shared intent and protocol guard.
+4. **Run economy after movement and before combat.** Existing system relative
+   order is preserved: `orders → movement → economy → combat → death → victory
+   → invariants`. This matches ADR-013's reserved gather/deposit slot and lets a
+   worker act on the tick it arrives.
+5. **Deterministic rules use explicit ordering.** Workers and entities are
+   visited by ascending entity ID. Only the lowest-ID eligible worker progresses
+   on a node each tick. A return Base is chosen by squared distance, then entity
+   ID. No RNG, floating-point time, pathfinding, or wall clock is involved.
+6. **Use approved Economy baselines.** Cargo capacity is 10; one mineral is
+   transferred after 20 uncontested gather ticks; fixture nodes start with
+   3,000 minerals. Transfers use `min(1, remaining, free capacity)` so resource
+   conservation and non-negative balances are structural.
+7. **Treat this as a canonical-schema evolution.** Register the three new
+   components after the existing seven, add the `GATHER` order tag, bump the
+   simulation version, and intentionally regenerate the pinned golden bytes/hash.
+   `serializeState` itself needs no special case because it already walks the
+   registered component schema.
 
-### Phase 0 — Foundation
-- T1 `catalog.ts` (derive categories/search from manifest)
-- T2 `main.ts` shell (tabs, hash routing, lazy mount, `__spriteLab.browse/tab`)
+## Dependency Graph
 
-### Phase 1 — Browse functional
-- T3 `browse/nav.ts` sidebar (search + categories + list, persistent selection)
-- T4 `browse/canvas.ts` (1:1 native render, strips animate, tilesets grid+variant)
-- T5 `browse/inspector.ts` (readout, overlays, validate, per-type controls)
+```text
+canonical ECS components + order encoding
+              ↓
+shared/protocol GATHER intent + atomic command handler
+              ↓
+movement → economy pipeline loop + invariants
+              ↓
+snapshot/restore + replay/hash verification
+              ↓
+repository completion gate
+```
 
-### Phase 2 — Navigation & polish
-- T6 breadcrumb + prev/next + keyboard + focus + aria-live
-- T7 responsive + empty/loading states
+## Task List
 
-### Phase 3 — Tab ports
-- T8 `tabs/terrain.ts` (port terrain-playground)
-- T9 `tabs/stress.ts` (port perf-stress + `play()` fix)
-- T10 `tabs/report.ts` (merge manifest-report + game-mapping)
+### Phase 1 — Canonical economy state
 
-### Phase 4 — Cleanup, tests, docs
-- T11 remove `sections/`
-- T12 rewrite `tests/e2e/sprites-lab.spec.ts`
-- T13 docs (capabilities.md, ledger) + `pnpm verify`
+- [x] **T1 — Add canonical economy components and order state (M, 5 files).**
+  - Acceptance: `MineralNode`, `Base`, and `Cargo` are registered after existing
+    components; `GATHER` order phase/progress round-trips canonically; invalid
+    decoded tags/values are rejected; simulation version records the schema
+    change.
+  - TDD: first add focused component/order round-trip and lifecycle assertions.
+  - Files: `packages/simulation/src/ecs/components.ts`,
+    `packages/simulation/src/ecs/create-world.ts`,
+    `packages/simulation/src/contracts/orders.ts`,
+    `packages/simulation/src/contracts/simulation-version.ts`,
+    `tests/unit/economy-components.test.ts`.
+  - Verify: `pnpm vitest run tests/unit/economy-components.test.ts` and
+    `pnpm run typecheck`.
 
-## Checkpoints
-- CP1 after T2: typecheck/lint/build + shell e2e.
-- CP2 after T5: Browse end-to-end (select → view → validate).
-- CP3 after T10: all tabs functional.
-- CP4 final: `pnpm verify` + visual + a11y inspection.
+### Phase 2 — Authoritative command boundary
 
-## Risks
-- E2E tied to old DOM → keep `__spriteLab` hook + `browse(key)`/`tab()`; rewrite
-  spec in T12.
-- Lazy mount vs global checks → `registerChecks` only on tab mount (current
-  pattern); "run all checks" tolerates unmounted tabs.
-- Pixi app leaks → `destroy()` on tab unmount.
-- Terrain playground (718 lines) port risk → pure move + existing checks.
+- [x] **T2 — Add and atomically apply `GATHER` (M, 5 files).**
+  - Acceptance: the shared intent and wire guard accept only integer worker/node
+    IDs; the simulation rejects foreign, non-worker, missing, or non-node
+    selections without partial mutation; a valid command replaces prior work
+    and starts movement toward the node.
+  - TDD: add contract/atomicity cases before the handler.
+  - Files: `packages/shared/src/commands.ts`,
+    `packages/protocol/src/messages/command.ts`,
+    `packages/simulation/src/commands/gather.ts`,
+    `packages/simulation/src/commands/apply-command.ts`,
+    `tests/contracts/economy-command.test.ts`.
+  - Verify: `pnpm vitest run tests/contracts/economy-command.test.ts` and
+    `pnpm run test:contracts`.
+
+### Checkpoint — State and command contract
+
+- [x] Component/order serialization tests pass.
+- [x] Valid and invalid `GATHER` commands preserve atomicity.
+- [x] Typecheck and lint pass for the new contract surface.
+
+### Phase 3 — Vertical gameplay loop
+
+- [x] **T3 — Implement gather, carry, return, and deposit (M, 4 files).**
+  - Acceptance: a commanded worker completes the full automatic loop; wallet
+    changes only on deposit; node + cargo + wallet conserve minerals; same-node
+    contention and Base choice follow deterministic ID/distance tie-breaks.
+  - TDD: write focused simulation scenarios before the economy system.
+  - Files: `packages/simulation/src/systems/economy-system.ts`,
+    `packages/simulation/src/systems/pipeline.ts`,
+    `packages/simulation/src/invariants/check-invariants.ts`,
+    `tests/simulation/economy-v0.test.ts`.
+  - Verify: `pnpm vitest run tests/simulation/economy-v0.test.ts` and
+    `pnpm run test:simulation`.
+
+- [x] **T4 — Cover interruption and edge-state behavior (S, 2 files).**
+  - Acceptance: node exhaustion never creates negative resources; a worker with
+    cargo waits when no owned Base exists and resumes when one is valid; worker
+    death removes cargo through ECS lifecycle; replacing the order does not
+    deposit carried minerals.
+  - Files: `tests/simulation/economy-v0.test.ts`,
+    `packages/simulation/src/systems/economy-system.ts`.
+  - Verify: `pnpm vitest run tests/simulation/economy-v0.test.ts` and
+    `pnpm run test:invariants`.
+
+### Checkpoint — Playable simulation slice
+
+- [x] The Worker → Node → Gather → Carry → Base → Deposit path passes.
+- [x] Conservation, contention, interruption, and invariant cases pass.
+- [x] `pnpm run typecheck`, `pnpm run lint`, `pnpm run test:simulation`, and
+  `pnpm run test:contracts` pass.
+
+### Phase 4 — Persistence and determinism
+
+- [x] **T5 — Pin snapshot, hash, and replay behavior (M, 4 files).**
+  - Acceptance: snapshots taken while travelling, gathering, carrying, and
+    returning restore the exact economy state and continue identically; equal
+    seed + command streams hash equally; changed node/cargo/wallet state changes
+    the hash; the intentional canonical golden/version update is explicit.
+  - Files: `tests/simulation/snapshot-roundtrip.test.ts`,
+    `tests/determinism/core-replay.test.ts`,
+    `tests/simulation/hash-golden.test.ts`,
+    `packages/simulation/src/contracts/simulation-version.ts`.
+  - Verify: `pnpm run test:determinism` and `pnpm run test:simulation`.
+
+- [x] **T6 — Update public contracts and operational documentation (M, 5 files).**
+  - Acceptance: public API assertions include economy components/types; command
+    and simulation docs describe Economy v0; task status matches reality.
+  - Files: `tests/architecture/public-api.test.ts`, `docs/commands.md`,
+    `docs/simulation.md`, `tasks/todo.md`.
+  - Verify: `pnpm run test:architecture` and documentation self-audit.
+
+### Checkpoint — Completion
+
+- [x] Focused economy, contract, simulation, determinism, invariant, and
+  architecture checks pass.
+- [x] `pnpm run verify` passes.
+- [x] Browser E2E passes through the explicit Chromium gate.
+- [x] Changed files pass the engineering-standard self-audit.
+
+## Risks and Mitigations
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| Canonical component/order additions invalidate pinned bytes | High | Version bump and explicit golden update only after round-trip/replay tests pass |
+| Economy order fights existing movement/combat orders | High | `GATHER` replaces the queue atomically; other replacing commands cancel the loop but leave cargo intact |
+| Multiple workers create minerals from one node | High | Ascending-ID arbitration and conservation assertions over node + cargo + wallet |
+| Base/node disappears mid-loop | Medium | Revalidate references every economy tick; return/wait with cargo, clear empty invalid jobs |
+| No pathfinding means “accessible” cannot be modeled | Low | Any valid owned Base is reachable by current straight-line movement; path accessibility remains a non-goal |
+| `gold` name differs from “minerals” | Low | Document it as the v0 mineral wallet and avoid a cross-package rename unrelated to gameplay |
+
+## Parallelization
+
+None. These tasks share canonical contracts and must remain sequential. Tests
+are written first within each slice, then the smallest implementation makes
+them pass.
+
+## Approved Review Points
+
+- Retain `PlayerState.gold` as the v0 mineral balance.
+- Use the 20-tick-per-mineral baseline and automatic repeat behavior.
+- Use Movement → Economy with a deliberate schema/version/golden update.

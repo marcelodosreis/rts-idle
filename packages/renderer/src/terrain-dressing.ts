@@ -1,3 +1,4 @@
+import type { DressingKind } from '@rts/game-data'
 import type { AutoTileTerrain } from './terrain-autotile.js'
 
 /**
@@ -8,17 +9,9 @@ import type { AutoTileTerrain } from './terrain-autotile.js'
  * the simulation.
  */
 
-export type DressingKind =
-  | 'bush'
-  | 'tree'
-  | 'rock'
-  | 'cloud'
-  | 'water_rock'
-  | 'gold'
-  | 'gold_stone'
-  | 'wood'
-  | 'meat'
-  | 'sheep'
+// The kind union lives in `game-data` (content-as-data). Re-exported here so
+// `@rts/renderer`'s public surface is unchanged.
+export type { DressingKind } from '@rts/game-data'
 
 export interface DressingItem {
   readonly x: number

@@ -72,7 +72,7 @@ Master plan: `docs/master-plan.md`. Specs: `docs/specs/`.
 - [x] A8 P1.04b SURRENDER + defeat
 - [x] V8 snapshot/protocol hp/maxHp/kind/orderState/players/events
 - [x] V6 event contract (attackFired/damageDealt/unitDied)
-- [ ] V10b resources/supply HUD — **moved to Phase 2** (no economy state in the simulation yet)
+- [ ] V10b resources/supply HUD — **moved to Phase 2** (Economy v0 state now exists; HUD remains separate)
 
 ### Sprint F — Combat + readable feedback
 - [x] A9 P1.05 combat components + stats + ATTACK + instant damage (`basic-combat`)
@@ -93,14 +93,46 @@ Master plan: `docs/master-plan.md`. Specs: `docs/specs/`.
 
 > **Phase 1 complete** (2026-09-18). Simulation core A1–A10 was rebuilt from
 > scratch after being lost in the merge of the engineering refactor (`82212a8`);
-> A11–A14 + visual track (V7–V13) completed on top. Gate: `pnpm verify` green,
+> A11–A14 + visual track (V7–V13) completed on top. Gate: `pnpm run verify` green,
 > 21/21 e2e. Report: `docs/reports/phase-1.md`.
 
 > Phase 1 dependency (master plan): Phase 0 approved. Full command contracts,
 > order queue, and complete combat rules. Visual track runs in parallel (ADR-015).
 
 ## Phase 2 — Economy and production
-- [ ] P2.01–P2.12 (see `docs/master-plan.md`)
+
+Execution plan: `tasks/plan.md`. Latest completed task packet: `tasks/BUILD-001.md`.
+
+### VS-01 — Economy v0 (P2.01–P2.02)
+
+- [x] T1 Canonical Mineral Node, Base, Cargo, and GATHER order state
+- [x] T2 Atomic shared/protocol/simulation GATHER command
+- [x] Checkpoint: state and command contracts green
+- [x] T3 Worker gather/carry/return/deposit loop in the system pipeline
+- [x] T4 Exhaustion, contention, waiting, cancellation, and death behavior
+- [x] Checkpoint: playable simulation slice green
+- [x] T5 Snapshot, restore, deterministic replay, version, and golden hash
+- [x] T6 Public contracts and operational documentation
+- [x] Completion: `pnpm run verify`; browser changes also ran the explicit E2E gate
+
+### VS-01B — Playable Economy Integration
+
+- [x] Dedicated economy scenario and authoritative Base/Mineral projections
+- [x] Contextual browser GATHER, minimal visuals, and live Mineral HUD
+- [x] Real-interaction browser coverage for deposit, repeat, and STOP
+- [x] Pickaxe/carrying sprites, economy progress bar, active-node highlight, and visible phase status
+- [x] Completion: `pnpm run verify`; browser changes also require the explicit E2E gate
+
+### BUILD-001 — Building placement validation
+
+- [x] Deterministic rectangular footprint validation with explicit rejection reasons
+- [x] Map bounds, invalid cells, integer tile coordinates, overlap, and edge-touching rules
+- [x] Invariant helper and focused unit/invariant coverage
+- [x] Completion gates passed; no construction, protocol, renderer, or production changes
+
+### Remaining Phase 2
+
+- [ ] P2.04–P2.12 (see `docs/master-plan.md`)
 
 ## Phase 3 — Navigation, full combat, and fog
 - [ ] P3.01–P3.12 (see `docs/master-plan.md`)
