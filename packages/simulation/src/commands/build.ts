@@ -1,4 +1,4 @@
-import { BASE_BUILDING } from '@rts/game-data'
+import { BUILDING_DEFINITIONS } from '@rts/game-data'
 import { tilesToFixed } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { CommandRejectedError } from '../contracts/commands.js'
@@ -40,9 +40,10 @@ export function applyBuild(state: GameState, command: ScheduledCommand): void {
   if (player === undefined || player.defeated) {
     reject(command, 'INVALID_PHASE', `BUILD: player ${command.playerId} is not active`)
   }
-  if (buildingType !== 'BASE' || !Number.isInteger(x) || !Number.isInteger(y)) {
+  if ((buildingType !== 'BASE' && buildingType !== 'BARRACKS') || !Number.isInteger(x) || !Number.isInteger(y)) {
     reject(command, 'INVALID_PAYLOAD', 'BUILD: building type and tile coordinates are invalid')
   }
+  const definition = BUILDING_DEFINITIONS[buildingType]
   if (!state.world.hasEntity(unitId)) {
     reject(command, 'ENTITY_UNAVAILABLE', `BUILD: worker ${unitId} does not exist`)
   }
@@ -57,8 +58,8 @@ export function applyBuild(state: GameState, command: ScheduledCommand): void {
   const footprint: BuildingFootprint = {
     x,
     y,
-    width: BASE_BUILDING.footprint.width,
-    height: BASE_BUILDING.footprint.height
+    width: definition.footprint.width,
+    height: definition.footprint.height
   }
   const constructions = state.world.store(Construction)
   const occupied = state.world
@@ -82,7 +83,7 @@ export function applyBuild(state: GameState, command: ScheduledCommand): void {
   if (!placement.ok) {
     reject(command, 'INVALID_PLACEMENT', `BUILD: placement is ${placement.reason}`)
   }
-  if (player!.gold < BASE_BUILDING.costMinerals) {
+  if (player!.gold < definition.costMinerals) {
     reject(command, 'INSUFFICIENT_RESOURCES', 'BUILD: insufficient minerals')
   }
 
@@ -90,16 +91,16 @@ export function applyBuild(state: GameState, command: ScheduledCommand): void {
   if (state.world.hasEntity(buildingId)) {
     reject(command, 'ENTITY_UNAVAILABLE', `BUILD: entity id ${buildingId} is unavailable`)
   }
-  player!.gold -= BASE_BUILDING.costMinerals
+  player!.gold -= definition.costMinerals
   state.nextEntityId += 1
   state.world.createEntity(buildingId)
   state.world.store(Position).set(buildingId, { x: tilesToFixed(x), y: tilesToFixed(y) })
   state.world.store(Owner).set(buildingId, { owner: command.playerId })
   constructions.set(buildingId, {
-    buildingType: 'BASE',
+    buildingType,
     status: 'FOUNDATION',
     progressTicks: 0,
-    totalTicks: BASE_BUILDING.constructionTicks,
+    totalTicks: definition.constructionTicks,
     builderId: unitId,
     footprint
   })
@@ -131,7 +132,9 @@ function assignBuilder(state: GameState, buildingId: number, workerId: number, f
   if (target === undefined) {
     throw new Error(`BUILD: construction ${buildingId} has no position`)
   }
-  state.world.store(Orders).set(workerId, { queue: [{ type: 'BUILD', buildingId, buildingType: 'BASE' }] })
+  state.world
+    .store(Orders)
+    .set(workerId, { queue: [{ type: 'BUILD', buildingId, buildingType: current.buildingType }] })
   const workerPosition = positions.get(workerId)
   if (workerPosition?.x === target.x && workerPosition.y === target.y) {
     state.world.store(Movement).delete(workerId)

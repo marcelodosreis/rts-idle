@@ -19,7 +19,7 @@ const CONSTRUCTION_STATUS_TAGS = { FOUNDATION: 0, UNDER_CONSTRUCTION: 1, COMPLET
 export const Construction: ComponentType<ConstructionData> = {
   name: 'construction',
   encode(writer: CanonicalWriter, value) {
-    writer.writeU8(value.buildingType === 'BASE' ? 0 : 255)
+    writer.writeU8(value.buildingType === 'BASE' ? 0 : value.buildingType === 'BARRACKS' ? 1 : 255)
     writer.writeU8(CONSTRUCTION_STATUS_TAGS[value.status])
     writer.writeI32(value.progressTicks)
     writer.writeI32(value.totalTicks)
@@ -34,7 +34,7 @@ export const Construction: ComponentType<ConstructionData> = {
   },
   decode(reader: CanonicalReader) {
     const buildingType = reader.readU8()
-    if (buildingType !== 0) {
+    if (buildingType !== 0 && buildingType !== 1) {
       throw new Error(`Construction: invalid building type tag ${buildingType}`)
     }
     const statusTag = reader.readU8()
@@ -52,7 +52,7 @@ export const Construction: ComponentType<ConstructionData> = {
     }
     const builderId = builderPresent === 1 ? reader.readU32() : null
     return {
-      buildingType: 'BASE',
+      buildingType: buildingType === 0 ? 'BASE' : 'BARRACKS',
       status,
       progressTicks,
       totalTicks,

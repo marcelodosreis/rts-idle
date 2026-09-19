@@ -1,5 +1,5 @@
 import { GATHER_TICKS_PER_MINERAL, MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
-import { Base, Cargo, Combat, Health, Kind, MineralNode, Orders, Owner, Position } from '../ecs/components.js'
+import { Barracks, Base, Cargo, Combat, Health, Kind, MineralNode, Orders, Owner, Position } from '../ecs/components.js'
 import { Construction } from '../ecs/construction-component.js'
 import {
   type BuildingFootprint,
@@ -51,11 +51,12 @@ function checkConstruction(state: GameState, id: number): void {
   if (!Number.isInteger(construction.totalTicks) || construction.totalTicks <= 0) {
     fail(`construction ${id} has invalid duration ${construction.totalTicks}`)
   }
-  if (construction.status === 'COMPLETED' && !state.world.store(Base).has(id)) {
-    fail(`completed construction ${id} is not a functional Base`)
+  const marker = construction.buildingType === 'BASE' ? state.world.store(Base) : state.world.store(Barracks)
+  if (construction.status === 'COMPLETED' && !marker.has(id)) {
+    fail(`completed construction ${id} is not a functional ${construction.buildingType}`)
   }
-  if (construction.status !== 'COMPLETED' && state.world.store(Base).has(id)) {
-    fail(`incomplete construction ${id} is a functional Base`)
+  if (construction.status !== 'COMPLETED' && marker.has(id)) {
+    fail(`incomplete construction ${id} is a functional ${construction.buildingType}`)
   }
   if (construction.builderId !== null) {
     if (!state.world.hasEntity(construction.builderId) || kinds.get(construction.builderId) !== 'pawn') {
@@ -73,6 +74,9 @@ function checkEconomyEntity(state: GameState, id: number): void {
   }
   if (state.world.store(Base).has(id) && owners.get(id) === undefined) {
     fail(`Base ${id} has no owner`)
+  }
+  if (state.world.store(Barracks).has(id) && owners.get(id) === undefined) {
+    fail(`Barracks ${id} has no owner`)
   }
   checkConstruction(state, id)
   const cargo = state.world.store(Cargo).get(id)

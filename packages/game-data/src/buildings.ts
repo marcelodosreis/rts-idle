@@ -7,7 +7,7 @@ export interface BuildingDefinition {
   readonly constructionTicks: number
 }
 
-/** Baseline BUILD-002 content values; balance is intentionally deferred. */
+/** Baseline building content values; balance is intentionally deferred. */
 export const BASE_BUILDING: BuildingDefinition = Object.freeze({
   type: 'BASE',
   footprint: Object.freeze({ width: 2, height: 2 }),
@@ -17,6 +17,14 @@ export const BASE_BUILDING: BuildingDefinition = Object.freeze({
 
 export const BASE_DEFINITION = BASE_BUILDING
 
+export const BARRACKS_BUILDING: BuildingDefinition = Object.freeze({
+  type: 'BARRACKS',
+  footprint: Object.freeze({ width: 3, height: 3 }),
+  costMinerals: 150,
+  constructionTicks: 100
+})
+
 export const BUILDING_DEFINITIONS: Readonly<Record<BuildingType, BuildingDefinition>> = Object.freeze({
-  BASE: BASE_BUILDING
+  BASE: BASE_BUILDING,
+  BARRACKS: BARRACKS_BUILDING
 })
