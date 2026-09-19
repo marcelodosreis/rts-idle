@@ -2,6 +2,7 @@ import { FIXED_SCALE, fixedToRenderPixels } from '@rts/shared'
 import { Graphics } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
 import { buildingVisualStyle, ownerColor } from './building-visual-style.js'
+import { BAR_BACKGROUND, BAR_BORDER, BAR_HEIGHT, BAR_RADIUS, clampRatio, drawProgressBar } from './progress-bar.js'
 import type { RenderBase, RenderBuildPreview, RenderConstruction, RenderMineralNode } from './types.js'
 
 const BASE_WIDTH = 80
@@ -74,10 +75,18 @@ export class WorldObjectLayer {
       }
       if (style.kind === 'foundation') {
         const width = construction.footprint.width * (FIXED_SCALE / 4)
-        const height = construction.footprint.height * (FIXED_SCALE / 4)
-        const ratio = construction.progressTicks / construction.totalTicks
-        graphic.rect(0, height + 6, width * ratio, 6).fill({ color: 0x22c55e })
-        graphic.rect(0, height + 6, width, 6).stroke({ color: 0x0f172a, width: 2 })
+        const ratio = clampRatio(construction.progressTicks, construction.totalTicks)
+        drawProgressBar(graphic, {
+          x: 0,
+          y: -10,
+          width,
+          height: BAR_HEIGHT,
+          ratio,
+          fillColor: 0x22c55e,
+          background: BAR_BACKGROUND,
+          border: BAR_BORDER,
+          radius: BAR_RADIUS
+        })
       }
       graphic.position.set(fixedToRenderPixels(construction.x), fixedToRenderPixels(construction.y))
     }

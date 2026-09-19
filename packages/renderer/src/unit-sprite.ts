@@ -1,5 +1,14 @@
 import { AnimatedSprite, Circle, Container, Graphics, Text, Texture, type Ticker } from 'pixi.js'
-import { HP_BAR_HEIGHT, HP_BAR_WIDTH, hpColor, hpFillWidth, hpRatio } from './hp-bar.js'
+import {
+  BAR_BACKGROUND,
+  BAR_BORDER,
+  BAR_HEIGHT,
+  BAR_RADIUS,
+  BAR_WIDTH,
+  clampRatio,
+  drawProgressBar,
+  hpColor
+} from './progress-bar.js'
 import type { RenderUnit, UnitKind } from './types.js'
 import { drawEconomyBar, type EconomyFrames, economyAnimation, FACTION_BY_OWNER } from './unit-economy.js'
 import { FALLBACK_GLYPH, type FallbackShape } from './unit-fallback.js'
@@ -264,18 +273,24 @@ export class UnitSprite {
       return
     }
     this.healthNow = { current, max }
-    const ratio = hpRatio(current, max)
+    const ratio = clampRatio(current, max)
     if (current >= max) {
       this.hpBar.visible = false
       return
     }
     this.hpBar.visible = true
-    const fill = hpFillWidth(ratio, HP_BAR_WIDTH)
     this.hpBar.clear()
-    this.hpBar.rect(-HP_BAR_WIDTH / 2, HP_BAR_OFFSET_Y, HP_BAR_WIDTH, HP_BAR_HEIGHT)
-    this.hpBar.fill({ color: 0x000000, alpha: 0.5 })
-    this.hpBar.rect(-HP_BAR_WIDTH / 2, HP_BAR_OFFSET_Y, fill, HP_BAR_HEIGHT)
-    this.hpBar.fill({ color: hpColor(ratio) })
+    drawProgressBar(this.hpBar, {
+      x: -BAR_WIDTH / 2,
+      y: HP_BAR_OFFSET_Y,
+      width: BAR_WIDTH,
+      height: BAR_HEIGHT,
+      ratio,
+      fillColor: hpColor(ratio),
+      background: BAR_BACKGROUND,
+      border: BAR_BORDER,
+      radius: BAR_RADIUS
+    })
   }
 
   setPosition(x: number, y: number): void {
