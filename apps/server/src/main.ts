@@ -57,6 +57,7 @@ wss.on('connection', (ws, request) => {
       phase: session.phase(),
       units: session.projectUnits(),
       bases: session.projectBases(),
+      constructions: session.projectConstructions(),
       mineralNodes: session.projectMineralNodes(),
       players: session.projectPlayers(),
       events
@@ -74,6 +75,9 @@ wss.on('connection', (ws, request) => {
   send([])
   const timer = setInterval(() => {
     const result = session.advance()
+    for (const rejection of result.rejected) {
+      sendError(`${rejection.code}: ${rejection.message}`)
+    }
     send(result.events)
   }, TICK_MS)
 

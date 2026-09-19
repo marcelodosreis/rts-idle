@@ -23,6 +23,7 @@ export interface DemoMineralNodeSpawn {
 export interface DemoScenario {
   readonly id: string
   readonly label: string
+  readonly startingGold?: number
   readonly spawns: readonly DemoSpawn[]
   readonly bases?: readonly DemoBaseSpawn[]
   readonly mineralNodes?: readonly DemoMineralNodeSpawn[]
@@ -88,7 +89,13 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
   {
     id: 'economy',
     label: 'Economy',
-    spawns: [{ owner: 0, kind: PAWN, worker: true, ...tile(7, 8) }],
+    startingGold: 250,
+    spawns: [
+      { owner: 0, kind: PAWN, worker: true, ...tile(7, 7) },
+      { owner: 0, kind: PAWN, worker: true, ...tile(8, 7) },
+      { owner: 0, kind: PAWN, worker: true, ...tile(7, 10) },
+      { owner: 0, kind: PAWN, worker: true, ...tile(8, 10) }
+    ],
     bases: [
       { owner: 0, ...tile(6, 8) },
       { owner: 1, ...tile(24, 24) }

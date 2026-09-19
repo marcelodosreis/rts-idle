@@ -25,7 +25,8 @@ See `tasks/todo.md` for full phase list.
 - Snapshot/hash/export/restore
 - PixiJS renderer (animated sprites, terrain autotile, combat effects, HP bars)
 - Unit selection (click + box), command bar, match overlay
-- Playable economy scenario with contextual GATHER, pickaxe/carry animations, progress feedback, and live Mineral HUD
+- Playable economy scenario with four controllable workers, 250 starting minerals,
+  contextual GATHER, pickaxe/carry animations, progress feedback, and live Mineral HUD
 - WebSocket server (isolated per-connection sessions)
 - Automated suites and architecture barriers green
 
