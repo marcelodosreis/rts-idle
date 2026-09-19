@@ -1,4 +1,4 @@
-import { BASE_BUILDING } from '@rts/game-data'
+import { BARRACKS_BUILDING, BASE_BUILDING } from '@rts/game-data'
 import { START_ENTITY_ID } from '@rts/shared'
 import { Construction, createSimulation, createWorld, simulationFromSnapshot } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
@@ -10,6 +10,15 @@ describe('base construction data and persistence', () => {
       type: 'BASE',
       footprint: { width: 2, height: 2 },
       costMinerals: 100,
+      constructionTicks: 100
+    })
+  })
+
+  it('defines a deterministic BARRACKS footprint, cost, and duration', () => {
+    expect(BARRACKS_BUILDING).toEqual({
+      type: 'BARRACKS',
+      footprint: { width: 3, height: 3 },
+      costMinerals: 150,
       constructionTicks: 100
     })
   })
@@ -34,6 +43,29 @@ describe('base construction data and persistence', () => {
       totalTicks: 100,
       builderId: null,
       footprint: { x: 2, y: 3, width: 2, height: 2 }
+    })
+  })
+
+  it('round-trips BARRACKS construction state', () => {
+    const world = createWorld()
+    world.createEntity(START_ENTITY_ID)
+    const sim = createSimulation({ seed: 1, identity: TEST_IDENTITY, initialWorld: world })
+    world.store(Construction).set(START_ENTITY_ID, {
+      buildingType: 'BARRACKS',
+      status: 'FOUNDATION',
+      progressTicks: 0,
+      totalTicks: 100,
+      builderId: START_ENTITY_ID,
+      footprint: { x: 4, y: 5, width: 3, height: 3 }
+    })
+    const restored = simulationFromSnapshot(sim.exportSnapshot()).inspectState()
+    expect(restored.world.store(Construction).get(START_ENTITY_ID)).toEqual({
+      buildingType: 'BARRACKS',
+      status: 'FOUNDATION',
+      progressTicks: 0,
+      totalTicks: 100,
+      builderId: START_ENTITY_ID,
+      footprint: { x: 4, y: 5, width: 3, height: 3 }
     })
   })
 })

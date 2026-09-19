@@ -101,7 +101,7 @@ Master plan: `docs/master-plan.md`. Specs: `docs/specs/`.
 
 ## Phase 2 — Economy and production
 
-Execution plan: `tasks/plan.md`. Latest completed task packet: `tasks/BUILD-001.md`.
+Execution plan: `tasks/plan.md`. Latest completed task packet: `tasks/BUILD-003.md`.
 
 ### VS-01 — Economy v0 (P2.01–P2.02)
 
@@ -137,6 +137,15 @@ Execution plan: `tasks/plan.md`. Latest completed task packet: `tasks/BUILD-001.
 - [x] Foundation reservation, worker construction, pause, takeover, and completion
 - [x] Snapshot, restore, replay, hash, and invariant coverage
 - [x] Completion gates passed; no cancellation, production, pathfinding, or UI changes
+
+### BUILD-003 — Barracks construction
+
+- [x] BARRACKS definition, 3×3 footprint, 150 minerals, and 100 ticks
+- [x] Generalized BUILD validation and canonical construction/order tags
+- [x] Foundation, pause, takeover, resume, completion, and Barracks marker coverage
+- [x] Snapshot, replay, deterministic hash, invariant, contract, and architecture coverage
+- [x] Completion gates passed; no production, supply, rally point, or UI changes
+
 ### Remaining Phase 2
 
 - [ ] P2.04–P2.12 (see `docs/master-plan.md`)
