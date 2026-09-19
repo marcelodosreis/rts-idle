@@ -26,6 +26,8 @@ export interface MatchHudProps {
   readonly onHold: () => void
   readonly onSurrender: () => void
   readonly onArm: (mode: 'patrol' | 'attack_move' | 'attack') => void
+  readonly workerSelected: boolean
+  readonly onBuildArm: (mode: 'build_base' | 'build_barracks') => void
   readonly onNewMatch: () => void
   readonly onChangeScenario: (id: string) => void
   readonly onToggleAggression: () => void
@@ -55,6 +57,8 @@ export function MatchHud({
   onHold,
   onSurrender,
   onArm,
+  workerSelected,
+  onBuildArm,
   onNewMatch,
   onChangeScenario,
   onToggleAggression,
@@ -90,7 +94,15 @@ export function MatchHud({
           onStop={onStop}
           onHold={onHold}
           onSurrender={onSurrender}
-          onArm={onArm}
+          workerSelected={workerSelected}
+          minerals={resources?.mineral ?? 0}
+          onArm={(mode) => {
+            if (mode === 'build_base' || mode === 'build_barracks') {
+              onBuildArm(mode)
+            } else {
+              onArm(mode)
+            }
+          }}
         />
       </footer>
       {matchResult !== null ? <MatchOverlay result={matchResult} onNewMatch={onNewMatch} /> : null}

@@ -1,4 +1,4 @@
-import { isSnapshotMessage, type SnapshotMessage } from '@rts/protocol'
+import { isErrorMessage, isSnapshotMessage, type SnapshotMessage } from '@rts/protocol'
 import type { CommandIntent } from '@rts/shared'
 
 export type { SnapshotMessage }
@@ -33,6 +33,8 @@ export function connectMatch(url: string, handlers: ConnectionHandlers): MatchCo
     }
     if (isSnapshotMessage(parsed)) {
       handlers.onSnapshot(parsed)
+    } else if (isErrorMessage(parsed)) {
+      handlers.onError?.(parsed.message)
     }
   })
 

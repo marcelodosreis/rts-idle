@@ -16,6 +16,21 @@ export function snapshotToFrame(message: SnapshotMessage): RenderFrame {
       ...(unit.hp === undefined ? {} : { hp: unit.hp, maxHp: unit.maxHp })
     })),
     bases: message.bases.map((base) => ({ id: base.id, x: base.x, y: base.y, owner: base.owner })),
+    ...(message.constructions === undefined
+      ? {}
+      : {
+          constructions: message.constructions.map((construction) => ({
+            id: construction.id,
+            buildingType: construction.buildingType,
+            x: construction.x,
+            y: construction.y,
+            owner: construction.owner,
+            footprint: construction.footprint,
+            status: construction.status,
+            progressTicks: construction.progressTicks,
+            totalTicks: construction.totalTicks
+          }))
+        }),
     mineralNodes: message.mineralNodes.map((node) => ({
       id: node.id,
       x: node.x,
