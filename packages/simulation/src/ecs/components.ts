@@ -1,4 +1,4 @@
-import type { Fixed, PlayerId, UnitKind } from '@rts/shared'
+import type { BuildingType, Fixed, PlayerId, UnitKind } from '@rts/shared'
 import type { CanonicalReader } from '../canonical/reader.js'
 import type { CanonicalWriter } from '../canonical/writer.js'
 import type { Order } from '../contracts/orders.js'
@@ -90,6 +90,15 @@ const ORDER_TAG_ATTACK_MOVE = 4
 const ORDER_TAG_GATHER = 5
 const ORDER_TAG_BUILD = 6
 
+function buildingTypeTag(buildingType: BuildingType): number {
+  switch (buildingType) {
+    case 'BASE':
+      return 0
+    case 'BARRACKS':
+      return 1
+  }
+}
+
 const GATHER_PHASE_TAGS = {
   TO_NODE: 0,
   GATHERING: 1,
@@ -152,7 +161,7 @@ function writeOrder(writer: CanonicalWriter, order: Order): void {
     case 'BUILD':
       writer.writeU8(ORDER_TAG_BUILD)
       writer.writeU32(order.buildingId)
-      writer.writeU8(order.buildingType === 'BASE' ? 0 : order.buildingType === 'BARRACKS' ? 1 : 255)
+      writer.writeU8(buildingTypeTag(order.buildingType))
       return
   }
 }

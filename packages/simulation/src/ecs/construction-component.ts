@@ -16,10 +16,19 @@ export interface ConstructionData {
 
 const CONSTRUCTION_STATUS_TAGS = { FOUNDATION: 0, UNDER_CONSTRUCTION: 1, COMPLETED: 2 } as const
 
+function buildingTypeTag(buildingType: BuildingType): number {
+  switch (buildingType) {
+    case 'BASE':
+      return 0
+    case 'BARRACKS':
+      return 1
+  }
+}
+
 export const Construction: ComponentType<ConstructionData> = {
   name: 'construction',
   encode(writer: CanonicalWriter, value) {
-    writer.writeU8(value.buildingType === 'BASE' ? 0 : value.buildingType === 'BARRACKS' ? 1 : 255)
+    writer.writeU8(buildingTypeTag(value.buildingType))
     writer.writeU8(CONSTRUCTION_STATUS_TAGS[value.status])
     writer.writeI32(value.progressTicks)
     writer.writeI32(value.totalTicks)
