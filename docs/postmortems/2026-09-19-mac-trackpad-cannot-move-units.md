@@ -24,7 +24,7 @@ Extract the command-dispatch logic into a reusable `dispatchCommand(globalX, glo
 
 ## Regression
 
-A unit test (`tests/unit/renderer-contextmenu-command.test.ts`) that simulates a `contextmenu` DOM event on the canvas and asserts that `onGroundCommand` is called with correctly converted coordinates, and that `preventDefault` is called to suppress the native menu.
+A Playwright end-to-end regression (`tests/e2e/control-click-attack.spec.ts`) that right-clicks an enemy and asserts the attack lands and the selection is preserved, covering the `contextmenu` → command path. The original inline unit test was removed because it re-implemented the dispatch logic instead of exercising the renderer.
 
 ## Prevention
 
@@ -34,6 +34,6 @@ A unit test (`tests/unit/renderer-contextmenu-command.test.ts`) that simulates a
 ## Verification
 
 ```bash
-pnpm run test:unit -- --reporter=verbose
+pnpm run test:e2e tests/e2e/control-click-attack.spec.ts --project=chromium
 pnpm run lint
 ```
