@@ -3,6 +3,7 @@ import { UNIT_SPEED_TILES_PER_SECOND } from '../commands/move.js'
 import type { Order } from '../contracts/orders.js'
 import { GATHER_TICKS_PER_MINERAL } from '../data/economy-rules.js'
 import { Base, Cargo, Kind, MineralNode, Movement, Orders, Owner, Position } from '../ecs/components.js'
+import { Construction } from '../ecs/construction-component.js'
 import type { GameState } from '../state/state.js'
 
 type GatherOrder = Extract<Order, { readonly type: 'GATHER' }>
@@ -165,6 +166,63 @@ function updateGathering(
   }
 }
 
+function updateConstruction(state: GameState): void {
+  const constructions = state.world.store(Construction)
+  const orders = state.world.store(Orders)
+  const movements = state.world.store(Movement)
+  const positions = state.world.store(Position)
+  const kinds = state.world.store(Kind)
+  const owners = state.world.store(Owner)
+  const bases = state.world.store(Base)
+  for (const buildingId of state.world.aliveIds()) {
+    const construction = constructions.get(buildingId)
+    if (construction === undefined || construction.status === 'COMPLETED') {
+      continue
+    }
+    const builderId = construction.builderId
+    const builderOrder = builderId === null ? undefined : orders.get(builderId)?.queue[0]
+    const validBuilder =
+      builderId !== null &&
+      state.world.hasEntity(builderId) &&
+      kinds.get(builderId) === 'pawn' &&
+      owners.get(builderId)?.owner === owners.get(buildingId)?.owner &&
+      builderOrder?.type === 'BUILD' &&
+      builderOrder.buildingId === buildingId &&
+      positions.get(builderId) !== undefined
+    if (!validBuilder) {
+      constructions.set(buildingId, { ...construction, builderId: null })
+      continue
+    }
+    const builderPosition = positions.get(builderId)!
+    const buildingPosition = positions.get(buildingId)
+    if (
+      buildingPosition === undefined ||
+      movements.has(builderId) ||
+      builderPosition.x !== buildingPosition.x ||
+      builderPosition.y !== buildingPosition.y
+    ) {
+      continue
+    }
+    const progressTicks = Math.min(construction.totalTicks, construction.progressTicks + 1)
+    if (progressTicks >= construction.totalTicks) {
+      constructions.set(buildingId, { ...construction, status: 'COMPLETED', progressTicks, builderId: null })
+      bases.set(buildingId, {})
+      const queue = orders.get(builderId)?.queue.slice(1) ?? []
+      if (queue.length === 0) {
+        orders.delete(builderId)
+      } else {
+        orders.set(builderId, { queue })
+      }
+    } else {
+      constructions.set(buildingId, {
+        ...construction,
+        status: 'UNDER_CONSTRUCTION',
+        progressTicks
+      })
+    }
+  }
+}
+
 /** Advances deterministic mineral gathering, return, and deposit work. */
 export function economySystem(state: GameState): void {
   const occupiedNodes = new Set<EntityId>()
@@ -195,4 +253,5 @@ export function economySystem(state: GameState): void {
     }
     updateGathering(state, workerId, order, owner, occupiedNodes)
   }
+  updateConstruction(state)
 }

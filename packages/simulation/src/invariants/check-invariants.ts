@@ -1,5 +1,6 @@
 import { GATHER_TICKS_PER_MINERAL, MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
 import { Base, Cargo, Combat, Health, Kind, MineralNode, Orders, Owner, Position } from '../ecs/components.js'
+import { Construction } from '../ecs/construction-component.js'
 import {
   type BuildingFootprint,
   type PlacementMapBounds,
@@ -30,6 +31,39 @@ function fail(invariant: string): never {
   throw new InvariantError(`check-invariants: ${invariant}`)
 }
 
+function checkConstruction(state: GameState, id: number): void {
+  const kinds = state.world.store(Kind)
+  const owners = state.world.store(Owner)
+  const construction = state.world.store(Construction).get(id)
+  if (construction === undefined) {
+    return
+  }
+  if (owners.get(id) === undefined) {
+    fail(`construction ${id} has no owner`)
+  }
+  if (
+    !Number.isInteger(construction.progressTicks) ||
+    construction.progressTicks < 0 ||
+    construction.progressTicks > construction.totalTicks
+  ) {
+    fail(`construction ${id} has invalid progress ${construction.progressTicks}/${construction.totalTicks}`)
+  }
+  if (!Number.isInteger(construction.totalTicks) || construction.totalTicks <= 0) {
+    fail(`construction ${id} has invalid duration ${construction.totalTicks}`)
+  }
+  if (construction.status === 'COMPLETED' && !state.world.store(Base).has(id)) {
+    fail(`completed construction ${id} is not a functional Base`)
+  }
+  if (construction.status !== 'COMPLETED' && state.world.store(Base).has(id)) {
+    fail(`incomplete construction ${id} is a functional Base`)
+  }
+  if (construction.builderId !== null) {
+    if (!state.world.hasEntity(construction.builderId) || kinds.get(construction.builderId) !== 'pawn') {
+      fail(`construction ${id} references missing worker ${construction.builderId}`)
+    }
+  }
+}
+
 function checkEconomyEntity(state: GameState, id: number): void {
   const owners = state.world.store(Owner)
   const kinds = state.world.store(Kind)
@@ -40,6 +74,7 @@ function checkEconomyEntity(state: GameState, id: number): void {
   if (state.world.store(Base).has(id) && owners.get(id) === undefined) {
     fail(`Base ${id} has no owner`)
   }
+  checkConstruction(state, id)
   const cargo = state.world.store(Cargo).get(id)
   if (
     cargo !== undefined &&
@@ -133,6 +168,11 @@ export function checkInvariants(state: GameState): void {
   for (const id of state.world.aliveIds()) {
     checkEntity(state, id)
   }
+  const footprints = state.world
+    .aliveIds()
+    .map((id) => state.world.store(Construction).get(id)?.footprint)
+    .filter((footprint): footprint is NonNullable<typeof footprint> => footprint !== undefined)
+  checkBuildingFootprints(state.mapBounds, footprints)
   checkPlayers(state)
   if (state.pendingDamage.size !== 0) {
     fail('the per-tick damage buffer was not cleared')
