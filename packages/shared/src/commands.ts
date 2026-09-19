@@ -45,7 +45,6 @@ export interface BuildPayload {
   readonly x: number
   readonly y: number
 }
-
 /** SURRENDER has no payload: the issuing player concedes their own match. */
 export type SurrenderPayload = Record<string, never>
 
