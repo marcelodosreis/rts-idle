@@ -1,5 +1,10 @@
 import { GATHER_TICKS_PER_MINERAL, MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
 import { Base, Cargo, Combat, Health, Kind, MineralNode, Orders, Owner, Position } from '../ecs/components.js'
+import {
+  type BuildingFootprint,
+  type PlacementMapBounds,
+  validateBuildingPlacement
+} from '../placement/building-placement.js'
 import type { GameState } from '../state/state.js'
 
 /** Raised when a central invariant no longer holds (master plan P1.08). */
@@ -7,6 +12,17 @@ export class InvariantError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'InvariantError'
+  }
+}
+
+/** Validates the footprints already admitted to a building collection. */
+export function checkBuildingFootprints(mapBounds: PlacementMapBounds, footprints: readonly BuildingFootprint[]): void {
+  for (const [index, footprint] of footprints.entries()) {
+    const result = validateBuildingPlacement(mapBounds, footprints.slice(0, index), footprint)
+    if (result.ok) {
+      continue
+    }
+    throw new InvariantError(`check-invariants: building footprint ${index} is ${result.reason}`)
   }
 }
 

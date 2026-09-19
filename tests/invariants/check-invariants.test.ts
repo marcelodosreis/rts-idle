@@ -1,8 +1,44 @@
-import { Cargo, createSimulation, Health, Kind, MineralNode, Movement, Orders, Position } from '@rts/simulation'
+import {
+  Cargo,
+  checkBuildingFootprints,
+  createSimulation,
+  Health,
+  Kind,
+  MineralNode,
+  Movement,
+  Orders,
+  Position
+} from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { SEEDS, TEST_IDENTITY, worldWithCombatUnits, worldWithOwners } from '../fixtures/index.js'
 
 describe('central invariants (P1.08)', () => {
+  it('accepts valid building footprints and edge-touching buildings', () => {
+    expect(() =>
+      checkBuildingFootprints({ width: 8, height: 8 }, [
+        { x: 0, y: 0, width: 2, height: 2 },
+        { x: 2, y: 0, width: 2, height: 2 }
+      ])
+    ).not.toThrow()
+  })
+
+  it.each([
+    ['out of bounds', [{ x: 7, y: 7, width: 2, height: 1 }], /OUT_OF_BOUNDS/],
+    ['invalid tile', [{ x: 1, y: 1, width: 2, height: 2 }], /INVALID_TILE/],
+    [
+      'overlap',
+      [
+        { x: 0, y: 0, width: 2, height: 2 },
+        { x: 1, y: 1, width: 2, height: 2 }
+      ],
+      /OVERLAP/
+    ]
+  ])('rejects a footprint list with %s', (_name, footprints, error) => {
+    const map =
+      _name === 'invalid tile' ? { width: 8, height: 8, invalidTiles: [{ x: 2, y: 2 }] } : { width: 8, height: 8 }
+    expect(() => checkBuildingFootprints(map, footprints)).toThrow(error)
+  })
+
   it('accepts valid states across combat', () => {
     const world = worldWithCombatUnits([0, 1])
     const ids = world.aliveIds()

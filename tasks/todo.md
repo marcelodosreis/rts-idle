@@ -101,7 +101,7 @@ Master plan: `docs/master-plan.md`. Specs: `docs/specs/`.
 
 ## Phase 2 — Economy and production
 
-Execution plan: `tasks/plan.md`. Latest completed task packet: `tasks/VS-01B.md`.
+Execution plan: `tasks/plan.md`. Latest completed task packet: `tasks/BUILD-001.md`.
 
 ### VS-01 — Economy v0 (P2.01–P2.02)
 
@@ -123,9 +123,16 @@ Execution plan: `tasks/plan.md`. Latest completed task packet: `tasks/VS-01B.md`
 - [x] Pickaxe/carrying sprites, economy progress bar, active-node highlight, and visible phase status
 - [x] Completion: `pnpm run verify`; browser changes also require the explicit E2E gate
 
+### BUILD-001 — Building placement validation
+
+- [x] Deterministic rectangular footprint validation with explicit rejection reasons
+- [x] Map bounds, invalid cells, integer tile coordinates, overlap, and edge-touching rules
+- [x] Invariant helper and focused unit/invariant coverage
+- [x] Completion gates passed; no construction, protocol, renderer, or production changes
+
 ### Remaining Phase 2
 
-- [ ] P2.03–P2.12 (see `docs/master-plan.md`)
+- [ ] P2.04–P2.12 (see `docs/master-plan.md`)
 
 ## Phase 3 — Navigation, full combat, and fog
 - [ ] P3.01–P3.12 (see `docs/master-plan.md`)
