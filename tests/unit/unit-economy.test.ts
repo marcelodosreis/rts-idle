@@ -2,6 +2,7 @@ import type { AnimatedSprite } from 'pixi.js'
 import { describe, expect, it } from 'vitest'
 import { type EconomyFrames, economyAnimation, economyFrameKey } from '../../packages/renderer/src/economy-animation.js'
 import { economyBarColor, economyBarRatio } from '../../packages/renderer/src/economy-helpers.js'
+import { drawEconomyBar } from '../../packages/renderer/src/unit-economy.js'
 
 // Regression coverage for the sprite-selection logic itself: E2E only
 // exercises the game's phase transitions (see economy-playable.spec.ts),
@@ -172,5 +173,55 @@ describe('economyBarColor', () => {
         nodeId: 1
       })
     ).toBe(0x22c55e)
+  })
+})
+
+describe('drawEconomyBar', () => {
+  it('draws a visible gathering bar using the worker progress ratio', () => {
+    const calls: Array<{ readonly method: string; readonly values: readonly number[] }> = []
+    const graphics = {
+      visible: false,
+      clear() {
+        calls.push({ method: 'clear', values: [] })
+        return this
+      },
+      roundRect(x: number, y: number, width: number, height: number, radius: number) {
+        calls.push({ method: 'roundRect', values: [x, y, width, height, radius] })
+        return this
+      },
+      fill() {
+        calls.push({ method: 'fill', values: [] })
+        return this
+      },
+      stroke() {
+        calls.push({ method: 'stroke', values: [] })
+        return this
+      }
+    }
+
+    expect(() =>
+      drawEconomyBar(graphics as never, {
+        phase: 'gathering',
+        progressTicks: 5,
+        progressMax: 10,
+        cargoAmount: 0,
+        cargoCapacity: 10,
+        nodeId: 1
+      })
+    ).not.toThrow()
+
+    expect(graphics.visible).toBe(true)
+    expect(calls.map((call) => call.method)).toEqual([
+      'clear',
+      'roundRect',
+      'fill',
+      'roundRect',
+      'fill',
+      'roundRect',
+      'stroke'
+    ])
+    expect(calls.find((call) => call.method === 'roundRect' && call.values[2] === 22)?.values).toEqual([
+      -22, -48, 22, 6, 2
+    ])
   })
 })

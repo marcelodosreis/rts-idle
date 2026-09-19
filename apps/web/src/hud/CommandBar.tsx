@@ -31,7 +31,7 @@ function ArmButton({
       size="sm"
       disabled={disabled}
       onClick={onClick}
-      className="w-full whitespace-nowrap"
+      className="h-7 w-full whitespace-nowrap px-1.5 text-xs"
       aria-pressed={active}
     >
       {label}
@@ -73,7 +73,7 @@ export function CommandBar({
           size="sm"
           disabled={disabled}
           onClick={onStop}
-          className="w-full whitespace-nowrap"
+          className="h-7 w-full whitespace-nowrap px-1.5 text-xs"
         >
           Stop
         </Button>
@@ -83,7 +83,7 @@ export function CommandBar({
           size="sm"
           disabled={disabled}
           onClick={onHold}
-          className="w-full whitespace-nowrap"
+          className="h-7 w-full whitespace-nowrap px-1.5 text-xs"
         >
           Hold
         </Button>
@@ -99,7 +99,13 @@ export function CommandBar({
       </CommandGroup>
       <CommandGroup label="Utility">
         <ArmButton label="Patrol" active={mode === 'patrol'} disabled={disabled} onClick={() => onArm('patrol')} />
-        <Button type="button" variant="outline" size="sm" onClick={onSurrender} className="w-full whitespace-nowrap">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onSurrender}
+          className="h-7 w-full whitespace-nowrap px-1.5 text-xs"
+        >
           Surrender
         </Button>
       </CommandGroup>
@@ -120,7 +126,7 @@ export function CommandBar({
       {mode !== 'none' ? (
         <div
           className={cn(
-            'flex w-36 shrink-0 items-center justify-center rounded-xl border border-primary/60 bg-primary/10 p-2 text-center text-xs text-primary',
+            'flex w-36 shrink-0 items-center justify-center rounded-xl border border-primary/60 bg-primary/10 p-2 text-center text-xs text-primary transition-opacity',
             'animate-pulse'
           )}
           aria-live="polite"
