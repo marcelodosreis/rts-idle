@@ -2301,6 +2301,12 @@ Dependency: Phase 0 approved. Full command contracts, order queue, and complete 
 
 Dependency: Phase 1. Full economy on the simulation core.
 
+Economy v0 Mineral Nodes allow any number of eligible Workers to gather in
+parallel. Each Worker owns its own 20-tick progress cycle; sorted entity-id
+iteration only decides allocation when simultaneous completed cycles contend
+for the final remaining minerals. Return routing continues to choose the
+nearest owned Base, breaking equal-distance ties by entity id.
+
 ---
 
 ## Phase 3 — Navigation, complete combat, and fog

@@ -18,7 +18,10 @@ import {
 import { DEMO_SEED, scenarioById } from './demo/scenarios.js'
 import { GameSession } from './sessions/session.js'
 
-export const DEMO_IDENTITY: RulesIdentity = createRulesIdentity('demo')
+export const DEMO_IDENTITY: RulesIdentity = createRulesIdentity('demo-parallel-economy-v1', {
+  mapId: 'demo',
+  mapHash: 'demo'
+})
 
 /**
  * Hostile demo: enemies spawn in their own spot with combat stats and, in
