@@ -76,7 +76,7 @@ renderer/src/
   unit-layer.ts  Unit lifecycle + positions + interpolation
   unit-sprite.ts One unit's sprite: idle/run/attack frames, HP bar, facing
   effects-layer.ts  Combat feedback: streaks, damage popups, explosions
-  hp-bar.ts      Pure health-bar math (ratio, color, fill width)
+  progress-bar.ts  Shared progress-bar primitive (ratio, color, fill, draw)
   selection.ts   Box selection + selection rings + selection set
   ping.ts        Right-click command ping
   terrain-*      Terrain tileset/autotile/dressing presentation

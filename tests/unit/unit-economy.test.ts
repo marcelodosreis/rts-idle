@@ -1,6 +1,7 @@
-import { type EconomyFrames, economyAnimation, economyFrameKey } from '@rts/renderer'
 import type { AnimatedSprite } from 'pixi.js'
 import { describe, expect, it } from 'vitest'
+import { type EconomyFrames, economyAnimation, economyFrameKey } from '../../packages/renderer/src/economy-animation.js'
+import { economyBarColor, economyBarRatio } from '../../packages/renderer/src/economy-helpers.js'
 
 // Regression coverage for the sprite-selection logic itself: E2E only
 // exercises the game's phase transitions (see economy-playable.spec.ts),
@@ -59,5 +60,117 @@ describe('economyFrameKey', () => {
     expect(economyFrameKey(1, 'gather')).toBe('units.red.pawn.pawn_interact_pickaxe')
     expect(economyFrameKey(2, 'gather')).toBe('units.purple.pawn.pawn_interact_pickaxe')
     expect(economyFrameKey(3, 'gather')).toBe('units.yellow.pawn.pawn_interact_pickaxe')
+  })
+})
+
+describe('economyBarRatio', () => {
+  it('returns 0 when economy is undefined', () => {
+    expect(economyBarRatio(undefined)).toBe(0)
+  })
+
+  it('uses progressTicks/progressMax when gathering', () => {
+    expect(
+      economyBarRatio({
+        phase: 'gathering',
+        progressTicks: 5,
+        progressMax: 10,
+        cargoAmount: 0,
+        cargoCapacity: 10,
+        nodeId: 1
+      })
+    ).toBe(0.5)
+  })
+
+  it('uses cargoAmount/cargoCapacity when to_base', () => {
+    expect(
+      economyBarRatio({
+        phase: 'to_base',
+        progressTicks: 0,
+        progressMax: 10,
+        cargoAmount: 3,
+        cargoCapacity: 10,
+        nodeId: 1
+      })
+    ).toBe(0.3)
+  })
+
+  it('uses cargoAmount/cargoCapacity when to_node', () => {
+    expect(
+      economyBarRatio({
+        phase: 'to_node',
+        progressTicks: 0,
+        progressMax: 10,
+        cargoAmount: 7,
+        cargoCapacity: 10,
+        nodeId: 1
+      })
+    ).toBe(0.7)
+  })
+
+  it('clamps ratio to 0..1', () => {
+    expect(
+      economyBarRatio({
+        phase: 'gathering',
+        progressTicks: 15,
+        progressMax: 10,
+        cargoAmount: 0,
+        cargoCapacity: 10,
+        nodeId: 1
+      })
+    ).toBe(1)
+  })
+})
+
+describe('economyBarColor', () => {
+  it('returns amber when gathering', () => {
+    expect(
+      economyBarColor({
+        phase: 'gathering',
+        progressTicks: 5,
+        progressMax: 10,
+        cargoAmount: 0,
+        cargoCapacity: 10,
+        nodeId: 1
+      })
+    ).toBe(0xfbbf24)
+  })
+
+  it('returns green when to_base', () => {
+    expect(
+      economyBarColor({
+        phase: 'to_base',
+        progressTicks: 0,
+        progressMax: 10,
+        cargoAmount: 3,
+        cargoCapacity: 10,
+        nodeId: 1
+      })
+    ).toBe(0x22c55e)
+  })
+
+  it('returns green when to_node', () => {
+    expect(
+      economyBarColor({
+        phase: 'to_node',
+        progressTicks: 0,
+        progressMax: 10,
+        cargoAmount: 3,
+        cargoCapacity: 10,
+        nodeId: 1
+      })
+    ).toBe(0x22c55e)
+  })
+
+  it('returns green when waiting_for_base', () => {
+    expect(
+      economyBarColor({
+        phase: 'waiting_for_base',
+        progressTicks: 0,
+        progressMax: 10,
+        cargoAmount: 3,
+        cargoCapacity: 10,
+        nodeId: 1
+      })
+    ).toBe(0x22c55e)
   })
 })

@@ -1,11 +1,12 @@
 import type { EconomyPhase } from '@rts/protocol'
+import type { AnimatedSprite } from 'pixi.js'
 
 export const FACTION_BY_OWNER: readonly ('blue' | 'red' | 'purple' | 'yellow')[] = ['blue', 'red', 'purple', 'yellow']
 
 export interface EconomyFrames {
-  readonly gather: unknown | null
-  readonly carryIdle: unknown | null
-  readonly carryRun: unknown | null
+  readonly gather: AnimatedSprite | null
+  readonly carryIdle: AnimatedSprite | null
+  readonly carryRun: AnimatedSprite | null
 }
 
 export function economyFrameKey(owner: number, anim: keyof EconomyFrames): string {
@@ -24,7 +25,7 @@ export function economyAnimation(
   frames: EconomyFrames,
   phase: EconomyPhase | undefined,
   moving: boolean
-): unknown | null {
+): AnimatedSprite | null {
   if (phase === 'gathering') {
     return frames.gather
   }
