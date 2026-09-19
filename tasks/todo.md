@@ -130,6 +130,14 @@ Execution plan: `tasks/plan.md`. Latest completed task packet: `tasks/BUILD-001.
 - [x] Invariant helper and focused unit/invariant coverage
 - [x] Completion gates passed; no construction, protocol, renderer, or production changes
 
+### BUILD-002 — Base construction
+
+- [x] BASE definition, cost, footprint, duration, and canonical construction state
+- [x] Atomic BUILD command with placement, ownership, worker, and mineral validation
+- [x] Foundation reservation, worker construction, pause, takeover, and completion
+- [x] Snapshot, restore, replay, hash, and invariant coverage
+- [x] Completion gates passed; no cancellation, production, pathfinding, or UI changes
+
 ### Remaining Phase 2
 
 - [ ] P2.04–P2.12 (see `docs/master-plan.md`)

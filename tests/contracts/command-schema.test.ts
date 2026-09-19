@@ -41,9 +41,10 @@ describe('command schema (P1.01)', () => {
       { type: 'PATROL', payload: { unitIds: [], x: 0, y: 0 } },
       { type: 'ATTACK', payload: { unitIds: [], targetId: 1 } },
       { type: 'ATTACK_MOVE', payload: { unitIds: [], x: 0, y: 0 } },
-      { type: 'GATHER', payload: { unitIds: [], nodeId: 1 } }
+      { type: 'GATHER', payload: { unitIds: [], nodeId: 1 } },
+      { type: 'BUILD', payload: { unitId: 1, buildingType: 'BASE', x: 0, y: 0 } }
     ]
     const asIntents = types.map((intent) => intent as ScheduledCommand['intent'])
-    expect(asIntents).toHaveLength(7)
+    expect(asIntents).toHaveLength(8)
   })
 })
