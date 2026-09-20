@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 classe: convention
-barreira: null
+barreira: unit-economy.test.ts + economy-playable.spec.ts fallback-tolerant assertions
 regressao:
   - tests/e2e/economy-playable.spec.ts
   - tests/unit/unit-economy.test.ts

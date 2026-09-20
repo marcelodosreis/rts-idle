@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 classe: input-cross-platform
-barreira: null
+barreira: control-click-attack.spec.ts
 regressao:
   - tests/e2e/control-click-attack.spec.ts
 ---
