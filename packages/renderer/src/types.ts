@@ -27,11 +27,17 @@ export interface RenderPlayer {
   readonly gold: number
 }
 
-export interface RenderBase {
+export interface RenderBuilding {
   readonly id: number
+  readonly buildingType: 'BASE' | 'BARRACKS'
   readonly x: number
   readonly y: number
   readonly owner: number
+  readonly builderId?: number | null
+  readonly footprint: { readonly width: number; readonly height: number }
+  readonly status: ConstructionStatus
+  readonly progressTicks: number
+  readonly totalTicks: number
 }
 
 export interface RenderMineralNode {
@@ -39,18 +45,6 @@ export interface RenderMineralNode {
   readonly x: number
   readonly y: number
   readonly remaining: number
-}
-
-export interface RenderConstruction {
-  readonly id: number
-  readonly buildingType: 'BASE' | 'BARRACKS'
-  readonly x: number
-  readonly y: number
-  readonly owner: number
-  readonly footprint: { readonly width: number; readonly height: number }
-  readonly status: ConstructionStatus
-  readonly progressTicks: number
-  readonly totalTicks: number
 }
 
 export interface RenderBuildPreview {
@@ -65,8 +59,7 @@ export interface RenderBuildPreview {
 export interface RenderFrame {
   readonly tick: number
   readonly units: readonly RenderUnit[]
-  readonly bases?: readonly RenderBase[]
-  readonly constructions?: readonly RenderConstruction[]
+  readonly buildings?: readonly RenderBuilding[]
   readonly mineralNodes?: readonly RenderMineralNode[]
   readonly players?: readonly RenderPlayer[]
   /** Per-tick deterministic events that drive combat feedback. */
@@ -75,6 +68,9 @@ export interface RenderFrame {
 
 export interface RendererCallbacks {
   readonly onUnitSelected?: (id: number) => void
+  readonly onBuildingSelected?: (id: number) => void
+  /** Primary click landed on a Mineral Node (informational selection). */
+  readonly onMineralSelected?: (id: number) => void
   readonly onBoxSelected?: (ids: readonly number[]) => void
   readonly onGroundCommand?: (worldX: number, worldY: number) => void
   /** Primary click on the ground; return true when a mode consumes it. */
@@ -82,6 +78,8 @@ export interface RendererCallbacks {
   readonly onGroundMove?: (worldX: number, worldY: number) => void
   /** Right-click landed on a unit (used for attack targeting). */
   readonly onUnitCommand?: (id: number) => void
+  /** Right-click landed on a construction (used for builder assignment). */
+  readonly onBuildingCommand?: (id: number) => void
   /** Right-click landed on a Mineral Node (used for contextual gathering). */
   readonly onMineralCommand?: (id: number) => void
 }

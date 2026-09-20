@@ -111,7 +111,8 @@ export class UnitLayer {
       const deltaMoved = last !== undefined && (last.x !== unit.x || last.y !== unit.y)
       const moving =
         unit.orderState === 'moving' ||
-        ((unit.orderState === 'attacking' || unit.orderState === 'attack_move') && deltaMoved)
+        ((unit.orderState === 'attacking' || unit.orderState === 'attack_move' || unit.orderState === 'patrol') &&
+          deltaMoved)
       sprite.setHealth(unit.hp, unit.maxHp)
       sprite.setState(moving, unit.x < (last?.x ?? unit.x), now, unit.economy)
       sprite.setEconomyBar(unit.economy)
