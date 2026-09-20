@@ -2,6 +2,7 @@ import { START_ENTITY_ID } from '@rts/shared'
 import {
   Barracks,
   Base,
+  Building,
   Construction,
   createSimulation,
   createWorld,
@@ -116,7 +117,7 @@ describe('BUILD simulation lifecycle', () => {
       status: 'COMPLETED'
     })
     expect(state.world.store(Barracks).has(buildingId)).toBe(true)
-    expect(state.world.store(Base).has(buildingId)).toBe(false)
+    expect(state.world.store(Building).get(buildingId)?.buildingType).toBe('BARRACKS')
     expect(state.world.store(Orders).get(START_ENTITY_ID)).toBeUndefined()
   })
 
