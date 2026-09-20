@@ -1,7 +1,15 @@
-import { BUILDING_DEFINITIONS, createCompetitiveMap, tileAtPosition } from '@rts/game-data'
+import { BUILDING_DEFINITIONS, createCompetitiveMap } from '@rts/game-data'
 import { type GameRenderer, PixiRenderer } from '@rts/renderer'
 import type { CommandIntent } from '@rts/shared'
-import { FIXED_SCALE, fixedToRenderPixels, renderPixelsToFixed, TILE_PIXELS, tilesToFixed } from '@rts/shared'
+import {
+  FIXED_SCALE,
+  fixedToRenderPixels,
+  placementBoundsFromMap,
+  renderPixelsToFixed,
+  TILE_PIXELS,
+  tilesToFixed,
+  validateBuildingPlacement
+} from '@rts/shared'
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import { type ConnectionHandlers, connectMatch, type MatchConnection, type SnapshotMessage } from '../client/connection'
 import { snapshotToFrame } from '../client/snapshot-to-frame'
@@ -185,36 +193,24 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       const { width, height } = footprint
       const x = Math.floor(renderPixelsToFixed(worldX) / FIXED_SCALE)
       const y = Math.floor(renderPixelsToFixed(worldY) / FIXED_SCALE)
-      let reason: string | null = null
-      let valid = x >= 0 && y >= 0 && x + width <= map.width && y + height <= map.height
-      if (!valid) {
-        reason = 'Outside the map.'
-      }
-      for (let row = y; valid && row < y + height; row += 1) {
-        for (let column = x; column < x + width; column += 1) {
-          const tile = tileAtPosition(map, column, row)
-          if (tile !== 'land' && tile !== 'elevated') {
-            valid = false
-            reason = 'This terrain cannot support construction.'
-          }
-        }
-      }
-      if (
-        buildings.some((construction) => {
-          const cx = construction.x / FIXED_SCALE
-          const cy = construction.y / FIXED_SCALE
-          return (
-            x < cx + construction.footprint.width &&
-            x + width > cx &&
-            y < cy + construction.footprint.height &&
-            y + height > cy
-          )
-        })
-      ) {
-        valid = false
-        reason = 'Location is occupied.'
-      }
-      return { x: tilesToFixed(x), y: tilesToFixed(y), width, height, valid, reason }
+      const result = validateBuildingPlacement(
+        placementBoundsFromMap(map),
+        buildings.map((building) => ({
+          x: building.x / FIXED_SCALE,
+          y: building.y / FIXED_SCALE,
+          ...building.footprint
+        })),
+        { x, y, width, height }
+      )
+      const reason = result.ok
+        ? null
+        : {
+            OUT_OF_BOUNDS: 'Outside the map.',
+            INVALID_TILE: 'This terrain cannot support construction.',
+            OVERLAP: 'Location is occupied.',
+            INVALID_FOOTPRINT: 'This terrain cannot support construction.'
+          }[result.reason]
+      return { x: tilesToFixed(x), y: tilesToFixed(y), width, height, valid: result.ok, reason }
     }
 
     const updatePreview = (worldX: number, worldY: number): void => {
