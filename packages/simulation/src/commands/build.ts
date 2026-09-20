@@ -6,6 +6,7 @@ import { Building } from '../ecs/building-component.js'
 import { Kind, Movement, Orders, Owner, Position } from '../ecs/components.js'
 import type { BuildingFootprint } from '../placement/building-placement.js'
 import { validateBuildingPlacement } from '../placement/building-placement.js'
+import { constructionWorkPoint } from '../placement/construction-work-point.js'
 import type { GameState } from '../state/state.js'
 import { UNIT_SPEED_TILES_PER_SECOND } from './move.js'
 
@@ -127,22 +128,22 @@ function assignBuilder(state: GameState, buildingId: number, workerId: number, f
     }
   }
   const positions = state.world.store(Position)
-  const target = positions.get(buildingId)
-  if (target === undefined) {
-    throw new Error(`BUILD: construction ${buildingId} has no position`)
-  }
-  buildings.set(buildingId, { ...current, builderId: workerId, footprint })
-  state.world
-    .store(Orders)
-    .set(workerId, { queue: [{ type: 'BUILD', buildingId, buildingType: current.buildingType }] })
   const workerPosition = positions.get(workerId)
-  if (workerPosition?.x === target.x && workerPosition.y === target.y) {
+  if (workerPosition === undefined) {
+    throw new Error(`BUILD: worker ${workerId} has no position`)
+  }
+  const workPoint = constructionWorkPoint(workerPosition, footprint, state.mapBounds)
+  buildings.set(buildingId, { ...current, builderId: workerId, footprint })
+  state.world.store(Orders).set(workerId, {
+    queue: [{ type: 'BUILD', buildingId, buildingType: current.buildingType, workPoint }]
+  })
+  if (workerPosition.x === workPoint.x && workerPosition.y === workPoint.y) {
     state.world.store(Movement).delete(workerId)
   } else {
     state.world.store(Movement).set(workerId, {
       speedTilesPerSecond: UNIT_SPEED_TILES_PER_SECOND,
-      destX: target.x,
-      destY: target.y,
+      destX: workPoint.x,
+      destY: workPoint.y,
       remainderX: 0,
       remainderY: 0
     })

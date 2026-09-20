@@ -164,6 +164,8 @@ function writeOrder(writer: CanonicalWriter, order: Order): void {
       writer.writeU8(ORDER_TAG_BUILD)
       writer.writeU32(order.buildingId)
       writer.writeU8(buildingTypeTag(order.buildingType))
+      writer.writeI32(order.workPoint.x)
+      writer.writeI32(order.workPoint.y)
       return
   }
 }
@@ -202,7 +204,12 @@ function readOrder(reader: CanonicalReader): Order {
       if (buildingType !== 0 && buildingType !== 1) {
         throw new Error(`Orders: invalid building type tag ${buildingType}`)
       }
-      return { type: 'BUILD', buildingId, buildingType: buildingType === 0 ? 'BASE' : 'BARRACKS' }
+      return {
+        type: 'BUILD',
+        buildingId,
+        buildingType: buildingType === 0 ? 'BASE' : 'BARRACKS',
+        workPoint: { x: reader.readI32(), y: reader.readI32() }
+      }
     }
     default:
       // A bad tag is corruption, not a valid order.
