@@ -99,7 +99,7 @@ test('construction stays at the clicked location while the worker travels', asyn
     })
   await expect
     .poll(() => page.evaluate((id) => window.__rtsDebug!.getPositions()[String(id)]!, workerId), { timeout: 5_000 })
-    .toEqual({ x: tilesToFixed(11), y: tilesToFixed(11) })
+    .toEqual({ x: tilesToFixed(10), y: tilesToFixed(10) })
 
   await page.mouse.click(point.x, point.y)
   await expect(page.getByTestId('construction-panel')).toContainText('Base · Ready')

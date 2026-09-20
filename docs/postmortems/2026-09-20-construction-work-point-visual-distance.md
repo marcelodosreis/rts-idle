@@ -54,6 +54,9 @@ that single authority without changing the BUILD order or snapshot format.
 
 ## Verification
 
-Under Node `v24.21.0`, focused placement and construction tests passed,
-`pnpm run verify` passed, the enumerated focused `building-hud.spec.ts` run
-passed 4/4, and `pnpm run verify:browser` passed.
+Under Node `v24.21.0`, focused placement and construction tests passed and
+`pnpm run verify` passed. The original claim that the enumerated focused
+`building-hud.spec.ts` run passed 4/4 was inaccurate: CI run `35537655750`
+failed `tests/e2e/building-hud.spec.ts:102` on a stale work-point assertion.
+See `2026-09-20-construction-e2e-stale-work-point-assertion.md` for the
+correction and `pnpm run verify:browser`.

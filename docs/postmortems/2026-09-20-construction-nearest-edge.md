@@ -57,7 +57,9 @@ from the building footprint origin and cover reassignment and map boundaries.
 
 ## Verification
 
-Under Node `v24.21.0`, focused simulation/contract tests passed, `verify`
-passed, the focused building E2E passed 4/4, and `verify:browser` passed 37
-Chromium tests with 17 intentional skips. The generated simulation `dist`
-contains the same work-point flow as `src`.
+Under Node `v24.21.0`, focused simulation/contract tests passed and `verify`
+passed. The original claim that the focused building E2E passed 4/4 was
+inaccurate: CI run `35537655750` failed `tests/e2e/building-hud.spec.ts:102`
+because its work-point assertion was stale. See
+`2026-09-20-construction-e2e-stale-work-point-assertion.md` for the correction.
+The generated simulation `dist` contains the same work-point flow as `src`.
