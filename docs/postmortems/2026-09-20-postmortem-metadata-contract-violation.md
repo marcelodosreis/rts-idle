@@ -32,7 +32,8 @@ validates every postmortem front matter block.
 ## Fix
 
 Updated the building reassignment postmortem to use the supported `coverage`
-class and the `QUAL-017` barrier.
+class and a `null` barrier because this branch does not define a matching QUAL
+item in the task index.
 
 ## Regression
 

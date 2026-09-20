@@ -36,6 +36,19 @@ async function startMatch(page: import('@playwright/test').Page): Promise<void> 
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
 }
 
+async function constructionAt(
+  page: import('@playwright/test').Page,
+  target: { readonly x: number; readonly y: number }
+) {
+  return page.evaluate(
+    ({ x, y }) =>
+      Object.values(window.__rtsDebug?.getConstructionStates() ?? {}).find(
+        (construction) => construction.x === x && construction.y === y
+      ) ?? null,
+    target
+  )
+}
+
 test('construction HUD uses the concise building labels and preserves costs', async ({ page }) => {
   await startMatch(page)
 
@@ -72,13 +85,15 @@ test('construction stays at the clicked location while the worker travels', asyn
   await page.mouse.click(point.x, point.y)
 
   await expect
-    .poll(() => page.evaluate(() => Object.values(window.__rtsDebug?.getConstructionStates() ?? {})[0] ?? null))
+    .poll(() => constructionAt(page, target))
     .toMatchObject({ x: target.x, y: target.y, status: 'FOUNDATION' })
   await expect
-    .poll(() => page.evaluate(() => Object.values(window.__rtsDebug?.getConstructionStates() ?? {})[0] ?? null), {
-      timeout: 20_000
+    .poll(() => constructionAt(page, target), { timeout: 20_000 })
+    .toMatchObject({
+      x: target.x,
+      y: target.y,
+      status: 'COMPLETED'
     })
-    .toMatchObject({ x: target.x, y: target.y, status: 'COMPLETED' })
 
   await page.mouse.click(point.x, point.y)
   await expect(page.getByTestId('construction-panel')).toContainText('Base · Ready')
@@ -97,11 +112,7 @@ test('construction preview explains an occupied location before sending a comman
   const target = { x: tilesToFixed(10), y: tilesToFixed(9) }
   const targetPoint = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
   await page.mouse.click(targetPoint.x, targetPoint.y)
-  await expect
-    .poll(() => page.evaluate(() => Object.values(window.__rtsDebug?.getConstructionStates() ?? {})[0] ?? null), {
-      timeout: 15_000
-    })
-    .toMatchObject({ status: 'COMPLETED' })
+  await expect.poll(() => constructionAt(page, target), { timeout: 15_000 }).toMatchObject({ status: 'COMPLETED' })
 
   await selectWorker(page, workers[1]!)
   await page.getByRole('button', { name: 'Barracks · 150', exact: true }).click()
@@ -123,9 +134,7 @@ test('a construction can pause and resume with another worker through the HUD', 
   const targetPoint = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
   await page.mouse.click(targetPoint.x, targetPoint.y)
 
-  await expect
-    .poll(() => page.evaluate(() => Object.values(window.__rtsDebug?.getConstructionStates() ?? {})[0] ?? null))
-    .toMatchObject({ status: 'UNDER_CONSTRUCTION' })
+  await expect.poll(() => constructionAt(page, target)).toMatchObject({ status: 'UNDER_CONSTRUCTION' })
 
   await selectWorker(page, builder)
   await page.getByRole('button', { name: 'Stop', exact: true }).click()
