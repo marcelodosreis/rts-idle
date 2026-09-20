@@ -1,3 +1,11 @@
+---
+status: open
+classe: input-cross-platform
+barreira: null
+regressao:
+  - tests/e2e/control-click-attack.spec.ts
+---
+
 # Postmortem: Control+Click Selects an Enemy Instead of Attacking
 
 ## Summary

@@ -1,3 +1,12 @@
+---
+status: open
+classe: convention
+barreira: null
+regressao:
+  - tests/e2e/economy-playable.spec.ts
+  - tests/unit/unit-economy.test.ts
+---
+
 # Postmortem: economy-playable E2E asserted a sprite anim that can't exist in CI
 
 Date: 2026-09-19

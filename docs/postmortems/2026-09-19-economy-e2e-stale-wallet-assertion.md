@@ -1,3 +1,11 @@
+---
+status: open
+classe: completion-gate
+barreira: null
+regressao:
+  - tests/e2e/economy-playable.spec.ts
+---
+
 ## Summary
 
 Chromium economy E2E timed out while waiting for Mineral `10`, despite the economy scenario correctly depositing into its 250-mineral starting wallet.
