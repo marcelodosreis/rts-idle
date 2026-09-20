@@ -20,7 +20,7 @@ Enable binary postmortem tracking (open/closed) with front-matter, guard, and ge
 
 - [x] All 15 postmortems have valid front-matter
 - [x] Guard validates status, classe, barreira, regressao
-- [x] Summary generated: 14 open, 1 closed
+- [x] Summary generated: 2 open, 13 closed
 - [x] Guard passes: `pnpm run test:architecture`
 
 ## Validation

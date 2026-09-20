@@ -179,7 +179,7 @@ Execution plan: `tasks/VS-01-plan.md`. Latest completed task packet: `tasks/BUIL
 
 ### Fundação
 - [ ] QUAL-000 Spec + ADR
-- [ ] QUAL-017 Front-matter + guard + resumo (postmortem tracking)
+- [x] QUAL-017 Front-matter + guard + resumo (postmortem tracking)
 - [ ] QUAL-018 Board + tracking guard + protocolo
 - [ ] QUAL-016 Higiene de saída (test output)
 

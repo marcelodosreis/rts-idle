@@ -1,7 +1,7 @@
 ---
 status: closed
 classe: completion-gate
-barreira: economy-playable.spec.ts baseline-relative wallet assertions
+barreira: null
 regressao:
   - tests/e2e/economy-playable.spec.ts
 ---

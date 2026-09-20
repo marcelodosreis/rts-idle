@@ -1,7 +1,7 @@
 ---
 status: closed
 classe: presentation
-barreira: unit-economy.test.ts
+barreira: null
 regressao:
   - tests/unit/unit-economy.test.ts
 ---
