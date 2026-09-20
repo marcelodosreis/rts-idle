@@ -9,6 +9,8 @@ export function MatchScreen() {
     unitCount,
     tick,
     selectionUnits,
+    selectedConstruction,
+    selectedMineral,
     resources,
     commandMode,
     matchResult,
@@ -16,6 +18,7 @@ export function MatchScreen() {
     scenarios,
     aggression,
     spritesEnabled,
+    buildHint,
     arm,
     issueOrder,
     surrender,
@@ -31,6 +34,8 @@ export function MatchScreen() {
       unitCount={unitCount}
       tick={tick}
       selection={selectionUnits}
+      construction={selectedConstruction}
+      mineral={selectedMineral}
       resources={resources}
       hostRef={hostRef}
       commandMode={commandMode}
@@ -47,6 +52,7 @@ export function MatchScreen() {
         selectionUnits.length === 1 && selectionUnits[0]?.kind === 'pawn' && selectionUnits[0]?.owner === 0
       }
       onBuildArm={arm}
+      buildHint={buildHint}
       onNewMatch={newMatch}
       onChangeScenario={changeScenario}
       onToggleAggression={() => setAggression(aggression === 'offensive' ? 'passive' : 'offensive')}

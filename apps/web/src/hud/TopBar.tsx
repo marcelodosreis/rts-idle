@@ -66,7 +66,6 @@ export function TopBar({
   onToggleAggression,
   onToggleSprites
 }: TopBarProps) {
-  const supply = resources === null ? '0/0' : `${resources.supply}/${resources.supplyCap}`
   return (
     <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b bg-card/70 px-4 py-2 backdrop-blur">
       <div data-testid="hud-topbar-brand" className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
@@ -127,8 +126,6 @@ export function TopBar({
           value={resources === null ? '0' : String(resources.mineral)}
           dotClass="bg-amber-400"
         />
-        <StatChip label="Energy" value={resources === null ? '0' : String(resources.energy)} dotClass="bg-sky-400" />
-        <StatChip label="Supply" value={supply} dotClass="bg-emerald-400" />
 
         <Separator orientation="vertical" className="hidden h-5 lg:flex" />
 

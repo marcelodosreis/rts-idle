@@ -5,7 +5,7 @@ import { FIXED_SCALE, fixedToRenderPixels, renderPixelsToFixed, TILE_PIXELS, til
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import { type ConnectionHandlers, connectMatch, type MatchConnection, type SnapshotMessage } from '../client/connection'
 import { snapshotToFrame } from '../client/snapshot-to-frame'
-import type { HudSelectionUnit } from '../hud/types'
+import type { HudConstruction, HudMineral, HudSelectionUnit } from '../hud/types'
 import { type CommandMode, useCommandModes } from '../hud/useCommandModes'
 import { readPlaytestMap } from './playtest-map'
 
@@ -66,6 +66,8 @@ export interface MatchSessionState {
   readonly selectedCount: number
   readonly tick: number
   readonly selectionUnits: readonly HudSelectionUnit[]
+  readonly selectedConstruction: HudConstruction | null
+  readonly selectedMineral: HudMineral | null
   readonly resources: {
     readonly mineral: number
     readonly energy: number
@@ -79,6 +81,7 @@ export interface MatchSessionState {
   readonly scenarios: readonly string[]
   readonly aggression: 'offensive' | 'passive'
   readonly spritesEnabled: boolean
+  readonly buildHint: string | null
   arm(mode: Exclude<CommandMode, 'none'>): void
   issueOrder(
     type: 'STOP' | 'HOLD' | 'PATROL' | 'ATTACK_MOVE',
@@ -106,6 +109,7 @@ function unitForHud(unit: SnapshotMessage['units'][number]): Omit<HudSelectionUn
   return {
     kind: unit.kind ?? 'pawn',
     owner: unit.owner,
+    ...(unit.orderState === undefined ? {} : { orderState: unit.orderState }),
     ...(unit.hp === undefined ? {} : { hp: unit.hp, maxHp: unit.maxHp }),
     ...(unit.economy === undefined ? {} : { economy: unit.economy })
   }
@@ -123,6 +127,9 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
   const [selectedCount, setSelectedCount] = useState(0)
   const [tick, setTick] = useState(0)
   const [selectionUnits, setSelectionUnits] = useState<readonly HudSelectionUnit[]>([])
+  const [selectedConstruction, setSelectedConstruction] = useState<HudConstruction | null>(null)
+  const [selectedMineral, setSelectedMineral] = useState<HudMineral | null>(null)
+  const [buildHint, setBuildHint] = useState<string | null>(null)
   const [resources, setResources] = useState<MatchSessionState['resources']>(null)
   const [matchResult, setMatchResult] = useState<MatchSessionState['matchResult']>(null)
   const commandModes = useCommandModes()
@@ -156,12 +163,16 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
         readonly hp?: number
         readonly maxHp?: number
         readonly economy?: HudSelectionUnit['economy']
+        readonly orderState?: HudSelectionUnit['orderState']
       }
     >()
     const unitOwners = new Map<number, number>()
     const unitPositions = new Map<number, { readonly x: number; readonly y: number }>()
     let prevFramePositions = new Map<number, { readonly x: number; readonly y: number }>()
-    let constructions: NonNullable<SnapshotMessage['constructions']> = []
+    let buildings: SnapshotMessage['buildings'] = []
+    let mineralNodes: SnapshotMessage['mineralNodes'] = []
+    let selectedConstructionId: number | null = null
+    let selectedMineralId: number | null = null
     let connection: MatchConnection | null = null
 
     const placementFor = (worldX: number, worldY: number) => {
@@ -174,17 +185,22 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       const { width, height } = footprint
       const x = Math.floor(renderPixelsToFixed(worldX) / FIXED_SCALE)
       const y = Math.floor(renderPixelsToFixed(worldY) / FIXED_SCALE)
+      let reason: string | null = null
       let valid = x >= 0 && y >= 0 && x + width <= map.width && y + height <= map.height
+      if (!valid) {
+        reason = 'Outside the map.'
+      }
       for (let row = y; valid && row < y + height; row += 1) {
         for (let column = x; column < x + width; column += 1) {
           const tile = tileAtPosition(map, column, row)
           if (tile !== 'land' && tile !== 'elevated') {
             valid = false
+            reason = 'This terrain cannot support construction.'
           }
         }
       }
       if (
-        constructions?.some((construction) => {
+        buildings.some((construction) => {
           const cx = construction.x / FIXED_SCALE
           const cy = construction.y / FIXED_SCALE
           return (
@@ -196,22 +212,30 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
         })
       ) {
         valid = false
+        reason = 'Location is occupied.'
       }
-      return { x: tilesToFixed(x), y: tilesToFixed(y), width, height, valid }
+      return { x: tilesToFixed(x), y: tilesToFixed(y), width, height, valid, reason }
     }
 
     const updatePreview = (worldX: number, worldY: number): void => {
-      renderer.setBuildPreview(placementFor(worldX, worldY))
+      const placement = placementFor(worldX, worldY)
+      renderer.setBuildPreview(placement)
+      setBuildHint(placement?.valid ? 'Valid location — click to build.' : (placement?.reason ?? null))
     }
 
     const cancelPlacement = (): void => {
       if (commandModes.modeRef.current === 'build_base' || commandModes.modeRef.current === 'build_barracks') {
         commandModes.clear()
         renderer.setBuildPreview(null)
+        setBuildHint(null)
       }
     }
 
     const updateSelection = (ids: readonly number[]): void => {
+      selectedConstructionId = null
+      setSelectedConstruction(null)
+      selectedMineralId = null
+      setSelectedMineral(null)
       selection = new Set(ids)
       selectionRef.current = [...ids]
       setSelectedCount(selection.size)
@@ -228,11 +252,56 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
             owner: kind.owner,
             moving: previous !== undefined && (previous.x !== current.x || previous.y !== current.y),
             ...(kind.hp === undefined ? {} : { hp: kind.hp, maxHp: kind.maxHp }),
+            ...(kind.orderState === undefined ? {} : { orderState: kind.orderState }),
             ...(kind.economy === undefined ? {} : { economy: kind.economy })
           })
         }
       }
       setSelectionUnits(units)
+    }
+
+    const updateConstructionSelection = (id: number): void => {
+      selectedMineralId = null
+      setSelectedMineral(null)
+      const construction = buildings.find((candidate) => candidate.id === id)
+      if (construction === undefined || construction.owner !== HUMAN_PLAYER) {
+        selectedConstructionId = null
+        setSelectedConstruction(null)
+        return
+      }
+      selectedConstructionId = id
+      selection.clear()
+      selectionRef.current = []
+      setSelectedCount(0)
+      setSelectionUnits([])
+      renderer.setSelection([])
+      setSelectedConstruction({
+        id: construction.id,
+        buildingType: construction.buildingType,
+        owner: construction.owner,
+        status: construction.status !== 'COMPLETED' && construction.builderId == null ? 'PAUSED' : construction.status,
+        progressTicks: construction.progressTicks,
+        totalTicks: construction.totalTicks,
+        builderId: construction.builderId ?? null
+      })
+    }
+
+    const updateMineralSelection = (id: number): void => {
+      const node = mineralNodes.find((candidate) => candidate.id === id)
+      if (node === undefined) {
+        selectedMineralId = null
+        setSelectedMineral(null)
+        return
+      }
+      selectedMineralId = id
+      setSelectedConstruction(null)
+      selectedConstructionId = null
+      selection.clear()
+      selectionRef.current = []
+      setSelectedCount(0)
+      setSelectionUnits([])
+      renderer.setSelection([])
+      setSelectedMineral({ id: node.id, remaining: node.remaining })
     }
 
     const sendCommand = (intent: CommandIntent): void => {
@@ -286,6 +355,9 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
         })
         cancelPlacement()
       }
+      if (placement !== null && !placement.valid) {
+        setBuildHint(placement.reason)
+      }
       return true
     }
 
@@ -306,10 +378,43 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       // Right-click on a friendly unit with no armed order does nothing.
     }
 
+    const constructionCommand = (id: number): void => {
+      const construction = buildings.find((candidate) => candidate.id === id)
+      const workerId = [...selection].find((selectedId) => {
+        const unit = unitKinds.get(selectedId)
+        return unit?.kind === 'pawn' && unit.owner === HUMAN_PLAYER
+      })
+      if (construction === undefined || workerId === undefined || construction.status === 'COMPLETED') {
+        return
+      }
+      sendCommand({
+        type: 'BUILD',
+        payload: {
+          unitId: workerId,
+          buildingType: construction.buildingType,
+          x: construction.x / FIXED_SCALE,
+          y: construction.y / FIXED_SCALE
+        }
+      })
+    }
+
     const handlers: ConnectionHandlers = {
       onSnapshot: (message: SnapshotMessage) => {
         lastTick = message.tick
-        constructions = message.constructions ?? []
+        buildings = message.buildings
+        mineralNodes = message.mineralNodes
+        if (selectedConstructionId !== null) {
+          updateConstructionSelection(selectedConstructionId)
+        }
+        if (selectedMineralId !== null) {
+          const selectedNode = mineralNodes.find((node) => node.id === selectedMineralId)
+          if (selectedNode === undefined) {
+            selectedMineralId = null
+            setSelectedMineral(null)
+          } else {
+            setSelectedMineral({ id: selectedNode.id, remaining: selectedNode.remaining })
+          }
+        }
         setTick(message.tick)
         setUnitCount(message.units.length)
         prevFramePositions = new Map(unitPositions)
@@ -344,6 +449,8 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
         onUnitSelected: (id) => {
           updateSelection([id])
         },
+        onBuildingSelected: updateConstructionSelection,
+        onMineralSelected: updateMineralSelection,
         onBoxSelected: (ids) => {
           updateSelection(ids)
         },
@@ -351,6 +458,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
         onGroundClick: groundClick,
         onGroundMove: updatePreview,
         onUnitCommand: unitCommand,
+        onBuildingCommand: constructionCommand,
         onMineralCommand: (nodeId) => {
           if (commandModes.modeRef.current === 'build_base' || commandModes.modeRef.current === 'build_barracks') {
             cancelPlacement()
@@ -383,7 +491,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
           },
           getConstructionStates: () => {
             const out: Record<string, { readonly x: number; readonly y: number; readonly status: string }> = {}
-            for (const construction of constructions) {
+            for (const construction of buildings) {
               out[String(construction.id)] = {
                 x: construction.x,
                 y: construction.y,
@@ -436,6 +544,8 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     selectedCount,
     tick,
     selectionUnits,
+    selectedConstruction,
+    selectedMineral,
     resources,
     commandMode: commandModes.mode,
     matchResult,
@@ -443,6 +553,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     scenarios: DEMO_SCENARIO_IDS,
     aggression: AGGRESSION,
     spritesEnabled: SPRITES_ENABLED,
+    buildHint,
     arm: commandModes.arm,
     issueOrder: (type, target) => {
       const connection = connectionRef.current

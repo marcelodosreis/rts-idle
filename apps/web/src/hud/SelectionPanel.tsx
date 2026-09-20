@@ -1,9 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { type HudSelectionUnit, KIND_LABEL, OWNER_COLORS } from './types'
+import { constructionStatusLine, mineralRemainingLine } from './selection-panel-logic'
+import { type HudConstruction, type HudMineral, type HudSelectionUnit, KIND_LABEL, OWNER_COLORS } from './types'
+
+export { constructionStatusLine, mineralRemainingLine } from './selection-panel-logic'
 
 interface SelectionPanelProps {
   readonly selection: readonly HudSelectionUnit[]
+  readonly construction: HudConstruction | null
+  readonly mineral: HudMineral | null
 }
 
 function kindSummary(selection: readonly HudSelectionUnit[]): string {
@@ -40,12 +45,32 @@ function economyLabel(unit: HudSelectionUnit): string | null {
   return `Waiting for Base ${unit.economy.cargoAmount}/${unit.economy.cargoCapacity}`
 }
 
+function orderLabel(unit: HudSelectionUnit): string {
+  if (unit.economy !== undefined) {
+    return economyLabel(unit) ?? 'Idle'
+  }
+  switch (unit.orderState) {
+    case 'moving':
+      return 'Moving'
+    case 'attacking':
+      return 'Attacking'
+    case 'hold':
+      return 'Holding position'
+    case 'patrol':
+      return 'Patrolling'
+    case 'attack_move':
+      return 'Attack-moving'
+    default:
+      return unit.moving ? 'Moving' : 'Idle'
+  }
+}
+
 function UnitChip({ unit }: { readonly unit: HudSelectionUnit }) {
   const hasHp = unit.hp !== undefined && unit.maxHp !== undefined && unit.maxHp > 0
   const ratio = hasHp ? Math.max(0, Math.min(1, unit.hp! / unit.maxHp!)) : 0
   const hpPercent = Math.round(ratio * 100)
   const unitLabel = `${KIND_LABEL[unit.kind]} #${unit.id}`
-  const economyText = economyLabel(unit)
+  const statusText = orderLabel(unit)
 
   return (
     <Tooltip>
@@ -53,7 +78,7 @@ function UnitChip({ unit }: { readonly unit: HudSelectionUnit }) {
         <button
           type="button"
           className={`flex cursor-help flex-col items-center rounded border-0 px-1 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-ring ${OWNER_COLORS[unit.owner] ?? 'bg-muted/30 text-foreground'}`}
-          aria-label={`${unitLabel}, owner ${unit.owner}, ${economyText ?? (unit.moving ? 'moving' : 'idle')}${hasHp ? `, ${hpPercent}% health` : ''}`}
+          aria-label={`${unitLabel}, owner ${unit.owner}, ${statusText}${hasHp ? `, ${hpPercent}% health` : ''}`}
         >
           <span className="text-[11px] font-bold leading-none">{KIND_LABEL[unit.kind].charAt(0)}</span>
           {hasHp && (
@@ -66,7 +91,7 @@ function UnitChip({ unit }: { readonly unit: HudSelectionUnit }) {
       <TooltipContent side="top" sideOffset={6} className="space-y-0.5">
         <p className="font-semibold">{unitLabel}</p>
         <p>Owner: P{unit.owner}</p>
-        <p>Status: {economyText ?? (unit.moving ? 'Moving' : 'Idle')}</p>
+        <p>Status: {statusText}</p>
         {unit.economy !== undefined && (
           <div className="space-y-0.5">
             <div className="h-1.5 w-28 overflow-hidden rounded-full bg-black/30">
@@ -82,7 +107,7 @@ function UnitChip({ unit }: { readonly unit: HudSelectionUnit }) {
                 }}
               />
             </div>
-            <p>{economyText}</p>
+            <p>{statusText}</p>
           </div>
         )}
         {hasHp && (
@@ -95,8 +120,71 @@ function UnitChip({ unit }: { readonly unit: HudSelectionUnit }) {
   )
 }
 
-export function SelectionPanel({ selection }: SelectionPanelProps) {
+function constructionLabel(construction: HudConstruction): string {
+  return construction.buildingType === 'BASE' ? 'Base' : 'Barracks'
+}
+
+function constructionTitleStatus(status: HudConstruction['status']): string {
+  if (status === 'COMPLETED') {
+    return 'Ready'
+  }
+  if (status === 'PAUSED') {
+    return 'Paused'
+  }
+  return status.replace('_', ' ')
+}
+
+function constructionHint(status: HudConstruction['status']): string {
+  if (status === 'PAUSED') {
+    return 'Select a Worker and right-click this construction to resume.'
+  }
+  if (status === 'COMPLETED') {
+    return 'Construction complete.'
+  }
+  return 'Select the builder and press Stop to pause.'
+}
+
+export function SelectionPanel({ selection, construction, mineral }: SelectionPanelProps) {
   const activeEconomy = selection.map(economyLabel).find((label) => label !== null) ?? null
+  if (construction !== null) {
+    const label = constructionLabel(construction)
+    const status = constructionTitleStatus(construction.status)
+    return (
+      <Card
+        className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1"
+        data-testid="construction-panel"
+      >
+        <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
+          <CardTitle className="truncate text-[11px] text-muted-foreground">
+            {label} · {status}
+          </CardTitle>
+          {construction.status !== 'COMPLETED' && (
+            <p className="h-4 truncate text-[11px] font-medium text-amber-300" data-testid="construction-status">
+              {constructionStatusLine(construction)}
+            </p>
+          )}
+        </CardHeader>
+        <CardContent className="px-2 py-0.5 text-[11px] text-muted-foreground" aria-live="polite">
+          {constructionHint(construction.status)}
+        </CardContent>
+      </Card>
+    )
+  }
+  if (mineral !== null) {
+    return (
+      <Card className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1" data-testid="mineral-panel">
+        <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
+          <CardTitle className="truncate text-[11px] text-muted-foreground">Mineral Node</CardTitle>
+          <p className="h-4 truncate text-[11px] font-medium text-amber-300" data-testid="mineral-remaining">
+            {mineralRemainingLine(mineral)}
+          </p>
+        </CardHeader>
+        <CardContent className="px-2 py-0.5 text-[11px] text-muted-foreground" aria-live="polite">
+          Neutral resource
+        </CardContent>
+      </Card>
+    )
+  }
   return (
     <Card className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1">
       <CardHeader className="shrink-0 gap-0.5 px-2 py-0">

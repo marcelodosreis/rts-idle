@@ -4,6 +4,7 @@ export interface HudSelectionUnit {
   readonly kind: 'pawn' | 'warrior' | 'archer'
   readonly owner: number
   readonly moving: boolean
+  readonly orderState?: 'idle' | 'moving' | 'attacking' | 'hold' | 'patrol' | 'attack_move'
   readonly hp?: number
   readonly maxHp?: number
   readonly economy?: {
@@ -13,6 +14,21 @@ export interface HudSelectionUnit {
     readonly progressTicks: number
     readonly progressMax: number
   }
+}
+
+export interface HudConstruction {
+  readonly id: number
+  readonly buildingType: 'BASE' | 'BARRACKS'
+  readonly owner: number
+  readonly status: 'FOUNDATION' | 'UNDER_CONSTRUCTION' | 'COMPLETED' | 'PAUSED'
+  readonly progressTicks: number
+  readonly totalTicks: number
+  readonly builderId: number | null
+}
+
+export interface HudMineral {
+  readonly id: number
+  readonly remaining: number
 }
 
 export interface HudResources {
