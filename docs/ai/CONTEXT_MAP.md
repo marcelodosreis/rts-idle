@@ -16,6 +16,7 @@ normal implementation task.
 | Web/HUD | match screen, relevant HUD, session hook | renderer integration, focused E2E |
 | Game data | relevant map/types/stats modules | game-data spec, master plan section |
 | Architecture | architecture tests | architecture docs, engineering standard §2 |
+| Quality | `tasks/QUAL-*.md`, `docs/quality/postmortem-status.md` | `docs/postmortems/`, engineering standard |
 | Documentation | engineering standard, architecture, relevant spec/ADR | master plan only for milestone work |
 
 ## Read rules

@@ -55,3 +55,15 @@ test('returns empty array when no markets match query', () => {})
 test('throws error when API key is missing', () => {})
 test('falls back to substring search when Redis is unavailable', () => {})
 ```
+
+## Anti-Duplication Rule
+
+Before writing a new test, search for existing tests that cover the same behavior:
+
+1. **Check existing tests** — use `grep` or `find` to locate tests for the same module/feature
+2. **Reuse existing patterns** — extend existing tests rather than duplicating
+3. **One assertion per behavior** — don't duplicate test logic with minor variations
+4. **Shared fixtures** — use `tests/fixtures/` for common test data
+5. **Barrier tests** — if a behavior is already tested, add a barrier test instead of another regression test
+
+This prevents test suite bloat and ensures each test has a unique purpose.
