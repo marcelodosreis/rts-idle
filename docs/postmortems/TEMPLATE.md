@@ -1,3 +1,10 @@
+---
+status: open
+classe: presentation
+barreira: null
+regressao: []
+---
+
 # Postmortem Template
 
 Use one file per bug/malfunction, named `docs/postmortems/YYYY-MM-DD-<slug>.md`.
