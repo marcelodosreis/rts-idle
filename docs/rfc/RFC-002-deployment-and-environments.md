@@ -395,7 +395,7 @@ value.
 
 - Existing `.github/workflows/ci.yml` remains the quality gate: lint, build,
   typecheck, unit, integration, simulation, contracts, orders, determinism,
-  architecture, invariants, regression, E2E, then release on `main`.
+  architecture, invariants, E2E, then release on `main`.
 - Deploy is triggered by Render when checks pass (`autoDeployTrigger: checksPass`).
 - Rollback: Render keeps the two most recent deploys on free; roll back from the
   dashboard, or redeploy a previous commit.

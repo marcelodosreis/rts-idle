@@ -86,7 +86,7 @@ Every bug or malfunction — reported by a user, found by a test, fuzz, or code 
 2. **Reproduce.** Reduce to the minimal failing case (seed + commands for simulation bugs).
 3. **Diagnose.** Identify the root cause, not the symptom.
 4. **Write a postmortem.** Create `docs/postmortems/YYYY-MM-DD-<slug>.md` using the template at `docs/postmortems/TEMPLATE.md`. It must document: symptom, root cause, **what we missed** (the process/test gap), fix, regression, prevention. Front-matter must include `status: open`, `classe`, `barreira`, and `regressao`.
-5. **Add a permanent regression test** that fails without the fix and passes with it. For simulation bugs, the regression lives in `tests/regression/`; for browser bugs, in `tests/e2e/`.
+5. **Add a permanent regression test** that fails without the fix and passes with it. Regressions are co-located in the suite that owns the affected behavior: pure logic in `tests/unit/`, simulation in `tests/simulation/`, browser behavior in `tests/e2e/`. There is no separate regression suite (see `docs/adr/ADR-016-co-located-regression-tests.md`).
 6. **Fix the root cause.**
 7. **Verify.** Run the focused test, the full suite, the build, and the original failing scenario.
 8. **Register status.** Run `npx tsx tools/quality/postmortem-status.ts` to update the summary.

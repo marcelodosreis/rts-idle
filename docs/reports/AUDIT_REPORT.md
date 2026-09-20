@@ -20,7 +20,6 @@
 | `pnpm run test:determinism` | PASS — 2 files, 6 tests |
 | `pnpm run test:invariants` | PASS — 1 file, 6 tests |
 | `pnpm run test:architecture` | PASS — 3 files, 61 tests |
-| `pnpm run test:regression` | 0 tests (empty directory) |
 | `pnpm run build` | PASS — all packages + Vite app built successfully |
 
 **Total: 280 tests passing, 14 E2E specs, 0 failures.**
@@ -68,8 +67,8 @@ tools/
   balance/     — stub
   benchmark/   — stub
 tests/
-  12 directories: unit, integration, simulation, contracts, orders, determinism,
-  invariants, architecture, regression, e2e, fuzz, fixtures
+  11 directories: unit, integration, simulation, contracts, orders, determinism,
+  invariants, architecture, e2e, fuzz, fixtures
 ```
 
 ### O Que é o Jogo
@@ -522,7 +521,6 @@ O `@rts/ai` package é vazio (`export const version = '0.1.0'`).
 | determinism | 2 | 6 | ✅ PASS |
 | orders | 1 | 6 | ✅ PASS |
 | invariants | 1 | 6 | ✅ PASS |
-| regression | 0 | 0 | ⚪ vazio |
 | fuzz | 0 | 0 | ⚪ fast-check instalado, não usado |
 | e2e (Playwright) | 14 specs | — | ✅ specs definidos |
 | **TOTAL** | **53** | **280** | **✅ TODOS PASSANDO** |
@@ -671,7 +669,7 @@ O `@rts/ai` package é vazio (`export const version = '0.1.0'`).
 
 - Pipeline descrita como 19 steps no master plan, mas apenas 6 existem (esperado para fase atual)
 - game-data descrito como "declarative content" mas é placeholder
-- `tests/regression/` vazio mas descrito como infraestrutura para testes de regressão
+- ~~`tests/regression/` vazio mas descrito como infraestrutura para testes de regressão~~ resolvido: suíte removida; regressões co-localizadas nos suites que possuem o comportamento (ADR-016)
 
 ---
 

@@ -22,7 +22,7 @@ Use for new behavior, bug fixes, contracts, and risky refactors.
 - simulation across ticks: simulation/determinism test;
 - wire contract: contract test;
 - user-visible browser behavior: focused Playwright test;
-- bug: permanent regression in the project-designated regression suite.
+- bug: permanent regression co-located in the suite that owns the affected behavior (unit/integration/simulation/e2e).
 
 Prefer deterministic fixtures, real boundaries, meaningful assertions, and
 concise failure messages. Avoid testing implementation details, broad mocks,

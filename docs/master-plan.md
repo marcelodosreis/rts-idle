@@ -366,7 +366,6 @@ rts-idle/
 │   ├── determinism/
 │   ├── invariants/
 │   ├── fuzz/
-│   ├── regression/
 │   ├── e2e/
 │   └── fixtures/
 │
@@ -2111,7 +2110,6 @@ pnpm run test:integration
 pnpm run test:simulation
 pnpm run test:determinism
 pnpm run test:invariants
-pnpm run test:regression
 pnpm run test:architecture
 pnpm run build
 pnpm run test:e2e -- --project=chromium

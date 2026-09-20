@@ -51,5 +51,4 @@ pnpm run test:e2e tests/e2e/select-and-move.spec.ts --project=chromium
 pnpm run test:e2e tests/e2e/hud-commands.spec.ts --project=chromium
 pnpm run typecheck
 pnpm run lint
-pnpm run test:regression
 ```
