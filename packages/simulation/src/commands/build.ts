@@ -2,8 +2,8 @@ import { BUILDING_DEFINITIONS } from '@rts/game-data'
 import { tilesToFixed } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { CommandRejectedError } from '../contracts/commands.js'
+import { Building } from '../ecs/building-component.js'
 import { Kind, Movement, Orders, Owner, Position } from '../ecs/components.js'
-import { Construction } from '../ecs/construction-component.js'
 import type { BuildingFootprint } from '../placement/building-placement.js'
 import { validateBuildingPlacement } from '../placement/building-placement.js'
 import type { GameState } from '../state/state.js'
@@ -61,16 +61,16 @@ export function applyBuild(state: GameState, command: ScheduledCommand): void {
     width: definition.footprint.width,
     height: definition.footprint.height
   }
-  const constructions = state.world.store(Construction)
+  const buildings = state.world.store(Building)
   const occupied = state.world
     .aliveIds()
-    .map((id) => constructions.get(id))
+    .map((id) => buildings.get(id))
     .filter((construction): construction is NonNullable<typeof construction> => construction !== undefined)
   const existingId = state.world.aliveIds().find((id) => {
-    const construction = constructions.get(id)
+    const construction = buildings.get(id)
     return construction !== undefined && sameFootprint(construction.footprint, footprint)
   })
-  const existing = existingId === undefined ? undefined : constructions.get(existingId)
+  const existing = existingId === undefined ? undefined : buildings.get(existingId)
   if (existing !== undefined && existing.status !== 'COMPLETED') {
     assignBuilder(state, existingId!, unitId, footprint)
     return
@@ -96,7 +96,7 @@ export function applyBuild(state: GameState, command: ScheduledCommand): void {
   state.world.createEntity(buildingId)
   state.world.store(Position).set(buildingId, { x: tilesToFixed(x), y: tilesToFixed(y) })
   state.world.store(Owner).set(buildingId, { owner: command.playerId })
-  constructions.set(buildingId, {
+  buildings.set(buildingId, {
     buildingType,
     status: 'FOUNDATION',
     progressTicks: 0,
@@ -108,8 +108,8 @@ export function applyBuild(state: GameState, command: ScheduledCommand): void {
 }
 
 function assignBuilder(state: GameState, buildingId: number, workerId: number, footprint: BuildingFootprint): void {
-  const constructions = state.world.store(Construction)
-  const current = constructions.get(buildingId)
+  const buildings = state.world.store(Building)
+  const current = buildings.get(buildingId)
   if (current === undefined) {
     throw new Error(`BUILD: construction ${buildingId} disappeared during assignment`)
   }
@@ -121,17 +121,17 @@ function assignBuilder(state: GameState, buildingId: number, workerId: number, f
     }
   }
   for (const id of state.world.aliveIds()) {
-    const construction = constructions.get(id)
+    const construction = buildings.get(id)
     if (construction?.builderId === workerId && id !== buildingId) {
-      constructions.set(id, { ...construction, builderId: null })
+      buildings.set(id, { ...construction, builderId: null })
     }
   }
-  constructions.set(buildingId, { ...current, builderId: workerId, footprint })
   const positions = state.world.store(Position)
   const target = positions.get(buildingId)
   if (target === undefined) {
     throw new Error(`BUILD: construction ${buildingId} has no position`)
   }
+  buildings.set(buildingId, { ...current, builderId: workerId, footprint })
   state.world
     .store(Orders)
     .set(workerId, { queue: [{ type: 'BUILD', buildingId, buildingType: current.buildingType }] })

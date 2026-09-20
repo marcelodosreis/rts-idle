@@ -1,6 +1,7 @@
 import type { PlayerId, RngState } from '@rts/shared'
 import { CanonicalReader } from '../canonical/reader.js'
 import { CanonicalWriter } from '../canonical/writer.js'
+import { SIMULATION_VERSION } from '../contracts/simulation-version.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
 import type { GameState, PlayerState } from '../state/state.js'
@@ -141,6 +142,9 @@ export function deserializeState(bytes: Uint8Array): GameState {
     rulesetHash: reader.readString(),
     mapId: reader.readString(),
     mapHash: reader.readString()
+  }
+  if (identity.simulationVersion !== SIMULATION_VERSION) {
+    throw new Error(`deserializeState: unsupported simulation version ${identity.simulationVersion}`)
   }
   const seed = reader.readU32()
   const rng = readRng(reader)

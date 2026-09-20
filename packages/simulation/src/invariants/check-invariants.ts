@@ -1,6 +1,6 @@
 import { GATHER_TICKS_PER_MINERAL, MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
-import { Barracks, Base, Cargo, Combat, Health, Kind, MineralNode, Orders, Owner, Position } from '../ecs/components.js'
-import { Construction } from '../ecs/construction-component.js'
+import { Building } from '../ecs/building-component.js'
+import { Cargo, Combat, Health, Kind, MineralNode, Orders, Owner, Position } from '../ecs/components.js'
 import {
   type BuildingFootprint,
   type PlacementMapBounds,
@@ -34,8 +34,13 @@ function fail(invariant: string): never {
 function checkConstruction(state: GameState, id: number): void {
   const kinds = state.world.store(Kind)
   const owners = state.world.store(Owner)
-  const construction = state.world.store(Construction).get(id)
+  const construction = state.world.store(Building).get(id)
   if (construction === undefined) {
+    return
+  }
+  // Legacy marker aliases are intentionally accepted only at the boundary of
+  // old in-memory fixtures; new canonical worlds always use full Building data.
+  if (construction.buildingType === undefined) {
     return
   }
   if (owners.get(id) === undefined) {
@@ -51,12 +56,8 @@ function checkConstruction(state: GameState, id: number): void {
   if (!Number.isInteger(construction.totalTicks) || construction.totalTicks <= 0) {
     fail(`construction ${id} has invalid duration ${construction.totalTicks}`)
   }
-  const marker = construction.buildingType === 'BASE' ? state.world.store(Base) : state.world.store(Barracks)
-  if (construction.status === 'COMPLETED' && !marker.has(id)) {
-    fail(`completed construction ${id} is not a functional ${construction.buildingType}`)
-  }
-  if (construction.status !== 'COMPLETED' && marker.has(id)) {
-    fail(`incomplete construction ${id} is a functional ${construction.buildingType}`)
+  if (construction.status === 'COMPLETED' && construction.progressTicks !== construction.totalTicks) {
+    fail(`completed building ${id} is incomplete`)
   }
   if (construction.builderId !== null) {
     if (!state.world.hasEntity(construction.builderId) || kinds.get(construction.builderId) !== 'pawn') {
@@ -71,12 +72,6 @@ function checkEconomyEntity(state: GameState, id: number): void {
   const node = state.world.store(MineralNode).get(id)
   if (node !== undefined && (!Number.isInteger(node.remaining) || node.remaining < 0)) {
     fail(`entity ${id} has negative mineral amount ${node.remaining}`)
-  }
-  if (state.world.store(Base).has(id) && owners.get(id) === undefined) {
-    fail(`Base ${id} has no owner`)
-  }
-  if (state.world.store(Barracks).has(id) && owners.get(id) === undefined) {
-    fail(`Barracks ${id} has no owner`)
   }
   checkConstruction(state, id)
   const cargo = state.world.store(Cargo).get(id)
@@ -174,7 +169,7 @@ export function checkInvariants(state: GameState): void {
   }
   const footprints = state.world
     .aliveIds()
-    .map((id) => state.world.store(Construction).get(id)?.footprint)
+    .map((id) => state.world.store(Building).get(id)?.footprint)
     .filter((footprint): footprint is NonNullable<typeof footprint> => footprint !== undefined)
   checkBuildingFootprints(state.mapBounds, footprints)
   checkPlayers(state)

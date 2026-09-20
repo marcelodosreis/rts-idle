@@ -2,8 +2,8 @@ import { distSquaredFixed, type EntityId, type Fixed, type PlayerId } from '@rts
 import { UNIT_SPEED_TILES_PER_SECOND } from '../commands/move.js'
 import type { Order } from '../contracts/orders.js'
 import { GATHER_TICKS_PER_MINERAL } from '../data/economy-rules.js'
-import { Barracks, Base, Cargo, Kind, MineralNode, Movement, Orders, Owner, Position } from '../ecs/components.js'
-import { Construction } from '../ecs/construction-component.js'
+import { Building } from '../ecs/building-component.js'
+import { Cargo, Kind, MineralNode, Movement, Orders, Owner, Position } from '../ecs/components.js'
 import type { GameState } from '../state/state.js'
 
 type GatherOrder = Extract<Order, { readonly type: 'GATHER' }>
@@ -42,14 +42,20 @@ function moveWorker(state: GameState, workerId: EntityId, x: Fixed, y: Fixed): v
 }
 
 function nearestOwnedBase(state: GameState, owner: PlayerId, x: Fixed, y: Fixed): EntityId | null {
-  const bases = state.world.store(Base)
+  const buildings = state.world.store(Building)
   const owners = state.world.store(Owner)
   const positions = state.world.store(Position)
   let nearest: EntityId | null = null
   let nearestDistance = Number.POSITIVE_INFINITY
   for (const entityId of state.world.aliveIds()) {
     const position = positions.get(entityId)
-    if (!bases.has(entityId) || owners.get(entityId)?.owner !== owner || position === undefined) {
+    const building = buildings.get(entityId)
+    const legacyBase = building !== undefined && building.buildingType === undefined
+    if (
+      (!legacyBase && (building?.buildingType !== 'BASE' || building.status !== 'COMPLETED')) ||
+      owners.get(entityId)?.owner !== owner ||
+      position === undefined
+    ) {
       continue
     }
     const distance = distSquaredFixed(x, y, position.x, position.y)
@@ -98,7 +104,10 @@ function updateReturn(state: GameState, workerId: EntityId, order: GatherOrder, 
   const basePosition = baseId === null ? undefined : state.world.store(Position).get(baseId)
   const validBase =
     baseId !== null &&
-    state.world.store(Base).has(baseId) &&
+    (state.world.store(Building).get(baseId)?.buildingType === 'BASE' ||
+      state.world.store(Building).get(baseId)?.buildingType === undefined) &&
+    (state.world.store(Building).get(baseId)?.status === 'COMPLETED' ||
+      state.world.store(Building).get(baseId)?.status === undefined) &&
     state.world.store(Owner).get(baseId)?.owner === owner &&
     basePosition !== undefined
   if (!validBase) {
@@ -157,16 +166,14 @@ function updateGathering(state: GameState, workerId: EntityId, order: GatherOrde
 }
 
 function updateConstruction(state: GameState): void {
-  const constructions = state.world.store(Construction)
+  const buildings = state.world.store(Building)
   const orders = state.world.store(Orders)
   const movements = state.world.store(Movement)
   const positions = state.world.store(Position)
   const kinds = state.world.store(Kind)
   const owners = state.world.store(Owner)
-  const bases = state.world.store(Base)
-  const barracks = state.world.store(Barracks)
   for (const buildingId of state.world.aliveIds()) {
-    const construction = constructions.get(buildingId)
+    const construction = buildings.get(buildingId)
     if (construction === undefined || construction.status === 'COMPLETED') {
       continue
     }
@@ -181,7 +188,7 @@ function updateConstruction(state: GameState): void {
       builderOrder.buildingId === buildingId &&
       positions.get(builderId) !== undefined
     if (!validBuilder) {
-      constructions.set(buildingId, { ...construction, builderId: null })
+      buildings.set(buildingId, { ...construction, builderId: null })
       continue
     }
     const builderPosition = positions.get(builderId)!
@@ -196,12 +203,7 @@ function updateConstruction(state: GameState): void {
     }
     const progressTicks = Math.min(construction.totalTicks, construction.progressTicks + 1)
     if (progressTicks >= construction.totalTicks) {
-      constructions.set(buildingId, { ...construction, status: 'COMPLETED', progressTicks, builderId: null })
-      if (construction.buildingType === 'BASE') {
-        bases.set(buildingId, {})
-      } else {
-        barracks.set(buildingId, {})
-      }
+      buildings.set(buildingId, { ...construction, status: 'COMPLETED', progressTicks, builderId: null })
       const queue = orders.get(builderId)?.queue.slice(1) ?? []
       if (queue.length === 0) {
         orders.delete(builderId)
@@ -209,7 +211,7 @@ function updateConstruction(state: GameState): void {
         orders.set(builderId, { queue })
       }
     } else {
-      constructions.set(buildingId, {
+      buildings.set(buildingId, {
         ...construction,
         status: 'UNDER_CONSTRUCTION',
         progressTicks
