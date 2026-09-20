@@ -19,7 +19,7 @@
  * `terrain-layer.ts` can adopt it later.
  */
 
-import type { MapTileKind } from '@rts/game-data'
+import type { MapTileKind } from '@rts/shared'
 
 /** Canonical terrain states, shared with the game (`MapTileKind`). */
 export type AutoTileTerrain = MapTileKind

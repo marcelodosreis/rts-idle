@@ -1,6 +1,5 @@
-import type { MapDefinition } from '@rts/game-data'
 import type { ConstructionStatus, OrderState, SnapshotEconomy } from '@rts/protocol'
-import type { PlayerId, SimulationEvent, UnitKind } from '@rts/shared'
+import type { MapDefinition, PlayerId, SimulationEvent, UnitKind } from '@rts/shared'
 import type { PointData } from 'pixi.js'
 
 export type { UnitKind } from '@rts/shared'
