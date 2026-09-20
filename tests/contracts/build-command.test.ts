@@ -70,7 +70,7 @@ describe('BUILD command contract', () => {
     const state = sim.inspectState()
     expect(result.rejected).toEqual([])
     expect(state.players[0]?.gold).toBe(0)
-    expect(state.world.store(Construction).get(START_ENTITY_ID + 1)?.status).toBe('UNDER_CONSTRUCTION')
+    expect(state.world.store(Construction).get(START_ENTITY_ID + 1)?.status).toBe('FOUNDATION')
   })
 
   it('creates a BARRACKS foundation with its own footprint and cost', () => {

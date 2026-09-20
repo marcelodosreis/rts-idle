@@ -1,4 +1,10 @@
-import { type BuildingFootprint, type PlacementMapBounds, validateBuildingPlacement } from '@rts/simulation'
+import { FIXED_SCALE } from '@rts/shared'
+import {
+  type BuildingFootprint,
+  constructionWorkPoint,
+  type PlacementMapBounds,
+  validateBuildingPlacement
+} from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 
 const bounds: PlacementMapBounds = { width: 10, height: 8 }
@@ -56,5 +62,42 @@ describe('building placement validation (BUILD-001)', () => {
     expect(second).toEqual(first)
     expect(occupied).toEqual(occupiedBefore)
     expect(candidate).toEqual(candidateBefore)
+  })
+})
+
+describe('construction work point', () => {
+  const footprint = { x: 4, y: 4, width: 2, height: 2 }
+  const mapBounds = { width: 16, height: 16 }
+  const fixed = (x: number, y: number) => ({ x: x * FIXED_SCALE, y: y * FIXED_SCALE })
+
+  it.each([
+    ['top', fixed(5, 4), fixed(5, 1)],
+    ['right', fixed(6, 5), fixed(8, 5)],
+    ['bottom', fixed(5, 6), fixed(5, 8)],
+    ['left', fixed(4, 5), fixed(1, 5)]
+  ])('chooses the %s side for the nearest worker', (_side, expected, worker) => {
+    expect(constructionWorkPoint(worker, footprint, mapBounds)).toEqual(expected)
+  })
+
+  it.each([
+    ['upper-left diagonal', fixed(1, 3), fixed(4, 5)],
+    ['lower-right diagonal', fixed(8, 7), fixed(6, 5)]
+  ])('chooses the truly nearest side from the %s', (_position, worker, expected) => {
+    expect(constructionWorkPoint(worker, footprint, mapBounds)).toEqual(expected)
+  })
+
+  it('uses top as the deterministic tie-breaker', () => {
+    expect(constructionWorkPoint(fixed(6, 4), footprint, mapBounds)).toEqual(fixed(5, 4))
+  })
+
+  it.each([
+    ['top', { x: 4, y: 0 }, fixed(5, 0), fixed(5, 0)],
+    ['right', { x: 14, y: 4 }, fixed(15, 5), fixed(15, 5)],
+    ['bottom', { x: 4, y: 14 }, fixed(5, 15), fixed(5, 15)],
+    ['left', { x: 0, y: 4 }, fixed(0, 5), fixed(0, 5)]
+  ])('keeps a work point valid on the %s map border', (_side, footprintAtEdge, worker, expected) => {
+    expect(
+      constructionWorkPoint(worker, { ...footprintAtEdge, width: 2, height: 2 }, { width: 16, height: 16 })
+    ).toEqual(expected)
   })
 })
