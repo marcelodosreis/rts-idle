@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 classe: process-branch
-barreira: null
+barreira: RFC-002 branching procedure with merge-base check
 regressao: []
 ---
 

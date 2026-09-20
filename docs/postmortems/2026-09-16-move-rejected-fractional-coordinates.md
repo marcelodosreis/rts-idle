@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 classe: input-geometry
-barreira: null
+barreira: regression-move-fractional-coords.spec.ts
 regressao:
   - tests/e2e/regression-move-fractional-coords.spec.ts
 ---

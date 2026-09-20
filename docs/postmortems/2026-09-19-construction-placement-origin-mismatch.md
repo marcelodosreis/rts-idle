@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 classe: presentation
-barreira: null
+barreira: world-object-layer.test.ts + building-construction.test.ts + building-hud.spec.ts
 regressao:
   - tests/unit/world-object-layer.test.ts
   - tests/simulation/building-construction.test.ts

@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 classe: presentation
-barreira: null
+barreira: regression-units-visible.spec.ts
 regressao:
   - tests/e2e/regression-units-visible.spec.ts
 ---

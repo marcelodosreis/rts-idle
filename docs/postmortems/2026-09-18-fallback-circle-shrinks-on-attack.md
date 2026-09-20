@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 classe: presentation
-barreira: null
+barreira: sprite-fallback.spec.ts
 regressao:
   - tests/e2e/sprite-fallback.spec.ts
 ---
