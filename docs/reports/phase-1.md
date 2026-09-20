@@ -84,7 +84,7 @@ The simulation core tasks A1–A10 were **rebuilt from scratch** (user decision,
 2026-09-17) because the prior branch work was lost in the merge of the
 engineering refactor (commit `82212a8` dropped the old-layout systems; only
 movement was restored). A11–A14 and the visual track (V7–V13) were completed
-on top. Docs (`docs/handoff-animations.md`, `tasks/todo.md`) were stale and
+on top. Docs (`docs/reports/handoff-animations.md`, `tasks/todo.md`) were stale and
 have been synced (G1).
 
 Definition of Done: verified by `pnpm verify` (typecheck, lint, 8 vitest
