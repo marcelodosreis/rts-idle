@@ -56,6 +56,8 @@ describe('WorldObjectLayer construction anchors', () => {
     expect(foundationBounds.width).toBeGreaterThanOrEqual(baseFootprint.width * 64)
     expect(foundationBounds.height).toBeGreaterThanOrEqual(baseFootprint.height * 64)
     expect(foundation.getLocalBounds().x).toBeGreaterThanOrEqual(-3)
+    expect(layer.constructionAt(200, 140)).toBe(42)
+    expect(layer.constructionAt(500, 500)).toBeNull()
 
     layer.present([{ id: 42, x: construction.x, y: construction.y, owner: construction.owner }], [], [])
     const initial = viewport.children[0]!
@@ -141,5 +143,46 @@ describe('building presentation styles', () => {
       fillAlpha: 0.3,
       strokeColor: 0xfacc15
     })
+  })
+})
+
+describe('WorldObjectLayer hit testing', () => {
+  it('selects a mineral node across consecutive presentation frames', () => {
+    const viewport = viewportStub()
+    const layer = new WorldObjectLayer(viewport as never)
+    const node = { id: 9, x: 640, y: 384, remaining: 300 }
+
+    layer.present([], [node])
+    expect(layer.mineralNodeAt(160, 96)).toBe(9)
+
+    layer.present([], [{ ...node, remaining: 275 }])
+    expect(layer.mineralNodeAt(160, 96)).toBe(9)
+  })
+
+  it('keeps building and mineral hit targets distinct', () => {
+    const viewport = viewportStub()
+    const layer = new WorldObjectLayer(viewport as never)
+
+    layer.present(
+      [
+        {
+          id: 7,
+          buildingType: 'BASE',
+          x: 0,
+          y: 0,
+          owner: 0,
+          footprint: { width: 2, height: 2 },
+          status: 'COMPLETED',
+          progressTicks: 100,
+          totalTicks: 100
+        }
+      ],
+      [{ id: 9, x: 640, y: 384, remaining: 300 }]
+    )
+
+    expect(layer.buildingAt(32, 32)).toBe(7)
+    expect(layer.mineralNodeAt(160, 96)).toBe(9)
+    expect(layer.buildingAt(500, 500)).toBeNull()
+    expect(layer.mineralNodeAt(500, 500)).toBeNull()
   })
 })

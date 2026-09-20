@@ -40,7 +40,7 @@ describe('economy ECS state', () => {
     const restored = simulationFromSnapshot(simulation.exportSnapshot()).inspectState().world
 
     expect(restored.store(MineralNode).get(START_ENTITY_ID)).toEqual({ remaining: 37 })
-    expect(restored.store(Base).get(START_ENTITY_ID)).toEqual({})
+    expect(restored.store(Base).get(START_ENTITY_ID)).toMatchObject({ buildingType: 'BASE', status: 'COMPLETED' })
     expect(restored.store(Cargo).get(START_ENTITY_ID)).toEqual({ amount: 4, capacity: 10 })
     expect(restored.store(Orders).get(START_ENTITY_ID)?.queue).toEqual([
       {

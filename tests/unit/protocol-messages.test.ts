@@ -65,14 +65,14 @@ describe('protocol snapshot message', () => {
       { id: 1, x: 256, y: 512, owner: 0, kind: 'pawn', hp: 90, maxHp: 100, orderState: 'attacking' },
       { id: 2, x: 0, y: 0, owner: 1 }
     ],
-    bases: [{ id: 3, x: 128, y: 256, owner: 0 }],
-    constructions: [
+    buildings: [
       {
         id: 5,
         buildingType: 'BARRACKS',
         x: 512,
         y: 768,
         owner: 0,
+        builderId: 1,
         footprint: { width: 3, height: 3 },
         status: 'UNDER_CONSTRUCTION',
         progressTicks: 12,
@@ -102,7 +102,7 @@ describe('protocol snapshot message', () => {
         tick: 0,
         phase: 'RUNNING',
         units: [],
-        bases: [],
+        buildings: [],
         mineralNodes: [],
         players: [],
         events: []
@@ -117,7 +117,7 @@ describe('protocol snapshot message', () => {
         tick: 0,
         phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0 }],
-        bases: [],
+        buildings: [],
         mineralNodes: [],
         players: [],
         events: []
@@ -153,7 +153,7 @@ describe('protocol snapshot message', () => {
         tick: 1,
         phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0, kind: 'zeppelin' }],
-        bases: [],
+        buildings: [],
         mineralNodes: [],
         players: [],
         events: []
@@ -165,7 +165,7 @@ describe('protocol snapshot message', () => {
         tick: 1,
         phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0, orderState: 'flying' }],
-        bases: [],
+        buildings: [],
         mineralNodes: [],
         players: [],
         events: []
@@ -177,7 +177,7 @@ describe('protocol snapshot message', () => {
         tick: 1,
         phase: 'PAUSED',
         units: [],
-        bases: [],
+        buildings: [],
         mineralNodes: [],
         players: [],
         events: []
@@ -185,28 +185,25 @@ describe('protocol snapshot message', () => {
     ).toBe(false)
   })
 
-  it('requires and validates Base and Mineral Node projections', () => {
-    const { bases: _bases, ...withoutBases } = valid
+  it('requires and validates buildings and Mineral Node projections', () => {
+    const { buildings: _buildings, ...withoutBuildings } = valid
     const { mineralNodes: _mineralNodes, ...withoutMineralNodes } = valid
-    expect(isSnapshotMessage(withoutBases)).toBe(false)
+    expect(isSnapshotMessage(withoutBuildings)).toBe(false)
     expect(isSnapshotMessage(withoutMineralNodes)).toBe(false)
-    expect(isSnapshotMessage({ ...valid, bases: [{ id: 3, x: 0, y: 0, owner: 4 }] })).toBe(false)
+    expect(isSnapshotMessage({ ...valid, buildings: [{ ...valid.buildings[0]!, owner: 4 }] })).toBe(false)
     expect(isSnapshotMessage({ ...valid, mineralNodes: [{ id: 4, x: 0, y: 0, remaining: -1 }] })).toBe(false)
   })
 
   it('validates construction projection state', () => {
-    expect(isSnapshotMessage({ ...valid, constructions: [{ ...valid.constructions[0]!, progressTicks: 101 }] })).toBe(
-      false
-    )
+    expect(isSnapshotMessage({ ...valid, buildings: [{ ...valid.buildings[0]!, progressTicks: 101 }] })).toBe(false)
     expect(
       isSnapshotMessage({
         ...valid,
-        constructions: [{ ...valid.constructions[0]!, footprint: { width: 0, height: 3 } }]
+        buildings: [{ ...valid.buildings[0]!, footprint: { width: 0, height: 3 } }]
       })
     ).toBe(false)
-    expect(
-      isSnapshotMessage({ ...valid, constructions: [{ ...valid.constructions[0]!, buildingType: 'TOWER' }] })
-    ).toBe(false)
+    expect(isSnapshotMessage({ ...valid, buildings: [{ ...valid.buildings[0]!, buildingType: 'TOWER' }] })).toBe(false)
+    expect(isSnapshotMessage({ ...valid, buildings: [{ ...valid.buildings[0]!, builderId: -1 }] })).toBe(false)
   })
 
   it('rejects malformed players and events', () => {
