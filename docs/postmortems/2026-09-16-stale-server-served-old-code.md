@@ -1,7 +1,7 @@
 ---
-status: closed
+status: open
 classe: environment
-barreira: tsx watch dev script prevents stale servers
+barreira: null
 regressao: []
 ---
 

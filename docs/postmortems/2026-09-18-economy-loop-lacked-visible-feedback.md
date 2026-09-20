@@ -1,7 +1,7 @@
 ---
 status: closed
 classe: presentation
-barreira: economy-playable.spec.ts
+barreira: null
 regressao:
   - tests/e2e/economy-playable.spec.ts
 ---

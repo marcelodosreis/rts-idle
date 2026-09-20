@@ -1,7 +1,7 @@
 ---
-status: closed
+status: open
 classe: isolation
-barreira: E2E suite (--workers=6) validates per-session isolation
+barreira: null
 regressao: []
 ---
 
