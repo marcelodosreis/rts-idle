@@ -1,3 +1,10 @@
+---
+status: open
+classe: environment
+barreira: null
+regressao: []
+---
+
 # Postmortem: Stale dev server served pre-formation simulation code
 
 Date: 2026-09-16

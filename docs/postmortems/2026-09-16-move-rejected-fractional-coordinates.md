@@ -1,3 +1,11 @@
+---
+status: open
+classe: input-geometry
+barreira: null
+regressao:
+  - tests/e2e/regression-move-fractional-coords.spec.ts
+---
+
 # Postmortem: MOVE silently rejected for fractional world coordinates
 
 Date: 2026-09-16

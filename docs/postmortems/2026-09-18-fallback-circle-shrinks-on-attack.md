@@ -1,3 +1,11 @@
+---
+status: open
+classe: presentation
+barreira: null
+regressao:
+  - tests/e2e/sprite-fallback.spec.ts
+---
+
 # Postmortem: Fallback unit circles shrink after first attack
 
 Date: 2026-09-18
