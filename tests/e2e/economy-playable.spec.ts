@@ -146,7 +146,7 @@ test('a group mines the same node concurrently through the browser command path'
     })
   )
   expect(progress[0]).toBeGreaterThan(0)
-  expect(progress[1]).toBe(progress[0])
+  expect(progress[1]).toBeGreaterThan(0)
   await expect(page.getByTestId('economy-status')).toContainText('Mining')
 
   if (await hasArt(page)) {

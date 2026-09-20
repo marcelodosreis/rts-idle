@@ -91,10 +91,10 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
     label: 'Economy',
     startingGold: 250,
     spawns: [
-      { owner: 0, kind: PAWN, worker: true, ...tile(8, 9) },
-      { owner: 0, kind: PAWN, worker: true, ...tile(8, 7) },
-      { owner: 0, kind: PAWN, worker: true, ...tile(7, 10) },
-      { owner: 0, kind: PAWN, worker: true, ...tile(8, 10) }
+      { owner: 0, kind: PAWN, worker: true, ...tile(8, 11) },
+      { owner: 0, kind: PAWN, worker: true, ...tile(9, 11) },
+      { owner: 0, kind: PAWN, worker: true, ...tile(10, 11) },
+      { owner: 0, kind: PAWN, worker: true, ...tile(11, 11) }
     ],
     bases: [
       { owner: 0, ...tile(6, 8) },

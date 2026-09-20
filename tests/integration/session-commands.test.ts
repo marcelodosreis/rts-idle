@@ -1,4 +1,5 @@
 import { GameSession } from '@rts/server'
+import { tilesToFixed } from '@rts/shared'
 import {
   Base,
   Construction,
@@ -29,6 +30,12 @@ describe('game session commands', () => {
     const session = createDemoSession('economy', 'passive')
 
     expect(session.projectUnits()).toHaveLength(4)
+    expect(session.projectUnits().map(({ x, y }) => ({ x, y }))).toEqual([
+      { x: tilesToFixed(8), y: tilesToFixed(11) },
+      { x: tilesToFixed(9), y: tilesToFixed(11) },
+      { x: tilesToFixed(10), y: tilesToFixed(11) },
+      { x: tilesToFixed(11), y: tilesToFixed(11) }
+    ])
     expect(session.projectUnits()).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ owner: 0, kind: 'pawn' }),

@@ -1,3 +1,4 @@
+import { BUILDING_DEFINITIONS } from '@rts/game-data'
 import { FIXED_SCALE, fixedToRenderPixels } from '@rts/shared'
 import { Graphics } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
@@ -5,10 +6,10 @@ import { buildingVisualStyle, ownerColor } from './building-visual-style.js'
 import { BAR_BACKGROUND, BAR_BORDER, BAR_HEIGHT, BAR_RADIUS, clampRatio, drawProgressBar } from './progress-bar.js'
 import type { RenderBase, RenderBuildPreview, RenderConstruction, RenderMineralNode } from './types.js'
 
-const BASE_WIDTH = 80
-const BASE_HEIGHT = 64
 const MINERAL_RADIUS = 30
 const MINERAL_COLOR = 0xfbbf24
+
+const pixelsPerTile = fixedToRenderPixels(FIXED_SCALE)
 
 /** Minimal static presentation and hit testing for economy world objects. */
 export class WorldObjectLayer {
@@ -59,11 +60,12 @@ export class WorldObjectLayer {
         this.constructions.set(construction.id, graphic)
       }
       const style = buildingVisualStyle(construction.buildingType, construction.status, construction.owner)
+      const footprint = BUILDING_DEFINITIONS[construction.buildingType].footprint
       if (style.kind === 'base') {
-        this.drawBase(graphic, construction.owner)
+        this.drawBase(graphic, construction.owner, footprint)
       } else {
-        const width = construction.footprint.width * (FIXED_SCALE / 4)
-        const height = construction.footprint.height * (FIXED_SCALE / 4)
+        const width = footprint.width * pixelsPerTile
+        const height = footprint.height * pixelsPerTile
         graphic.clear()
         graphic.rect(0, 0, width, height)
         graphic.fill({ color: style.fillColor, alpha: style.fillAlpha })
@@ -74,7 +76,7 @@ export class WorldObjectLayer {
         }
       }
       if (style.kind === 'foundation') {
-        const width = construction.footprint.width * (FIXED_SCALE / 4)
+        const width = footprint.width * pixelsPerTile
         const ratio = clampRatio(construction.progressTicks, construction.totalTicks)
         drawProgressBar(graphic, {
           x: 0,
@@ -118,14 +120,17 @@ export class WorldObjectLayer {
     this.renderPreview()
   }
 
-  private drawBase(graphic: Graphics, owner: number): void {
+  private drawBase(graphic: Graphics, owner: number, footprint = BUILDING_DEFINITIONS.BASE.footprint): void {
+    // Building visuals share the top-left footprint anchor used by previews and foundations.
+    const width = footprint.width * pixelsPerTile
+    const height = footprint.height * pixelsPerTile
     graphic.clear()
-    graphic.rect(-BASE_WIDTH / 2, -BASE_HEIGHT / 2, BASE_WIDTH, BASE_HEIGHT)
+    graphic.rect(0, 0, width, height)
     graphic.fill({ color: ownerColor(owner), alpha: 0.8 })
     graphic.stroke({ color: 0xf8fafc, width: 4 })
-    graphic.moveTo(-BASE_WIDTH / 2, -BASE_HEIGHT / 2)
-    graphic.lineTo(0, -BASE_HEIGHT / 2 - 22)
-    graphic.lineTo(BASE_WIDTH / 2, -BASE_HEIGHT / 2)
+    graphic.moveTo(0, 0)
+    graphic.lineTo(width / 2, -22)
+    graphic.lineTo(width, 0)
     graphic.stroke({ color: 0xf8fafc, width: 4 })
   }
 
@@ -151,8 +156,8 @@ export class WorldObjectLayer {
       this.viewport.addChild(graphic)
       this.constructions.set(id, graphic)
     }
-    const width = this.preview.width * (FIXED_SCALE / 4)
-    const height = this.preview.height * (FIXED_SCALE / 4)
+    const width = this.preview.width * pixelsPerTile
+    const height = this.preview.height * pixelsPerTile
     graphic.clear()
     graphic.rect(0, 0, width, height)
     graphic.fill({ color: this.preview.valid ? 0x22c55e : 0xef4444, alpha: 0.28 })

@@ -1,4 +1,4 @@
-import { createCompetitiveMap, tileAtPosition } from '@rts/game-data'
+import { BUILDING_DEFINITIONS, createCompetitiveMap, tileAtPosition } from '@rts/game-data'
 import { type GameRenderer, PixiRenderer } from '@rts/renderer'
 import type { CommandIntent } from '@rts/shared'
 import { FIXED_SCALE, fixedToRenderPixels, renderPixelsToFixed, TILE_PIXELS, tilesToFixed } from '@rts/shared'
@@ -26,6 +26,7 @@ const PLAYER_BASE_CENTER = {
 interface RtsDebug {
   getPositions(): Record<string, { readonly x: number; readonly y: number }>
   getUnitOwners(): Record<string, number>
+  getConstructionStates(): Record<string, { readonly x: number; readonly y: number; readonly status: string }>
   getAnimationFrame(id: number): number | null
   getUnitHealth(id: number): { readonly current: number; readonly max: number } | null
   getSpriteState(id: number): {
@@ -160,7 +161,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     const unitOwners = new Map<number, number>()
     const unitPositions = new Map<number, { readonly x: number; readonly y: number }>()
     let prevFramePositions = new Map<number, { readonly x: number; readonly y: number }>()
-    let constructions: SnapshotMessage['constructions'] = []
+    let constructions: NonNullable<SnapshotMessage['constructions']> = []
     let connection: MatchConnection | null = null
 
     const placementFor = (worldX: number, worldY: number) => {
@@ -168,11 +169,13 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       if (mode !== 'build_base' && mode !== 'build_barracks') {
         return null
       }
-      const width = mode === 'build_base' ? 2 : 3
+      const buildingType = mode === 'build_base' ? 'BASE' : 'BARRACKS'
+      const footprint = BUILDING_DEFINITIONS[buildingType].footprint
+      const { width, height } = footprint
       const x = Math.floor(renderPixelsToFixed(worldX) / FIXED_SCALE)
       const y = Math.floor(renderPixelsToFixed(worldY) / FIXED_SCALE)
-      let valid = x >= 0 && y >= 0 && x + width <= map.width && y + width <= map.height
-      for (let row = y; valid && row < y + width; row += 1) {
+      let valid = x >= 0 && y >= 0 && x + width <= map.width && y + height <= map.height
+      for (let row = y; valid && row < y + height; row += 1) {
         for (let column = x; column < x + width; column += 1) {
           const tile = tileAtPosition(map, column, row)
           if (tile !== 'land' && tile !== 'elevated') {
@@ -188,13 +191,13 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
             x < cx + construction.footprint.width &&
             x + width > cx &&
             y < cy + construction.footprint.height &&
-            y + width > cy
+            y + height > cy
           )
         })
       ) {
         valid = false
       }
-      return { x: tilesToFixed(x), y: tilesToFixed(y), width, height: width, valid }
+      return { x: tilesToFixed(x), y: tilesToFixed(y), width, height, valid }
     }
 
     const updatePreview = (worldX: number, worldY: number): void => {
@@ -375,6 +378,17 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
             const out: Record<string, number> = {}
             for (const [id, owner] of unitOwners) {
               out[String(id)] = owner
+            }
+            return out
+          },
+          getConstructionStates: () => {
+            const out: Record<string, { readonly x: number; readonly y: number; readonly status: string }> = {}
+            for (const construction of constructions) {
+              out[String(construction.id)] = {
+                x: construction.x,
+                y: construction.y,
+                status: construction.status
+              }
             }
             return out
           },
