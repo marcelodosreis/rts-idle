@@ -38,7 +38,7 @@ Master plan: `docs/master-plan.md`. Specs: `docs/specs/`.
 - [x] Performance matrix executed
 - [x] Tick rate decided (ADR-009)
 
-## Phase 1 — Simulation core (execution plan: `tasks/plan.md`, master plan §23.2)
+## Phase 1 — Simulation core (execution plan: `tasks/VS-01-plan.md`, master plan §23.2)
 
 ### Sprint 0 — Docs and coordination
 - [x] C0 master-plan + todo synced (visual parallel track §23.2)
@@ -101,7 +101,7 @@ Master plan: `docs/master-plan.md`. Specs: `docs/specs/`.
 
 ## Phase 2 — Economy and production
 
-Execution plan: `tasks/plan.md`. Latest completed task packet: `tasks/BUILD-003.md`.
+Execution plan: `tasks/VS-01-plan.md`. Latest completed task packet: `tasks/BUILD-003.md`.
 
 ### VS-01 — Economy v0 (P2.01–P2.02)
 
@@ -174,3 +174,34 @@ Execution plan: `tasks/plan.md`. Latest completed task packet: `tasks/BUILD-003.
 
 ## Phase 9 — Polish and M2 release
 - [ ] P9.01–P9.07 (see `docs/master-plan.md`)
+
+## Quality Hardening
+
+### Fundação
+- [ ] QUAL-000 Spec + ADR
+- [ ] QUAL-017 Front-matter + guard + resumo (postmortem tracking)
+- [ ] QUAL-018 Board + tracking guard + protocolo
+- [ ] QUAL-016 Higiene de saída (test output)
+
+### Baratos
+- [ ] QUAL-004 Helper de input (deps: QUAL-000)
+- [ ] QUAL-007 Barrier input (deps: QUAL-004)
+- [ ] QUAL-012 expectAnim + barrier (deps: QUAL-000)
+- [ ] QUAL-008 Geometria dinâmica (deps: QUAL-002)
+- [ ] QUAL-015 Base de branch (deps: none)
+
+### Núcleo
+- [ ] QUAL-001 Harness estrutural (deps: QUAL-000)
+- [ ] QUAL-002 Contrato HUD (deps: QUAL-001)
+- [ ] QUAL-003 Invariantes display list (deps: QUAL-001)
+- [ ] QUAL-005 Matriz de gestos (deps: QUAL-004)
+- [ ] QUAL-009 Isolamento concorrente (deps: QUAL-000)
+- [ ] QUAL-010 Barrier singleton (deps: QUAL-000)
+
+### Estrutural
+- [ ] QUAL-011 Flip paralelismo CI (deps: QUAL-009, QUAL-010)
+- [ ] QUAL-006 WebKit/touch (deps: QUAL-005)
+
+### Condicionado
+- [ ] QUAL-013 Gate E2E por caminho (deps: QUAL-002, QUAL-005)
+- [ ] QUAL-014 Coverage ratchet (deps: QUAL-016)
