@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 4 |
+| open | 5 |
 | closed | 12 |
-| **total** | **16** |
+| **total** | **17** |
 
 ## Detalhes
 
@@ -30,7 +30,8 @@
 | 2026-09-19-hud-topbar-overlap-narrow-viewport | closed | layout | — | 1 teste(s) |
 | 2026-09-19-mac-trackpad-cannot-move-units | closed | input-cross-platform | — | 1 teste(s) |
 | 2026-09-19-renderer-economy-progress-reference-error | closed | presentation | — | 1 teste(s) |
-| 2026-09-20-building-reassignment-persistence | open | simulation | test:simulation | 1 teste(s) |
+| 2026-09-20-building-reassignment-persistence | open | coverage | — | 1 teste(s) |
+| 2026-09-20-postmortem-metadata-contract-violation | open | convention | — | 1 teste(s) |
 
 ## Legenda
 

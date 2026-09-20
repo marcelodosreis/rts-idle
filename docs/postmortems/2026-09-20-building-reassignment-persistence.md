@@ -1,7 +1,7 @@
 ---
 status: open
-classe: simulation
-barreira: test:simulation
+classe: coverage
+barreira: null
 regressao:
   - tests/simulation/building-construction.test.ts
 ---
