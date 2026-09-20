@@ -3,6 +3,23 @@
 > Standard workflow for AI coding agents working on rts-idle.
 > This document is Tier 1 — always load before starting work.
 
+## Mandatory local preflight
+
+This document is the operational source of truth for local project commands.
+Before running any project command, execute:
+
+```bash
+nvm install
+nvm use
+node --version
+corepack enable
+```
+
+`node --version` must report `v24.x`. The required version is sourced only from
+`.nvmrc`; stop if NVM selects another major version. Running tests or builds
+with Node 20 is not valid project validation, even if those commands happen to
+pass locally.
+
 ## Context Loading Rules
 
 ### DO NOT

@@ -11,6 +11,10 @@ This project is an RTS idle game. It uses engineering workflow skills installed 
 **Read `docs/engineering-standard.md` before modifying code.** It remains the
 project's engineering source of truth.
 
+`docs/ai/EXECUTION_PROTOCOL.md` is the operational source for local commands.
+Its mandatory preflight selects Node 24 from `.nvmrc`; Node 20 test results are
+not valid project validation.
+
 `docs/architecture.md` documents the current module layout and boundaries.
 The automated barriers (`tests/architecture/package-dependencies.test.ts`,
 `public-api.test.ts`, `simulation-isolation.test.ts`) are enforced by CI
