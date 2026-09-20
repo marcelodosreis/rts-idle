@@ -34,23 +34,17 @@ export interface SnapshotPlayer {
   readonly gold: number
 }
 
-/** An owned Base projected for static world rendering and deposit feedback. */
-export interface SnapshotBase {
-  readonly id: EntityId
-  readonly x: Fixed
-  readonly y: Fixed
-  readonly owner: PlayerId
-}
-
 export type ConstructionStatus = 'FOUNDATION' | 'UNDER_CONSTRUCTION' | 'COMPLETED'
 
 /** A building or foundation projected for authoritative world rendering. */
-export interface SnapshotConstruction {
+export interface SnapshotBuilding {
   readonly id: EntityId
   readonly buildingType: 'BASE' | 'BARRACKS'
   readonly x: Fixed
   readonly y: Fixed
   readonly owner: PlayerId
+  /** Worker currently assigned to construction, or null while paused/completed. */
+  readonly builderId?: EntityId | null
   readonly footprint: { readonly width: number; readonly height: number }
   readonly status: ConstructionStatus
   readonly progressTicks: number
@@ -71,9 +65,7 @@ export interface SnapshotMessage {
   readonly tick: number
   readonly phase: 'RUNNING' | 'FINISHED'
   readonly units: readonly SnapshotUnit[]
-  readonly bases: readonly SnapshotBase[]
-  /** Optional for backwards compatibility with pre-building servers. */
-  readonly constructions?: readonly SnapshotConstruction[]
+  readonly buildings: readonly SnapshotBuilding[]
   readonly mineralNodes: readonly SnapshotMineralNode[]
   readonly players: readonly SnapshotPlayer[]
   readonly events: readonly SimulationEvent[]
@@ -94,15 +86,7 @@ function isPositionedEntity(value: unknown): value is Record<string, unknown> {
   )
 }
 
-function isSnapshotBase(value: unknown): boolean {
-  if (!isPositionedEntity(value)) {
-    return false
-  }
-  const owner = value.owner
-  return typeof owner === 'number' && Number.isInteger(owner) && owner >= 0 && owner <= 3
-}
-
-function isSnapshotConstruction(value: unknown): boolean {
+function isSnapshotBuilding(value: unknown): boolean {
   if (!isPositionedEntity(value)) {
     return false
   }
@@ -122,6 +106,11 @@ function isSnapshotConstruction(value: unknown): boolean {
     Number.isInteger(construction.owner) &&
     construction.owner >= 0 &&
     construction.owner <= 3 &&
+    (construction.builderId === undefined ||
+      construction.builderId === null ||
+      (typeof construction.builderId === 'number' &&
+        Number.isInteger(construction.builderId) &&
+        construction.builderId >= 0)) &&
     validFootprint &&
     (construction.status === 'FOUNDATION' ||
       construction.status === 'UNDER_CONSTRUCTION' ||
@@ -283,10 +272,8 @@ export function isSnapshotMessage(value: unknown): value is SnapshotMessage {
     (message.phase === 'RUNNING' || message.phase === 'FINISHED') &&
     Array.isArray(message.units) &&
     message.units.every(isSnapshotUnit) &&
-    Array.isArray(message.bases) &&
-    message.bases.every(isSnapshotBase) &&
-    (message.constructions === undefined ||
-      (Array.isArray(message.constructions) && message.constructions.every(isSnapshotConstruction))) &&
+    Array.isArray(message.buildings) &&
+    message.buildings.every(isSnapshotBuilding) &&
     Array.isArray(message.mineralNodes) &&
     message.mineralNodes.every(isSnapshotMineralNode) &&
     Array.isArray(message.players) &&

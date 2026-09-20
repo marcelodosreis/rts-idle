@@ -56,8 +56,7 @@ wss.on('connection', (ws, request) => {
       tick: session.snapshot().tick,
       phase: session.phase(),
       units: session.projectUnits(),
-      bases: session.projectBases(),
-      constructions: session.projectConstructions(),
+      buildings: session.projectBuildings(),
       mineralNodes: session.projectMineralNodes(),
       players: session.projectPlayers(),
       events
