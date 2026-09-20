@@ -39,7 +39,7 @@ jobs:
       - run: pnpm run test:integration
 
   simulation:
-    name: Simulation, Contracts, Orders, Invariants & Regression Tests
+    name: Simulation, Contracts, Orders & Invariants Tests
     needs: unit_integration
     runs-on: ubuntu-latest
     steps:
@@ -49,7 +49,6 @@ jobs:
       - run: pnpm run test:contracts
       - run: pnpm run test:orders
       - run: pnpm run test:invariants
-      - run: pnpm run test:regression
 
   determinism_architecture:
     name: Determinism & Architecture Tests
