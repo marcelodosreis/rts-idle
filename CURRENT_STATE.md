@@ -27,6 +27,8 @@ See `tasks/todo.md` for full phase list.
 - Unit selection (click + box), command bar, match overlay
 - Playable economy scenario with four controllable workers, 250 starting minerals,
   contextual GATHER, pickaxe/carry animations, progress feedback, and live Mineral HUD
+- Unified Building construction with HUD placement feedback, shared selection,
+  pause/resume, worker reassignment, and completion status
 - WebSocket server (isolated per-connection sessions)
 - Automated suites and architecture barriers green
 
@@ -34,13 +36,14 @@ See `tasks/todo.md` for full phase list.
 
 Player connects → gets isolated match → selects units → issues commands → fights
 pre-scripted enemies, or opens `?scenario=economy` to gather and deposit
-minerals through the authoritative command path.
+minerals through the authoritative command path. In the economy scenario, the player
+can also place Base/Barracks construction, pause it by stopping the worker, and resume
+it by assigning another worker through the construction HUD.
 
-No building placement, production, real AI, pathfinding, fog of war, or multiplayer.
+No production, real AI, pathfinding, fog of war, or multiplayer.
 
 ## Current Limitations
 
-- No buildings (assets exist, no system)
 - No production queue
 - No AI (enemies are pre-scripted)
 - No pathfinding (straight-line movement)
@@ -52,7 +55,10 @@ No building placement, production, real AI, pathfinding, fog of war, or multipla
 
 ## Active Task
 
-VS-01B Playable Economy Integration is complete, including visible mining/carrying feedback. VS-02 has not started.
+VS-01B Playable Economy Integration is complete, including visible mining/carrying feedback.
+Building lifecycle coverage is complete for Base and Barracks through the shared
+Building component and `buildings` snapshot collection.
+VS-02 has not started.
 
 Quality Hardening (QUAL-000..018) is in progress. Foundation tasks: QUAL-017 (postmortem tracking) complete, QUAL-018 (board + packets) in progress. See `tasks/todo.md` for full board.
 
