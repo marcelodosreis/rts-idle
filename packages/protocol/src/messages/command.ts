@@ -1,4 +1,4 @@
-import type { CommandIntent } from '@rts/shared'
+import { BUILDING_TYPES, type CommandIntent } from '@rts/shared'
 
 /** Client → server command message carrying the shared authoritative intent. */
 export interface CommandMessage {
@@ -51,7 +51,7 @@ function isCommandIntent(value: unknown): boolean {
       const p = payload as Record<string, unknown>
       return (
         isInteger(p.unitId) &&
-        (p.buildingType === 'BASE' || p.buildingType === 'BARRACKS') &&
+        BUILDING_TYPES.includes(p.buildingType as (typeof BUILDING_TYPES)[number]) &&
         isInteger(p.x) &&
         isInteger(p.y)
       )

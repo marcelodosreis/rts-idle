@@ -1,4 +1,4 @@
-import { allocateEntityId, START_ENTITY_ID } from '@rts/shared'
+import { allocateEntityId, PLAYER_IDS, START_ENTITY_ID } from '@rts/shared'
 import {
   BUILDING_DEFINITIONS,
   Building,
@@ -93,8 +93,8 @@ export function createDemoSession(
     seed: DEMO_SEED,
     identity: DEMO_IDENTITY,
     initialWorld: world,
-    initialPlayers: [0, 1, 2, 3].map((id) => ({
-      id: id as 0 | 1 | 2 | 3,
+    initialPlayers: PLAYER_IDS.map((id) => ({
+      id,
       defeated: false,
       gold: id === 0 ? (scenario.startingGold ?? 0) : 0
     }))

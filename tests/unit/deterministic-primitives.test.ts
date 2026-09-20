@@ -6,6 +6,7 @@ import {
   fixedToTiles,
   intSqrt,
   MAX_ENTITY_ID,
+  PLAYER_IDS,
   peekEntityId,
   rngNext,
   rngNextInt,
@@ -49,6 +50,13 @@ describe('fixed point arithmetic', () => {
     expect(intSqrt(999_999_999_999)).toBe(999_999)
     expect(() => intSqrt(-1)).toThrow()
     expect(() => intSqrt(1.5)).toThrow()
+  })
+})
+
+describe('player slots', () => {
+  it('exposes the exact immutable competitive slots', () => {
+    expect(PLAYER_IDS).toEqual([0, 1, 2, 3])
+    expect(Object.isFrozen(PLAYER_IDS)).toBe(true)
   })
 })
 

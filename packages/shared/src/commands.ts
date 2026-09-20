@@ -37,7 +37,9 @@ export interface GatherPayload {
   readonly nodeId: EntityId
 }
 
-export type BuildingType = 'BASE' | 'BARRACKS'
+export const BUILDING_TYPES = ['BASE', 'BARRACKS'] as const
+
+export type BuildingType = (typeof BUILDING_TYPES)[number]
 
 export interface BuildPayload {
   readonly unitId: EntityId

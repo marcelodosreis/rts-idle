@@ -24,7 +24,7 @@ export const BARRACKS_BUILDING: BuildingDefinition = Object.freeze({
   constructionTicks: 100
 })
 
-export const BUILDING_DEFINITIONS: Readonly<Record<BuildingType, BuildingDefinition>> = Object.freeze({
+export const BUILDING_DEFINITIONS = Object.freeze({
   BASE: BASE_BUILDING,
   BARRACKS: BARRACKS_BUILDING
-})
+} satisfies Record<BuildingType, BuildingDefinition>)
