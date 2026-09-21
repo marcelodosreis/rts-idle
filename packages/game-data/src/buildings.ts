@@ -6,6 +6,7 @@ export interface BuildingDefinition {
   readonly footprint: { readonly width: number; readonly height: number }
   readonly costMinerals: number
   readonly constructionTicks: number
+  readonly supplyProvided: number
 }
 
 /** Baseline building content values; balance is intentionally deferred. */
@@ -14,7 +15,8 @@ export const BASE_BUILDING: BuildingDefinition = Object.freeze({
   label: 'Base',
   footprint: Object.freeze({ width: 2, height: 2 }),
   costMinerals: 100,
-  constructionTicks: 100
+  constructionTicks: 100,
+  supplyProvided: 10
 })
 
 export const BASE_DEFINITION = BASE_BUILDING
@@ -24,10 +26,21 @@ export const BARRACKS_BUILDING: BuildingDefinition = Object.freeze({
   label: 'Barracks',
   footprint: Object.freeze({ width: 3, height: 3 }),
   costMinerals: 150,
-  constructionTicks: 100
+  constructionTicks: 100,
+  supplyProvided: 0
+})
+
+export const SUPPLY_DEPOT_BUILDING: BuildingDefinition = Object.freeze({
+  type: 'SUPPLY_DEPOT',
+  label: 'Supply Depot',
+  footprint: Object.freeze({ width: 2, height: 2 }),
+  costMinerals: 100,
+  constructionTicks: 100,
+  supplyProvided: 8
 })
 
 export const BUILDING_DEFINITIONS = Object.freeze({
   BASE: BASE_BUILDING,
-  BARRACKS: BARRACKS_BUILDING
+  BARRACKS: BARRACKS_BUILDING,
+  SUPPLY_DEPOT: SUPPLY_DEPOT_BUILDING
 } satisfies Record<BuildingType, BuildingDefinition>)

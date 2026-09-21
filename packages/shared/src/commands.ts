@@ -37,7 +37,7 @@ export interface GatherPayload {
   readonly nodeId: EntityId
 }
 
-export const BUILDING_TYPES = ['BASE', 'BARRACKS'] as const
+export const BUILDING_TYPES = ['BASE', 'BARRACKS', 'SUPPLY_DEPOT'] as const
 
 export type BuildingType = (typeof BUILDING_TYPES)[number]
 

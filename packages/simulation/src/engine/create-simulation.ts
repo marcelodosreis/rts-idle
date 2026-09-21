@@ -3,12 +3,13 @@ import type { SimulationOptions } from '../contracts/simulation.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
 import type { GameState, PlayerState } from '../state/state.js'
+import { updateSupply } from '../systems/supply-system.js'
 import { Simulation } from './simulation.js'
 import type { SimulationHost } from './simulation-host.js'
 
 /** The four competitive player slots, initialized undefeated with an empty wallet. */
 function createPlayers(): PlayerState[] {
-  return PLAYER_IDS.map((id) => ({ id, defeated: false, gold: 0 }))
+  return PLAYER_IDS.map((id) => ({ id, defeated: false, gold: 0, usedSupply: 0, supplyCap: 0 }))
 }
 
 const DEFAULT_MAP_BOUNDS = { width: 32, height: 32 } as const
@@ -37,11 +38,18 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
     rng,
     nextEntityId: resolveNextEntityId(world),
     players:
-      options.initialPlayers === undefined ? createPlayers() : options.initialPlayers.map((player) => ({ ...player })),
+      options.initialPlayers === undefined
+        ? createPlayers()
+        : options.initialPlayers.map((player) => ({
+            ...player,
+            usedSupply: player.usedSupply ?? 0,
+            supplyCap: player.supplyCap ?? 0
+          })),
     mapBounds: options.mapBounds ?? DEFAULT_MAP_BOUNDS,
     world,
     events: [],
     pendingDamage: new Map()
   }
+  updateSupply(state)
   return new Simulation(state)
 }
