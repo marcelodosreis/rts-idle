@@ -33,7 +33,7 @@ Headless; reproducible; no renderer. Failure artifacts saved with seed, tick, co
 
 ## Testing Strategy
 
-`tests/determinism/*`, `tests/invariants/*`, `tests/fuzz/*`, `tests/regression/*`. See master plan (phases 7, 22).
+`tests/determinism/*`, `tests/invariants/*`, `tests/fuzz/*`. See master plan (phases 7, 22).
 
 ## Boundaries
 

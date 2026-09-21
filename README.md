@@ -42,7 +42,7 @@ packages/
   renderer/   PixiJS world: camera, layers, selection, minimap
   audio/      Audio cues
 tools/        Headless CLI: replay, simulate, fuzz, balance, benchmark
-tests/        unit, integration, simulation, determinism, invariants, fuzz, regression, e2e, architecture
+tests/        unit, integration, simulation, determinism, invariants, fuzz, e2e, architecture
 docs/         master-plan.md, specs/, adr/
 ```
 
@@ -96,13 +96,13 @@ sudo env "PATH=$PATH" corepack pnpm exec playwright install-deps chromium
 | `corepack pnpm dev` | Run server + web locally together (one command, prefixed logs) |
 | `corepack pnpm run verify` | Full local gate: typecheck, lint, all suites, build |
 | `corepack pnpm run verify:fast` | Typecheck, lint, and unit tests for quick iteration |
-| `corepack pnpm run verify:simulation` | Simulation, contracts, orders, determinism, architecture, invariants, regression |
+| `corepack pnpm run verify:simulation` | Simulation, contracts, orders, determinism, architecture, invariants |
 | `corepack pnpm run verify:browser` | Build and explicitly scoped Chromium E2E gate |
 | `corepack pnpm run test:e2e:focused <file>` | Run one E2E target; use `--list` first to confirm test count |
 | `corepack pnpm run test:e2e -- --project=chromium` | Explicitly scoped full Chromium E2E gate |
 | `corepack pnpm run typecheck` | `tsc --noEmit` across all packages |
 | `corepack pnpm run lint` / `lint:fix` | Biome check / check + fix |
-| `corepack pnpm run test:*` | unit, integration, simulation, contracts, orders, determinism, invariants, regression, architecture, e2e |
+| `corepack pnpm run test:*` | unit, integration, simulation, contracts, orders, determinism, invariants, architecture, e2e |
 | `corepack pnpm run build` | Topological build of all packages + Vite |
 | `corepack pnpm run replay -- <file>` | Reproduce / validate a replay |
 | `corepack pnpm run simulate -- --games 1000` | Headless matches |
