@@ -1,4 +1,13 @@
-import type { EntityId, Fixed, PlayerId, SimulationEvent, UnitKind } from '@rts/shared'
+import {
+  BUILDING_TYPES,
+  type EntityId,
+  type Fixed,
+  isPlayerId,
+  type PlayerId,
+  type SimulationEvent,
+  UNIT_KINDS,
+  type UnitKind
+} from '@rts/shared'
 
 /** High-level unit behavior for the renderer (drives idle/run/attack). */
 export type OrderState = 'idle' | 'moving' | 'attacking' | 'hold' | 'patrol' | 'attack_move'
@@ -34,12 +43,13 @@ export interface SnapshotPlayer {
   readonly gold: number
 }
 
-export type ConstructionStatus = 'FOUNDATION' | 'UNDER_CONSTRUCTION' | 'COMPLETED'
+export const BUILDING_STATUSES = ['FOUNDATION', 'UNDER_CONSTRUCTION', 'COMPLETED'] as const
+export type ConstructionStatus = (typeof BUILDING_STATUSES)[number]
 
 /** A building or foundation projected for authoritative world rendering. */
 export interface SnapshotBuilding {
   readonly id: EntityId
-  readonly buildingType: 'BASE' | 'BARRACKS'
+  readonly buildingType: (typeof BUILDING_TYPES)[number]
   readonly x: Fixed
   readonly y: Fixed
   readonly owner: PlayerId
@@ -101,20 +111,15 @@ function isSnapshotBuilding(value: unknown): boolean {
     Number(footprintRecord?.width) > 0 &&
     Number(footprintRecord?.height) > 0
   return (
-    (construction.buildingType === 'BASE' || construction.buildingType === 'BARRACKS') &&
-    typeof construction.owner === 'number' &&
-    Number.isInteger(construction.owner) &&
-    construction.owner >= 0 &&
-    construction.owner <= 3 &&
+    BUILDING_TYPES.includes(construction.buildingType as (typeof BUILDING_TYPES)[number]) &&
+    isPlayerId(construction.owner) &&
     (construction.builderId === undefined ||
       construction.builderId === null ||
       (typeof construction.builderId === 'number' &&
         Number.isInteger(construction.builderId) &&
         construction.builderId >= 0)) &&
     validFootprint &&
-    (construction.status === 'FOUNDATION' ||
-      construction.status === 'UNDER_CONSTRUCTION' ||
-      construction.status === 'COMPLETED') &&
+    BUILDING_STATUSES.includes(construction.status as ConstructionStatus) &&
     isOptionalNonNegativeInteger(construction.progressTicks) &&
     isOptionalNonNegativeInteger(construction.totalTicks) &&
     typeof construction.progressTicks === 'number' &&
@@ -132,7 +137,6 @@ function isSnapshotMineralNode(value: unknown): boolean {
   return typeof remaining === 'number' && Number.isInteger(remaining) && remaining >= 0
 }
 
-const KINDS: readonly string[] = ['pawn', 'warrior', 'archer']
 const ORDER_STATES: readonly string[] = ['idle', 'moving', 'attacking', 'hold', 'patrol', 'attack_move']
 const ECONOMY_PHASES: readonly string[] = ['to_node', 'gathering', 'to_base', 'waiting_for_base']
 
@@ -196,10 +200,10 @@ function isSnapshotUnit(value: unknown): boolean {
   if (typeof owner !== 'number' || !Number.isInteger(owner)) {
     return false
   }
-  if (owner < 0 || owner > 3) {
+  if (!isPlayerId(owner)) {
     return false
   }
-  if (unit.kind !== undefined && !KINDS.includes(String(unit.kind))) {
+  if (unit.kind !== undefined && !UNIT_KINDS.includes(unit.kind as UnitKind)) {
     return false
   }
   if (!isOptionalNonNegativeInteger(unit.hp) || !isOptionalNonNegativeInteger(unit.maxHp)) {
@@ -222,8 +226,7 @@ function isSnapshotPlayer(value: unknown): boolean {
   return (
     typeof player.id === 'number' &&
     Number.isInteger(player.id) &&
-    player.id >= 0 &&
-    player.id <= 3 &&
+    isPlayerId(player.id) &&
     typeof player.defeated === 'boolean' &&
     typeof player.gold === 'number' &&
     Number.isInteger(player.gold)
@@ -251,9 +254,7 @@ function isSimulationEvent(value: unknown): boolean {
   if (type === 'unitDied') {
     return (
       Number.isInteger(event.entityId) &&
-      typeof event.owner === 'number' &&
-      event.owner >= 0 &&
-      event.owner <= 3 &&
+      isPlayerId(event.owner) &&
       (event.killerId === null || Number.isInteger(event.killerId))
     )
   }

@@ -1,6 +1,5 @@
-import type { MapDefinition } from '@rts/game-data'
-import type { ConstructionStatus, OrderState, SnapshotEconomy } from '@rts/protocol'
-import type { PlayerId, SimulationEvent, UnitKind } from '@rts/shared'
+import type { OrderState, SnapshotBuilding, SnapshotEconomy } from '@rts/protocol'
+import type { MapDefinition, PlayerId, SimulationEvent, UnitKind } from '@rts/shared'
 import type { PointData } from 'pixi.js'
 
 export type { UnitKind } from '@rts/shared'
@@ -27,18 +26,7 @@ export interface RenderPlayer {
   readonly gold: number
 }
 
-export interface RenderBuilding {
-  readonly id: number
-  readonly buildingType: 'BASE' | 'BARRACKS'
-  readonly x: number
-  readonly y: number
-  readonly owner: number
-  readonly builderId?: number | null
-  readonly footprint: { readonly width: number; readonly height: number }
-  readonly status: ConstructionStatus
-  readonly progressTicks: number
-  readonly totalTicks: number
-}
+export type RenderBuilding = SnapshotBuilding
 
 export interface RenderMineralNode {
   readonly id: number

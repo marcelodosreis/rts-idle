@@ -1,3 +1,4 @@
+import { durationMsToFps, fpsToPixiAnimationSpeed } from '@rts/renderer'
 import { AnimatedSprite, type BLEND_MODES, type Container, type Texture, type Ticker } from 'pixi.js'
 
 /** Common player contract the sections drive via the global fps/pause controls. */
@@ -43,11 +44,11 @@ export class StripPlayer {
   private fps: number
 
   constructor(options: StripPlayerOptions) {
-    this.fps = options.fps ?? Math.round(1000 / (options.durationMs ?? 100))
+    this.fps = options.fps ?? Math.round(durationMsToFps(options.durationMs ?? 100))
     this.loop = options.loop ?? true
     this.sprite = new AnimatedSprite([...options.frames], false)
     this.sprite.anchor.set(options.anchorX ?? 0.5, options.anchorY ?? 0.5)
-    this.sprite.animationSpeed = this.fps / 60
+    this.sprite.animationSpeed = fpsToPixiAnimationSpeed(this.fps)
     this.sprite.loop = this.loop
     this.sprite.play()
     if (options.blend !== undefined) {
@@ -66,7 +67,7 @@ export class StripPlayer {
   /** Sets the play speed in absolute frames per second. */
   setFps(fps: number): void {
     this.fps = fps
-    this.sprite.animationSpeed = fps / 60
+    this.sprite.animationSpeed = fpsToPixiAnimationSpeed(fps)
   }
 
   get currentFps(): number {

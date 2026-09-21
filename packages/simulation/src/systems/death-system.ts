@@ -1,4 +1,5 @@
 import { Health, Orders, Owner } from '../ecs/components.js'
+import { setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
 
 /**
@@ -15,9 +16,9 @@ function clearOrdersTargeting(state: GameState, deadId: number): void {
     }
     const remaining = queue.filter((order) => !(order.type === 'ATTACK' && order.targetId === deadId))
     if (remaining.length === 0) {
-      orders.delete(id)
+      setOrders(state, id, [])
     } else if (remaining.length !== queue.length) {
-      orders.set(id, { queue: remaining })
+      setOrders(state, id, remaining)
     }
   }
 }

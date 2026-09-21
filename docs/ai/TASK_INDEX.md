@@ -2,8 +2,29 @@
 
 > Compact index of work. Each task is a small, verifiable unit.
 > Full details in task packets. Status: pending / in-progress / done.
+> Completed packets are archived in `docs/tasks/done/`; active packets remain in `docs/tasks/`.
 
 ## Phase 2 — Economy and Production
+
+## Concept Authority
+
+| ID | Title | Status | Dependencies | Packages | Validation |
+|----|-------|--------|--------------|----------|------------|
+| AUTH-005A | Bootstrap consolidation | done | — | protocol, server | contracts, integration |
+| AUTH-005 | Match bootstrap lifecycle | done | AUTH-005A | protocol, server | contracts, integration |
+| AUTH-006 | Single normalized map | done | AUTH-005 | server, simulation, web | integration, simulation, e2e |
+| AUTH-007 | Web dependency authority | done | AUTH-006 | web, renderer | architecture |
+| AUTH-008 | Configured HUD catalogs | done | AUTH-007 | protocol, server, web | e2e |
+| AUTH-009 | Snapshot building projection | done | AUTH-008 | protocol, renderer, web | unit |
+| AUTH-010 | Command admission | done | — | simulation | simulation, orders |
+| AUTH-011 | Movement destination authority | done | AUTH-010 | simulation | simulation, orders, determinism |
+| AUTH-012 | Order queue authority | done | AUTH-011 | simulation | simulation, orders, determinism |
+| AUTH-013 | Deterministic predicates | done | AUTH-012 | simulation | simulation, determinism |
+| AUTH-014 | Coordinate authority | done | — | shared, renderer | unit |
+| AUTH-015 | Visual timing and health authority | done | AUTH-014 | renderer, web | unit |
+| AUTH-016 | Metrics locality decision | done | AUTH-015 | docs | lint |
+| AUTH-017 | Legacy authority removal | done | AUTH-013 | protocol, simulation | contracts, simulation, architecture |
+| AUTH-018 | Authority closure audit | done | AUTH-005–017 | docs, quality | verify, browser |
 
 | ID | Title | Status | Dependencies | Packages | Validation |
 |----|-------|--------|-------------|----------|------------|
@@ -70,7 +91,7 @@
 
 ## Level Editor Initiative
 
-Spec: `docs/specs/SPEC-level-editor.md`. Plan: `tasks/level-editor-plan.md`.
+Spec: `docs/specs/SPEC-level-editor.md`. Completed plan: `docs/tasks/done/level-editor-plan.md`.
 
 | ID | Title | Status | Dependencies | Packages | Validation |
 |----|-------|--------|-------------|----------|------------|

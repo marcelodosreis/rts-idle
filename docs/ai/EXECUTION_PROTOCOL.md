@@ -234,7 +234,7 @@ Do NOT produce large essays. Keep reports under 30 lines.
 | Update spec | Behavior becomes a stable contract depended on by multiple systems |
 | Write postmortem | Every bug or malfunction; follow the mandatory Bug Response Protocol in `AGENTS.md` |
 | Update CURRENT_STATE.md | Milestone boundary or significant state change |
-| Update tasks/todo.md | Task completed or new task identified |
+| Update docs/tasks/todo.md | Task completed or new task identified |
 
 Do NOT create documentation for:
 

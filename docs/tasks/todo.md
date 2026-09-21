@@ -1,6 +1,8 @@
 # Task List — Browser RTS
 
 Master plan: `docs/master-plan.md`. Specs: `docs/specs/`.
+Task packet convention: completed packets are archived in [`docs/tasks/done/`](done/);
+active and pending packets remain here. See [`docs/tasks/README.md`](README.md).
 
 ## Phase 0 — Foundation and spikes
 
@@ -38,7 +40,7 @@ Master plan: `docs/master-plan.md`. Specs: `docs/specs/`.
 - [x] Performance matrix executed
 - [x] Tick rate decided (ADR-009)
 
-## Phase 1 — Simulation core (execution plan: `tasks/VS-01-plan.md`, master plan §23.2)
+## Phase 1 — Simulation core (execution plan: `docs/tasks/done/VS-01-plan.md`, master plan §23.2)
 
 ### Sprint 0 — Docs and coordination
 - [x] C0 master-plan + todo synced (visual parallel track §23.2)
@@ -101,7 +103,8 @@ Master plan: `docs/master-plan.md`. Specs: `docs/specs/`.
 
 ## Phase 2 — Economy and production
 
-Execution plan: `tasks/VS-01-plan.md`. Latest completed task packet: `tasks/BUILD-003.md`.
+Execution plan: `docs/tasks/done/VS-01-plan.md`. Latest completed task packet:
+`docs/tasks/done/BUILD-003.md`.
 
 ### VS-01 — Economy v0 (P2.01–P2.02)
 
@@ -176,6 +179,26 @@ Execution plan: `tasks/VS-01-plan.md`. Latest completed task packet: `tasks/BUIL
 - [ ] P9.01–P9.07 (see `docs/master-plan.md`)
 
 ## Quality Hardening
+
+## Concept Authority
+
+| Packet | Status | Dependencies | Packages | Validation |
+|--------|--------|--------------|----------|------------|
+| AUTH-005A | done | — | protocol, server | contracts, integration |
+| AUTH-005 | done | AUTH-005A | protocol, server | contracts, integration |
+| AUTH-006 | done | AUTH-005 | server, simulation, web | integration, simulation, e2e |
+| AUTH-007 | done | AUTH-006 | web, renderer, architecture | architecture |
+| AUTH-008 | done | AUTH-007 | protocol, server, web | e2e |
+| AUTH-009 | done | AUTH-008 | protocol, renderer, web | unit |
+| AUTH-010 | done | — | simulation | simulation, orders |
+| AUTH-011 | done | AUTH-010 | simulation | simulation, orders, determinism |
+| AUTH-012 | done | AUTH-011 | simulation | simulation, orders, determinism |
+| AUTH-013 | done | AUTH-012 | simulation | simulation, determinism |
+| AUTH-014 | done | — | shared, renderer | unit |
+| AUTH-015 | done | AUTH-014 | renderer, web | unit |
+| AUTH-016 | done | AUTH-015 | docs | lint |
+| AUTH-017 | done | AUTH-013 | protocol, simulation | contracts, simulation, architecture |
+| AUTH-018 | done | AUTH-005–017 | docs, quality | verify, browser |
 
 ### Fundação
 - [ ] QUAL-000 Spec + ADR

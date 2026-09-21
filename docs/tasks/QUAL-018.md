@@ -10,8 +10,8 @@ Create resumable board, task packets, tracking guard, and update bug response pr
 
 ## Scope
 
-- `tasks/todo.md` — Quality Hardening section
-- `tasks/QUAL-*.md` — 19 task packets
+- `docs/tasks/todo.md` — Quality Hardening section
+- `docs/tasks/QUAL-*.md` — 19 task packets
 - `tests/unit/quality-tracking.test.ts` — tracking guard
 - `AGENTS.md` — Bug Response Protocol update
 - `.opencode/rules/common/testing.md` — anti-duplication rule

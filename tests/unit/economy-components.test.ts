@@ -1,6 +1,6 @@
 import { START_ENTITY_ID } from '@rts/shared'
 import {
-  Base,
+  Building,
   Cargo,
   createSimulation,
   createWorld,
@@ -18,7 +18,14 @@ describe('economy ECS state', () => {
     world.createEntity(START_ENTITY_ID)
     world.store(Position).set(START_ENTITY_ID, { x: 100, y: 200 })
     world.store(MineralNode).set(START_ENTITY_ID, { remaining: 37 })
-    world.store(Base).set(START_ENTITY_ID, {})
+    world.store(Building).set(START_ENTITY_ID, {
+      buildingType: 'BASE',
+      status: 'COMPLETED',
+      progressTicks: 1,
+      totalTicks: 1,
+      builderId: null,
+      footprint: { x: 0, y: 0, width: 2, height: 2 }
+    })
     world.store(Cargo).set(START_ENTITY_ID, { amount: 4, capacity: 10 })
     world.store(Orders).set(START_ENTITY_ID, {
       queue: [
@@ -40,7 +47,7 @@ describe('economy ECS state', () => {
     const restored = simulationFromSnapshot(simulation.exportSnapshot()).inspectState().world
 
     expect(restored.store(MineralNode).get(START_ENTITY_ID)).toEqual({ remaining: 37 })
-    expect(restored.store(Base).get(START_ENTITY_ID)).toMatchObject({ buildingType: 'BASE', status: 'COMPLETED' })
+    expect(restored.store(Building).get(START_ENTITY_ID)).toMatchObject({ buildingType: 'BASE', status: 'COMPLETED' })
     expect(restored.store(Cargo).get(START_ENTITY_ID)).toEqual({ amount: 4, capacity: 10 })
     expect(restored.store(Orders).get(START_ENTITY_ID)?.queue).toEqual([
       {
@@ -57,13 +64,20 @@ describe('economy ECS state', () => {
     const world = createWorld()
     world.createEntity(START_ENTITY_ID)
     world.store(MineralNode).set(START_ENTITY_ID, { remaining: 3_000 })
-    world.store(Base).set(START_ENTITY_ID, {})
+    world.store(Building).set(START_ENTITY_ID, {
+      buildingType: 'BASE',
+      status: 'COMPLETED',
+      progressTicks: 1,
+      totalTicks: 1,
+      builderId: null,
+      footprint: { x: 0, y: 0, width: 2, height: 2 }
+    })
     world.store(Cargo).set(START_ENTITY_ID, { amount: 10, capacity: 10 })
 
     world.removeEntity(START_ENTITY_ID)
 
     expect(world.store(MineralNode).has(START_ENTITY_ID)).toBe(false)
-    expect(world.store(Base).has(START_ENTITY_ID)).toBe(false)
+    expect(world.store(Building).has(START_ENTITY_ID)).toBe(false)
     expect(world.store(Cargo).has(START_ENTITY_ID)).toBe(false)
   })
 })

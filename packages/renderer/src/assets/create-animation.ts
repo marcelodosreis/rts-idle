@@ -1,5 +1,6 @@
 import type { AssetEntry } from '@rts/shared'
 import { AnimatedSprite, type Texture } from 'pixi.js'
+import { durationMsToPixiAnimationSpeed } from '../visual-timing.js'
 
 /**
  * Builds an `AnimatedSprite` from sliced frame textures using the manifest
@@ -13,6 +14,6 @@ export function createAnimation(entry: AssetEntry, textures: Texture[]): Animate
   // animation does not depend on Pixi's shared ticker running.
   const sprite = new AnimatedSprite(textures, false)
   sprite.anchor.set(entry.anchorX, entry.anchorY)
-  sprite.animationSpeed = 1000 / (entry.duration ?? 100) / 60
+  sprite.animationSpeed = durationMsToPixiAnimationSpeed(entry.duration ?? 100)
   return sprite
 }

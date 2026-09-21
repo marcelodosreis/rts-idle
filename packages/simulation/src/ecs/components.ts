@@ -2,8 +2,6 @@ import type { BuildingType, Fixed, PlayerId, UnitKind } from '@rts/shared'
 import type { CanonicalReader } from '../canonical/reader.js'
 import type { CanonicalWriter } from '../canonical/writer.js'
 import type { Order } from '../contracts/orders.js'
-import type { BuildingData } from './building-component.js'
-import { Building } from './building-component.js'
 
 export interface ComponentType<T> {
   readonly name: string
@@ -332,15 +330,6 @@ export const MineralNode: ComponentType<MineralNodeData> = {
     return { remaining: reader.readI32() }
   }
 }
-
-/** @deprecated Compatibility aliases; the registered component is Building. */
-export type BaseData = BuildingData | Record<string, never>
-/** @deprecated Compatibility alias; use Building. */
-export const Base = Building as unknown as ComponentType<BaseData>
-/** @deprecated Compatibility alias; the registered component is Building. */
-export type BarracksData = BuildingData | Record<string, never>
-/** @deprecated Compatibility alias; use Building. */
-export const Barracks = Building as unknown as ComponentType<BarracksData>
 
 export interface CargoData {
   readonly amount: number

@@ -1,6 +1,6 @@
 import { START_ENTITY_ID, tilesToFixed } from '@rts/shared'
 import {
-  Base,
+  Building,
   Cargo,
   Combat,
   createSimulation,
@@ -34,7 +34,14 @@ function economyScenario(options: EconomyScenarioOptions = {}) {
     world.createEntity(base)
     world.store(Position).set(base, { x: 0, y: 0 })
     world.store(Owner).set(base, { owner: 0 })
-    world.store(Base).set(base, {})
+    world.store(Building).set(base, {
+      buildingType: 'BASE',
+      status: 'COMPLETED',
+      progressTicks: 1,
+      totalTicks: 1,
+      builderId: null,
+      footprint: { x: 0, y: 0, width: 2, height: 2 }
+    })
   }
   for (const worker of workers) {
     world.createEntity(worker)
@@ -46,6 +53,12 @@ function economyScenario(options: EconomyScenarioOptions = {}) {
   world.createEntity(node)
   world.store(Position).set(node, { x: options.nodeX ?? tilesToFixed(1), y: 0 })
   world.store(MineralNode).set(node, { remaining: options.nodeMinerals ?? 3_000 })
+  // Keep economy command fixtures in RUNNING phase after the common command
+  // admission rule was introduced. This entity has no economy/combat role.
+  const opponent = 100_000
+  world.createEntity(opponent)
+  world.store(Position).set(opponent, { x: tilesToFixed(31), y: tilesToFixed(31) })
+  world.store(Owner).set(opponent, { owner: 1 })
   return { world, base, workers, node }
 }
 
@@ -415,7 +428,14 @@ describe('Economy v0 gathering loop', () => {
     scenario.world.createEntity(secondBase)
     scenario.world.store(Position).set(secondBase, { x: tilesToFixed(2), y: 0 })
     scenario.world.store(Owner).set(secondBase, { owner: 0 })
-    scenario.world.store(Base).set(secondBase, {})
+    scenario.world.store(Building).set(secondBase, {
+      buildingType: 'BASE',
+      status: 'COMPLETED',
+      progressTicks: 1,
+      totalTicks: 1,
+      builderId: null,
+      footprint: { x: 2, y: 0, width: 2, height: 2 }
+    })
     scenario.world.store(Position).set(worker, { x: tilesToFixed(1), y: 0 })
     scenario.world.store(Cargo).set(worker, { amount: 9, capacity: 10 })
     const simulation = createSimulation({

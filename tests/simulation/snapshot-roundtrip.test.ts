@@ -1,6 +1,6 @@
 import { START_ENTITY_ID, tilesToFixed } from '@rts/shared'
 import {
-  Base,
+  Building,
   Cargo,
   createSimulation,
   createWorld,
@@ -66,7 +66,14 @@ describe('state serialization roundtrip', () => {
       world.createEntity(base)
       world.store(Position).set(base, { x: 0, y: 0 })
       world.store(Owner).set(base, { owner: 0 })
-      world.store(Base).set(base, {})
+      world.store(Building).set(base, {
+        buildingType: 'BASE',
+        status: 'COMPLETED',
+        progressTicks: 1,
+        totalTicks: 1,
+        builderId: null,
+        footprint: { x: 0, y: 0, width: 2, height: 2 }
+      })
       world.createEntity(worker)
       world.store(Position).set(worker, { x: 0, y: 0 })
       world.store(Owner).set(worker, { owner: 0 })

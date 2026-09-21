@@ -1,4 +1,4 @@
-import { type MapDefinition, validateMapDefinition } from '@rts/game-data'
+import { type MapDefinition, normalizeMapDefinition } from '@rts/shared'
 
 /** LocalStorage key holding the map the editor hands to the game. */
 export const PLAYTEST_STORAGE_KEY = 'rts.playtestMap'
@@ -25,8 +25,8 @@ export function readPlaytestMap(search: string, storage: StorageReader): MapDefi
     return null
   }
   try {
-    const result = validateMapDefinition(JSON.parse(raw))
-    return result.ok && result.map !== undefined ? result.map : null
+    const result = normalizeMapDefinition(JSON.parse(raw))
+    return result.ok ? result.map : null
   } catch {
     return null
   }

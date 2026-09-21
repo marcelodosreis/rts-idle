@@ -19,7 +19,7 @@ pnpm run build
 
 ## Project Structure
 
-See `docs/master-plan.md` (section 5). Foundation sets up `apps/`, `packages/`, `tools/`, `tests/`, `docs/`, and `tasks/` at the root.
+See `docs/master-plan.md` (section 5). Foundation sets up `apps/`, `packages/`, `tools/`, `tests/`, and `docs/tasks/`.
 
 ## Code Style
 

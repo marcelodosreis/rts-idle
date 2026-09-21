@@ -1,4 +1,4 @@
-import type { DressingKind } from '@rts/game-data'
+import type { DressingKind } from '@rts/shared'
 import type { AutoTileTerrain } from './terrain-autotile.js'
 
 /**
@@ -11,7 +11,7 @@ import type { AutoTileTerrain } from './terrain-autotile.js'
 
 // The kind union lives in `game-data` (content-as-data). Re-exported here so
 // `@rts/renderer`'s public surface is unchanged.
-export type { DressingKind } from '@rts/game-data'
+export type { DressingKind } from '@rts/shared'
 
 export interface DressingItem {
   readonly x: number

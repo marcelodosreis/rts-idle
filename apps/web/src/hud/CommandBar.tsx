@@ -1,6 +1,7 @@
+import type { BuildCatalogEntry } from '@rts/protocol'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import type { CommandMode } from './useCommandModes'
+import { buildingTypeForMode, type CommandMode } from './useCommandModes'
 
 interface CommandBarProps {
   readonly disabled: boolean
@@ -10,8 +11,9 @@ interface CommandBarProps {
   readonly onSurrender: () => void
   readonly workerSelected: boolean
   readonly minerals: number
-  readonly onArm: (mode: 'patrol' | 'attack_move' | 'attack' | 'build_base' | 'build_barracks') => void
+  readonly onArm: (mode: Exclude<CommandMode, 'idle'>) => void
   readonly buildHint: string | null
+  readonly buildings: readonly BuildCatalogEntry[]
 }
 
 function ArmButton({
@@ -64,7 +66,8 @@ export function CommandBar({
   onHold,
   onSurrender,
   onArm,
-  buildHint
+  buildHint,
+  buildings
 }: CommandBarProps) {
   return (
     <div className="flex flex-wrap items-stretch gap-2">
@@ -112,20 +115,17 @@ export function CommandBar({
         </Button>
       </CommandGroup>
       <CommandGroup label="Construction">
-        <ArmButton
-          label="Base · 100"
-          active={mode === 'build_base'}
-          disabled={!workerSelected || minerals < 100}
-          onClick={() => onArm('build_base')}
-        />
-        <ArmButton
-          label="Barracks · 150"
-          active={mode === 'build_barracks'}
-          disabled={!workerSelected || minerals < 150}
-          onClick={() => onArm('build_barracks')}
-        />
+        {buildings.map((building) => (
+          <ArmButton
+            key={building.type}
+            label={`${building.label} · ${building.costMinerals}`}
+            active={buildingTypeForMode(mode) === building.type}
+            disabled={!workerSelected || minerals < building.costMinerals}
+            onClick={() => onArm({ kind: 'build', buildingType: building.type })}
+          />
+        ))}
       </CommandGroup>
-      {mode !== 'none' ? (
+      {mode !== 'idle' ? (
         <div
           className={cn(
             'flex w-36 shrink-0 items-center justify-center rounded-xl border border-primary/60 bg-primary/10 p-2 text-center text-xs text-primary transition-opacity',
@@ -133,7 +133,7 @@ export function CommandBar({
           )}
           aria-live="polite"
         >
-          {mode === 'build_base' || mode === 'build_barracks'
+          {buildingTypeForMode(mode) !== null
             ? (buildHint ?? 'Move over the map to preview a building location.')
             : `Pick a target: ${mode}.`}
         </div>

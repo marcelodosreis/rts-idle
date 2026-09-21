@@ -1,24 +1,41 @@
-import { isCommandMessage, isErrorMessage, isMoveMessage, isSnapshotMessage } from '@rts/protocol'
+import { isCommandMessage, isErrorMessage, isMatchConfig, isMatchRequest, isSnapshotMessage } from '@rts/protocol'
 import { describe, expect, it } from 'vitest'
 
-describe('protocol MOVE message', () => {
-  it('accepts a valid MOVE message', () => {
-    expect(isMoveMessage({ type: 'MOVE', unitIds: [1, 2], x: 100, y: 200 })).toBe(true)
+describe('match bootstrap messages', () => {
+  const map = { width: 2, height: 2, tiles: ['land', 'land', 'land', 'land'] }
+  it('accepts a valid request and config', () => {
+    expect(
+      isMatchRequest({
+        type: 'match_request',
+        scenarioId: '6v6',
+        aggression: 'offensive',
+        map: { source: 'local', definition: map }
+      })
+    ).toBe(true)
+    expect(
+      isMatchConfig({
+        type: 'match_config',
+        scenario: { id: '6v6', label: '6v6' },
+        scenarios: [{ id: '6v6', label: '6v6' }],
+        map,
+        buildings: [
+          { type: 'BASE', label: 'Base', footprint: { width: 2, height: 2 }, costMinerals: 100, constructionTicks: 100 }
+        ]
+      })
+    ).toBe(true)
   })
-
-  it('accepts an empty unit list at the transport layer (the simulation rejects it)', () => {
-    expect(isMoveMessage({ type: 'MOVE', unitIds: [], x: 0, y: 0 })).toBe(true)
-  })
-
-  it('rejects non-conforming payloads', () => {
-    expect(isMoveMessage(null)).toBe(false)
-    expect(isMoveMessage('MOVE')).toBe(false)
-    expect(isMoveMessage({ type: 'ATTACK', unitIds: [1], x: 0, y: 0 })).toBe(false)
-    expect(isMoveMessage({ type: 'MOVE', x: 0, y: 0 })).toBe(false)
-    expect(isMoveMessage({ type: 'MOVE', unitIds: '1', x: 0, y: 0 })).toBe(false)
-    expect(isMoveMessage({ type: 'MOVE', unitIds: [1.5], x: 0, y: 0 })).toBe(false)
-    expect(isMoveMessage({ type: 'MOVE', unitIds: [1], x: 0.5, y: 0 })).toBe(false)
-    expect(isMoveMessage({ type: 'MOVE', unitIds: [1], x: 0, y: '0' })).toBe(false)
+  it('rejects malformed bootstrap payloads', () => {
+    expect(
+      isMatchRequest({ type: 'match_request', scenarioId: '', aggression: 'offensive', map: { source: 'catalog' } })
+    ).toBe(false)
+    expect(
+      isMatchRequest({
+        type: 'match_request',
+        scenarioId: '6v6',
+        aggression: 'offensive',
+        map: { source: 'local', definition: { width: 999, height: 1, tiles: [] } }
+      })
+    ).toBe(false)
   })
 })
 
@@ -265,10 +282,22 @@ describe('protocol error message', () => {
     expect(isErrorMessage({ type: 'error', message: 'boom' })).toBe(true)
   })
 
+  it('accepts an error message with an optional scenario catalog', () => {
+    expect(
+      isErrorMessage({
+        type: 'error',
+        message: 'scenario spawn is outside or on invalid terrain',
+        scenarios: [{ id: '6v6', label: '6v6' }]
+      })
+    ).toBe(true)
+  })
+
   it('rejects non-conforming payloads', () => {
     expect(isErrorMessage(null)).toBe(false)
     expect(isErrorMessage({ type: 'error' })).toBe(false)
     expect(isErrorMessage({ type: 'error', message: 42 })).toBe(false)
+    expect(isErrorMessage({ type: 'error', message: 'boom', scenarios: [{ id: '', label: '6v6' }] })).toBe(false)
+    expect(isErrorMessage({ type: 'error', message: 'boom', scenarios: '6v6' })).toBe(false)
     expect(isErrorMessage({ type: 'snapshot', message: 'x' })).toBe(false)
   })
 })

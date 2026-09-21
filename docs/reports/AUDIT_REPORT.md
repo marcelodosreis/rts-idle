@@ -662,7 +662,7 @@ O `@rts/ai` package é vazio (`export const version = '0.1.0'`).
 | docs/specs/ (10 specs) | — | Completo |
 | docs/postmortems/ (5 postmortems) | — | Bug Response Protocol seguido |
 | docs/testing/manual-smoke.md | — | Existe |
-| tasks/todo.md | — | Existe |
+| docs/tasks/todo.md | — | Existe |
 | AGENTS.md | — | Atualizado |
 
 ### Documentação Desatualizada ou Contraditória

@@ -16,7 +16,6 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@rts/game-data": "workspace:*",
     "@rts/protocol": "workspace:*",
     "@rts/shared": "workspace:*",
     "pixi.js": "^8.20.1",

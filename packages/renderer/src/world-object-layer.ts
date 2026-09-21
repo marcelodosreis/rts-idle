@@ -1,4 +1,3 @@
-import { BUILDING_DEFINITIONS } from '@rts/game-data'
 import { FIXED_SCALE, fixedToRenderPixels } from '@rts/shared'
 import { Graphics } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
@@ -28,24 +27,8 @@ export class WorldObjectLayer {
     this.viewport = viewport
   }
 
-  present(
-    buildings: readonly RenderBuilding[],
-    mineralNodes: readonly RenderMineralNode[],
-    legacyBuildings: readonly RenderBuilding[] = []
-  ): void {
-    const normalizedBuildings = [...buildings, ...legacyBuildings].map((building) =>
-      building.buildingType === undefined
-        ? {
-            ...building,
-            buildingType: 'BASE' as const,
-            status: 'COMPLETED' as const,
-            progressTicks: 1,
-            totalTicks: 1,
-            builderId: null,
-            footprint: BUILDING_DEFINITIONS.BASE.footprint
-          }
-        : building
-    )
+  present(buildings: readonly RenderBuilding[], mineralNodes: readonly RenderMineralNode[]): void {
+    const normalizedBuildings = buildings
     const seenBuildings = new Set<number>()
     this.constructionHitboxes.clear()
     for (const building of normalizedBuildings) {
@@ -58,7 +41,7 @@ export class WorldObjectLayer {
         this.buildings.set(building.id, graphic)
       }
       const style = buildingVisualStyle(building.buildingType, building.status, building.owner)
-      const footprint = BUILDING_DEFINITIONS[building.buildingType].footprint
+      const footprint = building.footprint
       if (style.kind === 'base') {
         this.drawBase(graphic, building.owner, footprint)
       } else {
@@ -119,7 +102,11 @@ export class WorldObjectLayer {
     this.renderPreview()
   }
 
-  private drawBase(graphic: Graphics, owner: number, footprint = BUILDING_DEFINITIONS.BASE.footprint): void {
+  private drawBase(
+    graphic: Graphics,
+    owner: number,
+    footprint: { readonly width: number; readonly height: number }
+  ): void {
     // Building visuals share the top-left footprint anchor used by previews and foundations.
     const width = footprint.width * pixelsPerTile
     const height = footprint.height * pixelsPerTile
@@ -194,11 +181,6 @@ export class WorldObjectLayer {
       }
     }
     return topmost
-  }
-
-  /** @deprecated Use buildingAt. */
-  constructionAt(x: number, y: number): number | null {
-    return this.buildingAt(x, y)
   }
 
   private removeMissing(graphics: Map<number, Graphics>, seen: ReadonlySet<number>): void {

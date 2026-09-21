@@ -372,10 +372,10 @@ rts-idle/
 ├── docs/
 │   ├── adr/
 │   ├── specs/          ← CAPABILITIES.md + SPEC-<module-id>.md
+│   ├── tasks/
+│   │   ├── plan.md
+│   │   └── todo.md
 │   └── [technical documents]
-├── tasks/
-│   ├── plan.md
-│   └── todo.md
 ├── package.json
 ├── pnpm-workspace.yaml
 ├── pnpm-lock.yaml
@@ -2215,7 +2215,7 @@ Frozen contracts:
 
 Deliverables live in `docs/proposals/visual-feedback-layer.md`,
 `docs/assets/capabilities.md` (asset capability inventory), and the task
-checklists in `tasks/todo.md`. Assets are kept out of git until the pack
+checklists in `docs/tasks/todo.md`. Assets are kept out of git until the pack
 license is validated (`.gitignore`: `tmp/`, `apps/web/public/assets/`).
 
 ---
@@ -2587,8 +2587,8 @@ In a later execution, materialize:
 ```text
 docs/specs/CAPABILITIES.md
 docs/specs/SPEC-<module-id>.md
-tasks/plan.md
-tasks/todo.md
+docs/tasks/plan.md
+docs/tasks/todo.md
 docs/adr/*
 ```
 

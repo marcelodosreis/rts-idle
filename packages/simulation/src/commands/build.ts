@@ -3,12 +3,13 @@ import { tilesToFixed } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { CommandRejectedError } from '../contracts/commands.js'
 import { Building } from '../ecs/building-component.js'
-import { Kind, Movement, Orders, Owner, Position } from '../ecs/components.js'
+import { Kind, Orders, Owner, Position } from '../ecs/components.js'
+import { clearMovement, setMovementDestination } from '../movement/destination.js'
+import { clearOrders, setOrders } from '../orders/order-queue.js'
 import type { BuildingFootprint } from '../placement/building-placement.js'
 import { validateBuildingPlacement } from '../placement/building-placement.js'
 import { constructionWorkPoint } from '../placement/construction-work-point.js'
 import type { GameState } from '../state/state.js'
-import { UNIT_SPEED_TILES_PER_SECOND } from './move.js'
 
 function sameFootprint(first: BuildingFootprint, second: BuildingFootprint): boolean {
   return first.x === second.x && first.y === second.y && first.width === second.width && first.height === second.height
@@ -117,8 +118,8 @@ function assignBuilder(state: GameState, buildingId: number, workerId: number, f
   if (current.builderId !== null && current.builderId !== workerId) {
     const previousOrder = state.world.store(Orders).get(current.builderId)?.queue[0]
     if (previousOrder?.type === 'BUILD' && previousOrder.buildingId === buildingId) {
-      state.world.store(Orders).delete(current.builderId)
-      state.world.store(Movement).delete(current.builderId)
+      clearOrders(state, current.builderId)
+      clearMovement(state, current.builderId)
     }
   }
   for (const id of state.world.aliveIds()) {
@@ -134,18 +135,10 @@ function assignBuilder(state: GameState, buildingId: number, workerId: number, f
   }
   const workPoint = constructionWorkPoint(workerPosition, footprint, state.mapBounds)
   buildings.set(buildingId, { ...current, builderId: workerId, footprint })
-  state.world.store(Orders).set(workerId, {
-    queue: [{ type: 'BUILD', buildingId, buildingType: current.buildingType, workPoint }]
-  })
+  setOrders(state, workerId, [{ type: 'BUILD', buildingId, buildingType: current.buildingType, workPoint }])
   if (workerPosition.x === workPoint.x && workerPosition.y === workPoint.y) {
-    state.world.store(Movement).delete(workerId)
+    clearMovement(state, workerId)
   } else {
-    state.world.store(Movement).set(workerId, {
-      speedTilesPerSecond: UNIT_SPEED_TILES_PER_SECOND,
-      destX: workPoint.x,
-      destY: workPoint.y,
-      remainderX: 0,
-      remainderY: 0
-    })
+    setMovementDestination(state, workerId, workPoint.x, workPoint.y)
   }
 }

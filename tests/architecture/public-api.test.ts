@@ -10,11 +10,11 @@ import { describe, expect, it } from 'vitest'
 //
 // @rts/shared types: Fixed, GridPosition, EntityId, PlayerId, RngState, RngResult, RngIntResult,
 //   SimulationEvent, CommandIntent, MovePayload, GatherPayload, BuildPayload, BuildingType, UnitKind
-// @rts/protocol types: MoveMessage, CommandMessage, SnapshotMessage, SnapshotUnit, SnapshotBase,
+// @rts/protocol types: MatchRequest, MatchConfig, CommandMessage, SnapshotMessage, SnapshotUnit,
 //   SnapshotMineralNode, SnapshotPlayer, OrderState, ErrorMessage
 // @rts/simulation types: ScheduledCommand, CommandErrorCode, Order, RulesIdentity, TickResult,
 //   SimulationOptions, ComponentType, PositionData, OwnerData, MovementData, OrdersData, HealthData,
-//   CombatData, KindData, MineralNodeData, BaseData, BarracksData, ConstructionData, CargoData, GatherPhase, SimulationHost,
+//   CombatData, KindData, MineralNodeData, BuildingData, CargoData, GatherPhase, SimulationHost,
 //   SimulationSnapshot, FormationOffset, GameState, PlayerState, UnitCombatStats
 // @rts/renderer types: GameRenderer, RenderFrame, RenderUnit, RenderBase, RenderMineralNode,
 //   RenderPlayer, RendererOptions, RendererCallbacks
@@ -48,7 +48,10 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'UINT32_MAX'
     ]
   ],
-  ['protocol', ['version', 'isCommandMessage', 'isMoveMessage', 'isSnapshotMessage', 'isErrorMessage']],
+  [
+    'protocol',
+    ['version', 'isCommandMessage', 'isMatchRequest', 'isMatchConfig', 'isSnapshotMessage', 'isErrorMessage']
+  ],
   [
     'simulation',
     [
@@ -66,8 +69,6 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'Kind',
       'MineralNode',
       'Building',
-      'Base',
-      'Construction',
       'Cargo',
       'ComponentStore',
       'World',
@@ -125,4 +126,10 @@ describe('public API surface', () => {
       }
     })
   }
+
+  it('does not expose removed building compatibility aliases', () => {
+    for (const legacyName of ['Base', 'Barracks', 'Construction'] as const) {
+      expect(legacyName in simulation, `@rts/simulation must not expose ${legacyName}`).toBe(false)
+    }
+  })
 })

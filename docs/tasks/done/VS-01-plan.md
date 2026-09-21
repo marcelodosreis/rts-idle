@@ -9,7 +9,7 @@ and repeats while minerals remain. The implementation stays inside the current
 ECS/command/system architecture and deliberately excludes UI, pathfinding,
 construction, production, supply, and generalized resource abstractions.
 
-Task packet: `tasks/VS-01.md`.
+Task packet: `docs/tasks/VS-01.md`.
 
 ## Architecture Decisions
 
@@ -147,7 +147,7 @@ repository completion gate
   - Acceptance: public API assertions include economy components/types; command
     and simulation docs describe Economy v0; task status matches reality.
   - Files: `tests/architecture/public-api.test.ts`, `docs/commands.md`,
-    `docs/simulation.md`, `tasks/todo.md`.
+    `docs/simulation.md`, `docs/tasks/todo.md`.
   - Verify: `pnpm run test:architecture` and documentation self-audit.
 
 ### Checkpoint — Completion

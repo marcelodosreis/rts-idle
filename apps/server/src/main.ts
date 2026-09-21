@@ -1,8 +1,9 @@
 import { createServer } from 'node:http'
-import { type ErrorMessage, isCommandMessage, isMoveMessage, type SnapshotMessage } from '@rts/protocol'
+import { type ErrorMessage, isCommandMessage, isMatchRequest, type SnapshotMessage } from '@rts/protocol'
 import type { CommandIntent, SimulationEvent } from '@rts/shared'
 import { WebSocketServer } from 'ws'
-import { createDemoSession } from './demo.js'
+import { bootstrapMatch } from './match-bootstrap.js'
+import type { GameSession } from './sessions/session.js'
 
 const PORT = Number(process.env.PORT ?? 8080)
 const TICK_MS = 50
@@ -19,38 +20,25 @@ const httpServer = createServer((req, res) => {
 
 const wss = new WebSocketServer({ server: httpServer })
 
-/** Reads the `?scenario=` query from the WS upgrade request (defaults to 6v6). */
-function requestedScenario(requestUrl: string | undefined): string | undefined {
-  if (requestUrl === undefined) {
-    return undefined
-  }
-  return new URL(requestUrl, 'http://localhost').searchParams.get('scenario') ?? undefined
-}
-
-/** Reads `?aggression=`; anything other than `passive` is offensive. */
-function requestedAggression(requestUrl: string | undefined): 'offensive' | 'passive' {
-  if (requestUrl === undefined) {
-    return 'offensive'
-  }
-  const value = new URL(requestUrl, 'http://localhost').searchParams.get('aggression')
-  return value === 'passive' ? 'passive' : 'offensive'
-}
-
-wss.on('connection', (ws, request) => {
+wss.on('connection', (ws) => {
   // Each client gets its own isolated match. This mirrors the future
   // rooms architecture and keeps concurrent clients from mutating each
   // other's state (test isolation is a hard requirement).
-  const session = createDemoSession(requestedScenario(request.url), requestedAggression(request.url))
+  let session: GameSession | null = null
+  let timer: ReturnType<typeof setInterval> | null = null
   let sequence = 1
+  let lifecycle: 'awaiting_request' | 'running' | 'closed' = 'awaiting_request'
 
-  const sendError = (message: string): void => {
-    const error: ErrorMessage = { type: 'error', message }
+  const sendError = (error: ErrorMessage): void => {
     if (ws.readyState === ws.OPEN) {
       ws.send(JSON.stringify(error))
     }
   }
 
   const send = (events: readonly SimulationEvent[]): void => {
+    if (session === null) {
+      return
+    }
     const message: SnapshotMessage = {
       type: 'snapshot',
       tick: session.snapshot().tick,
@@ -68,40 +56,65 @@ wss.on('connection', (ws, request) => {
 
   /** Schedules the next command for the demo player (player 0) on the next tick. */
   const schedule = (intent: CommandIntent): void => {
+    if (session === null) {
+      return
+    }
     session.submit(0, [{ tick: session.snapshot().tick + 1, playerId: 0, sequence: sequence++, intent }])
   }
-
-  send([])
-  const timer = setInterval(() => {
-    const result = session.advance()
-    for (const rejection of result.rejected) {
-      sendError(`${rejection.code}: ${rejection.message}`)
-    }
-    send(result.events)
-  }, TICK_MS)
 
   ws.on('message', (raw) => {
     let parsed: unknown
     try {
       parsed = JSON.parse(raw.toString())
     } catch {
-      sendError('invalid JSON')
+      sendError({ type: 'error', message: 'invalid JSON' })
       return
     }
     try {
-      if (isCommandMessage(parsed)) {
+      if (lifecycle === 'closed') {
+        return
+      }
+      if (lifecycle === 'awaiting_request') {
+        if (!isMatchRequest(parsed)) {
+          sendError({ type: 'error', message: 'expected one valid match_request before commands' })
+          return
+        }
+        const result = bootstrapMatch(parsed)
+        if ('error' in result) {
+          sendError(result.error)
+          return
+        }
+        session = result.match.session
+        ws.send(JSON.stringify(result.match.config))
+        send([])
+        lifecycle = 'running'
+        timer = setInterval(() => {
+          if (session === null) {
+            return
+          }
+          const advanceResult = session.advance()
+          for (const rejection of advanceResult.rejected) {
+            sendError({ type: 'error', message: `${rejection.code}: ${rejection.message}` })
+          }
+          send(advanceResult.events)
+        }, TICK_MS)
+      } else if (isMatchRequest(parsed)) {
+        sendError({ type: 'error', message: 'match_request already received' })
+      } else if (isCommandMessage(parsed)) {
         schedule(parsed.intent)
-      } else if (isMoveMessage(parsed)) {
-        // Legacy MOVE transport: keep working for old clients and fixtures.
-        schedule({ type: 'MOVE', payload: { unitIds: parsed.unitIds, x: parsed.x, y: parsed.y } })
+      } else {
+        sendError({ type: 'error', message: 'invalid command message' })
       }
     } catch (error) {
-      sendError(error instanceof Error ? error.message : String(error))
+      sendError({ type: 'error', message: error instanceof Error ? error.message : String(error) })
     }
   })
 
   ws.on('close', () => {
-    clearInterval(timer)
+    lifecycle = 'closed'
+    if (timer !== null) {
+      clearInterval(timer)
+    }
   })
 })
 

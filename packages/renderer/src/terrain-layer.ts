@@ -1,4 +1,4 @@
-import type { MapDefinition } from '@rts/game-data'
+import type { MapDefinition } from '@rts/shared'
 import type { Viewport } from 'pixi-viewport'
 import type { AssetLibrary } from './assets/asset-library.js'
 import { mapToTerrainSceneInput } from './terrain-conversion.js'

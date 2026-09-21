@@ -1,11 +1,11 @@
 import type { ScheduledCommand } from '../contracts/commands.js'
-import { Movement, Orders, Position } from '../ecs/components.js'
 import { formationOffset } from '../formation.js'
+import { setMovementDestination } from '../movement/destination.js'
+import { clearOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
 import { validateIntegerTarget, validateOwnedUnits } from './validate-units.js'
 
-/** Default movement speed for units without authored stats (tiles per second). */
-export const UNIT_SPEED_TILES_PER_SECOND = 4
+export { UNIT_SPEED_TILES_PER_SECOND } from '../movement/destination.js'
 
 /**
  * Applies a MOVE command: distributes the sorted units around the target in a
@@ -22,29 +22,14 @@ export function applyMove(state: GameState, command: ScheduledCommand): void {
   const payload = command.intent.payload
   validateOwnedUnits(state, command, payload.unitIds)
   validateIntegerTarget(command, payload.x, payload.y)
-  const positions = state.world.store(Position)
-  const movements = state.world.store(Movement)
-  const orders = state.world.store(Orders)
   const sorted = [...payload.unitIds].sort((a, b) => a - b)
   sorted.forEach((unitId, index) => {
     // A MOVE replaces any standing order for the unit (order replacement,
     // master plan P1.03).
-    orders.delete(unitId)
+    clearOrders(state, unitId)
     const offset = formationOffset(index)
     const destX = payload.x + offset.dx
     const destY = payload.y + offset.dy
-    const current = positions.get(unitId)
-    // Already at the destination: nothing to move.
-    if (current !== undefined && current.x === destX && current.y === destY) {
-      movements.delete(unitId)
-      return
-    }
-    movements.set(unitId, {
-      speedTilesPerSecond: UNIT_SPEED_TILES_PER_SECOND,
-      destX,
-      destY,
-      remainderX: 0,
-      remainderY: 0
-    })
+    setMovementDestination(state, unitId, destX, destY)
   })
 }

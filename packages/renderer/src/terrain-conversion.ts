@@ -1,4 +1,4 @@
-import type { DecorationPlacement, DressingKind, MapDefinition, StairEntry } from '@rts/game-data'
+import type { DecorationPlacement, DressingKind, MapDefinition, StairEntry } from '@rts/shared'
 import type { AutoTileTerrain } from './terrain-autotile.js'
 import type { ManualDecoration } from './terrain-scene.js'
 

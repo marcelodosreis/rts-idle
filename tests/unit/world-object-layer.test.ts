@@ -31,7 +31,7 @@ function viewportStub(): {
 }
 
 describe('WorldObjectLayer construction anchors', () => {
-  it('uses the catalog footprint for initial, foundation, preview, and completed BASE geometry', () => {
+  it('uses the snapshot footprint for foundation, preview, and completed BASE geometry', () => {
     const viewport = viewportStub()
     const layer = new WorldObjectLayer(viewport as never)
     const baseFootprint = BASE_BUILDING.footprint
@@ -47,7 +47,7 @@ describe('WorldObjectLayer construction anchors', () => {
       totalTicks: 100
     }
 
-    layer.present([], [], [construction])
+    layer.present([construction], [])
     const foundation = viewport.children[0]!
     const foundationPosition = { x: foundation.position.x, y: foundation.position.y }
     expect(foundationPosition).toEqual({ x: 192, y: 128 })
@@ -56,14 +56,8 @@ describe('WorldObjectLayer construction anchors', () => {
     expect(foundationBounds.width).toBeGreaterThanOrEqual(baseFootprint.width * 64)
     expect(foundationBounds.height).toBeGreaterThanOrEqual(baseFootprint.height * 64)
     expect(foundation.getLocalBounds().x).toBeGreaterThanOrEqual(-3)
-    expect(layer.constructionAt(200, 140)).toBe(42)
-    expect(layer.constructionAt(500, 500)).toBeNull()
-
-    layer.present([{ id: 42, x: construction.x, y: construction.y, owner: construction.owner }], [], [])
-    const initial = viewport.children[0]!
-    expect({ x: initial.position.x, y: initial.position.y }).toEqual(foundationPosition)
-    expect(initial.getLocalBounds().width).toBeCloseTo(foundationWidth, 0)
-    expect(initial.getLocalBounds().height).toBeGreaterThanOrEqual(baseFootprint.height * 64)
+    expect(layer.buildingAt(200, 140)).toBe(42)
+    expect(layer.buildingAt(500, 500)).toBeNull()
 
     layer.setBuildPreview({
       x: construction.x,
@@ -78,7 +72,7 @@ describe('WorldObjectLayer construction anchors', () => {
     expect(preview.getLocalBounds().height).toBe(baseFootprint.height * 64 + 4)
 
     layer.setBuildPreview(null)
-    layer.present([], [], [{ ...construction, status: 'COMPLETED', progressTicks: 100 }])
+    layer.present([{ ...construction, status: 'COMPLETED', progressTicks: 100 }], [])
     const completed = viewport.children[0]!
     expect({ x: completed.position.x, y: completed.position.y }).toEqual(foundationPosition)
     expect(completed.getLocalBounds().width).toBeCloseTo(foundationWidth, 0)
@@ -86,12 +80,10 @@ describe('WorldObjectLayer construction anchors', () => {
     expect(completed.getLocalBounds().x).toBeGreaterThanOrEqual(-3)
   })
 
-  it('uses the catalog footprint for Barracks geometry', () => {
+  it('uses the snapshot footprint for Barracks geometry', () => {
     const viewport = viewportStub()
     const layer = new WorldObjectLayer(viewport as never)
     layer.present(
-      [],
-      [],
       [
         {
           id: 7,
@@ -99,12 +91,13 @@ describe('WorldObjectLayer construction anchors', () => {
           x: 0,
           y: 0,
           owner: 0,
-          footprint: { width: 1, height: 1 },
+          footprint: BARRACKS_BUILDING.footprint,
           status: 'COMPLETED',
           progressTicks: 100,
           totalTicks: 100
         }
-      ]
+      ],
+      []
     )
     const barracks = viewport.children[0]!
     expect(barracks.getLocalBounds().width).toBe(BARRACKS_BUILDING.footprint.width * 64 + 4)

@@ -1,5 +1,6 @@
-import { UNIT_SPEED_TILES_PER_SECOND } from '../commands/move.js'
 import { Movement, Orders } from '../ecs/components.js'
+import { setMovementDestination } from '../movement/destination.js'
+import { clearOrders, setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
 
 /**
@@ -19,22 +20,16 @@ export function ordersSystem(state: GameState): void {
     }
     const queue = [...orderData.queue]
     if (queue.length === 0) {
-      orders.delete(id)
+      clearOrders(state, id)
       continue
     }
     const front = queue[0]!
     if (front.type === 'PATROL' && movements.get(id) === undefined) {
       const rotated = [...queue.slice(1), front]
-      orders.set(id, { queue: rotated })
+      setOrders(state, id, rotated)
       const next = rotated[0]!
       if (next.type === 'PATROL') {
-        movements.set(id, {
-          speedTilesPerSecond: UNIT_SPEED_TILES_PER_SECOND,
-          destX: next.x,
-          destY: next.y,
-          remainderX: 0,
-          remainderY: 0
-        })
+        setMovementDestination(state, id, next.x, next.y)
       }
     }
   }
