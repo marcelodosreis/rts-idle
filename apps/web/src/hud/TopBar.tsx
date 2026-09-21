@@ -1,11 +1,14 @@
 import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
+import type { MessageLogEntry } from '../screens/useMatchSession'
 import type { HudResources } from './types'
 
 interface TopBarProps {
   readonly status: string
+  readonly messageLog: readonly MessageLogEntry[]
   readonly unitCount: number
   readonly selectedCount: number
   readonly tick: number
@@ -60,6 +63,11 @@ function supplyDot(resources: HudResources | null): string {
   return 'bg-destructive'
 }
 
+function formatTimestamp(timestamp: number): string {
+  const date = new Date(timestamp)
+  return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
 /**
  * Top bar: brand/status/tick, match controls (scenario, aggression, sprites),
  * and resource stats. All zones live in a single wrapping flex row, so on
@@ -67,6 +75,7 @@ function supplyDot(resources: HudResources | null): string {
  */
 export function TopBar({
   status,
+  messageLog,
   unitCount,
   selectedCount,
   tick,
@@ -89,13 +98,40 @@ export function TopBar({
           <span className="text-sm font-semibold tracking-widest text-foreground uppercase">RTS Idle</span>
         </div>
 
-        <span
-          role="status"
-          className="flex min-w-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-xs"
-        >
-          <span className={`size-1.5 shrink-0 rounded-full ${statusDot(status)}`} />
-          <span className="truncate">status: {status}</span>
-        </span>
+        <Popover>
+          <PopoverTrigger asChild={true}>
+            <span
+              role="status"
+              className="flex min-w-0 cursor-default items-center gap-1.5 whitespace-nowrap rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-xs"
+            >
+              <span className={`size-1.5 shrink-0 rounded-full ${statusDot(status)}`} />
+              <span className="truncate">status: {status}</span>
+            </span>
+          </PopoverTrigger>
+          <PopoverContent align="start" side="bottom" sideOffset={4} className="w-80 p-0">
+            <div className="border-b px-3 py-2">
+              <span className="text-xs font-medium text-muted-foreground">Server Log</span>
+            </div>
+            <div className="max-h-60 overflow-y-auto">
+              {messageLog.length === 0 ? (
+                <p className="px-3 py-2 text-xs text-muted-foreground">No messages yet.</p>
+              ) : (
+                <ul className="divide-y">
+                  {messageLog.map((entry) => (
+                    <li key={`${entry.timestamp}-${entry.message}`} className="flex gap-2 px-3 py-1.5">
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        {formatTimestamp(entry.timestamp)}
+                      </span>
+                      <span className={`text-xs ${entry.type === 'error' ? 'text-destructive' : 'text-foreground'}`}>
+                        {entry.message}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
         <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">tick {tick}</span>
       </div>
 
