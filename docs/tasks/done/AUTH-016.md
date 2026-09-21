@@ -10,7 +10,7 @@
 
 ## Read first
 
-`docs/quality/concept-authority-audit.md`, `CURRENT_STATE.md`, `tasks/todo.md`, `docs/ai/TASK_INDEX.md`.
+`docs/quality/concept-authority-audit.md`, `CURRENT_STATE.md`, `docs/tasks/todo.md`, `docs/ai/TASK_INDEX.md`.
 
 ## Contract
 
