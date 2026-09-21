@@ -91,12 +91,13 @@ export class UnitLayer {
         const frames = this.framesFor(unit.owner, kind)
         sprite = new UnitSprite(kind, unit.owner, frames)
         sprite.container.on('pointerdown', (event) => {
-          event.stopPropagation()
-          // Only the left button selects; right-click targets for commands and
-          // must not silently change the selection.
-          if (event.button !== 0) {
+          // Only a primary click selects. Secondary input (right-click,
+          // Control+click, Cmd+click) must neither select nor swallow the
+          // event, so it can reach the canvas command handling.
+          if (event.button !== 0 || event.ctrlKey || event.metaKey) {
             return
           }
+          event.stopPropagation()
           this.onUnitSelected(unit.id)
         })
         this.viewport.addChild(sprite.container)

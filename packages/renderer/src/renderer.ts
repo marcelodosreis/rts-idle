@@ -112,9 +112,10 @@ export class PixiRenderer implements GameRenderer {
 
     viewport.eventMode = 'static'
     viewport.on('pointerdown', (event) => {
-      // Only the left button starts a selection box; right-click is the
-      // contextual command (it also fires `rightdown` below).
-      if (event.button === 0) {
+      // Only a primary click starts a selection box. Right-click and
+      // Control+click are secondary input, routed through the canvas
+      // `contextmenu` listener instead.
+      if (event.button === 0 && !event.ctrlKey && !event.metaKey) {
         selection.startBox(event.global)
       }
     })
@@ -123,9 +124,6 @@ export class PixiRenderer implements GameRenderer {
     })
     viewport.on('pointerup', (event) => {
       selection.endBox(event.global)
-    })
-    viewport.on('rightdown', (event) => {
-      this.dispatchCommand(event.global.x, event.global.y)
     })
 
     this.app = app
