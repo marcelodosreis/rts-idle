@@ -152,7 +152,8 @@ export class GameSession {
         }
         const health = healths.get(id)
         const front = orders.get(id)?.queue[0]
-        const economy = deriveEconomy(front, cargos.get(id))
+        const cargo = cargos.get(id)
+        const economy = deriveEconomy(front, cargo)
         const unit: SnapshotUnit = {
           id,
           x: pos.x,
@@ -161,6 +162,7 @@ export class GameSession {
           kind: kinds.get(id) ?? 'pawn',
           orderState: deriveOrderState(front, movements.get(id) !== undefined),
           ...(economy === undefined ? {} : { economy }),
+          ...(cargo === undefined || cargo.amount === 0 ? {} : { carrying: true }),
           ...(health === undefined ? {} : { hp: health.current, maxHp: health.max })
         }
         return unit

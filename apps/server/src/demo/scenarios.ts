@@ -100,7 +100,7 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
       { owner: 0, ...tile(6, 8) },
       { owner: 1, ...tile(24, 24) }
     ],
-    mineralNodes: [{ remaining: 3000, ...tile(10, 8) }],
+    mineralNodes: [{ remaining: 3000, ...tile(14, 7) }],
     attacks: []
   },
   {
