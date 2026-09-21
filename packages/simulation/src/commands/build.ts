@@ -42,7 +42,11 @@ export function applyBuild(state: GameState, command: ScheduledCommand): void {
   if (player === undefined || player.defeated) {
     reject(command, 'INVALID_PHASE', `BUILD: player ${command.playerId} is not active`)
   }
-  if ((buildingType !== 'BASE' && buildingType !== 'BARRACKS') || !Number.isInteger(x) || !Number.isInteger(y)) {
+  if (
+    (buildingType !== 'BASE' && buildingType !== 'BARRACKS' && buildingType !== 'SUPPLY_DEPOT') ||
+    !Number.isInteger(x) ||
+    !Number.isInteger(y)
+  ) {
     reject(command, 'INVALID_PAYLOAD', 'BUILD: building type and tile coordinates are invalid')
   }
   const definition = BUILDING_DEFINITIONS[buildingType]

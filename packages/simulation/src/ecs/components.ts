@@ -96,7 +96,19 @@ function buildingTypeTag(buildingType: BuildingType): number {
       return 0
     case 'BARRACKS':
       return 1
+    case 'SUPPLY_DEPOT':
+      return 2
   }
+}
+
+function buildingTypeFromTag(tag: number): BuildingType {
+  if (tag === 0) {
+    return 'BASE'
+  }
+  if (tag === 1) {
+    return 'BARRACKS'
+  }
+  return 'SUPPLY_DEPOT'
 }
 
 const GATHER_PHASE_TAGS = {
@@ -199,13 +211,13 @@ function readOrder(reader: CanonicalReader): Order {
     case ORDER_TAG_BUILD: {
       const buildingId = reader.readU32()
       const buildingType = reader.readU8()
-      if (buildingType !== 0 && buildingType !== 1) {
+      if (buildingType !== 0 && buildingType !== 1 && buildingType !== 2) {
         throw new Error(`Orders: invalid building type tag ${buildingType}`)
       }
       return {
         type: 'BUILD',
         buildingId,
-        buildingType: buildingType === 0 ? 'BASE' : 'BARRACKS',
+        buildingType: buildingTypeFromTag(buildingType),
         workPoint: { x: reader.readI32(), y: reader.readI32() }
       }
     }

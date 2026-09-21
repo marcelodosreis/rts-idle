@@ -2,6 +2,7 @@ import type { PlayerId, RngState } from '@rts/shared'
 import { CanonicalReader } from '../canonical/reader.js'
 import { CanonicalWriter } from '../canonical/writer.js'
 import { SIMULATION_VERSION } from '../contracts/simulation-version.js'
+import { MAX_SUPPLY_CAPACITY } from '../data/supply-rules.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
 import type { GameState, PlayerState } from '../state/state.js'
@@ -69,6 +70,8 @@ function writePlayers(writer: CanonicalWriter, players: readonly PlayerState[]):
     writer.writeU8(player.id)
     writer.writeU8(player.defeated ? 1 : 0)
     writer.writeI32(player.gold)
+    writer.writeI32(player.usedSupply)
+    writer.writeI32(player.supplyCap)
   }
 }
 
@@ -106,7 +109,12 @@ function readPlayers(reader: CanonicalReader): PlayerState[] {
     const id = slot as PlayerId
     const defeated = reader.readU8() === 1
     const gold = reader.readI32()
-    players.push({ id, defeated, gold })
+    const usedSupply = reader.readI32()
+    const supplyCap = reader.readI32()
+    if (usedSupply < 0 || supplyCap < 0 || supplyCap > MAX_SUPPLY_CAPACITY) {
+      throw new Error(`readPlayers: invalid supply ${usedSupply}/${supplyCap}`)
+    }
+    players.push({ id, defeated, gold, usedSupply, supplyCap })
   }
   return players
 }
