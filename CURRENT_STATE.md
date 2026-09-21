@@ -10,7 +10,7 @@ Browser-first competitive RTS with deterministic simulation, server authority, a
 
 **Phase 2 in progress.** Economy v0 is implemented and exposed through a dedicated browser scenario.
 
-See `tasks/todo.md` for full phase list.
+See `docs/tasks/todo.md` for full phase list.
 
 ## Working Systems
 
@@ -62,7 +62,7 @@ VS-02 has not started.
 
 Quality Hardening (QUAL-000..018) is in progress. The Concept Authority closure
 (AUTH-005A through AUTH-018) is complete; its audit records the authority and
-validation evidence. See `tasks/todo.md` for the remaining quality board.
+validation evidence. See `docs/tasks/todo.md` for the remaining quality board.
 
 Architecture evolution is tracked in `docs/rfc/RFC-001-technology-substitutability.md`
 (Proposed; no implementation started).

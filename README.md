@@ -163,4 +163,4 @@ their corners and fight, with overhead HP bars, attack streaks, damage popups,
 death explosions, and attack animations. The client issues the full command set
 (command bar + contextual right-click), shows a Victory/Defeat/Draw overlay, and
 switches demo scenarios (2v2, 4v4, melee-vs-ranged, free-for-all, win/defeat).
-Next: Phase 2 (economy and production). See `tasks/todo.md`.
+Next: Phase 2 (economy and production). See `docs/tasks/todo.md`.

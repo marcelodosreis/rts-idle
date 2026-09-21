@@ -77,5 +77,5 @@ bars) fed by deterministic simulation events.
 ## Deliverables
 
 - Asset inventory + integration/polish roadmap: `docs/assets/capabilities.md`.
-- Task checklists: `tasks/todo.md` (Sprints A–G).
+- Task checklists: `docs/tasks/todo.md` (Sprints A–G).
 - ADR: `docs/adr/ADR-015-visual-identity.md`.

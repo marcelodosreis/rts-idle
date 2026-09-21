@@ -24,4 +24,4 @@ Build order: `foundation` → `game-data`, `pathfinding`, `protocol` → `simula
 
 ## Execution model
 
-Each module runs Spec → Plan → Tasks → Implement in dependency order, per `SPEC-<module-id>.md` and `tasks/plan.md`.
+Each module runs Spec → Plan → Tasks → Implement in dependency order, per `SPEC-<module-id>.md` and `docs/tasks/plan.md`.
