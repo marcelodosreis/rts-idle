@@ -141,6 +141,9 @@ importers:
       '@rts/ai':
         specifier: workspace:*
         version: link:../../packages/ai
+      '@rts/game-data':
+        specifier: workspace:*
+        version: link:../../packages/game-data
       '@rts/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
@@ -205,9 +208,6 @@ importers:
       '@rts/audio':
         specifier: workspace:*
         version: link:../../packages/audio
-      '@rts/game-data':
-        specifier: workspace:*
-        version: link:../../packages/game-data
       '@rts/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
@@ -285,9 +285,6 @@ importers:
 
   packages/renderer:
     dependencies:
-      '@rts/game-data':
-        specifier: workspace:*
-        version: link:../game-data
       '@rts/protocol':
         specifier: workspace:*
         version: link:../protocol

@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 10 |
+| open | 11 |
 | closed | 12 |
-| **total** | **22** |
+| **total** | **23** |
 
 ## Detalhes
 
@@ -37,6 +37,7 @@
 | 2026-09-20-construction-work-point-visual-distance | open | presentation | — | 2 teste(s) |
 | 2026-09-20-postmortem-metadata-contract-violation | open | convention | — | 1 teste(s) |
 | 2026-09-20-renderer-snapshot-before-mount | open | presentation | — | 1 teste(s) |
+| 2026-09-21-renderer-lockfile-drift | open | completion-gate | — | 1 teste(s) |
 
 ## Legenda
 
