@@ -1,8 +1,8 @@
 # Task List — Browser RTS
 
 Master plan: `docs/master-plan.md`. Specs: `docs/specs/`.
-Task packet convention: completed packets are archived in [`tasks/done/`](done/);
-active and pending packets remain here. See [`tasks/README.md`](README.md).
+Task packet convention: completed packets are archived in [`docs/tasks/done/`](done/);
+active and pending packets remain here. See [`docs/tasks/README.md`](README.md).
 
 ## Phase 0 — Foundation and spikes
 
@@ -40,7 +40,7 @@ active and pending packets remain here. See [`tasks/README.md`](README.md).
 - [x] Performance matrix executed
 - [x] Tick rate decided (ADR-009)
 
-## Phase 1 — Simulation core (execution plan: `tasks/done/VS-01-plan.md`, master plan §23.2)
+## Phase 1 — Simulation core (execution plan: `docs/tasks/done/VS-01-plan.md`, master plan §23.2)
 
 ### Sprint 0 — Docs and coordination
 - [x] C0 master-plan + todo synced (visual parallel track §23.2)
@@ -103,8 +103,8 @@ active and pending packets remain here. See [`tasks/README.md`](README.md).
 
 ## Phase 2 — Economy and production
 
-Execution plan: `tasks/done/VS-01-plan.md`. Latest completed task packet:
-`tasks/done/BUILD-003.md`.
+Execution plan: `docs/tasks/done/VS-01-plan.md`. Latest completed task packet:
+`docs/tasks/done/BUILD-003.md`.
 
 ### VS-01 — Economy v0 (P2.01–P2.02)
 
