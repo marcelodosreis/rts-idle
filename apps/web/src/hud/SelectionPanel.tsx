@@ -207,7 +207,7 @@ export function SelectionPanel({ selection, construction, mineral }: SelectionPa
           {activeEconomy}
         </p>
       </CardHeader>
-      <CardContent className="flex flex-nowrap gap-0.5 overflow-x-auto px-2 py-0.5" aria-live="polite">
+      <CardContent className="flex flex-wrap gap-0.5 px-2 py-0.5" aria-live="polite">
         {selection.length > 0 && selection.map((unit) => <UnitChip key={unit.id} unit={unit} />)}
       </CardContent>
     </Card>
