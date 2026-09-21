@@ -1,6 +1,6 @@
 import { isCommandMessage } from '@rts/protocol'
 import { START_ENTITY_ID } from '@rts/shared'
-import { Construction, createSimulation, createWorld, Kind, Owner, Position } from '@rts/simulation'
+import { Building, createSimulation, createWorld, Kind, Owner, Position } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { TEST_IDENTITY } from '../fixtures/index.js'
 
@@ -70,7 +70,7 @@ describe('BUILD command contract', () => {
     const state = sim.inspectState()
     expect(result.rejected).toEqual([])
     expect(state.players[0]?.gold).toBe(0)
-    expect(state.world.store(Construction).get(START_ENTITY_ID + 1)?.status).toBe('FOUNDATION')
+    expect(state.world.store(Building).get(START_ENTITY_ID + 1)?.status).toBe('FOUNDATION')
   })
 
   it('creates a BARRACKS foundation with its own footprint and cost', () => {
@@ -83,7 +83,7 @@ describe('BUILD command contract', () => {
     ])
     const construction = sim
       .inspectState()
-      .world.store(Construction)
+      .world.store(Building)
       .get(START_ENTITY_ID + 1)
     expect(result.rejected).toEqual([])
     expect(sim.inspectState().players[0]?.gold).toBe(0)

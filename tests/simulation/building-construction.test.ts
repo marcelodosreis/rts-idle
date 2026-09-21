@@ -1,9 +1,6 @@
 import { START_ENTITY_ID } from '@rts/shared'
 import {
-  Barracks,
-  Base,
   Building,
-  Construction,
   createSimulation,
   createWorld,
   Kind,
@@ -54,18 +51,18 @@ describe('BUILD simulation lifecycle', () => {
     sim.step([build(START_ENTITY_ID, 1)])
     const buildingId = START_ENTITY_ID + 3
     sim.step([{ tick: 2, playerId: 0, sequence: 2, intent: { type: 'STOP', payload: { unitIds: [START_ENTITY_ID] } } }])
-    expect(sim.inspectState().world.store(Construction).get(buildingId)?.builderId).toBeNull()
-    const paused = sim.inspectState().world.store(Construction).get(buildingId)?.progressTicks
+    expect(sim.inspectState().world.store(Building).get(buildingId)?.builderId).toBeNull()
+    const paused = sim.inspectState().world.store(Building).get(buildingId)?.progressTicks
     sim.step([build(START_ENTITY_ID + 1, 3)])
     for (let i = 0; i < 150; i += 1) {
       sim.step()
     }
     const state = sim.inspectState()
-    expect(state.world.store(Construction).get(buildingId)?.progressTicks).toBe(100)
-    expect(state.world.store(Construction).get(buildingId)?.status).toBe('COMPLETED')
-    expect(state.world.store(Base).has(buildingId)).toBe(true)
+    expect(state.world.store(Building).get(buildingId)?.progressTicks).toBe(100)
+    expect(state.world.store(Building).get(buildingId)?.status).toBe('COMPLETED')
+    expect(state.world.store(Building).has(buildingId)).toBe(true)
     expect(state.world.store(Orders).get(START_ENTITY_ID + 1)).toBeUndefined()
-    expect(state.world.store(Construction).get(buildingId)?.progressTicks).toBeGreaterThanOrEqual(paused ?? 0)
+    expect(state.world.store(Building).get(buildingId)?.progressTicks).toBeGreaterThanOrEqual(paused ?? 0)
   })
 
   it('continues with the same result after a construction snapshot restore', () => {
@@ -103,8 +100,8 @@ describe('BUILD simulation lifecycle', () => {
     }
     const state = sim.inspectState()
     expect(state.world.store(Position).get(buildingId)).toEqual(buildingPosition)
-    expect(state.world.store(Base).has(buildingId)).toBe(true)
-    expect(state.world.store(Construction).get(buildingId)?.status).toBe('COMPLETED')
+    expect(state.world.store(Building).has(buildingId)).toBe(true)
+    expect(state.world.store(Building).get(buildingId)?.status).toBe('COMPLETED')
   })
 
   it('completes BARRACKS with only the Barracks marker', () => {
@@ -115,11 +112,11 @@ describe('BUILD simulation lifecycle', () => {
       sim.step()
     }
     const state = sim.inspectState()
-    expect(state.world.store(Construction).get(buildingId)).toMatchObject({
+    expect(state.world.store(Building).get(buildingId)).toMatchObject({
       buildingType: 'BARRACKS',
       status: 'COMPLETED'
     })
-    expect(state.world.store(Barracks).has(buildingId)).toBe(true)
+    expect(state.world.store(Building).has(buildingId)).toBe(true)
     expect(state.world.store(Building).get(buildingId)?.buildingType).toBe('BARRACKS')
     expect(state.world.store(Orders).get(START_ENTITY_ID)).toBeUndefined()
   })
@@ -131,14 +128,14 @@ describe('BUILD simulation lifecycle', () => {
     const order = sim.inspectState().world.store(Orders).get(START_ENTITY_ID)?.queue[0]
 
     expect(order).toMatchObject({ type: 'BUILD', workPoint: { x: 5 * 256, y: 4 * 256 } })
-    expect(sim.inspectState().world.store(Construction).get(buildingId)?.progressTicks).toBe(0)
+    expect(sim.inspectState().world.store(Building).get(buildingId)?.progressTicks).toBe(0)
     for (let i = 0; i < 100; i += 1) {
       sim.step()
-      if (sim.inspectState().world.store(Construction).get(buildingId)?.progressTicks !== 0) {
+      if (sim.inspectState().world.store(Building).get(buildingId)?.progressTicks !== 0) {
         break
       }
     }
-    expect(sim.inspectState().world.store(Construction).get(buildingId)?.progressTicks).toBeGreaterThan(0)
+    expect(sim.inspectState().world.store(Building).get(buildingId)?.progressTicks).toBeGreaterThan(0)
   })
 
   it('recalculates the work point when construction is reassigned', () => {

@@ -7,7 +7,9 @@ function unitSim(seed: number, owners: readonly number[]) {
   return createSimulation({
     seed,
     identity: TEST_IDENTITY,
-    initialWorld: worldWithOwners(owners)
+    // Command admission now correctly rejects commands after a finished match;
+    // retain an opponent so these lifecycle tests exercise running matches.
+    initialWorld: worldWithOwners(owners.includes(1) ? owners : [...owners, 1])
   })
 }
 

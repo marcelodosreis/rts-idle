@@ -1,18 +1,8 @@
 import { GameSession } from '@rts/server'
 import { tilesToFixed } from '@rts/shared'
-import {
-  Base,
-  Construction,
-  createRulesIdentity,
-  createWorld,
-  Health,
-  Kind,
-  MineralNode,
-  Owner,
-  Position
-} from '@rts/simulation'
+import { Building, createRulesIdentity, createWorld, Health, Kind, MineralNode, Owner, Position } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
-import { createDemoSession } from '../../apps/server/src/demo.js'
+import { createAuthoritativeMatch } from '../../apps/server/src/match-bootstrap.js'
 import { SEEDS, worldWithCombatUnits } from '../fixtures/index.js'
 
 function combatSession(seed: number) {
@@ -27,7 +17,12 @@ function combatSession(seed: number) {
 
 describe('game session commands', () => {
   it('seeds the economy sandbox with four Workers, two Bases, 250 minerals, and one Mineral Node', () => {
-    const session = createDemoSession('economy', 'passive')
+    const session = createAuthoritativeMatch({
+      type: 'match_request',
+      scenarioId: 'economy',
+      aggression: 'passive',
+      map: { source: 'catalog' }
+    }).session
 
     expect(session.projectUnits()).toHaveLength(4)
     expect(session.projectUnits().map(({ x, y }) => ({ x, y }))).toEqual([
@@ -45,8 +40,10 @@ describe('game session commands', () => {
       ])
     )
     expect(session.projectPlayers().find((player) => player.id === 0)?.gold).toBe(250)
-    expect(session.projectBases()).toHaveLength(2)
-    expect(session.projectBases()).toEqual(expect.arrayContaining([expect.objectContaining({ owner: 0 })]))
+    expect(session.projectBuildings()).toHaveLength(2)
+    expect(session.projectBuildings()).toEqual(
+      expect.arrayContaining([expect.objectContaining({ buildingType: 'BASE', owner: 0 })])
+    )
     expect(session.projectMineralNodes()).toEqual([expect.objectContaining({ remaining: 3000 })])
     const worker = session.projectUnits()[0]!
     const node = session.projectMineralNodes()[0]!
@@ -88,7 +85,14 @@ describe('game session commands', () => {
     world.createEntity(2)
     world.store(Position).set(2, { x: 256, y: 0 })
     world.store(Owner).set(2, { owner: 0 })
-    world.store(Base).set(2, {})
+    world.store(Building).set(2, {
+      buildingType: 'BASE',
+      status: 'COMPLETED',
+      progressTicks: 1,
+      totalTicks: 1,
+      builderId: null,
+      footprint: { x: 1, y: 0, width: 2, height: 2 }
+    })
     world.createEntity(3)
     world.store(Position).set(3, { x: 512, y: 0 })
     world.store(MineralNode).set(3, { remaining: 25 })
@@ -99,7 +103,9 @@ describe('game session commands', () => {
     })
 
     expect(session.projectUnits()).toEqual([expect.objectContaining({ id: 1, x: 0, y: 0, owner: 0, kind: 'pawn' })])
-    expect(session.projectBases()).toEqual([{ id: 2, x: 256, y: 0, owner: 0 }])
+    expect(session.projectBuildings()).toEqual([
+      expect.objectContaining({ id: 2, x: 256, y: 0, owner: 0, buildingType: 'BASE' })
+    ])
     expect(session.projectMineralNodes()).toEqual([{ id: 3, x: 512, y: 0, remaining: 25 }])
   })
 
@@ -108,7 +114,7 @@ describe('game session commands', () => {
     world.createEntity(1)
     world.store(Position).set(1, { x: 0, y: 0 })
     world.store(Owner).set(1, { owner: 0 })
-    world.store(Construction).set(1, {
+    world.store(Building).set(1, {
       buildingType: 'BARRACKS',
       status: 'UNDER_CONSTRUCTION',
       progressTicks: 12,
@@ -121,7 +127,7 @@ describe('game session commands', () => {
       identity: createRulesIdentity('session-test'),
       initialWorld: world
     })
-    expect(session.projectConstructions()).toEqual([
+    expect(session.projectBuildings()).toEqual([
       expect.objectContaining({
         id: 1,
         buildingType: 'BARRACKS',
