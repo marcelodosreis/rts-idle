@@ -154,6 +154,9 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     let map: MapDefinition | null = null
     let buildCatalog: readonly BuildCatalogEntry[] = []
     let renderer: GameRenderer | null = null
+    let rendererReady = false
+    let pendingFrame: ReturnType<typeof snapshotToFrame> | null = null
+    let sessionActive = true
     let selection = new Set<number>()
     let lastTick = 0
     let matchEnded = false
@@ -304,6 +307,14 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       }
     }
 
+    const presentFrame = (frame: ReturnType<typeof snapshotToFrame>): void => {
+      if (!rendererReady || renderer === null) {
+        pendingFrame = frame
+        return
+      }
+      renderer.present(frame)
+    }
+
     const groundCommand = (worldX: number, worldY: number): void => {
       if (isBuildMode(commandModes.modeRef.current)) {
         cancelPlacement()
@@ -394,7 +405,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     }
 
     const mountRenderer = (config: MatchConfig): void => {
-      if (renderer !== null) {
+      if (!sessionActive || renderer !== null) {
         return
       }
       map = config.map
@@ -433,6 +444,15 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
           }
         })
         .then(() => {
+          if (!sessionActive || renderer !== configuredRenderer) {
+            configuredRenderer.dispose()
+            return
+          }
+          rendererReady = true
+          if (pendingFrame !== null) {
+            configuredRenderer.present(pendingFrame)
+            pendingFrame = null
+          }
           window.__rtsDebug = {
             getPositions: () =>
               Object.fromEntries([...configuredRenderer.getUnitPositions()].map(([id, pos]) => [String(id), pos])),
@@ -462,7 +482,12 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
             })
           }
         })
-        .catch((error: unknown) => setStatus(`error: ${error instanceof Error ? error.message : String(error)}`))
+        .catch((error: unknown) => {
+          if (!sessionActive || renderer !== configuredRenderer) {
+            return
+          }
+          setStatus(`error: ${error instanceof Error ? error.message : String(error)}`)
+        })
     }
 
     const handlers: ConnectionHandlers = {
@@ -503,7 +528,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
             setMatchResult('draw')
           }
         }
-        renderer?.present(snapshotToFrame(message))
+        presentFrame(snapshotToFrame(message))
         if (selection.size > 0) {
           updateSelection([...selection])
         }
@@ -532,6 +557,9 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     window.addEventListener('keydown', onKeyDown)
 
     return () => {
+      sessionActive = false
+      rendererReady = false
+      pendingFrame = null
       window.removeEventListener('keydown', onKeyDown)
       connection?.close()
       connectionRef.current = null

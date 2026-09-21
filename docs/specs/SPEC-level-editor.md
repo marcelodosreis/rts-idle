@@ -174,4 +174,5 @@ and round-trip invariants are regression-guarded.
 None blocking. Deferred (out of scope for this initiative): undo/redo,
 drag-paint, brush size, flood fill, keyboard shortcuts, map resizing,
 decoration collision with units, accessibility hardening, and Reset
-confirmation. These are tracked as backlog in `tasks/level-editor-plan.md`.
+confirmation. These are tracked in the completed plan at
+`tasks/done/level-editor-plan.md`.

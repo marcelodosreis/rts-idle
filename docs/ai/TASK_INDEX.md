@@ -2,6 +2,7 @@
 
 > Compact index of work. Each task is a small, verifiable unit.
 > Full details in task packets. Status: pending / in-progress / done.
+> Completed packets are archived in `tasks/done/`; active packets remain in `tasks/`.
 
 ## Phase 2 — Economy and Production
 
@@ -90,7 +91,7 @@
 
 ## Level Editor Initiative
 
-Spec: `docs/specs/SPEC-level-editor.md`. Plan: `tasks/level-editor-plan.md`.
+Spec: `docs/specs/SPEC-level-editor.md`. Completed plan: `tasks/done/level-editor-plan.md`.
 
 | ID | Title | Status | Dependencies | Packages | Validation |
 |----|-------|--------|-------------|----------|------------|
