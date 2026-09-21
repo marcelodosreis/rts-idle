@@ -24,12 +24,15 @@ export function economyFrameKey(owner: number, anim: keyof EconomyFrames): strin
 export function economyAnimation(
   frames: EconomyFrames,
   phase: EconomyPhase | undefined,
-  moving: boolean
+  moving: boolean,
+  carrying = false
 ): AnimatedSprite | null {
   if (phase === 'gathering') {
     return frames.gather
   }
-  if (phase === 'to_base') {
+  // A worker carrying cargo shows the carry pose even without a gather order
+  // (for example after a manual move interrupted the return trip).
+  if (phase === 'to_base' || carrying) {
     return moving ? frames.carryRun : frames.carryIdle
   }
   return null
