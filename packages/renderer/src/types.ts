@@ -24,6 +24,8 @@ export interface RenderPlayer {
   readonly id: PlayerId
   readonly defeated: boolean
   readonly gold: number
+  readonly usedSupply: number
+  readonly supplyCap: number
 }
 
 export type RenderBuilding = SnapshotBuilding

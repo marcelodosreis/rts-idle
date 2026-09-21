@@ -29,7 +29,10 @@ function StatChip({
   readonly dotClass: string
 }) {
   return (
-    <span className="flex items-center gap-1.5 whitespace-nowrap rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-xs">
+    <span
+      data-testid={`hud-resource-${label.toLowerCase()}`}
+      className="flex items-center gap-1.5 whitespace-nowrap rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-xs"
+    >
       <span className={`size-1.5 rounded-full ${dotClass}`} />
       <span className="hidden text-muted-foreground sm:inline">{label}</span>
       <span className="font-mono tabular-nums">{value}</span>
@@ -45,6 +48,16 @@ function statusDot(status: string): string {
     return 'bg-destructive'
   }
   return 'bg-amber-500'
+}
+
+function supplyDot(resources: HudResources | null): string {
+  if (resources === null || resources.supply < resources.supplyCap) {
+    return 'bg-emerald-400'
+  }
+  if (resources.supply === resources.supplyCap) {
+    return 'bg-amber-400'
+  }
+  return 'bg-destructive'
 }
 
 /**
@@ -125,6 +138,12 @@ export function TopBar({
           label="Mineral"
           value={resources === null ? '0' : String(resources.mineral)}
           dotClass="bg-amber-400"
+        />
+
+        <StatChip
+          label="Supply"
+          value={resources === null ? '0 / 0' : `${resources.supply} / ${resources.supplyCap}`}
+          dotClass={supplyDot(resources)}
         />
 
         <Separator orientation="vertical" className="hidden h-5 lg:flex" />

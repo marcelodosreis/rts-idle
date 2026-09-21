@@ -121,7 +121,13 @@ function UnitChip({ unit }: { readonly unit: HudSelectionUnit }) {
 }
 
 function constructionLabel(construction: HudConstruction): string {
-  return construction.buildingType === 'BASE' ? 'Base' : 'Barracks'
+  if (construction.buildingType === 'BASE') {
+    return 'Base'
+  }
+  if (construction.buildingType === 'BARRACKS') {
+    return 'Barracks'
+  }
+  return 'Supply Depot'
 }
 
 function constructionTitleStatus(status: HudConstruction['status']): string {

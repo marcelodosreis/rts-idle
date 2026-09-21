@@ -1,9 +1,9 @@
 const OWNER_COLORS = [0x2e7d32, 0xc62828, 0x1565c0, 0xf9a825]
 
-export type RenderBuildingType = 'BASE' | 'BARRACKS'
+export type RenderBuildingType = 'BASE' | 'BARRACKS' | 'SUPPLY_DEPOT'
 
 export interface BuildingVisualStyle {
-  readonly kind: 'base' | 'barracks' | 'foundation'
+  readonly kind: 'base' | 'barracks' | 'supply-depot' | 'foundation'
   readonly fillColor: number
   readonly fillAlpha: number
   readonly strokeColor: number
@@ -23,7 +23,12 @@ export function buildingVisualStyle(
     return { kind: 'base', fillColor: ownerColor(owner), fillAlpha: 0.8, strokeColor: 0xf8fafc }
   }
   if (status === 'COMPLETED') {
-    return { kind: 'barracks', fillColor: ownerColor(owner), fillAlpha: 0.82, strokeColor: 0xf8fafc }
+    return {
+      kind: buildingType === 'BARRACKS' ? 'barracks' : 'supply-depot',
+      fillColor: ownerColor(owner),
+      fillAlpha: 0.82,
+      strokeColor: 0xf8fafc
+    }
   }
   return { kind: 'foundation', fillColor: ownerColor(owner), fillAlpha: 0.3, strokeColor: 0xfacc15 }
 }
