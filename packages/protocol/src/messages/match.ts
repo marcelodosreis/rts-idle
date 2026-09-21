@@ -55,7 +55,7 @@ export function isMatchRequest(value: unknown): value is MatchRequest {
   return value.map.source === 'local' && normalizeMapDefinition(value.map.definition).ok
 }
 
-function isScenarioSummary(value: unknown): value is ScenarioSummary {
+export function isScenarioSummary(value: unknown): value is ScenarioSummary {
   return isRecord(value) && typeof value.id === 'string' && value.id.length > 0 && typeof value.label === 'string'
 }
 

@@ -282,10 +282,22 @@ describe('protocol error message', () => {
     expect(isErrorMessage({ type: 'error', message: 'boom' })).toBe(true)
   })
 
+  it('accepts an error message with an optional scenario catalog', () => {
+    expect(
+      isErrorMessage({
+        type: 'error',
+        message: 'scenario spawn is outside or on invalid terrain',
+        scenarios: [{ id: '6v6', label: '6v6' }]
+      })
+    ).toBe(true)
+  })
+
   it('rejects non-conforming payloads', () => {
     expect(isErrorMessage(null)).toBe(false)
     expect(isErrorMessage({ type: 'error' })).toBe(false)
     expect(isErrorMessage({ type: 'error', message: 42 })).toBe(false)
+    expect(isErrorMessage({ type: 'error', message: 'boom', scenarios: [{ id: '', label: '6v6' }] })).toBe(false)
+    expect(isErrorMessage({ type: 'error', message: 'boom', scenarios: '6v6' })).toBe(false)
     expect(isErrorMessage({ type: 'snapshot', message: 'x' })).toBe(false)
   })
 })

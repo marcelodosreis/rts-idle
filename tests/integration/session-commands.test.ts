@@ -2,7 +2,8 @@ import { GameSession } from '@rts/server'
 import { tilesToFixed } from '@rts/shared'
 import { Building, createRulesIdentity, createWorld, Health, Kind, MineralNode, Owner, Position } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
-import { createAuthoritativeMatch } from '../../apps/server/src/match-bootstrap.js'
+import { DEMO_SCENARIOS } from '../../apps/server/src/demo/scenarios.js'
+import { bootstrapMatch, createAuthoritativeMatch } from '../../apps/server/src/match-bootstrap.js'
 import { SEEDS, worldWithCombatUnits } from '../fixtures/index.js'
 
 function combatSession(seed: number) {
@@ -16,6 +17,23 @@ function combatSession(seed: number) {
 }
 
 describe('game session commands', () => {
+  it('returns the server scenario catalog when a local map fails bootstrap', () => {
+    const result = bootstrapMatch({
+      type: 'match_request',
+      scenarioId: '6v6',
+      aggression: 'offensive',
+      map: { source: 'local', definition: { width: 1, height: 1, tiles: ['land'] } }
+    })
+
+    expect(result).toEqual({
+      error: {
+        type: 'error',
+        message: 'scenario spawn is outside or on invalid terrain',
+        scenarios: DEMO_SCENARIOS.map(({ id, label }) => ({ id, label }))
+      }
+    })
+  })
+
   it('seeds the economy sandbox with four Workers, two Bases, 250 minerals, and one Mineral Node', () => {
     const session = createAuthoritativeMatch({
       type: 'match_request',

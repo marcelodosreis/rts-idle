@@ -1,4 +1,5 @@
 import {
+  type ErrorMessage,
   isErrorMessage,
   isMatchConfig,
   isSnapshotMessage,
@@ -19,7 +20,7 @@ export interface ConnectionHandlers {
   readonly onSnapshot: (message: SnapshotMessage) => void
   readonly onOpen?: () => void
   readonly onMatchConfig?: (config: MatchConfig) => void
-  readonly onError?: (message: string) => void
+  readonly onError?: (error: ErrorMessage) => void
 }
 
 export function connectMatch(url: string, request: MatchRequest, handlers: ConnectionHandlers): MatchConnection {
@@ -30,7 +31,7 @@ export function connectMatch(url: string, request: MatchRequest, handlers: Conne
     handlers.onOpen?.()
   })
   ws.addEventListener('error', () => {
-    handlers.onError?.(`failed to connect to ${url}`)
+    handlers.onError?.({ type: 'error', message: `failed to connect to ${url}` })
   })
   ws.addEventListener('message', (event) => {
     let parsed: unknown
@@ -44,7 +45,7 @@ export function connectMatch(url: string, request: MatchRequest, handlers: Conne
     } else if (isSnapshotMessage(parsed)) {
       handlers.onSnapshot(parsed)
     } else if (isErrorMessage(parsed)) {
-      handlers.onError?.(parsed.message)
+      handlers.onError?.(parsed)
     }
   })
 

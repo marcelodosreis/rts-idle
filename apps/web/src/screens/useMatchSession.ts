@@ -1,4 +1,4 @@
-import type { BuildCatalogEntry, MatchConfig } from '@rts/protocol'
+import type { BuildCatalogEntry, MatchConfig, ScenarioSummary } from '@rts/protocol'
 import { type GameRenderer, PixiRenderer } from '@rts/renderer'
 import type { CommandIntent, MapDefinition } from '@rts/shared'
 import {
@@ -140,6 +140,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
   const [resources, setResources] = useState<MatchSessionState['resources']>(null)
   const [matchResult, setMatchResult] = useState<MatchSessionState['matchResult']>(null)
   const [matchConfig, setMatchConfig] = useState<MatchConfig | null>(null)
+  const [scenarios, setScenarios] = useState<readonly ScenarioSummary[]>([])
   const commandModes = useCommandModes()
   const connectionRef = useRef<MatchConnection | null>(null)
   const selectionRef = useRef<readonly number[]>([])
@@ -411,6 +412,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       map = config.map
       buildCatalog = config.buildings
       setMatchConfig(config)
+      setScenarios(config.scenarios)
       const configuredRenderer: GameRenderer = new PixiRenderer({
         worldWidth: config.map.width * TILE_PIXELS,
         worldHeight: config.map.height * TILE_PIXELS,
@@ -534,7 +536,12 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
         }
       },
       onOpen: () => setStatus('connected'),
-      onError: (message) => setStatus(message)
+      onError: (error) => {
+        setStatus(error.message)
+        if (error.scenarios !== undefined) {
+          setScenarios(error.scenarios)
+        }
+      }
     }
 
     connection = connectMatch(
@@ -580,7 +587,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     commandMode: commandModes.mode,
     matchResult,
     scenario: SCENARIO,
-    scenarios: matchConfig?.scenarios.map((scenario) => scenario.id) ?? [],
+    scenarios: scenarios.map((scenario) => scenario.id),
     buildings: matchConfig?.buildings ?? [],
     aggression: AGGRESSION,
     spritesEnabled: SPRITES_ENABLED,

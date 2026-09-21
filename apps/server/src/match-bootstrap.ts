@@ -1,5 +1,5 @@
 import { BUILDING_DEFINITIONS, createCompetitiveMap } from '@rts/game-data'
-import type { BuildCatalogEntry, MatchConfig, MatchRequest, ScenarioSummary } from '@rts/protocol'
+import type { BuildCatalogEntry, ErrorMessage, MatchConfig, MatchRequest, ScenarioSummary } from '@rts/protocol'
 import {
   isBuildableTile,
   type MapDefinition,
@@ -19,7 +19,7 @@ const BUILDINGS: readonly BuildCatalogEntry[] = Object.values(BUILDING_DEFINITIO
   costMinerals: definition.costMinerals,
   constructionTicks: definition.constructionTicks
 }))
-const SCENARIOS: readonly ScenarioSummary[] = DEMO_SCENARIOS.map(({ id, label }) => ({ id, label }))
+export const SCENARIOS: readonly ScenarioSummary[] = DEMO_SCENARIOS.map(({ id, label }) => ({ id, label }))
 
 function mapIdentity(map: MapDefinition): RulesIdentity {
   // The normalized map is immutable at the session boundary; its canonical JSON
@@ -71,6 +71,8 @@ export interface AuthoritativeMatch {
   readonly config: MatchConfig
 }
 
+export type MatchBootstrapResult = { readonly match: AuthoritativeMatch } | { readonly error: ErrorMessage }
+
 /** Validates external map input and creates the first mutable match state. */
 export function createAuthoritativeMatch(request: MatchRequest): AuthoritativeMatch {
   const scenario = DEMO_SCENARIOS.find((candidate) => candidate.id === request.scenarioId)
@@ -92,6 +94,21 @@ export function createAuthoritativeMatch(request: MatchRequest): AuthoritativeMa
       scenarios: SCENARIOS,
       map: normalized.map,
       buildings: BUILDINGS
+    }
+  }
+}
+
+/** Creates a match or returns the bootstrap failure with the server-owned scenario catalog. */
+export function bootstrapMatch(request: MatchRequest): MatchBootstrapResult {
+  try {
+    return { match: createAuthoritativeMatch(request) }
+  } catch (error) {
+    return {
+      error: {
+        type: 'error',
+        message: error instanceof Error ? error.message : String(error),
+        scenarios: SCENARIOS
+      }
     }
   }
 }

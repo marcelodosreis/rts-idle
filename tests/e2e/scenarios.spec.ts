@@ -45,3 +45,18 @@ test('switching the scenario in the top bar reloads into the new match', async (
   const positions = await settleUnits(page)
   expect(Object.keys(positions).length).toBe(8)
 })
+
+test('a failed local map keeps the server-provided scenario selector available', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('rts.playtestMap', JSON.stringify({ width: 1, height: 1, tiles: ['land'] }))
+  })
+  await page.goto('/?map=local')
+
+  await expect(page.getByRole('status')).toContainText('scenario spawn is outside or on invalid terrain')
+  await page.getByRole('combobox', { name: 'scenario' }).click()
+  await expect(page.getByRole('option', { name: '4v4' })).toBeVisible()
+  await page.getByRole('option', { name: '4v4' }).click()
+
+  await expect.poll(() => new URL(page.url()).searchParams.get('map')).toBe('local')
+  await expect.poll(() => new URL(page.url()).searchParams.get('scenario')).toBe('4v4')
+})
