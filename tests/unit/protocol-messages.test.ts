@@ -172,6 +172,11 @@ describe('protocol snapshot message', () => {
     ).toBe(false)
   })
 
+  it('validates the optional carrying flag', () => {
+    expect(isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], carrying: true }] })).toBe(true)
+    expect(isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], carrying: 'yes' }] })).toBe(false)
+  })
+
   it('rejects unknown kinds, order states, and phases', () => {
     expect(
       isSnapshotMessage({

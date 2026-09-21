@@ -42,6 +42,14 @@ describe('economyAnimation', () => {
   it('falls back to run/idle handling when there is no economy phase', () => {
     expect(economyAnimation(frames, undefined, true)).toBeNull()
   })
+
+  it('shows carry_run while carrying cargo without an economy phase', () => {
+    expect(economyAnimation(frames, undefined, true, true)).toBe(frames.carryRun)
+  })
+
+  it('shows carry_idle while stopped and carrying cargo without an economy phase', () => {
+    expect(economyAnimation(frames, undefined, false, true)).toBe(frames.carryIdle)
+  })
 })
 
 describe('economyFrameKey', () => {

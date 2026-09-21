@@ -2,6 +2,20 @@ import { describe, expect, it } from 'vitest'
 import { snapshotToFrame } from '../../apps/web/src/client/snapshot-to-frame.js'
 
 describe('snapshot to frame mapping', () => {
+  it('forwards the carrying flag to the render unit', () => {
+    const frame = snapshotToFrame({
+      type: 'snapshot',
+      tick: 1,
+      phase: 'RUNNING',
+      units: [{ id: 1, x: 0, y: 0, owner: 0, carrying: true }],
+      buildings: [],
+      mineralNodes: [],
+      players: [],
+      events: []
+    })
+    expect(frame.units[0]!.carrying).toBe(true)
+  })
+
   it('maps a snapshot message to a render frame', () => {
     const frame = snapshotToFrame({
       type: 'snapshot',
