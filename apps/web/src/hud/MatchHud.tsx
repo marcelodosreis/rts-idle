@@ -1,6 +1,6 @@
 import type { BuildCatalogEntry } from '@rts/protocol'
 import type { RefObject } from 'react'
-import type { MessageLogEntry } from '../screens/useMatchSession'
+import type { MessageLogEntry } from '../screens/useMessageLog'
 import { CommandBar } from './CommandBar'
 import { MatchOverlay } from './MatchOverlay'
 import { SelectionPanel } from './SelectionPanel'

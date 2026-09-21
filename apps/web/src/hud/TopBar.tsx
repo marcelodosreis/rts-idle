@@ -3,7 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import type { MessageLogEntry } from '../screens/useMatchSession'
+import type { MessageLogEntry } from '../screens/useMessageLog'
 import type { HudResources } from './types'
 
 interface TopBarProps {
@@ -68,6 +68,19 @@ function formatTimestamp(timestamp: number): string {
   return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
+function eventTypeClass(type: MessageLogEntry['type']): string {
+  switch (type) {
+    case 'error':
+      return 'text-destructive'
+    case 'command':
+      return 'text-blue-400'
+    case 'event':
+      return 'text-amber-400'
+    default:
+      return 'text-foreground'
+  }
+}
+
 /**
  * Top bar: brand/status/tick, match controls (scenario, aggression, sprites),
  * and resource stats. All zones live in a single wrapping flex row, so on
@@ -122,9 +135,7 @@ export function TopBar({
                       <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                         {formatTimestamp(entry.timestamp)}
                       </span>
-                      <span className={`text-xs ${entry.type === 'error' ? 'text-destructive' : 'text-foreground'}`}>
-                        {entry.message}
-                      </span>
+                      <span className={`text-xs ${eventTypeClass(entry.type)}`}>{entry.message}</span>
                     </li>
                   ))}
                 </ul>
