@@ -1,45 +1,14 @@
 import { distSquaredFixed, type EntityId, type Fixed, type PlayerId } from '@rts/shared'
-import { UNIT_SPEED_TILES_PER_SECOND } from '../commands/move.js'
 import type { Order } from '../contracts/orders.js'
 import { GATHER_TICKS_PER_MINERAL } from '../data/economy-rules.js'
+import { isActiveConstruction, isCloserCandidate, isCompletedBase } from '../domain/building-predicates.js'
 import { Building } from '../ecs/building-component.js'
 import { Cargo, Kind, MineralNode, Movement, Orders, Owner, Position } from '../ecs/components.js'
+import { clearMovement, setMovementDestination } from '../movement/destination.js'
+import { removeFrontOrder, replaceFrontOrder } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
 
 type GatherOrder = Extract<Order, { readonly type: 'GATHER' }>
-
-function replaceFrontOrder(state: GameState, workerId: EntityId, order: GatherOrder): void {
-  const orders = state.world.store(Orders)
-  const queue = orders.get(workerId)?.queue ?? []
-  orders.set(workerId, { queue: [order, ...queue.slice(1)] })
-}
-
-function clearFrontOrder(state: GameState, workerId: EntityId): void {
-  const orders = state.world.store(Orders)
-  const queue = orders.get(workerId)?.queue ?? []
-  const remaining = queue.slice(1)
-  if (remaining.length === 0) {
-    orders.delete(workerId)
-  } else {
-    orders.set(workerId, { queue: remaining })
-  }
-}
-
-function moveWorker(state: GameState, workerId: EntityId, x: Fixed, y: Fixed): void {
-  const position = state.world.store(Position).get(workerId)
-  const movements = state.world.store(Movement)
-  if (position?.x === x && position.y === y) {
-    movements.delete(workerId)
-    return
-  }
-  movements.set(workerId, {
-    speedTilesPerSecond: UNIT_SPEED_TILES_PER_SECOND,
-    destX: x,
-    destY: y,
-    remainderX: 0,
-    remainderY: 0
-  })
-}
 
 function nearestOwnedBase(state: GameState, owner: PlayerId, x: Fixed, y: Fixed): EntityId | null {
   const buildings = state.world.store(Building)
@@ -50,16 +19,11 @@ function nearestOwnedBase(state: GameState, owner: PlayerId, x: Fixed, y: Fixed)
   for (const entityId of state.world.aliveIds()) {
     const position = positions.get(entityId)
     const building = buildings.get(entityId)
-    const legacyBase = building !== undefined && building.buildingType === undefined
-    if (
-      (!legacyBase && (building?.buildingType !== 'BASE' || building.status !== 'COMPLETED')) ||
-      owners.get(entityId)?.owner !== owner ||
-      position === undefined
-    ) {
+    if (!isCompletedBase(building) || owners.get(entityId)?.owner !== owner || position === undefined) {
       continue
     }
     const distance = distSquaredFixed(x, y, position.x, position.y)
-    if (distance < nearestDistance) {
+    if (isCloserCandidate(distance, entityId, nearestDistance, nearest)) {
       nearest = entityId
       nearestDistance = distance
     }
@@ -71,24 +35,24 @@ function beginReturn(state: GameState, workerId: EntityId, order: GatherOrder, o
   const position = state.world.store(Position).get(workerId)!
   const baseId = nearestOwnedBase(state, owner, position.x, position.y)
   if (baseId === null) {
-    state.world.store(Movement).delete(workerId)
+    clearMovement(state, workerId)
     replaceFrontOrder(state, workerId, { ...order, baseId: null, phase: 'WAITING_FOR_BASE', progressTicks: 0 })
     return
   }
   const basePosition = state.world.store(Position).get(baseId)!
   replaceFrontOrder(state, workerId, { ...order, baseId, phase: 'TO_BASE', progressTicks: 0 })
-  moveWorker(state, workerId, basePosition.x, basePosition.y)
+  setMovementDestination(state, workerId, basePosition.x, basePosition.y)
 }
 
 function resumeGathering(state: GameState, workerId: EntityId, order: GatherOrder): void {
   const node = state.world.store(MineralNode).get(order.nodeId)
   const nodePosition = state.world.store(Position).get(order.nodeId)
   if (node === undefined || node.remaining === 0 || nodePosition === undefined) {
-    clearFrontOrder(state, workerId)
+    removeFrontOrder(state, workerId)
     return
   }
   replaceFrontOrder(state, workerId, { ...order, baseId: null, phase: 'TO_NODE', progressTicks: 0 })
-  moveWorker(state, workerId, nodePosition.x, nodePosition.y)
+  setMovementDestination(state, workerId, nodePosition.x, nodePosition.y)
 }
 
 function depositCargo(state: GameState, workerId: EntityId, order: GatherOrder, owner: PlayerId): void {
@@ -104,10 +68,7 @@ function updateReturn(state: GameState, workerId: EntityId, order: GatherOrder, 
   const basePosition = baseId === null ? undefined : state.world.store(Position).get(baseId)
   const validBase =
     baseId !== null &&
-    (state.world.store(Building).get(baseId)?.buildingType === 'BASE' ||
-      state.world.store(Building).get(baseId)?.buildingType === undefined) &&
-    (state.world.store(Building).get(baseId)?.status === 'COMPLETED' ||
-      state.world.store(Building).get(baseId)?.status === undefined) &&
+    isCompletedBase(state.world.store(Building).get(baseId)) &&
     state.world.store(Owner).get(baseId)?.owner === owner &&
     basePosition !== undefined
   if (!validBase) {
@@ -119,7 +80,7 @@ function updateReturn(state: GameState, workerId: EntityId, order: GatherOrder, 
   }
   const workerPosition = state.world.store(Position).get(workerId)!
   if (workerPosition.x !== basePosition.x || workerPosition.y !== basePosition.y) {
-    moveWorker(state, workerId, basePosition.x, basePosition.y)
+    setMovementDestination(state, workerId, basePosition.x, basePosition.y)
     return
   }
   depositCargo(state, workerId, order, owner)
@@ -138,14 +99,14 @@ function updateGathering(state: GameState, workerId: EntityId, order: GatherOrde
     if (cargo.amount > 0) {
       beginReturn(state, workerId, order, owner)
     } else {
-      clearFrontOrder(state, workerId)
+      removeFrontOrder(state, workerId)
     }
     return
   }
   const workerPosition = state.world.store(Position).get(workerId)!
   if (workerPosition.x !== nodePosition.x || workerPosition.y !== nodePosition.y) {
     replaceFrontOrder(state, workerId, { ...order, baseId: null, phase: 'TO_NODE', progressTicks: 0 })
-    moveWorker(state, workerId, nodePosition.x, nodePosition.y)
+    setMovementDestination(state, workerId, nodePosition.x, nodePosition.y)
     return
   }
   const progressTicks = order.progressTicks + 1
@@ -174,7 +135,7 @@ function updateConstruction(state: GameState): void {
   const owners = state.world.store(Owner)
   for (const buildingId of state.world.aliveIds()) {
     const construction = buildings.get(buildingId)
-    if (construction === undefined || construction.status === 'COMPLETED') {
+    if (!isActiveConstruction(construction)) {
       continue
     }
     const builderId = construction.builderId
@@ -204,12 +165,7 @@ function updateConstruction(state: GameState): void {
     const progressTicks = Math.min(construction.totalTicks, construction.progressTicks + 1)
     if (progressTicks >= construction.totalTicks) {
       buildings.set(buildingId, { ...construction, status: 'COMPLETED', progressTicks, builderId: null })
-      const queue = orders.get(builderId)?.queue.slice(1) ?? []
-      if (queue.length === 0) {
-        orders.delete(builderId)
-      } else {
-        orders.set(builderId, { queue })
-      }
+      removeFrontOrder(state, builderId)
     } else {
       buildings.set(buildingId, {
         ...construction,

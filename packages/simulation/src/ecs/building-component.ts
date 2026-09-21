@@ -23,29 +23,18 @@ function buildingTypeTag(buildingType: BuildingType): number {
 export const Building: ComponentType<BuildingData> = {
   name: 'building',
   encode(writer: CanonicalWriter, value) {
-    const legacy = value.buildingType === undefined
-    const building = legacy
-      ? {
-          buildingType: 'BASE' as const,
-          status: 'COMPLETED' as const,
-          progressTicks: 1,
-          totalTicks: 1,
-          builderId: null,
-          footprint: { x: 0, y: 0, width: 1, height: 1 }
-        }
-      : value
-    writer.writeU8(buildingTypeTag(building.buildingType))
-    writer.writeU8(STATUS_TAGS[building.status])
-    writer.writeI32(building.progressTicks)
-    writer.writeI32(building.totalTicks)
-    writer.writeU8(building.builderId === null ? 0 : 1)
-    if (building.builderId !== null) {
-      writer.writeU32(building.builderId)
+    writer.writeU8(buildingTypeTag(value.buildingType))
+    writer.writeU8(STATUS_TAGS[value.status])
+    writer.writeI32(value.progressTicks)
+    writer.writeI32(value.totalTicks)
+    writer.writeU8(value.builderId === null ? 0 : 1)
+    if (value.builderId !== null) {
+      writer.writeU32(value.builderId)
     }
-    writer.writeI32(building.footprint.x)
-    writer.writeI32(building.footprint.y)
-    writer.writeI32(building.footprint.width)
-    writer.writeI32(building.footprint.height)
+    writer.writeI32(value.footprint.x)
+    writer.writeI32(value.footprint.y)
+    writer.writeI32(value.footprint.width)
+    writer.writeI32(value.footprint.height)
   },
   decode(reader: CanonicalReader) {
     const buildingType = reader.readU8()

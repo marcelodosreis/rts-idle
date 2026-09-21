@@ -1,7 +1,9 @@
 import { distSquaredFixed, type EntityId, FIXED_SCALE } from '@rts/shared'
-import { UNIT_SPEED_TILES_PER_SECOND } from '../commands/move.js'
 import type { Order } from '../contracts/orders.js'
-import { Combat, Movement, Orders, Owner, Position } from '../ecs/components.js'
+import { isCloserCandidate } from '../domain/building-predicates.js'
+import { Combat, Orders, Owner, Position } from '../ecs/components.js'
+import { clearMovement, setMovementDestination } from '../movement/destination.js'
+import { clearOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
 
 /**
@@ -33,7 +35,7 @@ function nearestEnemyInRange(
       continue
     }
     const distance = distSquaredFixed(position.x, position.y, otherPosition.x, otherPosition.y)
-    if (distance <= rangeFixed * rangeFixed && distance < bestDistance) {
+    if (distance <= rangeFixed * rangeFixed && isCloserCandidate(distance, other, bestDistance, best)) {
       bestDistance = distance
       best = other
     }
@@ -56,8 +58,7 @@ function resolveTarget(
 ): EntityId | null {
   if (front.type === 'ATTACK') {
     if (!state.world.hasEntity(front.targetId)) {
-      const orders = state.world.store(Orders)
-      orders.delete(id)
+      clearOrders(state, id)
       return null
     }
     return front.targetId
@@ -95,7 +96,6 @@ export function combatSystem(state: GameState): void {
   const owners = state.world.store(Owner)
   const combats = state.world.store(Combat)
   const orders = state.world.store(Orders)
-  const movements = state.world.store(Movement)
 
   for (const id of state.world.aliveIds()) {
     const combat = combats.get(id)
@@ -131,20 +131,14 @@ export function combatSystem(state: GameState): void {
 
     if (inRange) {
       // Stand and fire; do not walk into melee range.
-      movements.delete(id)
+      clearMovement(state, id)
       if (cooldownRemaining === 0) {
         accumulateDamage(state, targetId, id, combat.damage)
         combats.set(id, { ...combat, cooldownRemaining: combat.cooldownTicks })
       }
     } else if (front.type === 'ATTACK') {
       // Out of range and directly ordered: chase the target.
-      movements.set(id, {
-        speedTilesPerSecond: UNIT_SPEED_TILES_PER_SECOND,
-        destX: targetPosition.x,
-        destY: targetPosition.y,
-        remainderX: 0,
-        remainderY: 0
-      })
+      setMovementDestination(state, id, targetPosition.x, targetPosition.y)
     }
   }
 }
