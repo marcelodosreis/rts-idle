@@ -109,7 +109,12 @@ function resourcesForHuman(message: SnapshotMessage): MatchSessionState['resourc
   if (humanPlayer === undefined) {
     return null
   }
-  return { mineral: humanPlayer.gold, energy: 0, supply: 0, supplyCap: 0 }
+  return {
+    mineral: humanPlayer.gold,
+    energy: 0,
+    supply: humanPlayer.usedSupply,
+    supplyCap: humanPlayer.supplyCap
+  }
 }
 
 function unitForHud(unit: SnapshotMessage['units'][number]): Omit<HudSelectionUnit, 'id' | 'moving'> {

@@ -1,4 +1,4 @@
-import { BARRACKS_BUILDING, BASE_BUILDING } from '@rts/game-data'
+import { BARRACKS_BUILDING, BASE_BUILDING, SUPPLY_DEPOT_BUILDING } from '@rts/game-data'
 import { START_ENTITY_ID } from '@rts/shared'
 import { Building, createSimulation, createWorld, simulationFromSnapshot } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
@@ -11,7 +11,8 @@ describe('base construction data and persistence', () => {
       label: 'Base',
       footprint: { width: 2, height: 2 },
       costMinerals: 100,
-      constructionTicks: 100
+      constructionTicks: 100,
+      supplyProvided: 10
     })
   })
 
@@ -21,7 +22,19 @@ describe('base construction data and persistence', () => {
       label: 'Barracks',
       footprint: { width: 3, height: 3 },
       costMinerals: 150,
-      constructionTicks: 100
+      constructionTicks: 100,
+      supplyProvided: 0
+    })
+  })
+
+  it('defines a deterministic Supply Depot footprint, cost, duration, and capacity', () => {
+    expect(SUPPLY_DEPOT_BUILDING).toEqual({
+      type: 'SUPPLY_DEPOT',
+      label: 'Supply Depot',
+      footprint: { width: 2, height: 2 },
+      costMinerals: 100,
+      constructionTicks: 100,
+      supplyProvided: 8
     })
   })
 

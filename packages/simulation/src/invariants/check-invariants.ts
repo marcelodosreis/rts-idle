@@ -1,4 +1,5 @@
 import { GATHER_TICKS_PER_MINERAL, MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
+import { MAX_SUPPLY_CAPACITY } from '../data/supply-rules.js'
 import { Building } from '../ecs/building-component.js'
 import { Cargo, Combat, Health, Kind, MineralNode, Orders, Owner, Position } from '../ecs/components.js'
 import {
@@ -151,6 +152,12 @@ function checkPlayers(state: GameState): void {
   for (const player of state.players) {
     if (!Number.isInteger(player.gold) || player.gold < 0) {
       fail(`player ${player.id} has invalid mineral balance ${player.gold}`)
+    }
+    if (!Number.isInteger(player.usedSupply) || player.usedSupply < 0) {
+      fail(`player ${player.id} has invalid used supply ${player.usedSupply}`)
+    }
+    if (!Number.isInteger(player.supplyCap) || player.supplyCap < 0 || player.supplyCap > MAX_SUPPLY_CAPACITY) {
+      fail(`player ${player.id} has invalid supply cap ${player.supplyCap}`)
     }
     if (player.defeated && aliveOwners.has(player.id)) {
       fail(`defeated player ${player.id} still has living units`)

@@ -17,7 +17,24 @@ export interface BuildingData {
 const STATUS_TAGS = { FOUNDATION: 0, UNDER_CONSTRUCTION: 1, COMPLETED: 2 } as const
 
 function buildingTypeTag(buildingType: BuildingType): number {
-  return buildingType === 'BASE' ? 0 : 1
+  switch (buildingType) {
+    case 'BASE':
+      return 0
+    case 'BARRACKS':
+      return 1
+    case 'SUPPLY_DEPOT':
+      return 2
+  }
+}
+
+function buildingTypeFromTag(tag: number): BuildingType {
+  if (tag === 0) {
+    return 'BASE'
+  }
+  if (tag === 1) {
+    return 'BARRACKS'
+  }
+  return 'SUPPLY_DEPOT'
 }
 
 export const Building: ComponentType<BuildingData> = {
@@ -38,7 +55,7 @@ export const Building: ComponentType<BuildingData> = {
   },
   decode(reader: CanonicalReader) {
     const buildingType = reader.readU8()
-    if (buildingType !== 0 && buildingType !== 1) {
+    if (buildingType !== 0 && buildingType !== 1 && buildingType !== 2) {
       throw new Error(`Building: invalid building type tag ${buildingType}`)
     }
     const statusTag = reader.readU8()
@@ -56,7 +73,7 @@ export const Building: ComponentType<BuildingData> = {
     }
     const builderId = builderPresent === 1 ? reader.readU32() : null
     return {
-      buildingType: buildingType === 0 ? 'BASE' : 'BARRACKS',
+      buildingType: buildingTypeFromTag(buildingType),
       status,
       progressTicks,
       totalTicks,

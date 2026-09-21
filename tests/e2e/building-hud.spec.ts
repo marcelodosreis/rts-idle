@@ -61,8 +61,26 @@ test('construction HUD uses the concise building labels and preserves costs', as
 
   await expect(page.getByRole('button', { name: 'Base · 100', exact: true })).toBeEnabled()
   await expect(page.getByRole('button', { name: 'Barracks · 150', exact: true })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'Supply Depot · 100', exact: true })).toBeEnabled()
   await expect(page.getByRole('button', { name: 'Build Base · 100', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Build Barracks · 150', exact: true })).toHaveCount(0)
+})
+
+test('Supply Depot capacity activates only after construction completes', async ({ page }) => {
+  test.setTimeout(30_000)
+  await startMatch(page)
+  const workerId = (await workerIds(page))[0]!
+  await selectWorker(page, workerId)
+  await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 10')
+  await page.getByRole('button', { name: 'Supply Depot · 100', exact: true }).click()
+
+  const target = { x: tilesToFixed(10), y: tilesToFixed(9) }
+  const point = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
+  await page.mouse.click(point.x, point.y)
+  await expect.poll(() => constructionAt(page, target)).toMatchObject({ status: 'FOUNDATION' })
+  await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 10')
+  await expect.poll(() => constructionAt(page, target), { timeout: 20_000 }).toMatchObject({ status: 'COMPLETED' })
+  await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 18')
 })
 
 test('construction stays at the clicked location while the worker travels', async ({ page }) => {

@@ -8,13 +8,15 @@ export type Phase = 'RUNNING' | 'FINISHED'
 
 /**
  * One of the four competitive slots. `defeated` flips when the player
- * surrenders or the victory system eliminates them; `gold` is the wallet (the
- * economy systems land in Phase 2, the field is reserved here).
+ * surrenders or the victory system eliminates them; `gold` is the mineral
+ * wallet and supply is authoritative economy state projected to the client.
  */
 export interface PlayerState {
   readonly id: PlayerId
   defeated: boolean
   gold: number
+  usedSupply: number
+  supplyCap: number
 }
 
 /**

@@ -49,6 +49,12 @@ async function mineralValue(page: Page): Promise<number> {
     })
 }
 
+test('economy HUD shows authoritative starting supply', async ({ page }) => {
+  await page.goto('/?scenario=economy&aggression=passive')
+  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 10')
+})
+
 async function boxSelect(page: Page, positions: readonly { readonly x: number; readonly y: number }[]): Promise<void> {
   const points = await Promise.all(positions.map((position) => canvasPointForFixed(page, position.x, position.y)))
   await page.mouse.move(

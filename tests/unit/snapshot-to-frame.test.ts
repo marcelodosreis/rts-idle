@@ -43,8 +43,8 @@ describe('snapshot to frame mapping', () => {
       ],
       mineralNodes: [{ id: 4, x: 700, y: 800, remaining: 25 }],
       players: [
-        { id: 0, defeated: false, gold: 0 },
-        { id: 1, defeated: true, gold: 5 }
+        { id: 0, defeated: false, gold: 0, usedSupply: 2, supplyCap: 10 },
+        { id: 1, defeated: true, gold: 5, usedSupply: 0, supplyCap: 0 }
       ],
       events: [{ type: 'damageDealt', targetId: 1, amount: 10, targetHp: 90 }]
     })
@@ -85,8 +85,8 @@ describe('snapshot to frame mapping', () => {
     ])
     expect(frame.mineralNodes).toEqual([{ id: 4, x: 700, y: 800, remaining: 25 }])
     expect(frame.players).toEqual([
-      { id: 0, defeated: false, gold: 0 },
-      { id: 1, defeated: true, gold: 5 }
+      { id: 0, defeated: false, gold: 0, usedSupply: 2, supplyCap: 10 },
+      { id: 1, defeated: true, gold: 5, usedSupply: 0, supplyCap: 0 }
     ])
     expect(frame.events).toEqual([{ type: 'damageDealt', targetId: 1, amount: 10, targetHp: 90 }])
   })

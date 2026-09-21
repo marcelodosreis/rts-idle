@@ -5,7 +5,7 @@ import { SEEDS, TEST_IDENTITY } from '../fixtures/index.js'
 describe('frozen systems pipeline', () => {
   it('declares the system order explicitly and immutably', () => {
     const names = SYSTEM_PIPELINE.map((step) => step.name)
-    expect(names).toEqual(['orders', 'movement', 'economy', 'combat', 'death', 'victory', 'invariants'])
+    expect(names).toEqual(['orders', 'movement', 'economy', 'combat', 'death', 'supply', 'victory', 'invariants'])
     expect(Object.isFrozen(SYSTEM_PIPELINE)).toBe(true)
   })
 

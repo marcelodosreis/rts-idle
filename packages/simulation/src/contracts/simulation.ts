@@ -1,6 +1,10 @@
 import type { World } from '../ecs/world.js'
 import type { PlacementMapBounds } from '../placement/building-placement.js'
 import type { PlayerState } from '../state/state.js'
+
+export type InitialPlayerState = Omit<PlayerState, 'usedSupply' | 'supplyCap'> &
+  Partial<Pick<PlayerState, 'usedSupply' | 'supplyCap'>>
+
 import type { SimulationEvent } from '../systems/events.js'
 import type { CommandRejectedError } from './commands.js'
 
@@ -22,6 +26,6 @@ export interface SimulationOptions {
   readonly seed: number
   readonly identity: RulesIdentity
   readonly initialWorld?: World
-  readonly initialPlayers?: readonly PlayerState[]
+  readonly initialPlayers?: readonly InitialPlayerState[]
   readonly mapBounds?: PlacementMapBounds
 }

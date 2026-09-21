@@ -18,7 +18,7 @@ export interface HudSelectionUnit {
 
 export interface HudConstruction {
   readonly id: number
-  readonly buildingType: 'BASE' | 'BARRACKS'
+  readonly buildingType: 'BASE' | 'BARRACKS' | 'SUPPLY_DEPOT'
   readonly owner: number
   readonly status: 'FOUNDATION' | 'UNDER_CONSTRUCTION' | 'COMPLETED' | 'PAUSED'
   readonly progressTicks: number

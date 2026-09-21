@@ -45,6 +45,13 @@ const buildBarracks = (workerId: number, sequence: number) => ({
   intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'BARRACKS' as const, x: 0, y: 0 } }
 })
 
+const buildDepot = (workerId: number, sequence: number) => ({
+  tick: 1,
+  playerId: 0,
+  sequence,
+  intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'SUPPLY_DEPOT' as const, x: 0, y: 0 } }
+})
+
 describe('BUILD simulation lifecycle', () => {
   it('pauses, transfers to another worker, and completes as a functional Base', () => {
     const sim = scenario()
@@ -170,5 +177,17 @@ describe('BUILD simulation lifecycle', () => {
       b.step()
     }
     expect(b.hashState()).toBe(a.hashState())
+  })
+
+  it('activates Supply Depot capacity only on its completion tick', () => {
+    const sim = scenario(100, { [START_ENTITY_ID]: { x: 256, y: 0 } })
+    sim.step([buildDepot(START_ENTITY_ID, 1)])
+    expect(sim.inspectState().players[0]?.supplyCap).toBe(0)
+    for (let i = 0; i < 98; i += 1) {
+      sim.step()
+      expect(sim.inspectState().players[0]?.supplyCap).toBe(0)
+    }
+    sim.step()
+    expect(sim.inspectState().players[0]?.supplyCap).toBe(8)
   })
 })
