@@ -8,8 +8,8 @@
 | Status | Quantidade |
 |--------|------------|
 | open | 11 |
-| closed | 12 |
-| **total** | **23** |
+| closed | 13 |
+| **total** | **24** |
 
 ## Detalhes
 
@@ -37,6 +37,7 @@
 | 2026-09-20-construction-work-point-visual-distance | open | presentation | — | 2 teste(s) |
 | 2026-09-20-postmortem-metadata-contract-violation | open | convention | — | 1 teste(s) |
 | 2026-09-20-renderer-snapshot-before-mount | open | presentation | — | 1 teste(s) |
+| 2026-09-21-carry-state-not-projected-without-order | closed | presentation | — | 2 teste(s) |
 | 2026-09-21-renderer-lockfile-drift | open | completion-gate | — | 1 teste(s) |
 
 ## Legenda

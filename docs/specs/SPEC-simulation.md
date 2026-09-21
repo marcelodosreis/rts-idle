@@ -36,6 +36,12 @@ packages/simulation/src/
 
 Integer/fixed-point; xoshiro128** RNG; monotonic IDs; single writer; system order frozen and documented (master plan, section 9).
 
+## Economy order contract
+
+- `Order` gains `DEPOSIT { buildingId }` (canonical tag 7): the worker walks to
+  the Base, credits its `Cargo` on arrival, then clears the order and stays
+  idle. Executed by the economy system; system order is unchanged.
+
 ## Testing Strategy
 
 See master plan (sections 22, 23). Each system has behavioral tests; invariants run during simulations; determinism tests equivalent streams.

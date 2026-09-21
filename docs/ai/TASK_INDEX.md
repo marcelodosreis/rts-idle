@@ -34,6 +34,7 @@
 | ECONOMY-004 | Cargo system (gather + deposit) | done | ECONOMY-002, ECONOMY-003 | simulation | unit, simulation |
 | ECONOMY-005 | Base building (deposit point) | done | ECONOMY-004 | simulation, game-data | unit, simulation |
 | VS-01B | Playable economy integration | done | ECONOMY-003, ECONOMY-004, ECONOMY-005 | protocol, server, renderer, web | unit, integration, e2e |
+| ECONOMY-006 | Manual cargo deposit command | done | ECONOMY-004, ECONOMY-005 | shared, protocol, simulation, server, renderer, web | unit, simulation, contracts, invariants, integration, e2e |
 | BUILD-001 | Building placement system | done | — | simulation | unit, invariants |
 | BUILD-002 | Base construction | done | BUILD-001, ECONOMY-005 | simulation, game-data | unit, simulation |
 | BUILD-003 | Barracks construction | done | BUILD-002 | simulation, game-data | unit, simulation |
@@ -43,6 +44,7 @@
 | PROD-003 | Supply cap system | done | BUILD-004 | simulation | unit, simulation |
 | ECONOMY-UI-001 | Resource display in HUD | done | ECONOMY-002 | web | e2e |
 | ECONOMY-UI-004 | Worker gather/carry feedback | done | ECONOMY-003, ECONOMY-004 | protocol, server, renderer, web | unit, integration, e2e |
+| ECONOMY-UI-005 | Carrying state without a gather order | done | ECONOMY-004, ECONOMY-006 | protocol, renderer, web | unit, integration, e2e |
 | ECONOMY-UI-002 | Build menu | pending | BUILD-001 | web | e2e |
 | ECONOMY-UI-003 | Production panel | pending | PROD-001 | web | e2e |
 
