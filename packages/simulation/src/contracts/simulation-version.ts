@@ -8,5 +8,6 @@
  * 0.5.0: BUILD construction state, orders, and map bounds joined canonical state.
  * 0.6.0: BARRACKS construction and marker joined canonical state.
  * 0.7.0: Base, Barracks, and Construction were unified as Building.
+ * 0.8.0: BUILD orders persist their deterministic construction work point.
  */
-export const SIMULATION_VERSION = '0.7.0'
+export const SIMULATION_VERSION = '0.8.0'

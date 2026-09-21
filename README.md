@@ -50,11 +50,13 @@ Dependency direction is enforced and verified by tests: the simulation stays iso
 
 ## Getting started
 
-Prerequisites: NVM, Node 24 from `.nvmrc`, and Corepack.
+Prerequisites: NVM, Node 24 from `.nvmrc`, and Corepack. Local command workflow
+and validation rules are defined in [`docs/ai/EXECUTION_PROTOCOL.md`](docs/ai/EXECUTION_PROTOCOL.md).
 
 ```bash
 nvm install
 nvm use
+node --version  # must report v24.x
 corepack enable
 corepack pnpm install --frozen-lockfile
 
@@ -74,6 +76,9 @@ corepack pnpm run build
 # Full local validation gate (typecheck + lint + all suites + build):
 corepack pnpm run verify
 ```
+
+Node 20 is not a supported validation environment for this project; a passing
+test or build under Node 20 does not count as verification.
 
 ### E2E (Playwright)
 

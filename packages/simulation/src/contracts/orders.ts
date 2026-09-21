@@ -21,4 +21,9 @@ export type Order =
       readonly phase: GatherPhase
       readonly progressTicks: number
     }
-  | { readonly type: 'BUILD'; readonly buildingId: EntityId; readonly buildingType: BuildingType }
+  | {
+      readonly type: 'BUILD'
+      readonly buildingId: EntityId
+      readonly buildingType: BuildingType
+      readonly workPoint: { readonly x: Fixed; readonly y: Fixed }
+    }

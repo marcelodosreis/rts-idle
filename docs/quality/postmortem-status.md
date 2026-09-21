@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 6 |
+| open | 9 |
 | closed | 12 |
-| **total** | **18** |
+| **total** | **21** |
 
 ## Detalhes
 
@@ -32,6 +32,9 @@
 | 2026-09-19-renderer-economy-progress-reference-error | closed | presentation | — | 1 teste(s) |
 | 2026-09-20-building-e2e-selected-initial-base | open | coverage | — | 1 teste(s) |
 | 2026-09-20-building-reassignment-persistence | open | coverage | — | 1 teste(s) |
+| 2026-09-20-construction-e2e-stale-work-point-assertion | open | completion-gate | — | 1 teste(s) |
+| 2026-09-20-construction-nearest-edge | open | presentation | — | 3 teste(s) |
+| 2026-09-20-construction-work-point-visual-distance | open | presentation | — | 2 teste(s) |
 | 2026-09-20-postmortem-metadata-contract-violation | open | convention | — | 1 teste(s) |
 
 ## Legenda

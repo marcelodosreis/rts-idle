@@ -192,12 +192,12 @@ function updateConstruction(state: GameState): void {
       continue
     }
     const builderPosition = positions.get(builderId)!
-    const buildingPosition = positions.get(buildingId)
+    const builderWorkPoint = builderOrder?.type === 'BUILD' ? builderOrder.workPoint : undefined
     if (
-      buildingPosition === undefined ||
+      builderWorkPoint === undefined ||
       movements.has(builderId) ||
-      builderPosition.x !== buildingPosition.x ||
-      builderPosition.y !== buildingPosition.y
+      builderPosition.x !== builderWorkPoint.x ||
+      builderPosition.y !== builderWorkPoint.y
     ) {
       continue
     }

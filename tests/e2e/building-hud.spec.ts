@@ -54,6 +54,9 @@ test('construction HUD uses the concise building labels and preserves costs', as
 
   const workerId = (await workerIds(page))[0]!
   expect(workerId).toBeGreaterThan(0)
+  await expect
+    .poll(() => page.evaluate((id) => window.__rtsDebug!.getPositions()[String(id)]!, workerId))
+    .toEqual({ x: tilesToFixed(8), y: tilesToFixed(11) })
   await selectWorker(page, workerId)
 
   await expect(page.getByRole('button', { name: 'Base · 100', exact: true })).toBeEnabled()
@@ -94,6 +97,9 @@ test('construction stays at the clicked location while the worker travels', asyn
       y: target.y,
       status: 'COMPLETED'
     })
+  await expect
+    .poll(() => page.evaluate((id) => window.__rtsDebug!.getPositions()[String(id)]!, workerId), { timeout: 5_000 })
+    .toEqual({ x: tilesToFixed(10), y: tilesToFixed(10) })
 
   await page.mouse.click(point.x, point.y)
   await expect(page.getByTestId('construction-panel')).toContainText('Base · Ready')
@@ -134,9 +140,8 @@ test('a construction can pause and resume with another worker through the HUD', 
   const targetPoint = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
   await page.mouse.click(targetPoint.x, targetPoint.y)
 
-  await expect.poll(() => constructionAt(page, target)).toMatchObject({ status: 'UNDER_CONSTRUCTION' })
+  await expect.poll(() => constructionAt(page, target)).toMatchObject({ status: 'FOUNDATION' })
 
-  await selectWorker(page, builder)
   await page.getByRole('button', { name: 'Stop', exact: true }).click()
   await page.mouse.click(targetPoint.x, targetPoint.y)
   await expect(page.getByTestId('construction-panel')).toContainText('Paused')
