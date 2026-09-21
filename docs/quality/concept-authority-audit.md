@@ -27,7 +27,7 @@ tasks so that behavior, protocol, and serialization changes are not coupled.
 | Medium | Animation timing | resolved | AUTH-015, `caf811f`; unit tests PASS. |
 | Medium | Coordinates | resolved | AUTH-014, `caf811f`; unit tests PASS. |
 | Medium | Runtime guards | resolved | AUTH-005, `da0920d`; contracts PASS. |
-| Low | Metrics | intentionally local | AUTH-016; create a shared diagnostics/metrics contract only when three independent consumers require the same statistical contract. Documentation review and lint PASS. |
+| Low | Metrics | intentionally local | AUTH-016, `abeea60`; create a shared diagnostics/metrics contract only when three independent consumers require the same statistical contract. Documentation review and lint PASS. |
 
 ## Deliberate non-centralization
 
