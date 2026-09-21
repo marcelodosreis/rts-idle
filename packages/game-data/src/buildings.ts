@@ -2,6 +2,7 @@ import type { BuildingType } from '@rts/shared'
 
 export interface BuildingDefinition {
   readonly type: BuildingType
+  readonly label: string
   readonly footprint: { readonly width: number; readonly height: number }
   readonly costMinerals: number
   readonly constructionTicks: number
@@ -10,6 +11,7 @@ export interface BuildingDefinition {
 /** Baseline building content values; balance is intentionally deferred. */
 export const BASE_BUILDING: BuildingDefinition = Object.freeze({
   type: 'BASE',
+  label: 'Base',
   footprint: Object.freeze({ width: 2, height: 2 }),
   costMinerals: 100,
   constructionTicks: 100
@@ -19,6 +21,7 @@ export const BASE_DEFINITION = BASE_BUILDING
 
 export const BARRACKS_BUILDING: BuildingDefinition = Object.freeze({
   type: 'BARRACKS',
+  label: 'Barracks',
   footprint: Object.freeze({ width: 3, height: 3 }),
   costMinerals: 150,
   constructionTicks: 100

@@ -22,7 +22,6 @@
     "@radix-ui/react-toggle-group": "^1.1.19",
     "@radix-ui/react-tooltip": "^1.2.16",
     "@rts/audio": "workspace:*",
-    "@rts/game-data": "workspace:*",
     "@rts/protocol": "workspace:*",
     "@rts/renderer": "workspace:*",
     "@rts/shared": "workspace:*",

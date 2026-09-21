@@ -1,15 +1,29 @@
+import type { BuildingType } from '@rts/shared'
 import type { MutableRefObject } from 'react'
 import { useCallback, useRef, useState } from 'react'
 
 /** Pending command modes that await a target click on the battlefield. */
-export type CommandMode = 'none' | 'patrol' | 'attack_move' | 'attack' | 'build_base' | 'build_barracks'
+export type CommandMode =
+  | 'idle'
+  | 'patrol'
+  | 'attack'
+  | 'attack_move'
+  | { readonly kind: 'build'; readonly buildingType: BuildingType }
+
+export function isBuildMode(mode: CommandMode): mode is Extract<CommandMode, { readonly kind: 'build' }> {
+  return typeof mode === 'object' && mode.kind === 'build'
+}
+
+export function buildingTypeForMode(mode: CommandMode): BuildingType | null {
+  return isBuildMode(mode) ? mode.buildingType : null
+}
 
 export interface CommandModes {
   readonly mode: CommandMode
   /** Current mode as a stable ref (readable inside event handlers). */
   readonly modeRef: MutableRefObject<CommandMode>
   /** Toggles a pending mode; selecting it again (or any other) clears it. */
-  arm(mode: Exclude<CommandMode, 'none'>): void
+  arm(mode: Exclude<CommandMode, 'idle'>): void
   /** Clears any pending mode (also called after a targeted order is issued). */
   clear(): void
 }
@@ -21,8 +35,8 @@ export interface CommandModes {
  * referentially stable so effects can depend on them safely.
  */
 export function useCommandModes(): CommandModes {
-  const [mode, setModeState] = useState<CommandMode>('none')
-  const modeRef = useRef<CommandMode>('none')
+  const [mode, setModeState] = useState<CommandMode>('idle')
+  const modeRef = useRef<CommandMode>('idle')
 
   const setMode = useCallback((next: CommandMode): void => {
     modeRef.current = next
@@ -30,14 +44,16 @@ export function useCommandModes(): CommandModes {
   }, [])
 
   const arm = useCallback(
-    (pending: Exclude<CommandMode, 'none'>): void => {
-      setMode(modeRef.current === pending ? 'none' : pending)
+    (pending: Exclude<CommandMode, 'idle'>): void => {
+      const current = modeRef.current
+      const sameBuild = isBuildMode(current) && isBuildMode(pending) && current.buildingType === pending.buildingType
+      setMode(current === pending || sameBuild ? 'idle' : pending)
     },
     [setMode]
   )
 
   const clear = useCallback((): void => {
-    setMode('none')
+    setMode('idle')
   }, [setMode])
 
   return { mode, modeRef, arm, clear }

@@ -18,6 +18,7 @@ export function MatchScreen() {
     scenarios,
     aggression,
     spritesEnabled,
+    buildings,
     buildHint,
     arm,
     issueOrder,
@@ -51,7 +52,7 @@ export function MatchScreen() {
       workerSelected={
         selectionUnits.length === 1 && selectionUnits[0]?.kind === 'pawn' && selectionUnits[0]?.owner === 0
       }
-      onBuildArm={arm}
+      buildings={buildings}
       buildHint={buildHint}
       onNewMatch={newMatch}
       onChangeScenario={changeScenario}

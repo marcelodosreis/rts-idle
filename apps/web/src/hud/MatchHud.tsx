@@ -1,3 +1,4 @@
+import type { BuildCatalogEntry } from '@rts/protocol'
 import type { RefObject } from 'react'
 import { CommandBar } from './CommandBar'
 import { MatchOverlay } from './MatchOverlay'
@@ -27,9 +28,9 @@ export interface MatchHudProps {
   readonly onStop: () => void
   readonly onHold: () => void
   readonly onSurrender: () => void
-  readonly onArm: (mode: 'patrol' | 'attack_move' | 'attack') => void
+  readonly onArm: (mode: Exclude<CommandMode, 'idle'>) => void
   readonly workerSelected: boolean
-  readonly onBuildArm: (mode: 'build_base' | 'build_barracks') => void
+  readonly buildings: readonly BuildCatalogEntry[]
   readonly buildHint: string | null
   readonly onNewMatch: () => void
   readonly onChangeScenario: (id: string) => void
@@ -63,7 +64,7 @@ export function MatchHud({
   onSurrender,
   onArm,
   workerSelected,
-  onBuildArm,
+  buildings,
   buildHint,
   onNewMatch,
   onChangeScenario,
@@ -103,13 +104,8 @@ export function MatchHud({
           workerSelected={workerSelected}
           minerals={resources?.mineral ?? 0}
           buildHint={buildHint}
-          onArm={(mode) => {
-            if (mode === 'build_base' || mode === 'build_barracks') {
-              onBuildArm(mode)
-            } else {
-              onArm(mode)
-            }
-          }}
+          buildings={buildings}
+          onArm={onArm}
         />
       </footer>
       {matchResult !== null ? <MatchOverlay result={matchResult} onNewMatch={onNewMatch} /> : null}
