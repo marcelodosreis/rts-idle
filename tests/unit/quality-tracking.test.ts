@@ -1,25 +1,14 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const WORKSPACE_ROOT = process.cwd()
 const TASKS_DIR = join(WORKSPACE_ROOT, 'tasks')
-const TASK_INDEX_PATH = join(WORKSPACE_ROOT, 'docs/ai/TASK_INDEX.md')
 
 function getQUALPackets(): string[] {
   return readdirSync(TASKS_DIR)
     .filter((f) => f.startsWith('QUAL-') && f.endsWith('.md'))
     .map((f) => f.replace('.md', ''))
-}
-
-function getQUALFromIndex(): string[] {
-  const content = readFileSync(TASK_INDEX_PATH, 'utf-8')
-  const matches = content.matchAll(/QUAL-\d+/g)
-  const ids = new Set<string>()
-  for (const m of matches) {
-    ids.add(m[0])
-  }
-  return Array.from(ids)
 }
 
 function getBoardTasks(): string[] {
