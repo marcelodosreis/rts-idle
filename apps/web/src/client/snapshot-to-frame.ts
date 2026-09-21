@@ -13,6 +13,7 @@ export function snapshotToFrame(message: SnapshotMessage): RenderFrame {
       kind: unit.kind ?? 'pawn',
       ...(unit.orderState === undefined ? {} : { orderState: unit.orderState }),
       ...(unit.economy === undefined ? {} : { economy: unit.economy }),
+      ...(unit.carrying === undefined ? {} : { carrying: unit.carrying }),
       ...(unit.hp === undefined ? {} : { hp: unit.hp, maxHp: unit.maxHp })
     })),
     buildings: message.buildings.map((construction) => ({

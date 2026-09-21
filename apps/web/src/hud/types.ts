@@ -14,6 +14,8 @@ export interface HudSelectionUnit {
     readonly progressTicks: number
     readonly progressMax: number
   }
+  /** True while the worker holds cargo, independent of its current order. */
+  readonly carrying?: boolean
 }
 
 export interface HudConstruction {
