@@ -88,13 +88,20 @@ function checkEconomyEntity(state: GameState, id: number): void {
   if (cargo !== undefined && (kinds.get(id) !== 'pawn' || owners.get(id) === undefined)) {
     fail(`entity ${id} has cargo without being an owned worker`)
   }
-  const gatherOrder = state.world.store(Orders).get(id)?.queue[0]
+  const frontOrder = state.world.store(Orders).get(id)?.queue[0]
   if (
-    gatherOrder?.type === 'GATHER' &&
+    frontOrder?.type === 'GATHER' &&
     (cargo === undefined || kinds.get(id) !== 'pawn' || owners.get(id) === undefined)
   ) {
     fail(`entity ${id} has gather order without Worker state`)
   }
+  if (
+    frontOrder?.type === 'DEPOSIT' &&
+    (cargo === undefined || kinds.get(id) !== 'pawn' || owners.get(id) === undefined)
+  ) {
+    fail(`entity ${id} has deposit order without Worker state`)
+  }
+  const gatherOrder = frontOrder
   if (
     gatherOrder?.type === 'GATHER' &&
     (!Number.isInteger(gatherOrder.progressTicks) ||

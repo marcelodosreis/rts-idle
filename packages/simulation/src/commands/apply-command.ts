@@ -3,6 +3,7 @@ import type { GameState } from '../state/state.js'
 import { applyAttack } from './attack.js'
 import { applyAttackMove } from './attack-move.js'
 import { applyBuild } from './build.js'
+import { applyDeposit } from './deposit.js'
 import { applyGather } from './gather.js'
 import { applyHold } from './hold.js'
 import { applyMove } from './move.js'
@@ -53,6 +54,9 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
       return
     case 'GATHER':
       applyGather(state, command)
+      return
+    case 'DEPOSIT':
+      applyDeposit(state, command)
       return
     case 'BUILD':
       applyBuild(state, command)
