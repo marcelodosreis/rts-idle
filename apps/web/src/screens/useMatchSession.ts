@@ -66,8 +66,15 @@ declare global {
   }
 }
 
+export interface MessageLogEntry {
+  readonly timestamp: number
+  readonly type: 'info' | 'error'
+  readonly message: string
+}
+
 export interface MatchSessionState {
   readonly status: string
+  readonly messageLog: readonly MessageLogEntry[]
   readonly unitCount: number
   readonly selectedCount: number
   readonly tick: number
@@ -128,6 +135,8 @@ function unitForHud(unit: SnapshotMessage['units'][number]): Omit<HudSelectionUn
   }
 }
 
+const MAX_MESSAGE_LOG = 50
+
 /**
  * Owns the match screen lifecycle: renderer mount, server connection, snapshot
  * presentation, selection state, command dispatch, and the match result. The
@@ -136,6 +145,7 @@ function unitForHud(unit: SnapshotMessage['units'][number]): Omit<HudSelectionUn
  */
 export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): MatchSessionState {
   const [status, setStatus] = useState('connecting')
+  const [messageLog, setMessageLog] = useState<readonly MessageLogEntry[]>([])
   const [unitCount, setUnitCount] = useState(0)
   const [selectedCount, setSelectedCount] = useState(0)
   const [tick, setTick] = useState(0)
@@ -426,6 +436,14 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       })
     }
 
+    const appendLog = (type: 'info' | 'error', message: string): void => {
+      setMessageLog((prev) => {
+        const entry: MessageLogEntry = { timestamp: Date.now(), type, message }
+        const next = [entry, ...prev]
+        return next.length > MAX_MESSAGE_LOG ? next.slice(0, MAX_MESSAGE_LOG) : next
+      })
+    }
+
     const mountRenderer = (config: MatchConfig): void => {
       if (!sessionActive || renderer !== null) {
         return
@@ -509,7 +527,8 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
           if (!sessionActive || renderer !== configuredRenderer) {
             return
           }
-          setStatus(`error: ${error instanceof Error ? error.message : String(error)}`)
+          const message = error instanceof Error ? error.message : String(error)
+          appendLog('error', message)
         })
     }
 
@@ -556,9 +575,12 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
           updateSelection([...selection])
         }
       },
-      onOpen: () => setStatus('connected'),
+      onOpen: () => {
+        setStatus('connected')
+        appendLog('info', 'Connected')
+      },
       onError: (error) => {
-        setStatus(error.message)
+        appendLog('error', error.message)
         if (error.scenarios !== undefined) {
           setScenarios(error.scenarios)
         }
@@ -598,6 +620,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
 
   return {
     status,
+    messageLog,
     unitCount,
     selectedCount,
     tick,

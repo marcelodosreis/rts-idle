@@ -1,5 +1,6 @@
 import type { BuildCatalogEntry } from '@rts/protocol'
 import type { RefObject } from 'react'
+import type { MessageLogEntry } from '../screens/useMatchSession'
 import { CommandBar } from './CommandBar'
 import { MatchOverlay } from './MatchOverlay'
 import { SelectionPanel } from './SelectionPanel'
@@ -11,6 +12,7 @@ export type { HudResources, HudSelectionUnit }
 
 export interface MatchHudProps {
   readonly status: string
+  readonly messageLog: readonly MessageLogEntry[]
   readonly unitCount: number
   readonly tick: number
   readonly selection: readonly HudSelectionUnit[]
@@ -46,6 +48,7 @@ export interface MatchHudProps {
  */
 export function MatchHud({
   status,
+  messageLog,
   unitCount,
   tick,
   selection,
@@ -75,6 +78,7 @@ export function MatchHud({
     <div className="relative flex h-screen flex-col overflow-hidden bg-background text-foreground">
       <TopBar
         status={status}
+        messageLog={messageLog}
         unitCount={unitCount}
         selectedCount={selection.length}
         tick={tick}
