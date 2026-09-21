@@ -47,6 +47,10 @@ function isCommandIntent(value: unknown): boolean {
       const p = payload as Record<string, unknown>
       return isIntegerArray(p.unitIds) && isInteger(p.nodeId)
     }
+    case 'DEPOSIT': {
+      const p = payload as Record<string, unknown>
+      return isIntegerArray(p.unitIds) && isInteger(p.buildingId)
+    }
     case 'BUILD': {
       const p = payload as Record<string, unknown>
       return (

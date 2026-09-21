@@ -34,6 +34,8 @@ export interface SnapshotUnit {
   readonly maxHp?: number
   readonly orderState?: OrderState
   readonly economy?: SnapshotEconomy
+  /** True while the worker holds cargo, independent of its current order. */
+  readonly carrying?: boolean
 }
 
 /** A competitive slot as projected on the wire. */
@@ -215,6 +217,9 @@ function isSnapshotUnit(value: unknown): boolean {
     return false
   }
   if (unit.economy !== undefined && !isSnapshotEconomy(unit.economy)) {
+    return false
+  }
+  if (unit.carrying !== undefined && typeof unit.carrying !== 'boolean') {
     return false
   }
   return true
