@@ -21,7 +21,7 @@ before changing code; do not load the entire document for a small task.
 | simulation | state, commands, systems, snapshots | shared, game-data, pathfinding |
 | ai | decisions from observations | shared, game-data, simulation |
 | renderer | PixiJS presentation | shared, protocol |
-| server | authority and transport | shared, simulation, protocol, ai |
+| server | authority, authored match content, and transport | shared, game-data, simulation, protocol, ai |
 | web | UI, HUD, input, client | shared, protocol, renderer, audio |
 
 ## Code rules

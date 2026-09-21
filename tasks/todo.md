@@ -177,6 +177,26 @@ Execution plan: `tasks/VS-01-plan.md`. Latest completed task packet: `tasks/BUIL
 
 ## Quality Hardening
 
+## Concept Authority
+
+| Packet | Status | Dependencies | Packages | Validation |
+|--------|--------|--------------|----------|------------|
+| AUTH-005A | done | — | protocol, server | contracts, integration |
+| AUTH-005 | done | AUTH-005A | protocol, server | contracts, integration |
+| AUTH-006 | done | AUTH-005 | server, simulation, web | integration, simulation, e2e |
+| AUTH-007 | done | AUTH-006 | web, renderer, architecture | architecture |
+| AUTH-008 | done | AUTH-007 | protocol, server, web | e2e |
+| AUTH-009 | done | AUTH-008 | protocol, renderer, web | unit |
+| AUTH-010 | done | — | simulation | simulation, orders |
+| AUTH-011 | done | AUTH-010 | simulation | simulation, orders, determinism |
+| AUTH-012 | done | AUTH-011 | simulation | simulation, orders, determinism |
+| AUTH-013 | done | AUTH-012 | simulation | simulation, determinism |
+| AUTH-014 | done | — | shared, renderer | unit |
+| AUTH-015 | done | AUTH-014 | renderer, web | unit |
+| AUTH-016 | done | AUTH-015 | docs | lint |
+| AUTH-017 | done | AUTH-013 | protocol, simulation | contracts, simulation, architecture |
+| AUTH-018 | done | AUTH-005–017 | docs, quality | verify, browser |
+
 ### Fundação
 - [ ] QUAL-000 Spec + ADR
 - [x] QUAL-017 Front-matter + guard + resumo (postmortem tracking)
