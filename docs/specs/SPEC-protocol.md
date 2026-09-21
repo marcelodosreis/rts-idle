@@ -13,6 +13,14 @@ pnpm run test:unit
 pnpm run build
 ```
 
+## Command and observation contracts
+
+- `DEPOSIT { unitIds, buildingId }`: owned workers walk to an owned completed
+  Base and deposit their carried minerals; the wire shape is validated by
+  `isCommandMessage`.
+- `SnapshotUnit.carrying?: boolean`: true while a worker holds cargo,
+  independent of its front order.
+
 ## Project Structure
 
 ```text

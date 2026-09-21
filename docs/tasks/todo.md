@@ -126,6 +126,15 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Latest completed task packet:
 - [x] Pickaxe/carrying sprites, economy progress bar, active-node highlight, and visible phase status
 - [x] Completion: `pnpm run verify`; browser changes also require the explicit E2E gate
 
+### ECONOMY-006 — Manual cargo deposit and visible carrying state
+
+- [x] Atomic shared/protocol/simulation `DEPOSIT` command and canonical order tag
+- [x] Economy-system deposit (walk, credit, idle) reusing Base validation/credit helpers
+- [x] `SnapshotUnit.carrying` projection independent of the front order
+- [x] Renderer carry pose without a gather order and Base right-click deposit in the HUD
+- [x] Postmortem and co-located regression tests for the invisible carrying state
+- [x] Completion: `pnpm run verify`; browser changes also require the explicit E2E gate
+
 ### BUILD-001 — Building placement validation
 
 - [x] Deterministic rectangular footprint validation with explicit rejection reasons
