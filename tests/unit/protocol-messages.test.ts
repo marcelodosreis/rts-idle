@@ -98,8 +98,8 @@ describe('protocol snapshot message', () => {
     ],
     mineralNodes: [{ id: 4, x: 768, y: 256, remaining: 3000 }],
     players: [
-      { id: 0, defeated: false, gold: 0 },
-      { id: 1, defeated: true, gold: 5 }
+      { id: 0, defeated: false, gold: 0, usedSupply: 2, supplyCap: 10 },
+      { id: 1, defeated: true, gold: 5, usedSupply: 0, supplyCap: 0 }
     ],
     events: [{ type: 'damageDealt', targetId: 1, amount: 10, targetHp: 90 }]
   }
@@ -125,6 +125,15 @@ describe('protocol snapshot message', () => {
         events: []
       })
     ).toBe(true)
+  })
+
+  it('rejects invalid authoritative supply values', () => {
+    expect(
+      isSnapshotMessage({ ...valid, players: [{ id: 0, defeated: false, gold: 0, usedSupply: -1, supplyCap: 10 }] })
+    ).toBe(false)
+    expect(
+      isSnapshotMessage({ ...valid, players: [{ id: 0, defeated: false, gold: 0, usedSupply: 2, supplyCap: 201 }] })
+    ).toBe(false)
   })
 
   it('accepts a unit with optional combat fields omitted', () => {
