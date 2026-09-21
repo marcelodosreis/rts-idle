@@ -13,6 +13,7 @@ export interface BuildCatalogEntry {
   readonly footprint: { readonly width: number; readonly height: number }
   readonly costMinerals: number
   readonly constructionTicks: number
+  readonly supplyProvided?: number
 }
 
 export interface MatchRequest {

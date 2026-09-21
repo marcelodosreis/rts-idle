@@ -41,6 +41,8 @@ export interface SnapshotPlayer {
   readonly id: PlayerId
   readonly defeated: boolean
   readonly gold: number
+  readonly usedSupply: number
+  readonly supplyCap: number
 }
 
 export const BUILDING_STATUSES = ['FOUNDATION', 'UNDER_CONSTRUCTION', 'COMPLETED'] as const
@@ -229,7 +231,14 @@ function isSnapshotPlayer(value: unknown): boolean {
     isPlayerId(player.id) &&
     typeof player.defeated === 'boolean' &&
     typeof player.gold === 'number' &&
-    Number.isInteger(player.gold)
+    Number.isInteger(player.gold) &&
+    typeof player.usedSupply === 'number' &&
+    Number.isInteger(player.usedSupply) &&
+    player.usedSupply >= 0 &&
+    typeof player.supplyCap === 'number' &&
+    Number.isInteger(player.supplyCap) &&
+    player.supplyCap >= 0 &&
+    player.supplyCap <= 200
   )
 }
 

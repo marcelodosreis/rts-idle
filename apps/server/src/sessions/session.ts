@@ -218,7 +218,9 @@ export class GameSession {
     return this.simulation.inspectState().players.map((player) => ({
       id: player.id,
       defeated: player.defeated,
-      gold: player.gold
+      gold: player.gold,
+      usedSupply: player.usedSupply,
+      supplyCap: player.supplyCap
     }))
   }
 

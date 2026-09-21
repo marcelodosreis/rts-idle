@@ -17,7 +17,8 @@ const BUILDINGS: readonly BuildCatalogEntry[] = Object.values(BUILDING_DEFINITIO
   label: definition.label,
   footprint: { ...definition.footprint },
   costMinerals: definition.costMinerals,
-  constructionTicks: definition.constructionTicks
+  constructionTicks: definition.constructionTicks,
+  supplyProvided: definition.supplyProvided
 }))
 export const SCENARIOS: readonly ScenarioSummary[] = DEMO_SCENARIOS.map(({ id, label }) => ({ id, label }))
 
