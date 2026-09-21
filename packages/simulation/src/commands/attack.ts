@@ -1,6 +1,8 @@
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { CommandRejectedError } from '../contracts/commands.js'
-import { Movement, Orders, Owner } from '../ecs/components.js'
+import { Owner } from '../ecs/components.js'
+import { clearMovement } from '../movement/destination.js'
+import { setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
 import { validateOwnedUnits } from './validate-units.js'
 
@@ -31,10 +33,8 @@ export function applyAttack(state: GameState, command: ScheduledCommand): void {
       `ATTACK: target ${payload.targetId} belongs to the issuing player`
     )
   }
-  const orders = state.world.store(Orders)
-  const movements = state.world.store(Movement)
   for (const unitId of payload.unitIds) {
-    orders.set(unitId, { queue: [{ type: 'ATTACK', targetId: payload.targetId }] })
-    movements.delete(unitId)
+    setOrders(state, unitId, [{ type: 'ATTACK', targetId: payload.targetId }])
+    clearMovement(state, unitId)
   }
 }

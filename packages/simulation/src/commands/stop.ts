@@ -1,5 +1,6 @@
 import type { ScheduledCommand } from '../contracts/commands.js'
-import { Movement, Orders } from '../ecs/components.js'
+import { clearMovement } from '../movement/destination.js'
+import { clearOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
 import { validateOwnedUnits } from './validate-units.js'
 
@@ -14,10 +15,8 @@ export function applyStop(state: GameState, command: ScheduledCommand): void {
   }
   const unitIds = command.intent.payload.unitIds
   validateOwnedUnits(state, command, unitIds)
-  const orders = state.world.store(Orders)
-  const movements = state.world.store(Movement)
   for (const unitId of unitIds) {
-    orders.delete(unitId)
-    movements.delete(unitId)
+    clearOrders(state, unitId)
+    clearMovement(state, unitId)
   }
 }

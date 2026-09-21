@@ -1,7 +1,8 @@
 import type { ScheduledCommand } from '../contracts/commands.js'
-import { Movement, Orders, Position } from '../ecs/components.js'
+import { Position } from '../ecs/components.js'
+import { setMovementDestination } from '../movement/destination.js'
+import { setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
-import { UNIT_SPEED_TILES_PER_SECOND } from './move.js'
 import { validateIntegerTarget, validateOwnedUnits } from './validate-units.js'
 
 /**
@@ -17,26 +18,16 @@ export function applyPatrol(state: GameState, command: ScheduledCommand): void {
   const payload = command.intent.payload
   validateOwnedUnits(state, command, payload.unitIds)
   validateIntegerTarget(command, payload.x, payload.y)
-  const orders = state.world.store(Orders)
-  const movements = state.world.store(Movement)
   const positions = state.world.store(Position)
   for (const unitId of payload.unitIds) {
     const home = positions.get(unitId)
     if (home === undefined) {
       continue
     }
-    orders.set(unitId, {
-      queue: [
-        { type: 'PATROL', x: payload.x, y: payload.y },
-        { type: 'PATROL', x: home.x, y: home.y }
-      ]
-    })
-    movements.set(unitId, {
-      speedTilesPerSecond: UNIT_SPEED_TILES_PER_SECOND,
-      destX: payload.x,
-      destY: payload.y,
-      remainderX: 0,
-      remainderY: 0
-    })
+    setOrders(state, unitId, [
+      { type: 'PATROL', x: payload.x, y: payload.y },
+      { type: 'PATROL', x: home.x, y: home.y }
+    ])
+    setMovementDestination(state, unitId, payload.x, payload.y)
   }
 }
