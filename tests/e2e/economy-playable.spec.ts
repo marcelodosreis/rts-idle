@@ -17,18 +17,53 @@ async function canvasPointForFixed(page: Page, x: number, y: number) {
   )
 }
 
-async function workerPosition(page: Page): Promise<{ readonly x: number; readonly y: number }> {
+async function workerIds(page: Page): Promise<number[]> {
   return page.evaluate(() => {
-    const position = Object.values(window.__rtsDebug?.getPositions() ?? {})[0]
+    const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    return Object.entries(owners)
+      .filter(([, owner]) => owner === 0)
+      .map(([id]) => Number(id))
+  })
+}
+
+async function workerPosition(page: Page, id: number): Promise<{ readonly x: number; readonly y: number }> {
+  return page.evaluate((workerId) => {
+    const position = window.__rtsDebug?.getPositions()[String(workerId)]
     if (position === undefined) {
       throw new Error('economy Worker is missing')
     }
     return position
-  })
+  }, id)
 }
 
-async function workerId(page: Page): Promise<number> {
-  return page.evaluate(() => Number(Object.keys(window.__rtsDebug?.getPositions() ?? {})[0]))
+async function mineralValue(page: Page): Promise<number> {
+  return page
+    .getByText('Mineral', { exact: true })
+    .locator('..')
+    .evaluate((chip) => {
+      const value = Number(chip.textContent?.match(/\d+/)?.[0])
+      if (!Number.isFinite(value)) {
+        throw new Error('Mineral HUD value is missing')
+      }
+      return value
+    })
+}
+
+async function boxSelect(page: Page, positions: readonly { readonly x: number; readonly y: number }[]): Promise<void> {
+  const points = await Promise.all(positions.map((position) => canvasPointForFixed(page, position.x, position.y)))
+  await page.mouse.move(
+    Math.min(...points.map((point) => point.x)) - 32,
+    Math.min(...points.map((point) => point.y)) - 32
+  )
+  await page.mouse.down()
+  await page.mouse.move(
+    Math.max(...points.map((point) => point.x)) + 32,
+    Math.max(...points.map((point) => point.y)) + 32,
+    {
+      steps: 4
+    }
+  )
+  await page.mouse.up()
 }
 
 test('a player gathers, deposits, repeats, and stops through browser controls', async ({ page }) => {
@@ -36,10 +71,13 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
   await page.goto('/?scenario=economy')
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
 
-  const mineralChip = page.getByText('Mineral', { exact: true }).locator('..')
-  await expect(mineralChip).toContainText('0')
+  const initialMinerals = await mineralValue(page)
+  expect(initialMinerals).toBe(250)
 
-  const start = await workerPosition(page)
+  const workers = await workerIds(page)
+  expect(workers).toHaveLength(4)
+  const id = workers[0]!
+  const start = await workerPosition(page, id)
   const workerPoint = await canvasPointForFixed(page, start.x, start.y)
   await page.mouse.click(workerPoint.x, workerPoint.y)
   await expect(page.getByText('1 · Worker')).toBeVisible()
@@ -47,9 +85,8 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
   const nodePoint = await canvasPointForFixed(page, tilesToFixed(10), tilesToFixed(8))
   await page.mouse.click(nodePoint.x, nodePoint.y, { button: 'right' })
 
-  await expect.poll(async () => (await workerPosition(page)).x).toBe(tilesToFixed(10))
+  await expect.poll(async () => (await workerPosition(page, id)).x).toBe(tilesToFixed(10))
   await expect(page.getByTestId('economy-status')).toContainText('Mining')
-  const id = await workerId(page)
   // Economy anims (gather/carry_run) only render when the tiny_swords art pack
   // is present (`pnpm run assets:prepare`); CI and a bare checkout run without
   // it, so skip the anim check then (see art.ts / regression-units-visible.spec.ts).
@@ -65,23 +102,58 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
       .poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id))
       .toBe('carry_run')
   }
-  await expect(mineralChip).toContainText('10', { timeout: 20_000 })
-
-  await expect
-    .poll(async () => {
-      const x = (await workerPosition(page)).x
-      return x > tilesToFixed(6) && x < tilesToFixed(10)
-    })
-    .toBe(true)
+  await expect.poll(() => mineralValue(page), { timeout: 20_000 }).toBeGreaterThan(initialMinerals)
 
   await page.getByRole('button', { name: 'Stop' }).click()
-  await page.waitForTimeout(300)
-  const stopped = await workerPosition(page)
+  const stopped = await workerPosition(page, id)
+  const stoppedMinerals = await mineralValue(page)
   await page.waitForTimeout(700)
-  expect(await workerPosition(page)).toEqual(stopped)
-  await expect(mineralChip).toContainText('10')
-  await expect(page.getByTestId('economy-status')).toHaveCount(0)
+  expect(await workerPosition(page, id)).toEqual(stopped)
+  expect(await mineralValue(page)).toBe(stoppedMinerals)
+  await expect(page.getByTestId('economy-status')).toBeEmpty()
   if (art) {
     await expect.poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id)).toBe('idle')
+  }
+})
+
+test('a group mines the same node concurrently through the browser command path', async ({ page }) => {
+  test.setTimeout(35_000)
+  await page.goto('/?scenario=economy')
+  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+
+  const workers = await workerIds(page)
+  const group = workers.slice(0, 2)
+  const starts = await Promise.all(group.map((id) => workerPosition(page, id)))
+  await boxSelect(page, starts)
+  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getSelection() ?? [])).toEqual(group)
+
+  const nodePoint = await canvasPointForFixed(page, tilesToFixed(10), tilesToFixed(8))
+  await page.mouse.click(nodePoint.x, nodePoint.y, { button: 'right' })
+  await expect
+    .poll(async () => Promise.all(group.map((id) => workerPosition(page, id))))
+    .toEqual([
+      { x: tilesToFixed(10), y: tilesToFixed(8) },
+      { x: tilesToFixed(10), y: tilesToFixed(8) }
+    ])
+
+  const economyLabels = () =>
+    group.map((id) => page.getByRole('button', { name: new RegExp(`Worker #${id}, owner 0, Mining \\d+/20`) }))
+  await expect.poll(async () => Promise.all((await economyLabels()).map((label) => label.count()))).toEqual([1, 1])
+  const progress = await Promise.all(
+    group.map(async (id) => {
+      const label = await page.getByRole('button', { name: new RegExp(`Worker #${id}`) }).getAttribute('aria-label')
+      return Number(label?.match(/Mining (\d+)\/20/)?.[1])
+    })
+  )
+  expect(progress[0]).toBeGreaterThan(0)
+  expect(progress[1]).toBeGreaterThan(0)
+  await expect(page.getByTestId('economy-status')).toContainText('Mining')
+
+  if (await hasArt(page)) {
+    for (const id of group) {
+      await expect
+        .poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id))
+        .toBe('gather')
+    }
   }
 })

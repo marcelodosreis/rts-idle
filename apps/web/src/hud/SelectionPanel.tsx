@@ -99,18 +99,16 @@ export function SelectionPanel({ selection }: SelectionPanelProps) {
   const activeEconomy = selection.map(economyLabel).find((label) => label !== null) ?? null
   return (
     <Card className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1">
-      <CardHeader className="shrink-0 gap-0 px-2 py-0">
-        <CardTitle className="text-[11px] text-muted-foreground">
+      <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
+        <CardTitle className="truncate text-[11px] text-muted-foreground">
           {selection.length === 0 ? 'No selection — click a unit' : `${selection.length} · ${kindSummary(selection)}`}
         </CardTitle>
+        <p data-testid="economy-status" className="h-4 truncate text-[11px] font-medium text-amber-300 empty:invisible">
+          {activeEconomy}
+        </p>
       </CardHeader>
-      <CardContent className="flex flex-wrap gap-0.5 px-2 py-0.5" aria-live="polite">
+      <CardContent className="flex flex-nowrap gap-0.5 overflow-x-auto px-2 py-0.5" aria-live="polite">
         {selection.length > 0 && selection.map((unit) => <UnitChip key={unit.id} unit={unit} />)}
-        {activeEconomy !== null && (
-          <p data-testid="economy-status" className="w-full text-[11px] font-medium text-amber-300">
-            {activeEconomy}
-          </p>
-        )}
       </CardContent>
     </Card>
   )

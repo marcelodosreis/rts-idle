@@ -5,7 +5,7 @@ import { EffectsLayer } from './effects-layer.js'
 import { CommandPing } from './ping.js'
 import { SelectionController } from './selection.js'
 import { TerrainLayer } from './terrain-layer.js'
-import type { GameRenderer, RendererCallbacks, RendererOptions, RenderFrame } from './types.js'
+import type { GameRenderer, RenderBuildPreview, RendererCallbacks, RendererOptions, RenderFrame } from './types.js'
 import { UnitLayer } from './unit-layer.js'
 import { WorldObjectLayer } from './world-object-layer.js'
 
@@ -116,10 +116,16 @@ export class PixiRenderer implements GameRenderer {
       // Control+click are secondary input, routed through the canvas
       // `contextmenu` listener instead.
       if (event.button === 0 && !event.ctrlKey && !event.metaKey) {
+        const world = viewport.toWorld(event.global.x, event.global.y)
+        if (this.callbacks.onGroundClick?.(world.x, world.y) === true) {
+          return
+        }
         selection.startBox(event.global)
       }
     })
     viewport.on('pointermove', (event) => {
+      const world = viewport.toWorld(event.global.x, event.global.y)
+      this.callbacks.onGroundMove?.(world.x, world.y)
       selection.updateBox(event.global)
     })
     viewport.on('pointerup', (event) => {
@@ -148,7 +154,7 @@ export class PixiRenderer implements GameRenderer {
       throw new Error('PixiRenderer: not mounted')
     }
     const now = performance.now()
-    this.worldObjects.present(frame.bases ?? [], frame.mineralNodes ?? [])
+    this.worldObjects.present(frame.bases ?? [], frame.mineralNodes ?? [], frame.constructions ?? [])
     this.worldObjects.setActiveMineralNodes(
       new Set(frame.units.flatMap((unit) => (unit.economy === undefined ? [] : [unit.economy.nodeId])))
     )
@@ -287,5 +293,9 @@ export class PixiRenderer implements GameRenderer {
       return { x, y }
     }
     return this.viewport.toScreen(x, y)
+  }
+
+  setBuildPreview(preview: RenderBuildPreview | null): void {
+    this.worldObjects?.setBuildPreview(preview)
   }
 }

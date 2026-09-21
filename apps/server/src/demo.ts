@@ -18,7 +18,10 @@ import {
 import { DEMO_SEED, scenarioById } from './demo/scenarios.js'
 import { GameSession } from './sessions/session.js'
 
-export const DEMO_IDENTITY: RulesIdentity = createRulesIdentity('demo')
+export const DEMO_IDENTITY: RulesIdentity = createRulesIdentity('demo-parallel-economy-v1', {
+  mapId: 'demo',
+  mapHash: 'demo'
+})
 
 /**
  * Hostile demo: enemies spawn in their own spot with combat stats and, in
@@ -78,5 +81,14 @@ export function createDemoSession(
     }
     world.store(Orders).set(ids[attacker]!, { queue: [{ type: 'ATTACK', targetId: ids[target]! }] })
   }
-  return GameSession.create({ seed: DEMO_SEED, identity: DEMO_IDENTITY, initialWorld: world })
+  return GameSession.create({
+    seed: DEMO_SEED,
+    identity: DEMO_IDENTITY,
+    initialWorld: world,
+    initialPlayers: [0, 1, 2, 3].map((id) => ({
+      id: id as 0 | 1 | 2 | 3,
+      defeated: false,
+      gold: id === 0 ? (scenario.startingGold ?? 0) : 0
+    }))
+  })
 }

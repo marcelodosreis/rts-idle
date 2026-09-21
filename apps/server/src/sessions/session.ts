@@ -2,6 +2,7 @@ import type {
   EconomyPhase,
   OrderState,
   SnapshotBase,
+  SnapshotConstruction,
   SnapshotEconomy,
   SnapshotMineralNode,
   SnapshotPlayer,
@@ -12,6 +13,7 @@ import {
   Base,
   Cargo,
   type CommandRejectedError,
+  Construction,
   createSimulation,
   GATHER_TICKS_PER_MINERAL,
   Health,
@@ -182,6 +184,38 @@ export class GameSession {
           throw new Error(`GameSession: Base ${id} is missing position or owner`)
         }
         return { id, x: position.x, y: position.y, owner: owner.owner }
+      })
+  }
+
+  projectConstructions(): readonly SnapshotConstruction[] {
+    const world = this.simulation.inspectState().world
+    const constructions = world.store(Construction)
+    const positions = world.store(Position)
+    const owners = world.store(Owner)
+    return world
+      .aliveIds()
+      .filter((id) => constructions.has(id))
+      .map((id) => {
+        const construction = constructions.get(id)
+        const position = positions.get(id)
+        const owner = owners.get(id)
+        if (construction === undefined || position === undefined || owner === undefined) {
+          throw new Error(`GameSession: construction ${id} is missing projection data`)
+        }
+        return {
+          id,
+          buildingType: construction.buildingType,
+          x: position.x,
+          y: position.y,
+          owner: owner.owner,
+          footprint: {
+            width: construction.footprint.width,
+            height: construction.footprint.height
+          },
+          status: construction.status,
+          progressTicks: construction.progressTicks,
+          totalTicks: construction.totalTicks
+        }
       })
   }
 

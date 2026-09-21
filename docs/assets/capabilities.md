@@ -167,7 +167,7 @@ What the game consumed in the Phase 1 simulation/visual pass:
 - **Combat feedback (V9)** — the renderer consumes the deterministic per-tick
   events and the extended snapshot:
   - HP bars overhead (green/yellow/red by ratio), shown only when damaged
-    (`packages/renderer/src/hp-bar.ts`).
+    (`packages/renderer/src/progress-bar.ts`).
   - Attack streaks, floating damage numbers, and death explosions
     (`packages/renderer/src/effects-layer.ts`).
   - Attack animation flashes on `attackFired`.

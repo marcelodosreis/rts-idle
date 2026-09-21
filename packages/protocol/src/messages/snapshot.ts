@@ -42,6 +42,21 @@ export interface SnapshotBase {
   readonly owner: PlayerId
 }
 
+export type ConstructionStatus = 'FOUNDATION' | 'UNDER_CONSTRUCTION' | 'COMPLETED'
+
+/** A building or foundation projected for authoritative world rendering. */
+export interface SnapshotConstruction {
+  readonly id: EntityId
+  readonly buildingType: 'BASE' | 'BARRACKS'
+  readonly x: Fixed
+  readonly y: Fixed
+  readonly owner: PlayerId
+  readonly footprint: { readonly width: number; readonly height: number }
+  readonly status: ConstructionStatus
+  readonly progressTicks: number
+  readonly totalTicks: number
+}
+
 /** A neutral Mineral Node projected for rendering and contextual targeting. */
 export interface SnapshotMineralNode {
   readonly id: EntityId
@@ -57,6 +72,8 @@ export interface SnapshotMessage {
   readonly phase: 'RUNNING' | 'FINISHED'
   readonly units: readonly SnapshotUnit[]
   readonly bases: readonly SnapshotBase[]
+  /** Optional for backwards compatibility with pre-building servers. */
+  readonly constructions?: readonly SnapshotConstruction[]
   readonly mineralNodes: readonly SnapshotMineralNode[]
   readonly players: readonly SnapshotPlayer[]
   readonly events: readonly SimulationEvent[]
@@ -83,6 +100,39 @@ function isSnapshotBase(value: unknown): boolean {
   }
   const owner = value.owner
   return typeof owner === 'number' && Number.isInteger(owner) && owner >= 0 && owner <= 3
+}
+
+function isSnapshotConstruction(value: unknown): boolean {
+  if (!isPositionedEntity(value)) {
+    return false
+  }
+  const construction = value as Record<string, unknown>
+  const footprint = construction.footprint
+  const footprintRecord = footprint as Record<string, unknown> | null
+  const validFootprint =
+    typeof footprint === 'object' &&
+    footprint !== null &&
+    Number.isInteger(footprintRecord?.width) &&
+    Number.isInteger(footprintRecord?.height) &&
+    Number(footprintRecord?.width) > 0 &&
+    Number(footprintRecord?.height) > 0
+  return (
+    (construction.buildingType === 'BASE' || construction.buildingType === 'BARRACKS') &&
+    typeof construction.owner === 'number' &&
+    Number.isInteger(construction.owner) &&
+    construction.owner >= 0 &&
+    construction.owner <= 3 &&
+    validFootprint &&
+    (construction.status === 'FOUNDATION' ||
+      construction.status === 'UNDER_CONSTRUCTION' ||
+      construction.status === 'COMPLETED') &&
+    isOptionalNonNegativeInteger(construction.progressTicks) &&
+    isOptionalNonNegativeInteger(construction.totalTicks) &&
+    typeof construction.progressTicks === 'number' &&
+    typeof construction.totalTicks === 'number' &&
+    construction.totalTicks > 0 &&
+    construction.progressTicks <= construction.totalTicks
+  )
 }
 
 function isSnapshotMineralNode(value: unknown): boolean {
@@ -235,6 +285,8 @@ export function isSnapshotMessage(value: unknown): value is SnapshotMessage {
     message.units.every(isSnapshotUnit) &&
     Array.isArray(message.bases) &&
     message.bases.every(isSnapshotBase) &&
+    (message.constructions === undefined ||
+      (Array.isArray(message.constructions) && message.constructions.every(isSnapshotConstruction))) &&
     Array.isArray(message.mineralNodes) &&
     message.mineralNodes.every(isSnapshotMineralNode) &&
     Array.isArray(message.players) &&

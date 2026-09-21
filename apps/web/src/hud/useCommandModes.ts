@@ -2,7 +2,7 @@ import type { MutableRefObject } from 'react'
 import { useCallback, useRef, useState } from 'react'
 
 /** Pending command modes that await a target click on the battlefield. */
-export type CommandMode = 'none' | 'patrol' | 'attack_move' | 'attack'
+export type CommandMode = 'none' | 'patrol' | 'attack_move' | 'attack' | 'build_base' | 'build_barracks'
 
 export interface CommandModes {
   readonly mode: CommandMode

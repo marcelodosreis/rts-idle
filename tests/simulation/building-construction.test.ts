@@ -30,11 +30,11 @@ function scenario(gold = 100) {
   })
 }
 
-const build = (workerId: number, sequence: number) => ({
+const build = (workerId: number, sequence: number, x = 0, y = 0) => ({
   tick: 1,
   playerId: 0,
   sequence,
-  intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'BASE' as const, x: 0, y: 0 } }
+  intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'BASE' as const, x, y } }
 })
 
 const buildBarracks = (workerId: number, sequence: number) => ({
@@ -76,6 +76,31 @@ describe('BUILD simulation lifecycle', () => {
       b.step()
     }
     expect(b.hashState()).toBe(a.hashState())
+  })
+
+  it('keeps a building at its requested position while its worker travels and builds', () => {
+    const sim = scenario()
+    const buildingPosition = { x: 4 * 256, y: 2 * 256 }
+    const workerStart = sim.inspectState().world.store(Position).get(START_ENTITY_ID)
+    sim.step([build(START_ENTITY_ID, 1, 4, 2)])
+    const buildingId = START_ENTITY_ID + 3
+
+    expect(sim.inspectState().world.store(Position).get(buildingId)).toEqual(buildingPosition)
+    expect(sim.inspectState().world.store(Position).get(START_ENTITY_ID)).not.toEqual(buildingPosition)
+
+    for (let i = 0; i < 70; i += 1) {
+      sim.step()
+      expect(sim.inspectState().world.store(Position).get(buildingId)).toEqual(buildingPosition)
+    }
+    expect(sim.inspectState().world.store(Position).get(START_ENTITY_ID)).not.toEqual(workerStart)
+
+    for (let i = 0; i < 100; i += 1) {
+      sim.step()
+    }
+    const state = sim.inspectState()
+    expect(state.world.store(Position).get(buildingId)).toEqual(buildingPosition)
+    expect(state.world.store(Base).has(buildingId)).toBe(true)
+    expect(state.world.store(Construction).get(buildingId)?.status).toBe('COMPLETED')
   })
 
   it('completes BARRACKS with only the Barracks marker', () => {

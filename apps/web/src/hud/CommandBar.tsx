@@ -8,7 +8,9 @@ interface CommandBarProps {
   readonly onStop: () => void
   readonly onHold: () => void
   readonly onSurrender: () => void
-  readonly onArm: (mode: 'patrol' | 'attack_move' | 'attack') => void
+  readonly workerSelected: boolean
+  readonly minerals: number
+  readonly onArm: (mode: 'patrol' | 'attack_move' | 'attack' | 'build_base' | 'build_barracks') => void
 }
 
 function ArmButton({
@@ -29,7 +31,7 @@ function ArmButton({
       size="sm"
       disabled={disabled}
       onClick={onClick}
-      className="w-full whitespace-nowrap"
+      className="h-7 w-full whitespace-nowrap px-1.5 text-xs"
       aria-pressed={active}
     >
       {label}
@@ -52,7 +54,16 @@ function CommandGroup({ label, children }: { readonly label: string; readonly ch
  * (Patrol/Surrender). Pending orders await a battlefield right-click; the
  * armed mode is shown as a compact hint only while active.
  */
-export function CommandBar({ disabled, mode, onStop, onHold, onSurrender, onArm }: CommandBarProps) {
+export function CommandBar({
+  disabled,
+  mode,
+  workerSelected,
+  minerals,
+  onStop,
+  onHold,
+  onSurrender,
+  onArm
+}: CommandBarProps) {
   return (
     <div className="flex flex-wrap items-stretch gap-2">
       <CommandGroup label="Orders">
@@ -62,7 +73,7 @@ export function CommandBar({ disabled, mode, onStop, onHold, onSurrender, onArm 
           size="sm"
           disabled={disabled}
           onClick={onStop}
-          className="w-full whitespace-nowrap"
+          className="h-7 w-full whitespace-nowrap px-1.5 text-xs"
         >
           Stop
         </Button>
@@ -72,7 +83,7 @@ export function CommandBar({ disabled, mode, onStop, onHold, onSurrender, onArm 
           size="sm"
           disabled={disabled}
           onClick={onHold}
-          className="w-full whitespace-nowrap"
+          className="h-7 w-full whitespace-nowrap px-1.5 text-xs"
         >
           Hold
         </Button>
@@ -88,19 +99,41 @@ export function CommandBar({ disabled, mode, onStop, onHold, onSurrender, onArm 
       </CommandGroup>
       <CommandGroup label="Utility">
         <ArmButton label="Patrol" active={mode === 'patrol'} disabled={disabled} onClick={() => onArm('patrol')} />
-        <Button type="button" variant="outline" size="sm" onClick={onSurrender} className="w-full whitespace-nowrap">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onSurrender}
+          className="h-7 w-full whitespace-nowrap px-1.5 text-xs"
+        >
           Surrender
         </Button>
+      </CommandGroup>
+      <CommandGroup label="Construction">
+        <ArmButton
+          label="Base · 100"
+          active={mode === 'build_base'}
+          disabled={!workerSelected || minerals < 100}
+          onClick={() => onArm('build_base')}
+        />
+        <ArmButton
+          label="Barracks · 150"
+          active={mode === 'build_barracks'}
+          disabled={!workerSelected || minerals < 150}
+          onClick={() => onArm('build_barracks')}
+        />
       </CommandGroup>
       {mode !== 'none' ? (
         <div
           className={cn(
-            'flex w-36 shrink-0 items-center justify-center rounded-xl border border-primary/60 bg-primary/10 p-2 text-center text-xs text-primary',
+            'flex w-36 shrink-0 items-center justify-center rounded-xl border border-primary/60 bg-primary/10 p-2 text-center text-xs text-primary transition-opacity',
             'animate-pulse'
           )}
           aria-live="polite"
         >
-          Pick a target: {mode}.
+          {mode === 'build_base' || mode === 'build_barracks'
+            ? 'Click a valid tile to build.'
+            : `Pick a target: ${mode}.`}
         </div>
       ) : null}
     </div>

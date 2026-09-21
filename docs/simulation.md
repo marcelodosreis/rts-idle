@@ -83,8 +83,11 @@ liveness.
 
 `GATHER` is valid for owned pawn Workers with Cargo and a live Mineral Node.
 Workers move through the existing straight-line Movement component, collect one
-mineral per 20 uncontested ticks up to capacity 10, then return to the nearest
-owned Base (distance, then entity id). `PlayerState.gold` is the internal v0
+mineral per 20 ticks independently of every other Worker at the node, up to
+capacity 10, then return to the nearest owned Base (distance, then entity id).
+Nodes permit any number of simultaneous Workers. When a node has fewer
+remaining minerals than simultaneously completed cycles, ascending Worker
+entity id allocates the final minerals deterministically. `PlayerState.gold` is the internal v0
 mineral wallet and changes only on deposit. Nodes, cargo, order phase/progress,
 and wallet balances are canonical; a dead Worker loses its Cargo component.
 

@@ -1,5 +1,5 @@
 import type { MapDefinition } from '@rts/game-data'
-import type { OrderState, SnapshotEconomy } from '@rts/protocol'
+import type { ConstructionStatus, OrderState, SnapshotEconomy } from '@rts/protocol'
 import type { PlayerId, SimulationEvent, UnitKind } from '@rts/shared'
 import type { PointData } from 'pixi.js'
 
@@ -41,11 +41,32 @@ export interface RenderMineralNode {
   readonly remaining: number
 }
 
+export interface RenderConstruction {
+  readonly id: number
+  readonly buildingType: 'BASE' | 'BARRACKS'
+  readonly x: number
+  readonly y: number
+  readonly owner: number
+  readonly footprint: { readonly width: number; readonly height: number }
+  readonly status: ConstructionStatus
+  readonly progressTicks: number
+  readonly totalTicks: number
+}
+
+export interface RenderBuildPreview {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+  readonly valid: boolean
+}
+
 /** A completed tick ready for presentation. */
 export interface RenderFrame {
   readonly tick: number
   readonly units: readonly RenderUnit[]
   readonly bases?: readonly RenderBase[]
+  readonly constructions?: readonly RenderConstruction[]
   readonly mineralNodes?: readonly RenderMineralNode[]
   readonly players?: readonly RenderPlayer[]
   /** Per-tick deterministic events that drive combat feedback. */
@@ -56,6 +77,9 @@ export interface RendererCallbacks {
   readonly onUnitSelected?: (id: number) => void
   readonly onBoxSelected?: (ids: readonly number[]) => void
   readonly onGroundCommand?: (worldX: number, worldY: number) => void
+  /** Primary click on the ground; return true when a mode consumes it. */
+  readonly onGroundClick?: (worldX: number, worldY: number) => boolean
+  readonly onGroundMove?: (worldX: number, worldY: number) => void
   /** Right-click landed on a unit (used for attack targeting). */
   readonly onUnitCommand?: (id: number) => void
   /** Right-click landed on a Mineral Node (used for contextual gathering). */
@@ -101,4 +125,5 @@ export interface GameRenderer {
   getPing(): { readonly x: number; readonly y: number } | null
   moveCamera(x: number, y: number): void
   worldToScreen(x: number, y: number): { readonly x: number; readonly y: number }
+  setBuildPreview(preview: RenderBuildPreview | null): void
 }

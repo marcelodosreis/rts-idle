@@ -1,47 +1,98 @@
-import { fixedToRenderPixels } from '@rts/shared'
+import { BUILDING_DEFINITIONS } from '@rts/game-data'
+import { FIXED_SCALE, fixedToRenderPixels } from '@rts/shared'
 import { Graphics } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
-import type { RenderBase, RenderMineralNode } from './types.js'
+import { buildingVisualStyle, ownerColor } from './building-visual-style.js'
+import { BAR_BACKGROUND, BAR_BORDER, BAR_HEIGHT, BAR_RADIUS, clampRatio, drawProgressBar } from './progress-bar.js'
+import type { RenderBase, RenderBuildPreview, RenderConstruction, RenderMineralNode } from './types.js'
 
-const OWNER_COLORS = [0x2e7d32, 0xc62828, 0x1565c0, 0xf9a825]
-const BASE_WIDTH = 80
-const BASE_HEIGHT = 64
 const MINERAL_RADIUS = 30
 const MINERAL_COLOR = 0xfbbf24
+
+const pixelsPerTile = fixedToRenderPixels(FIXED_SCALE)
 
 /** Minimal static presentation and hit testing for economy world objects. */
 export class WorldObjectLayer {
   private readonly viewport: Viewport
   private readonly bases = new Map<number, Graphics>()
+  private readonly constructions = new Map<number, Graphics>()
   private readonly mineralNodes = new Map<number, Graphics>()
   private readonly mineralNodePositions = new Map<number, { readonly x: number; readonly y: number }>()
   private readonly activeMineralNodes = new Set<number>()
+  private preview: RenderBuildPreview | null = null
 
   constructor(viewport: Viewport) {
     this.viewport = viewport
   }
 
-  present(bases: readonly RenderBase[], mineralNodes: readonly RenderMineralNode[]): void {
+  present(
+    bases: readonly RenderBase[],
+    mineralNodes: readonly RenderMineralNode[],
+    constructions: readonly RenderConstruction[] = []
+  ): void {
+    const constructionIds = new Set(constructions.map((construction) => construction.id))
     const seenBases = new Set<number>()
     for (const base of bases) {
+      if (constructionIds.has(base.id)) {
+        continue
+      }
       seenBases.add(base.id)
       let graphic = this.bases.get(base.id)
       if (graphic === undefined) {
         graphic = new Graphics()
-        graphic.rect(-BASE_WIDTH / 2, -BASE_HEIGHT / 2, BASE_WIDTH, BASE_HEIGHT)
-        graphic.fill({ color: OWNER_COLORS[base.owner % OWNER_COLORS.length] ?? 0x64748b, alpha: 0.8 })
-        graphic.stroke({ color: 0xf8fafc, width: 4 })
-        graphic.moveTo(-BASE_WIDTH / 2, -BASE_HEIGHT / 2)
-        graphic.lineTo(0, -BASE_HEIGHT / 2 - 22)
-        graphic.lineTo(BASE_WIDTH / 2, -BASE_HEIGHT / 2)
-        graphic.stroke({ color: 0xf8fafc, width: 4 })
         graphic.eventMode = 'none'
         this.viewport.addChild(graphic)
         this.bases.set(base.id, graphic)
       }
+      this.drawBase(graphic, base.owner)
       graphic.position.set(fixedToRenderPixels(base.x), fixedToRenderPixels(base.y))
     }
     this.removeMissing(this.bases, seenBases)
+
+    const seenConstructions = new Set<number>()
+    for (const construction of constructions) {
+      seenConstructions.add(construction.id)
+      let graphic = this.constructions.get(construction.id)
+      if (graphic === undefined) {
+        graphic = new Graphics()
+        graphic.eventMode = 'none'
+        this.viewport.addChild(graphic)
+        this.constructions.set(construction.id, graphic)
+      }
+      const style = buildingVisualStyle(construction.buildingType, construction.status, construction.owner)
+      const footprint = BUILDING_DEFINITIONS[construction.buildingType].footprint
+      if (style.kind === 'base') {
+        this.drawBase(graphic, construction.owner, footprint)
+      } else {
+        const width = footprint.width * pixelsPerTile
+        const height = footprint.height * pixelsPerTile
+        graphic.clear()
+        graphic.rect(0, 0, width, height)
+        graphic.fill({ color: style.fillColor, alpha: style.fillAlpha })
+        graphic.stroke({ color: style.strokeColor, width: 4 })
+        if (style.kind === 'barracks') {
+          graphic.rect(width * 0.2, height * 0.2, width * 0.6, height * 0.6)
+          graphic.stroke({ color: 0xf97316, width: 3 })
+        }
+      }
+      if (style.kind === 'foundation') {
+        const width = footprint.width * pixelsPerTile
+        const ratio = clampRatio(construction.progressTicks, construction.totalTicks)
+        drawProgressBar(graphic, {
+          x: 0,
+          y: -10,
+          width,
+          height: BAR_HEIGHT,
+          ratio,
+          fillColor: 0x22c55e,
+          background: BAR_BACKGROUND,
+          border: BAR_BORDER,
+          radius: BAR_RADIUS
+        })
+      }
+      graphic.position.set(fixedToRenderPixels(construction.x), fixedToRenderPixels(construction.y))
+    }
+    this.removeMissing(this.constructions, seenConstructions)
 
     const seenNodes = new Set<number>()
     this.mineralNodePositions.clear()
@@ -66,6 +117,52 @@ export class WorldObjectLayer {
       }
     }
     this.removeMissing(this.mineralNodes, seenNodes)
+    this.renderPreview()
+  }
+
+  private drawBase(graphic: Graphics, owner: number, footprint = BUILDING_DEFINITIONS.BASE.footprint): void {
+    // Building visuals share the top-left footprint anchor used by previews and foundations.
+    const width = footprint.width * pixelsPerTile
+    const height = footprint.height * pixelsPerTile
+    graphic.clear()
+    graphic.rect(0, 0, width, height)
+    graphic.fill({ color: ownerColor(owner), alpha: 0.8 })
+    graphic.stroke({ color: 0xf8fafc, width: 4 })
+    graphic.moveTo(0, 0)
+    graphic.lineTo(width / 2, -22)
+    graphic.lineTo(width, 0)
+    graphic.stroke({ color: 0xf8fafc, width: 4 })
+  }
+
+  setBuildPreview(preview: RenderBuildPreview | null): void {
+    this.preview = preview
+    this.renderPreview()
+  }
+
+  private renderPreview(): void {
+    const id = -1
+    let graphic = this.constructions.get(id)
+    if (this.preview === null) {
+      if (graphic !== undefined) {
+        this.viewport.removeChild(graphic)
+        graphic.destroy()
+        this.constructions.delete(id)
+      }
+      return
+    }
+    if (graphic === undefined) {
+      graphic = new Graphics()
+      graphic.eventMode = 'none'
+      this.viewport.addChild(graphic)
+      this.constructions.set(id, graphic)
+    }
+    const width = this.preview.width * pixelsPerTile
+    const height = this.preview.height * pixelsPerTile
+    graphic.clear()
+    graphic.rect(0, 0, width, height)
+    graphic.fill({ color: this.preview.valid ? 0x22c55e : 0xef4444, alpha: 0.28 })
+    graphic.stroke({ color: this.preview.valid ? 0x86efac : 0xfca5a5, width: 4 })
+    graphic.position.set(fixedToRenderPixels(this.preview.x), fixedToRenderPixels(this.preview.y))
   }
 
   setActiveMineralNodes(ids: ReadonlySet<number>): void {

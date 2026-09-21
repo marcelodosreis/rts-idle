@@ -66,6 +66,19 @@ describe('protocol snapshot message', () => {
       { id: 2, x: 0, y: 0, owner: 1 }
     ],
     bases: [{ id: 3, x: 128, y: 256, owner: 0 }],
+    constructions: [
+      {
+        id: 5,
+        buildingType: 'BARRACKS',
+        x: 512,
+        y: 768,
+        owner: 0,
+        footprint: { width: 3, height: 3 },
+        status: 'UNDER_CONSTRUCTION',
+        progressTicks: 12,
+        totalTicks: 100
+      }
+    ],
     mineralNodes: [{ id: 4, x: 768, y: 256, remaining: 3000 }],
     players: [
       { id: 0, defeated: false, gold: 0 },
@@ -179,6 +192,21 @@ describe('protocol snapshot message', () => {
     expect(isSnapshotMessage(withoutMineralNodes)).toBe(false)
     expect(isSnapshotMessage({ ...valid, bases: [{ id: 3, x: 0, y: 0, owner: 4 }] })).toBe(false)
     expect(isSnapshotMessage({ ...valid, mineralNodes: [{ id: 4, x: 0, y: 0, remaining: -1 }] })).toBe(false)
+  })
+
+  it('validates construction projection state', () => {
+    expect(isSnapshotMessage({ ...valid, constructions: [{ ...valid.constructions[0]!, progressTicks: 101 }] })).toBe(
+      false
+    )
+    expect(
+      isSnapshotMessage({
+        ...valid,
+        constructions: [{ ...valid.constructions[0]!, footprint: { width: 0, height: 3 } }]
+      })
+    ).toBe(false)
+    expect(
+      isSnapshotMessage({ ...valid, constructions: [{ ...valid.constructions[0]!, buildingType: 'TOWER' }] })
+    ).toBe(false)
   })
 
   it('rejects malformed players and events', () => {

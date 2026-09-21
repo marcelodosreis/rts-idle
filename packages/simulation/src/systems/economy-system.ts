@@ -116,13 +116,7 @@ function updateReturn(state: GameState, workerId: EntityId, order: GatherOrder, 
   depositCargo(state, workerId, order, owner)
 }
 
-function updateGathering(
-  state: GameState,
-  workerId: EntityId,
-  order: GatherOrder,
-  owner: PlayerId,
-  occupiedNodes: Set<EntityId>
-): void {
+function updateGathering(state: GameState, workerId: EntityId, order: GatherOrder, owner: PlayerId): void {
   const nodes = state.world.store(MineralNode)
   const node = nodes.get(order.nodeId)
   const nodePosition = state.world.store(Position).get(order.nodeId)
@@ -145,10 +139,6 @@ function updateGathering(
     moveWorker(state, workerId, nodePosition.x, nodePosition.y)
     return
   }
-  if (occupiedNodes.has(order.nodeId)) {
-    return
-  }
-  occupiedNodes.add(order.nodeId)
   const progressTicks = order.progressTicks + 1
   if (progressTicks < GATHER_TICKS_PER_MINERAL) {
     replaceFrontOrder(state, workerId, { ...order, phase: 'GATHERING', progressTicks })
@@ -230,7 +220,6 @@ function updateConstruction(state: GameState): void {
 
 /** Advances deterministic mineral gathering, return, and deposit work. */
 export function economySystem(state: GameState): void {
-  const occupiedNodes = new Set<EntityId>()
   const orders = state.world.store(Orders)
   const movements = state.world.store(Movement)
   const owners = state.world.store(Owner)
@@ -256,7 +245,7 @@ export function economySystem(state: GameState): void {
     if (order.phase === 'TO_NODE' && movements.has(workerId)) {
       continue
     }
-    updateGathering(state, workerId, order, owner, occupiedNodes)
+    updateGathering(state, workerId, order, owner)
   }
   updateConstruction(state)
 }
