@@ -191,7 +191,7 @@ export class UnitSprite {
   }
 
   /** Shows idle, run, or attack by current state and flips by direction. */
-  setState(moving: boolean, facingLeft: boolean, now: number, economy: RenderUnit['economy']): void {
+  setState(moving: boolean, facingLeft: boolean, now: number, economy: RenderUnit['economy'], carrying = false): void {
     if (this.frames === null) {
       return
     }
@@ -202,11 +202,14 @@ export class UnitSprite {
     }
     const attacking = now < this.attackUntil && this.frames.attack !== null
     let next: AnimatedSprite
-    const economyFrame = economyAnimation(this.frames, economy?.phase, moving)
-    if (economyFrame !== null && economyFrame !== undefined) {
+    const economyFrame = economyAnimation(this.frames, economy?.phase, moving, carrying)
+    if (economyFrame !== null && economyFrame === this.frames.gather) {
+      // Gathering outranks combat; the carry pose does not (see below).
       next = economyFrame
     } else if (attacking) {
       next = this.frames.attack!
+    } else if (economyFrame !== null && economyFrame !== undefined) {
+      next = economyFrame
     } else if (moving) {
       next = this.frames.run
     } else {
