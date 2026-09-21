@@ -175,4 +175,4 @@ None blocking. Deferred (out of scope for this initiative): undo/redo,
 drag-paint, brush size, flood fill, keyboard shortcuts, map resizing,
 decoration collision with units, accessibility hardening, and Reset
 confirmation. These are tracked in the completed plan at
-`tasks/done/level-editor-plan.md`.
+`docs/tasks/done/level-editor-plan.md`.

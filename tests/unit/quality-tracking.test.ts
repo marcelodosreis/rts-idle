@@ -3,12 +3,22 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const WORKSPACE_ROOT = process.cwd()
-const TASKS_DIR = join(WORKSPACE_ROOT, 'tasks')
+const TASKS_DIR = join(WORKSPACE_ROOT, 'docs', 'tasks')
 
-function getQUALPackets(): string[] {
-  return readdirSync(TASKS_DIR)
-    .filter((f) => f.startsWith('QUAL-') && f.endsWith('.md'))
-    .map((f) => f.replace('.md', ''))
+interface TaskPacket {
+  readonly id: string
+  readonly path: string
+}
+
+function getQUALPackets(): readonly TaskPacket[] {
+  return [TASKS_DIR, join(TASKS_DIR, 'done')].flatMap((directory) =>
+    readdirSync(directory)
+      .filter((file) => file.startsWith('QUAL-') && file.endsWith('.md'))
+      .map((file) => ({
+        id: file.replace('.md', ''),
+        path: join(directory, file)
+      }))
+  )
 }
 
 function getBoardTasks(): string[] {
@@ -28,7 +38,7 @@ describe('quality tracking (QUAL-018)', () => {
   })
 
   it('board references all QUAL packets', () => {
-    const packets = getQUALPackets()
+    const packets = getQUALPackets().map((packet) => packet.id)
     const board = getBoardTasks()
 
     for (const packet of packets) {
@@ -37,7 +47,7 @@ describe('quality tracking (QUAL-018)', () => {
   })
 
   it('packets reference all board QUAL tasks', () => {
-    const packets = getQUALPackets()
+    const packets = getQUALPackets().map((packet) => packet.id)
     const board = getBoardTasks()
 
     for (const task of board) {
@@ -55,7 +65,7 @@ describe('quality tracking (QUAL-018)', () => {
     const packets = getQUALPackets()
 
     for (const packet of packets) {
-      const content = readFileSync(join(TASKS_DIR, `${packet}.md`), 'utf-8')
+      const content = readFileSync(packet.path, 'utf-8')
 
       expect(content).toContain('**Status:**')
       expect(content).toContain('**Phase:**')
