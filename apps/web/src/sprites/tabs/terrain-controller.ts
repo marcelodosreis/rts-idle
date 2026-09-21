@@ -1,5 +1,4 @@
 // biome-ignore lint/style/noExcessiveLinesPerFile: terrain playground controller (draw + state + render)
-import type { DecorationPlacement, MapDefinition } from '@rts/game-data'
 import {
   type AutoTileTerrain,
   autotileTile,
@@ -12,6 +11,7 @@ import {
   type ManualDecoration,
   mapDefinitionToGrid
 } from '@rts/renderer'
+import type { DecorationPlacement, MapDefinition } from '@rts/shared'
 import { Container, Graphics, Sprite } from 'pixi.js'
 import { Viewport } from 'pixi-viewport'
 import { createSectionApp, removeApp } from '../lab/app.js'

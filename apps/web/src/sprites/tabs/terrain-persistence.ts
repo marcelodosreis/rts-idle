@@ -1,4 +1,4 @@
-import { type MapDefinition, validateMapDefinition } from '@rts/game-data'
+import { type MapDefinition, normalizeMapDefinition } from '@rts/shared'
 
 /** LocalStorage key for the editor's debounced autosave. */
 export const EDITOR_STORAGE_KEY = 'rts.editorLevel'
@@ -23,8 +23,8 @@ export function parseMapJson(text: string): ParseResult {
   } catch {
     return { ok: false, errors: ['not valid JSON'] }
   }
-  const result = validateMapDefinition(value)
-  if (result.ok && result.map !== undefined) {
+  const result = normalizeMapDefinition(value)
+  if (result.ok) {
     return { ok: true, map: result.map, errors: [] }
   }
   return { ok: false, errors: result.errors }

@@ -1,4 +1,4 @@
-import type { MapDefinition, MapTileKind, TileCoordinate } from './map.js'
+import { type MapDefinition, type MapTileKind, type TileCoordinate, tileIndex, tileKey } from './map.js'
 
 export type { TileCoordinate }
 export interface PlacementMapBounds {
@@ -19,7 +19,7 @@ export function placementBoundsFromMap(map: MapDefinition): PlacementMapBounds {
   const invalidTiles: TileCoordinate[] = []
   for (let y = 0; y < map.height; y += 1) {
     for (let x = 0; x < map.width; x += 1) {
-      if (!isBuildableTile(map.tiles[y * map.width + x]!)) {
+      if (!isBuildableTile(map.tiles[tileIndex(map.width, x, y)]!)) {
         invalidTiles.push({ x, y })
       }
     }
@@ -56,10 +56,10 @@ export function validateBuildingPlacement(
   ) {
     return { ok: false, reason: 'OUT_OF_BOUNDS' }
   }
-  const invalid = new Set((bounds.invalidTiles ?? []).map((tile) => `${tile.x},${tile.y}`))
+  const invalid = new Set((bounds.invalidTiles ?? []).map((tile) => tileKey(tile.x, tile.y)))
   for (let y = candidate.y; y < candidate.y + candidate.height; y += 1) {
     for (let x = candidate.x; x < candidate.x + candidate.width; x += 1) {
-      if (invalid.has(`${x},${y}`)) {
+      if (invalid.has(tileKey(x, y))) {
         return { ok: false, reason: 'INVALID_TILE' }
       }
     }
