@@ -125,6 +125,49 @@ reproducibility and portability; it also pins Node 24 and pnpm 10.33.2 exactly.
 
 Flow: `feature/* → PR into staging → validate on staging URL → merge staging into main`.
 
+### Branching, merge, and promotion procedure
+
+Create every new task branch from the current integration branch. Do not branch
+from another feature branch, even when that feature has already been merged;
+the merge or squash may have changed the commit ancestry.
+
+For a new task branch:
+
+```bash
+git checkout main
+git fetch origin
+git pull --ff-only origin main
+git checkout -b feat/nova-task
+```
+
+When the branch already exists, synchronize it before review:
+
+```bash
+git fetch origin main
+git merge origin/main
+pnpm run verify
+git push
+```
+
+Before opening or updating a pull request, verify that the branch contains the
+current target base. For a branch targeting `main`, for example:
+
+```bash
+git fetch origin
+git merge-base --is-ancestor origin/main HEAD
+```
+
+The command must succeed. If it does not, merge the current target branch into
+the task branch, resolve all conflicts locally, run the verification gate, and
+push the updated branch before requesting review. The same procedure applies
+with `origin/staging` when the pull request targets `staging`.
+
+Promotion is strictly `feature → staging → main`: validate the feature on the
+staging deployment first, then promote the tested `staging` history to
+production. Render deploys only after the CI checks are green. After each
+deployment, smoke-check `GET /health` and the application; if the deployment
+is unhealthy, roll back to the previous deploy from the Render dashboard.
+
 - A single `render.yaml` at the repo root defines both services; each service sets
   its `branch`, so the Blueprint lives on `main` while staging builds from
   `staging`.
@@ -354,8 +397,10 @@ value.
   dashboard, or redeploy a previous commit.
 - Promotion: merge `staging` into `main`. No rebuild logic differs between
   environments (same image definition), so staging is representative.
-- E2E in CI runs against local servers, not the deployed environment; a smoke
-  check against `/health` after deploy is optional (manual for now).
+- E2E in CI runs against local servers, not the deployed environment. After
+  every deployment, manually smoke-check `GET /health` and confirm that the
+  application establishes its WebSocket connection; roll back in Render if
+  either check fails.
 
 ## 11. Observability
 

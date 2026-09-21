@@ -1,4 +1,4 @@
-import type { EntityId, Fixed } from '@rts/shared'
+import type { BuildingType, EntityId, Fixed } from '@rts/shared'
 
 export type GatherPhase = 'TO_NODE' | 'GATHERING' | 'TO_BASE' | 'WAITING_FOR_BASE'
 
@@ -21,3 +21,4 @@ export type Order =
       readonly phase: GatherPhase
       readonly progressTicks: number
     }
+  | { readonly type: 'BUILD'; readonly buildingId: EntityId; readonly buildingType: BuildingType }

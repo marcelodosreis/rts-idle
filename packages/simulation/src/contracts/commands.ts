@@ -3,6 +3,8 @@ import type { CommandIntent, PlayerId } from '@rts/shared'
 export type {
   AttackMovePayload,
   AttackPayload,
+  BuildingType,
+  BuildPayload,
   CommandIntent,
   GatherPayload,
   HoldPayload,
@@ -19,7 +21,13 @@ export interface ScheduledCommand {
   readonly intent: CommandIntent
 }
 
-export type CommandErrorCode = 'INVALID_PAYLOAD' | 'INVALID_PHASE' | 'NOT_OWNER' | 'ENTITY_UNAVAILABLE'
+export type CommandErrorCode =
+  | 'INVALID_PAYLOAD'
+  | 'INVALID_PHASE'
+  | 'INVALID_PLACEMENT'
+  | 'INSUFFICIENT_RESOURCES'
+  | 'NOT_OWNER'
+  | 'ENTITY_UNAVAILABLE'
 
 export class CommandRejectedError extends Error {
   readonly code: CommandErrorCode

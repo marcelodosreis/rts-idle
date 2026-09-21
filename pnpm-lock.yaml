@@ -269,7 +269,11 @@ importers:
 
   packages/audio: {}
 
-  packages/game-data: {}
+  packages/game-data:
+    dependencies:
+      '@rts/shared':
+        specifier: workspace:*
+        version: link:../shared
 
   packages/pathfinding: {}
 

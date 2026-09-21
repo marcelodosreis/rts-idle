@@ -1,6 +1,7 @@
 import type { EntityId, PlayerId, RngState } from '@rts/shared'
 import type { RulesIdentity } from '../contracts/simulation.js'
 import type { World } from '../ecs/world.js'
+import type { PlacementMapBounds } from '../placement/building-placement.js'
 import type { SimulationEvent } from '../systems/events.js'
 
 export type Phase = 'RUNNING' | 'FINISHED'
@@ -32,8 +33,9 @@ export interface GameState {
   readonly identity: RulesIdentity
   readonly seed: number
   readonly rng: RngState
-  readonly nextEntityId: number
+  nextEntityId: number
   readonly players: readonly PlayerState[]
+  readonly mapBounds: PlacementMapBounds
   readonly world: World
   /** Transient per-tick events; never part of the canonical snapshot. */
   readonly events: SimulationEvent[]

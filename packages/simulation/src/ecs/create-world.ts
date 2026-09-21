@@ -1,4 +1,5 @@
 import { Base, Cargo, Combat, Health, Kind, MineralNode, Movement, Orders, Owner, Position } from './components.js'
+import { Construction } from './construction-component.js'
 import { World } from './world.js'
 
 /**
@@ -17,6 +18,7 @@ export function createWorld(): World {
   world.registerComponent(Kind)
   world.registerComponent(MineralNode)
   world.registerComponent(Base)
+  world.registerComponent(Construction)
   world.registerComponent(Cargo)
   return world
 }

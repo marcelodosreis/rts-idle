@@ -9,12 +9,12 @@ import { describe, expect, it } from 'vitest'
 // and this list documents them.
 //
 // @rts/shared types: Fixed, GridPosition, EntityId, PlayerId, RngState, RngResult, RngIntResult,
-//   SimulationEvent, CommandIntent, MovePayload, GatherPayload, UnitKind
+//   SimulationEvent, CommandIntent, MovePayload, GatherPayload, BuildPayload, BuildingType, UnitKind
 // @rts/protocol types: MoveMessage, CommandMessage, SnapshotMessage, SnapshotUnit, SnapshotBase,
 //   SnapshotMineralNode, SnapshotPlayer, OrderState, ErrorMessage
 // @rts/simulation types: ScheduledCommand, CommandErrorCode, Order, RulesIdentity, TickResult,
 //   SimulationOptions, ComponentType, PositionData, OwnerData, MovementData, OrdersData, HealthData,
-//   CombatData, KindData, MineralNodeData, BaseData, CargoData, GatherPhase, SimulationHost,
+//   CombatData, KindData, MineralNodeData, BaseData, ConstructionData, CargoData, GatherPhase, SimulationHost,
 //   SimulationSnapshot, FormationOffset, GameState, PlayerState, UnitCombatStats
 // @rts/renderer types: GameRenderer, RenderFrame, RenderUnit, RenderBase, RenderMineralNode,
 //   RenderPlayer, RendererOptions, RendererCallbacks
@@ -66,6 +66,7 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'Kind',
       'MineralNode',
       'Base',
+      'Construction',
       'Cargo',
       'ComponentStore',
       'World',

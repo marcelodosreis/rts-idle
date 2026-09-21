@@ -14,7 +14,7 @@
 | ECONOMY-005 | Base building (deposit point) | done | ECONOMY-004 | simulation, game-data | unit, simulation |
 | VS-01B | Playable economy integration | done | ECONOMY-003, ECONOMY-004, ECONOMY-005 | protocol, server, renderer, web | unit, integration, e2e |
 | BUILD-001 | Building placement system | done | — | simulation | unit, invariants |
-| BUILD-002 | Base construction | pending | BUILD-001, ECONOMY-005 | simulation, game-data | unit, simulation |
+| BUILD-002 | Base construction | done | BUILD-001, ECONOMY-005 | simulation, game-data | unit, simulation |
 | BUILD-003 | Barracks construction | pending | BUILD-002 | simulation, game-data | unit, simulation |
 | BUILD-004 | Supply depot construction | pending | BUILD-002 | simulation, game-data | unit, simulation |
 | PROD-001 | Production queue component | pending | — | simulation | unit, simulation |
