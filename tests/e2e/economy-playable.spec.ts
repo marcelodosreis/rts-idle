@@ -116,6 +116,20 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
   }
 })
 
+test('a primary click selects a mineral node without selecting a worker', async ({ page }) => {
+  await page.goto('/?scenario=economy&aggression=passive')
+  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+
+  const nodePoint = await canvasPointForFixed(page, tilesToFixed(10), tilesToFixed(8))
+  await page.mouse.click(nodePoint.x, nodePoint.y)
+
+  await expect(page.getByTestId('mineral-panel')).toContainText('Mineral Node')
+  await expect(page.getByTestId('mineral-panel')).toContainText('Neutral resource')
+  await expect(page.getByTestId('mineral-remaining')).toHaveText('3000 remaining')
+  await expect(page.getByTestId('economy-status')).toHaveCount(0)
+  await expect(page.getByTestId('mineral-panel')).toBeVisible()
+})
+
 test('a group mines the same node concurrently through the browser command path', async ({ page }) => {
   test.setTimeout(35_000)
   await page.goto('/?scenario=economy')

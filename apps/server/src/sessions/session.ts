@@ -1,8 +1,7 @@
 import type {
   EconomyPhase,
   OrderState,
-  SnapshotBase,
-  SnapshotConstruction,
+  SnapshotBuilding,
   SnapshotEconomy,
   SnapshotMineralNode,
   SnapshotPlayer,
@@ -10,10 +9,9 @@ import type {
 } from '@rts/protocol'
 import type { PlayerId, SimulationEvent } from '@rts/shared'
 import {
-  Base,
+  Building,
   Cargo,
   type CommandRejectedError,
-  Construction,
   createSimulation,
   GATHER_TICKS_PER_MINERAL,
   Health,
@@ -51,14 +49,14 @@ function deriveOrderState(front: Order | undefined, hasMovement: boolean): Order
   if (front?.type === 'ATTACK_MOVE') {
     return 'attack_move'
   }
-  if (hasMovement) {
-    return 'moving'
-  }
   if (front?.type === 'HOLD') {
     return 'hold'
   }
   if (front?.type === 'PATROL') {
     return 'patrol'
+  }
+  if (hasMovement) {
+    return 'moving'
   }
   return 'idle'
 }
@@ -169,54 +167,46 @@ export class GameSession {
       })
   }
 
-  projectBases(): readonly SnapshotBase[] {
+  projectBuildings(): readonly SnapshotBuilding[] {
     const world = this.simulation.inspectState().world
-    const bases = world.store(Base)
+    const buildings = world.store(Building)
     const positions = world.store(Position)
     const owners = world.store(Owner)
     return world
       .aliveIds()
-      .filter((id) => bases.has(id))
+      .filter((id) => buildings.has(id))
       .map((id) => {
         const position = positions.get(id)
         const owner = owners.get(id)
-        if (position === undefined || owner === undefined) {
-          throw new Error(`GameSession: Base ${id} is missing position or owner`)
-        }
-        return { id, x: position.x, y: position.y, owner: owner.owner }
-      })
-  }
-
-  projectConstructions(): readonly SnapshotConstruction[] {
-    const world = this.simulation.inspectState().world
-    const constructions = world.store(Construction)
-    const positions = world.store(Position)
-    const owners = world.store(Owner)
-    return world
-      .aliveIds()
-      .filter((id) => constructions.has(id))
-      .map((id) => {
-        const construction = constructions.get(id)
-        const position = positions.get(id)
-        const owner = owners.get(id)
-        if (construction === undefined || position === undefined || owner === undefined) {
-          throw new Error(`GameSession: construction ${id} is missing projection data`)
+        const building = buildings.get(id)
+        if (position === undefined || owner === undefined || building === undefined) {
+          throw new Error(`GameSession: building ${id} is missing projection data`)
         }
         return {
           id,
-          buildingType: construction.buildingType,
+          buildingType: building.buildingType,
           x: position.x,
           y: position.y,
           owner: owner.owner,
-          footprint: {
-            width: construction.footprint.width,
-            height: construction.footprint.height
-          },
-          status: construction.status,
-          progressTicks: construction.progressTicks,
-          totalTicks: construction.totalTicks
+          builderId: building.builderId,
+          footprint: { width: building.footprint.width, height: building.footprint.height },
+          status: building.status,
+          progressTicks: building.progressTicks,
+          totalTicks: building.totalTicks
         }
       })
+  }
+
+  /** @deprecated Use projectBuildings; retained for old in-process callers only. */
+  projectBases(): readonly { readonly id: number; readonly x: number; readonly y: number; readonly owner: number }[] {
+    return this.projectBuildings()
+      .filter((building) => building.buildingType === 'BASE')
+      .map(({ id, x, y, owner }) => ({ id, x, y, owner }))
+  }
+
+  /** @deprecated Use projectBuildings; retained for old in-process callers only. */
+  projectConstructions(): readonly SnapshotBuilding[] {
+    return this.projectBuildings()
   }
 
   projectMineralNodes(): readonly SnapshotMineralNode[] {

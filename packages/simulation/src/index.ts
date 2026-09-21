@@ -2,6 +2,7 @@ import { SIMULATION_VERSION } from './contracts/simulation-version.js'
 
 export const version = SIMULATION_VERSION
 
+export { BUILDING_DEFINITIONS } from '@rts/game-data'
 export type { RngState } from '@rts/shared'
 export * from './commands/limits.js'
 export * from './contracts/commands.js'
@@ -10,6 +11,7 @@ export * from './contracts/rules-identity.js'
 export * from './contracts/simulation.js'
 export * from './data/economy-rules.js'
 export * from './data/unit-stats.js'
+export * from './ecs/building-component.js'
 export * from './ecs/component-store.js'
 export * from './ecs/components.js'
 export * from './ecs/construction-component.js'

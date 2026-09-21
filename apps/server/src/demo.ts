@@ -1,6 +1,7 @@
 import { allocateEntityId, START_ENTITY_ID } from '@rts/shared'
 import {
-  Base,
+  BUILDING_DEFINITIONS,
+  Building,
   Cargo,
   Combat,
   createRulesIdentity,
@@ -58,13 +59,20 @@ export function createDemoSession(
     }
     ids.push(allocated.id)
   }
-  for (const base of scenario.bases ?? []) {
+  for (const base of scenario.buildings ?? []) {
     const allocated = allocateEntityId(next)
     next = allocated.nextEntityId
     world.createEntity(allocated.id)
     world.store(Position).set(allocated.id, { x: base.x, y: base.y })
     world.store(Owner).set(allocated.id, { owner: base.owner })
-    world.store(Base).set(allocated.id, {})
+    world.store(Building).set(allocated.id, {
+      buildingType: 'BASE',
+      status: 'COMPLETED',
+      progressTicks: BUILDING_DEFINITIONS.BASE.constructionTicks,
+      totalTicks: BUILDING_DEFINITIONS.BASE.constructionTicks,
+      builderId: null,
+      footprint: { x: base.x / 256, y: base.y / 256, ...BUILDING_DEFINITIONS.BASE.footprint }
+    })
   }
   for (const node of scenario.mineralNodes ?? []) {
     const allocated = allocateEntityId(next)

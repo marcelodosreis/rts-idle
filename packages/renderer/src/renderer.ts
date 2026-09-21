@@ -120,6 +120,16 @@ export class PixiRenderer implements GameRenderer {
         if (this.callbacks.onGroundClick?.(world.x, world.y) === true) {
           return
         }
+        const building = worldObjects.buildingAt(world.x, world.y)
+        if (building !== null) {
+          this.callbacks.onBuildingSelected?.(building)
+          return
+        }
+        const mineralNode = worldObjects.mineralNodeAt(world.x, world.y)
+        if (mineralNode !== null) {
+          this.callbacks.onMineralSelected?.(mineralNode)
+          return
+        }
         selection.startBox(event.global)
       }
     })
@@ -154,7 +164,7 @@ export class PixiRenderer implements GameRenderer {
       throw new Error('PixiRenderer: not mounted')
     }
     const now = performance.now()
-    this.worldObjects.present(frame.bases ?? [], frame.mineralNodes ?? [], frame.constructions ?? [])
+    this.worldObjects.present(frame.buildings ?? [], frame.mineralNodes ?? [])
     this.worldObjects.setActiveMineralNodes(
       new Set(frame.units.flatMap((unit) => (unit.economy === undefined ? [] : [unit.economy.nodeId])))
     )
@@ -195,6 +205,11 @@ export class PixiRenderer implements GameRenderer {
     const hit = this.units.unitAt(world.x, world.y)
     if (hit !== null) {
       this.callbacks.onUnitCommand?.(hit)
+      return
+    }
+    const building = this.worldObjects.buildingAt(world.x, world.y)
+    if (building !== null) {
+      this.callbacks.onBuildingCommand?.(building)
     } else {
       this.ping.show(world.x, world.y)
       this.callbacks.onGroundCommand?.(world.x, world.y)

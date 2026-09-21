@@ -7,5 +7,6 @@
  * 0.4.0: Economy v0 components and GATHER orders joined canonical state.
  * 0.5.0: BUILD construction state, orders, and map bounds joined canonical state.
  * 0.6.0: BARRACKS construction and marker joined canonical state.
+ * 0.7.0: Base, Barracks, and Construction were unified as Building.
  */
-export const SIMULATION_VERSION = '0.6.0'
+export const SIMULATION_VERSION = '0.7.0'

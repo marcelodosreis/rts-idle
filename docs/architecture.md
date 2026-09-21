@@ -46,7 +46,8 @@ simulation/src/
   data/          unit-stats.ts (combat stats), economy-rules.ts (v0 constants)
   engine/        create-simulation.ts, simulation-from-snapshot.ts,
                  simulation-host.ts (contract), simulation.ts (the class)
-  ecs/           component-store.ts, components.ts, world.ts, create-world.ts
+  ecs/           component-store.ts, components.ts, building-component.ts,
+                 world.ts, create-world.ts
   canonical/     writer.ts, reader.ts, utf8.ts, error.ts
   snapshot/      serialize.ts (state codec), hash.ts (SHA-256 + hex)
   state/         state.ts (GameState, players, Phase)
@@ -125,3 +126,7 @@ web/src/
 - `docs/specs/` — capability map + per-module specs.
 - `docs/rfc/` — technology substitutability RFCs (tracking + incremental plan).
 - `docs/postmortems/` — every bug's root cause + regression.
+Building state is represented by one `Building` component in the simulation.
+Its explicit lifecycle is `FOUNDATION` → `UNDER_CONSTRUCTION` → `COMPLETED`;
+initial bases are completed values of the same component. Protocol snapshots
+and renderer frames expose only `buildings`; mineral nodes remain separate.

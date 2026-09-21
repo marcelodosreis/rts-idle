@@ -25,7 +25,7 @@ export interface DemoScenario {
   readonly label: string
   readonly startingGold?: number
   readonly spawns: readonly DemoSpawn[]
-  readonly bases?: readonly DemoBaseSpawn[]
+  readonly buildings?: readonly DemoBaseSpawn[]
   readonly mineralNodes?: readonly DemoMineralNodeSpawn[]
   /** Engagement pairs: index of the attacking spawn → index of its target. */
   readonly attacks: readonly (readonly [number, number])[]
@@ -96,7 +96,7 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
       { owner: 0, kind: PAWN, worker: true, ...tile(10, 11) },
       { owner: 0, kind: PAWN, worker: true, ...tile(11, 11) }
     ],
-    bases: [
+    buildings: [
       { owner: 0, ...tile(6, 8) },
       { owner: 1, ...tile(24, 24) }
     ],

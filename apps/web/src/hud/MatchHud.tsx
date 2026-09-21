@@ -3,7 +3,7 @@ import { CommandBar } from './CommandBar'
 import { MatchOverlay } from './MatchOverlay'
 import { SelectionPanel } from './SelectionPanel'
 import { TopBar } from './TopBar'
-import type { HudResources, HudSelectionUnit } from './types'
+import type { HudConstruction, HudMineral, HudResources, HudSelectionUnit } from './types'
 import type { CommandMode } from './useCommandModes'
 
 export type { HudResources, HudSelectionUnit }
@@ -13,6 +13,8 @@ export interface MatchHudProps {
   readonly unitCount: number
   readonly tick: number
   readonly selection: readonly HudSelectionUnit[]
+  readonly construction: HudConstruction | null
+  readonly mineral: HudMineral | null
   readonly resources: HudResources | null
   /** Renderer host mount point, owned by the match session. */
   readonly hostRef: RefObject<HTMLDivElement | null>
@@ -28,6 +30,7 @@ export interface MatchHudProps {
   readonly onArm: (mode: 'patrol' | 'attack_move' | 'attack') => void
   readonly workerSelected: boolean
   readonly onBuildArm: (mode: 'build_base' | 'build_barracks') => void
+  readonly buildHint: string | null
   readonly onNewMatch: () => void
   readonly onChangeScenario: (id: string) => void
   readonly onToggleAggression: () => void
@@ -45,6 +48,8 @@ export function MatchHud({
   unitCount,
   tick,
   selection,
+  construction,
+  mineral,
   resources,
   hostRef,
   commandMode,
@@ -59,6 +64,7 @@ export function MatchHud({
   onArm,
   workerSelected,
   onBuildArm,
+  buildHint,
   onNewMatch,
   onChangeScenario,
   onToggleAggression,
@@ -87,7 +93,7 @@ export function MatchHud({
         />
       </main>
       <footer className="flex min-h-40 shrink-0 flex-wrap items-stretch justify-center gap-3 border-t bg-card/70 p-3 backdrop-blur">
-        <SelectionPanel selection={selection} />
+        <SelectionPanel selection={selection} construction={construction} mineral={mineral} />
         <CommandBar
           disabled={selection.length === 0}
           mode={commandMode}
@@ -96,6 +102,7 @@ export function MatchHud({
           onSurrender={onSurrender}
           workerSelected={workerSelected}
           minerals={resources?.mineral ?? 0}
+          buildHint={buildHint}
           onArm={(mode) => {
             if (mode === 'build_base' || mode === 'build_barracks') {
               onBuildArm(mode)

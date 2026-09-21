@@ -65,6 +65,7 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'Combat',
       'Kind',
       'MineralNode',
+      'Building',
       'Base',
       'Construction',
       'Cargo',

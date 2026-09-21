@@ -11,6 +11,7 @@ interface CommandBarProps {
   readonly workerSelected: boolean
   readonly minerals: number
   readonly onArm: (mode: 'patrol' | 'attack_move' | 'attack' | 'build_base' | 'build_barracks') => void
+  readonly buildHint: string | null
 }
 
 function ArmButton({
@@ -62,7 +63,8 @@ export function CommandBar({
   onStop,
   onHold,
   onSurrender,
-  onArm
+  onArm,
+  buildHint
 }: CommandBarProps) {
   return (
     <div className="flex flex-wrap items-stretch gap-2">
@@ -132,7 +134,7 @@ export function CommandBar({
           aria-live="polite"
         >
           {mode === 'build_base' || mode === 'build_barracks'
-            ? 'Click a valid tile to build.'
+            ? (buildHint ?? 'Move over the map to preview a building location.')
             : `Pick a target: ${mode}.`}
         </div>
       ) : null}
