@@ -1,6 +1,16 @@
 import { GameSession } from '@rts/server'
 import { tilesToFixed } from '@rts/shared'
-import { Building, createRulesIdentity, createWorld, Health, Kind, MineralNode, Owner, Position } from '@rts/simulation'
+import {
+  Building,
+  Cargo,
+  createRulesIdentity,
+  createWorld,
+  Health,
+  Kind,
+  MineralNode,
+  Owner,
+  Position
+} from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { DEMO_SCENARIOS } from '../../apps/server/src/demo/scenarios.js'
 import { bootstrapMatch, createAuthoritativeMatch } from '../../apps/server/src/match-bootstrap.js'
@@ -125,6 +135,29 @@ describe('game session commands', () => {
       expect.objectContaining({ id: 2, x: 256, y: 0, owner: 0, buildingType: 'BASE' })
     ])
     expect(session.projectMineralNodes()).toEqual([{ id: 3, x: 512, y: 0, remaining: 25 }])
+  })
+
+  it('projects carrying independently of the front order', () => {
+    const world = createWorld()
+    world.createEntity(1)
+    world.store(Position).set(1, { x: 0, y: 0 })
+    world.store(Owner).set(1, { owner: 0 })
+    world.store(Kind).set(1, 'pawn')
+    world.store(Cargo).set(1, { amount: 5, capacity: 10 })
+    world.createEntity(2)
+    world.store(Position).set(2, { x: 64, y: 0 })
+    world.store(Owner).set(2, { owner: 0 })
+    world.store(Kind).set(2, 'pawn')
+    world.store(Cargo).set(2, { amount: 0, capacity: 10 })
+    const session = GameSession.create({
+      seed: SEEDS.integration.session,
+      identity: createRulesIdentity('session-test'),
+      initialWorld: world
+    })
+
+    const projected = session.projectUnits()
+    expect(projected.find((unit) => unit.id === 1)?.carrying).toBe(true)
+    expect(projected.find((unit) => unit.id === 2)?.carrying).toBeUndefined()
   })
 
   it('projects foundations with type, footprint, status, and progress', () => {

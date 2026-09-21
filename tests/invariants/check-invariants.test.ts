@@ -175,4 +175,14 @@ describe('central invariants (P1.08)', () => {
 
     expect(() => sim.step()).toThrow(/gather order without Worker state/)
   })
+
+  it('rejects a deposit order without Worker cargo state', () => {
+    const world = worldWithOwners([0])
+    const id = world.aliveIds()[0]!
+    world.store(Kind).set(id, 'pawn')
+    world.store(Orders).set(id, { queue: [{ type: 'DEPOSIT', buildingId: 99 }] })
+    const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
+
+    expect(() => sim.step()).toThrow(/deposit order without Worker state/)
+  })
 })
