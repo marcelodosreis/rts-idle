@@ -197,18 +197,6 @@ export class GameSession {
       })
   }
 
-  /** @deprecated Use projectBuildings; retained for old in-process callers only. */
-  projectBases(): readonly { readonly id: number; readonly x: number; readonly y: number; readonly owner: number }[] {
-    return this.projectBuildings()
-      .filter((building) => building.buildingType === 'BASE')
-      .map(({ id, x, y, owner }) => ({ id, x, y, owner }))
-  }
-
-  /** @deprecated Use projectBuildings; retained for old in-process callers only. */
-  projectConstructions(): readonly SnapshotBuilding[] {
-    return this.projectBuildings()
-  }
-
   projectMineralNodes(): readonly SnapshotMineralNode[] {
     const world = this.simulation.inspectState().world
     const nodes = world.store(MineralNode)

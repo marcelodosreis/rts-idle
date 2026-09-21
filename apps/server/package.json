@@ -11,6 +11,7 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "@rts/game-data": "workspace:*",
     "@rts/simulation": "workspace:*",
     "@rts/protocol": "workspace:*",
     "@rts/ai": "workspace:*",

@@ -1,10 +1,9 @@
-import { allocateEntityId, PLAYER_IDS, START_ENTITY_ID } from '@rts/shared'
+import { allocateEntityId, type MapDefinition, PLAYER_IDS, placementBoundsFromMap, START_ENTITY_ID } from '@rts/shared'
 import {
   BUILDING_DEFINITIONS,
   Building,
   Cargo,
   Combat,
-  createRulesIdentity,
   createWorld,
   Health,
   Kind,
@@ -19,11 +18,6 @@ import {
 import { DEMO_SEED, scenarioById } from './demo/scenarios.js'
 import { GameSession } from './sessions/session.js'
 
-export const DEMO_IDENTITY: RulesIdentity = createRulesIdentity('demo-parallel-economy-v1', {
-  mapId: 'demo',
-  mapHash: 'demo'
-})
-
 /**
  * Hostile demo: enemies spawn in their own spot with combat stats and, in
  * offensive mode, march to attack the player. The player's own units (owner 0)
@@ -32,8 +26,10 @@ export const DEMO_IDENTITY: RulesIdentity = createRulesIdentity('demo-parallel-e
  * never attack.
  */
 export function createDemoSession(
-  scenarioId: string | undefined = '6v6',
-  aggression: 'offensive' | 'passive' = 'offensive'
+  scenarioId: string,
+  aggression: 'offensive' | 'passive',
+  map: MapDefinition,
+  identity: RulesIdentity
 ): GameSession {
   const scenario = scenarioById(scenarioId)
   const world = createWorld()
@@ -91,7 +87,8 @@ export function createDemoSession(
   }
   return GameSession.create({
     seed: DEMO_SEED,
-    identity: DEMO_IDENTITY,
+    identity,
+    mapBounds: placementBoundsFromMap(map),
     initialWorld: world,
     initialPlayers: PLAYER_IDS.map((id) => ({
       id,
