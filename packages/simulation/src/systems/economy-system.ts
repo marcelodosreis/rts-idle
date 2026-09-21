@@ -9,6 +9,7 @@ import { removeFrontOrder, replaceFrontOrder } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
 
 type GatherOrder = Extract<Order, { readonly type: 'GATHER' }>
+type DepositOrder = Extract<Order, { readonly type: 'DEPOSIT' }>
 
 function nearestOwnedBase(state: GameState, owner: PlayerId, x: Fixed, y: Fixed): EntityId | null {
   const buildings = state.world.store(Building)
@@ -55,26 +56,35 @@ function resumeGathering(state: GameState, workerId: EntityId, order: GatherOrde
   setMovementDestination(state, workerId, nodePosition.x, nodePosition.y)
 }
 
-function depositCargo(state: GameState, workerId: EntityId, order: GatherOrder, owner: PlayerId): void {
+/** A Base that can accept a deposit: owned completed Base with a position. */
+function isValidOwnedBase(state: GameState, baseId: EntityId, owner: PlayerId): boolean {
+  return (
+    isCompletedBase(state.world.store(Building).get(baseId)) &&
+    state.world.store(Owner).get(baseId)?.owner === owner &&
+    state.world.store(Position).get(baseId) !== undefined
+  )
+}
+
+/** Credits a worker's carried minerals to its player and empties the cargo. */
+function creditCargo(state: GameState, workerId: EntityId, owner: PlayerId): void {
   const cargo = state.world.store(Cargo).get(workerId)!
   const player = state.players.find((candidate) => candidate.id === owner)!
   player.gold += cargo.amount
   state.world.store(Cargo).set(workerId, { ...cargo, amount: 0 })
+}
+
+function depositCargo(state: GameState, workerId: EntityId, order: GatherOrder, owner: PlayerId): void {
+  creditCargo(state, workerId, owner)
   resumeGathering(state, workerId, order)
 }
 
 function updateReturn(state: GameState, workerId: EntityId, order: GatherOrder, owner: PlayerId): void {
   const baseId = order.baseId
-  const basePosition = baseId === null ? undefined : state.world.store(Position).get(baseId)
-  const validBase =
-    baseId !== null &&
-    isCompletedBase(state.world.store(Building).get(baseId)) &&
-    state.world.store(Owner).get(baseId)?.owner === owner &&
-    basePosition !== undefined
-  if (!validBase) {
+  if (baseId === null || !isValidOwnedBase(state, baseId, owner)) {
     beginReturn(state, workerId, order, owner)
     return
   }
+  const basePosition = state.world.store(Position).get(baseId)!
   if (state.world.store(Movement).has(workerId)) {
     return
   }
@@ -84,6 +94,31 @@ function updateReturn(state: GameState, workerId: EntityId, order: GatherOrder, 
     return
   }
   depositCargo(state, workerId, order, owner)
+}
+
+/**
+ * Manual deposit: walk to the ordered Base, credit the carried minerals on
+ * arrival, and end the order (the worker stays idle instead of resuming the
+ * previous Mine). An invalidated Base drops the order without a deposit.
+ */
+function updateDeposit(state: GameState, workerId: EntityId, order: DepositOrder, owner: PlayerId): void {
+  const baseId = order.buildingId
+  if (!isValidOwnedBase(state, baseId, owner)) {
+    clearMovement(state, workerId)
+    removeFrontOrder(state, workerId)
+    return
+  }
+  if (state.world.store(Movement).has(workerId)) {
+    return
+  }
+  const basePosition = state.world.store(Position).get(baseId)!
+  const workerPosition = state.world.store(Position).get(workerId)!
+  if (workerPosition.x !== basePosition.x || workerPosition.y !== basePosition.y) {
+    setMovementDestination(state, workerId, basePosition.x, basePosition.y)
+    return
+  }
+  creditCargo(state, workerId, owner)
+  removeFrontOrder(state, workerId)
 }
 
 function updateGathering(state: GameState, workerId: EntityId, order: GatherOrder, owner: PlayerId): void {
@@ -185,11 +220,20 @@ export function economySystem(state: GameState): void {
   const kinds = state.world.store(Kind)
   for (const workerId of state.world.aliveIds()) {
     const order = orders.get(workerId)?.queue[0]
+    const owner = owners.get(workerId)?.owner
+    if (owner === undefined) {
+      continue
+    }
+    if (order?.type === 'DEPOSIT') {
+      if (kinds.get(workerId) === 'pawn' && cargo.get(workerId) !== undefined) {
+        updateDeposit(state, workerId, order, owner)
+      }
+      continue
+    }
     if (order?.type !== 'GATHER') {
       continue
     }
-    const owner = owners.get(workerId)?.owner
-    if (owner === undefined || kinds.get(workerId) !== 'pawn' || cargo.get(workerId) === undefined) {
+    if (kinds.get(workerId) !== 'pawn' || cargo.get(workerId) === undefined) {
       continue
     }
     if (order.phase === 'WAITING_FOR_BASE') {

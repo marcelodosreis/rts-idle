@@ -89,6 +89,7 @@ const ORDER_TAG_ATTACK = 3
 const ORDER_TAG_ATTACK_MOVE = 4
 const ORDER_TAG_GATHER = 5
 const ORDER_TAG_BUILD = 6
+const ORDER_TAG_DEPOSIT = 7
 
 function buildingTypeTag(buildingType: BuildingType): number {
   switch (buildingType) {
@@ -177,6 +178,10 @@ function writeOrder(writer: CanonicalWriter, order: Order): void {
       writer.writeI32(order.workPoint.x)
       writer.writeI32(order.workPoint.y)
       return
+    case 'DEPOSIT':
+      writer.writeU8(ORDER_TAG_DEPOSIT)
+      writer.writeU32(order.buildingId)
+      return
   }
 }
 
@@ -221,6 +226,8 @@ function readOrder(reader: CanonicalReader): Order {
         workPoint: { x: reader.readI32(), y: reader.readI32() }
       }
     }
+    case ORDER_TAG_DEPOSIT:
+      return { type: 'DEPOSIT', buildingId: reader.readU32() }
     default:
       // A bad tag is corruption, not a valid order.
       throw new Error(`Orders: invalid order tag ${tag}`)
