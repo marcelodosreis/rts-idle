@@ -1,3 +1,10 @@
+---
+status: open
+classe: process-branch
+barreira: null
+regressao: []
+---
+
 # Postmortem: BUILD-002 branch conflicted with the merged feature history
 
 Date: 2026-09-19

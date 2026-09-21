@@ -1,3 +1,12 @@
+---
+status: closed
+classe: formation
+barreira: null
+regressao:
+  - tests/e2e/regression-units-spread.spec.ts
+  - tests/unit/formation-offsets.test.ts
+---
+
 # Postmortem: Multi-unit moves stacked every unit at the same point
 
 Date: 2026-09-16

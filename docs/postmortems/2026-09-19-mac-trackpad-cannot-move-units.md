@@ -1,3 +1,11 @@
+---
+status: closed
+classe: input-cross-platform
+barreira: null
+regressao:
+  - tests/e2e/control-click-attack.spec.ts
+---
+
 # Postmortem: Mac Trackpad Cannot Move Units
 
 ## Summary

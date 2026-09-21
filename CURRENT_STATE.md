@@ -54,6 +54,8 @@ No building placement, production, real AI, pathfinding, fog of war, or multipla
 
 VS-01B Playable Economy Integration is complete, including visible mining/carrying feedback. VS-02 has not started.
 
+Quality Hardening (QUAL-000..018) is in progress. Foundation tasks: QUAL-017 (postmortem tracking) complete, QUAL-018 (board + packets) in progress. See `tasks/todo.md` for full board.
+
 Architecture evolution is tracked in `docs/rfc/RFC-001-technology-substitutability.md`
 (Proposed; no implementation started).
 

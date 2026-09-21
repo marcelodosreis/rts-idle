@@ -1,3 +1,11 @@
+---
+status: closed
+classe: presentation
+barreira: null
+regressao:
+  - tests/e2e/regression-units-visible.spec.ts
+---
+
 # Postmortem: Units invisible in the browser renderer
 
 Date: 2026-09-16

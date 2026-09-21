@@ -1,3 +1,13 @@
+---
+status: closed
+classe: presentation
+barreira: null
+regressao:
+  - tests/unit/world-object-layer.test.ts
+  - tests/simulation/building-construction.test.ts
+  - tests/e2e/building-hud.spec.ts
+---
+
 # Construction Placement Origin Mismatch
 
 ## Summary

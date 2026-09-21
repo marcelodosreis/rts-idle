@@ -10,7 +10,7 @@
 
 ## Read first
 
-`CURRENT_STATE.md`, `AI_EXECUTION_PROTOCOL.md`, `docs/engineering-standard.md`,
+`CURRENT_STATE.md`, `docs/ai/EXECUTION_PROTOCOL.md`, `docs/engineering-standard.md`,
 `packages/simulation/src/ecs/world.ts`,
 `packages/simulation/src/invariants/check-invariants.ts`,
 `tests/invariants/check-invariants.test.ts`.

@@ -1,3 +1,11 @@
+---
+status: closed
+classe: presentation
+barreira: null
+regressao:
+  - tests/unit/unit-economy.test.ts
+---
+
 ## Summary
 
 Issuing a mining command in the browser could freeze the rendered pawn because rendering the economy progress bar threw during `renderer.present()`.

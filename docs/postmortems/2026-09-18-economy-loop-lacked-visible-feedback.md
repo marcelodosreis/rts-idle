@@ -1,3 +1,11 @@
+---
+status: closed
+classe: presentation
+barreira: null
+regressao:
+  - tests/e2e/economy-playable.spec.ts
+---
+
 # Economy Loop Lacked Visible Feedback
 
 ## Summary

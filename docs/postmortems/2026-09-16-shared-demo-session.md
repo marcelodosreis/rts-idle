@@ -1,3 +1,10 @@
+---
+status: open
+classe: isolation
+barreira: null
+regressao: []
+---
+
 # Postmortem: Demo server shared one session across all clients
 
 Date: 2026-09-16

@@ -1,3 +1,11 @@
+---
+status: closed
+classe: layout
+barreira: null
+regressao:
+  - tests/e2e/hud-responsive.spec.ts
+---
+
 # Postmortem: HUD top bar controls overlap on 13" laptop viewports
 
 Date: 2026-09-19
