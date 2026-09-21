@@ -18,7 +18,7 @@ See `docs/tasks/todo.md` for full phase list.
 - Fixed timestep (20 ticks/s, single-writer `step()`)
 - Deterministic simulation (xoshiro128**, fixed-point, SHA-256 hashes)
 - 8 commands: MOVE, STOP, HOLD, PATROL, ATTACK, ATTACK_MOVE, GATHER, SURRENDER
-- 7 pipeline systems: orders → movement → economy → combat → death → victory → invariants
+- 8 pipeline systems: orders → movement → economy → combat → death → supply → victory → invariants
 - 3 unit types: pawn (100hp/10dmg), warrior (150hp/15dmg), archer (60hp/8dmg/range 3)
 - Combat with simultaneous death, victory/draw/tick-limit
 - Economy v0: Worker → Mineral Node → cargo → owned Base → wallet deposit
@@ -29,6 +29,8 @@ See `docs/tasks/todo.md` for full phase list.
   contextual GATHER, pickaxe/carry animations, progress feedback, and live Mineral HUD
 - Unified Building construction with HUD placement feedback, shared selection,
   pause/resume, worker reassignment, and completion status
+- Authoritative supply accounting: Base capacity, unit usage, completed Supply
+  Depot capacity, over-cap handling, canonical snapshots, and Supply HUD
 - WebSocket server (isolated per-connection sessions)
 - Automated suites and architecture barriers green
 
@@ -37,8 +39,9 @@ See `docs/tasks/todo.md` for full phase list.
 Player connects → gets isolated match → selects units → issues commands → fights
 pre-scripted enemies, or opens `?scenario=economy` to gather and deposit
 minerals through the authoritative command path. In the economy scenario, the player
-can also place Base/Barracks construction, pause it by stopping the worker, and resume
-it by assigning another worker through the construction HUD.
+can also place Base/Barracks/Supply Depot construction, pause it by stopping the
+worker, and resume it by assigning another worker through the construction HUD.
+The top bar shows authoritative `used / cap` supply and updates on Depot completion.
 
 No production, real AI, pathfinding, fog of war, or multiplayer.
 
@@ -58,7 +61,8 @@ No production, real AI, pathfinding, fog of war, or multiplayer.
 VS-01B Playable Economy Integration is complete, including visible mining/carrying feedback.
 Building lifecycle coverage is complete for Base and Barracks through the shared
 Building component and `buildings` snapshot collection.
-VS-02 has not started.
+BUILD-004 Supply Depot and Supply HUD is complete. Production queues, training,
+reserved supply, and VS-02 have not started.
 
 Quality Hardening (QUAL-000..018) is in progress. The Concept Authority closure
 (AUTH-005A through AUTH-018) is complete; its audit records the authority and

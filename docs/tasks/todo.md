@@ -74,7 +74,7 @@ active and pending packets remain here. See [`docs/tasks/README.md`](README.md).
 - [x] A8 P1.04b SURRENDER + defeat
 - [x] V8 snapshot/protocol hp/maxHp/kind/orderState/players/events
 - [x] V6 event contract (attackFired/damageDealt/unitDied)
-- [ ] V10b resources/supply HUD — **moved to Phase 2** (Economy v0 state now exists; HUD remains separate)
+- [x] V10b resources/supply HUD — BUILD-004
 
 ### Sprint F — Combat + readable feedback
 - [x] A9 P1.05 combat components + stats + ATTACK + instant damage (`basic-combat`)
@@ -104,7 +104,7 @@ active and pending packets remain here. See [`docs/tasks/README.md`](README.md).
 ## Phase 2 — Economy and production
 
 Execution plan: `docs/tasks/done/VS-01-plan.md`. Latest completed task packet:
-`docs/tasks/done/BUILD-003.md`.
+`docs/tasks/done/BUILD-003.md`. Active packet: `docs/tasks/BUILD-004.md`.
 
 ### VS-01 — Economy v0 (P2.01–P2.02)
 
@@ -148,6 +148,14 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Latest completed task packet:
 - [x] Foundation, pause, takeover, resume, completion, and Barracks marker coverage
 - [x] Snapshot, replay, deterministic hash, invariant, contract, and architecture coverage
 - [x] Completion gates passed; no production, supply, rally point, or UI changes
+
+### BUILD-004 — Supply Depot and Supply HUD
+
+- [x] Supply state, Base/Depot capacity, unit usage, over-cap, and global cap
+- [x] Supply Depot definition and shared construction lifecycle
+- [x] Canonical snapshot, restore, hash, replay, protocol guard, and projection
+- [x] Supply HUD and browser scenario coverage
+- [x] Completion gates passed; no production queue or reserved supply
 
 ### Remaining Phase 2
 

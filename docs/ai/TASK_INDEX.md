@@ -37,10 +37,10 @@
 | BUILD-001 | Building placement system | done | — | simulation | unit, invariants |
 | BUILD-002 | Base construction | done | BUILD-001, ECONOMY-005 | simulation, game-data | unit, simulation |
 | BUILD-003 | Barracks construction | done | BUILD-002 | simulation, game-data | unit, simulation |
-| BUILD-004 | Supply depot construction | pending | BUILD-002 | simulation, game-data | unit, simulation |
+| BUILD-004 | Supply depot construction | done | BUILD-002 | simulation, game-data, protocol, web | unit, simulation, contracts, e2e |
 | PROD-001 | Production queue component | pending | — | simulation | unit, simulation |
 | PROD-002 | Unit training system | pending | PROD-001, BUILD-003 | simulation | unit, simulation |
-| PROD-003 | Supply cap system | pending | PROD-001, BUILD-004 | simulation | unit, simulation |
+| PROD-003 | Supply cap system | done | BUILD-004 | simulation | unit, simulation |
 | ECONOMY-UI-001 | Resource display in HUD | done | ECONOMY-002 | web | e2e |
 | ECONOMY-UI-004 | Worker gather/carry feedback | done | ECONOMY-003, ECONOMY-004 | protocol, server, renderer, web | unit, integration, e2e |
 | ECONOMY-UI-002 | Build menu | pending | BUILD-001 | web | e2e |
