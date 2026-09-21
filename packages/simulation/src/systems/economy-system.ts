@@ -2,7 +2,7 @@ import { distSquaredFixed, type EntityId, type Fixed, type PlayerId } from '@rts
 import { UNIT_SPEED_TILES_PER_SECOND } from '../commands/move.js'
 import type { Order } from '../contracts/orders.js'
 import { GATHER_TICKS_PER_MINERAL } from '../data/economy-rules.js'
-import { Base, Cargo, Kind, MineralNode, Movement, Orders, Owner, Position } from '../ecs/components.js'
+import { Barracks, Base, Cargo, Kind, MineralNode, Movement, Orders, Owner, Position } from '../ecs/components.js'
 import { Construction } from '../ecs/construction-component.js'
 import type { GameState } from '../state/state.js'
 
@@ -174,6 +174,7 @@ function updateConstruction(state: GameState): void {
   const kinds = state.world.store(Kind)
   const owners = state.world.store(Owner)
   const bases = state.world.store(Base)
+  const barracks = state.world.store(Barracks)
   for (const buildingId of state.world.aliveIds()) {
     const construction = constructions.get(buildingId)
     if (construction === undefined || construction.status === 'COMPLETED') {
@@ -206,7 +207,11 @@ function updateConstruction(state: GameState): void {
     const progressTicks = Math.min(construction.totalTicks, construction.progressTicks + 1)
     if (progressTicks >= construction.totalTicks) {
       constructions.set(buildingId, { ...construction, status: 'COMPLETED', progressTicks, builderId: null })
-      bases.set(buildingId, {})
+      if (construction.buildingType === 'BASE') {
+        bases.set(buildingId, {})
+      } else {
+        barracks.set(buildingId, {})
+      }
       const queue = orders.get(builderId)?.queue.slice(1) ?? []
       if (queue.length === 0) {
         orders.delete(builderId)

@@ -49,7 +49,12 @@ function isCommandIntent(value: unknown): boolean {
     }
     case 'BUILD': {
       const p = payload as Record<string, unknown>
-      return isInteger(p.unitId) && p.buildingType === 'BASE' && isInteger(p.x) && isInteger(p.y)
+      return (
+        isInteger(p.unitId) &&
+        (p.buildingType === 'BASE' || p.buildingType === 'BARRACKS') &&
+        isInteger(p.x) &&
+        isInteger(p.y)
+      )
     }
     case 'SURRENDER':
       return Object.keys(payload).length === 0

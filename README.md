@@ -50,62 +50,65 @@ Dependency direction is enforced and verified by tests: the simulation stays iso
 
 ## Getting started
 
-Prerequisites: Node ≥ 24, pnpm ≥ 10.
+Prerequisites: NVM, Node 24 from `.nvmrc`, and Corepack.
 
 ```bash
-pnpm install
+nvm install
+nvm use
+corepack enable
+corepack pnpm install --frozen-lockfile
 
 # Run the whole app locally (authoritative server + browser app, one command).
 # Logs are prefixed [@rts/server] / [@rts/web]; Ctrl+C stops both.
-pnpm dev
+corepack pnpm dev
 
 # Or run the two dev servers in separate terminals:
-pnpm --filter @rts/server dev   # authoritative WS server on :8080
-pnpm --filter @rts/web dev      # Vite app on :5173
+corepack pnpm --filter @rts/server dev   # authoritative WS server on :8080
+corepack pnpm --filter @rts/web dev      # Vite app on :5173
 
-pnpm run typecheck
-pnpm run lint
-pnpm run test:unit
-pnpm run build
+corepack pnpm run typecheck
+corepack pnpm run lint
+corepack pnpm run test:unit
+corepack pnpm run build
 
 # Full local validation gate (typecheck + lint + all suites + build):
-pnpm run verify
+corepack pnpm run verify
 ```
 
 ### E2E (Playwright)
 
 ```bash
-pnpm exec playwright install chromium
-pnpm run test:e2e:focused tests/e2e/<target>.spec.ts --list
-pnpm run test:e2e:focused tests/e2e/<target>.spec.ts
+corepack pnpm exec playwright install chromium
+corepack pnpm run test:e2e:focused tests/e2e/<target>.spec.ts --list
+corepack pnpm run test:e2e:focused tests/e2e/<target>.spec.ts
 ```
 
 On WSL2/Linux, system libraries may be required (Playwright needs sudo; make sure the pnpm in your nvm PATH is visible to it):
 
 ```bash
-sudo env "PATH=$PATH" pnpm exec playwright install-deps chromium
+sudo env "PATH=$PATH" corepack pnpm exec playwright install-deps chromium
 ```
 
 ## Scripts
 
 | Command | Purpose |
 |---|---|
-| `pnpm dev` | Run server + web locally together (one command, prefixed logs) |
-| `pnpm run verify` | Full local gate: typecheck, lint, all suites, build |
-| `pnpm run verify:fast` | Typecheck, lint, and unit tests for quick iteration |
-| `pnpm run verify:simulation` | Simulation, contracts, orders, determinism, architecture, invariants, regression |
-| `pnpm run verify:browser` | Build and explicitly scoped Chromium E2E gate |
-| `pnpm run test:e2e:focused <file>` | Run one E2E target; use `--list` first to confirm test count |
-| `pnpm run test:e2e -- --project=chromium` | Explicitly scoped full Chromium E2E gate |
-| `pnpm run typecheck` | `tsc --noEmit` across all packages |
-| `pnpm run lint` / `lint:fix` | Biome check / check + fix |
-| `pnpm run test:*` | unit, integration, simulation, contracts, orders, determinism, invariants, regression, architecture, e2e |
-| `pnpm run build` | Topological build of all packages + Vite |
-| `pnpm run replay -- <file>` | Reproduce / validate a replay |
-| `pnpm run simulate -- --games 1000` | Headless matches |
-| `pnpm run fuzz` | Fuzzing; failures save a reproducible replay |
-| `pnpm run balance -- --games 1000` | Matchup statistics |
-| `pnpm run benchmark` | Simulation / renderer benchmarks |
+| `corepack pnpm dev` | Run server + web locally together (one command, prefixed logs) |
+| `corepack pnpm run verify` | Full local gate: typecheck, lint, all suites, build |
+| `corepack pnpm run verify:fast` | Typecheck, lint, and unit tests for quick iteration |
+| `corepack pnpm run verify:simulation` | Simulation, contracts, orders, determinism, architecture, invariants, regression |
+| `corepack pnpm run verify:browser` | Build and explicitly scoped Chromium E2E gate |
+| `corepack pnpm run test:e2e:focused <file>` | Run one E2E target; use `--list` first to confirm test count |
+| `corepack pnpm run test:e2e -- --project=chromium` | Explicitly scoped full Chromium E2E gate |
+| `corepack pnpm run typecheck` | `tsc --noEmit` across all packages |
+| `corepack pnpm run lint` / `lint:fix` | Biome check / check + fix |
+| `corepack pnpm run test:*` | unit, integration, simulation, contracts, orders, determinism, invariants, regression, architecture, e2e |
+| `corepack pnpm run build` | Topological build of all packages + Vite |
+| `corepack pnpm run replay -- <file>` | Reproduce / validate a replay |
+| `corepack pnpm run simulate -- --games 1000` | Headless matches |
+| `corepack pnpm run fuzz` | Fuzzing; failures save a reproducible replay |
+| `corepack pnpm run balance -- --games 1000` | Matchup statistics |
+| `corepack pnpm run benchmark` | Simulation / renderer benchmarks |
 
 ## Release flow
 
@@ -135,6 +138,7 @@ A feature is **done** only when its acceptance criteria are demonstrated by obje
 - `docs/adr/` — architectural decisions (Context / Decision / Alternatives / Consequences / Evidence).
 - `docs/postmortems/` — every bug is closed with a postmortem + permanent regression test.
 - `docs/testing/manual-smoke.md` — what is implemented, how to test it yourself, expected results.
+- `docs/ai/STACKED-PR-WORKFLOW.md` — branch, stacked PR, rebase, and toolchain workflow.
 
 ## Status
 

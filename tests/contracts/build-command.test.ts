@@ -36,7 +36,19 @@ describe('BUILD command contract', () => {
     expect(
       isCommandMessage({
         type: 'command',
+        intent: { type: 'BUILD', payload: { unitId: 1, buildingType: 'BARRACKS', x: 2, y: 3 } }
+      })
+    ).toBe(true)
+    expect(
+      isCommandMessage({
+        type: 'command',
         intent: { type: 'BUILD', payload: { unitId: 1, buildingType: 'BASE', x: 2.5, y: 3 } }
+      })
+    ).toBe(false)
+    expect(
+      isCommandMessage({
+        type: 'command',
+        intent: { type: 'BUILD', payload: { unitId: 1, buildingType: 'TOWER', x: 2, y: 3 } }
       })
     ).toBe(false)
   })
@@ -59,5 +71,27 @@ describe('BUILD command contract', () => {
     expect(result.rejected).toEqual([])
     expect(state.players[0]?.gold).toBe(0)
     expect(state.world.store(Construction).get(START_ENTITY_ID + 1)?.status).toBe('UNDER_CONSTRUCTION')
+  })
+
+  it('creates a BARRACKS foundation with its own footprint and cost', () => {
+    const sim = simulation('pawn', 0, 150)
+    const result = sim.step([
+      {
+        ...command(START_ENTITY_ID, 4, 4),
+        intent: { type: 'BUILD', payload: { unitId: START_ENTITY_ID, buildingType: 'BARRACKS', x: 4, y: 4 } }
+      }
+    ])
+    const construction = sim
+      .inspectState()
+      .world.store(Construction)
+      .get(START_ENTITY_ID + 1)
+    expect(result.rejected).toEqual([])
+    expect(sim.inspectState().players[0]?.gold).toBe(0)
+    expect(construction).toMatchObject({
+      buildingType: 'BARRACKS',
+      status: 'FOUNDATION',
+      totalTicks: 100,
+      footprint: { x: 4, y: 4, width: 3, height: 3 }
+    })
   })
 })

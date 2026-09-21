@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest'
 //   SnapshotMineralNode, SnapshotPlayer, OrderState, ErrorMessage
 // @rts/simulation types: ScheduledCommand, CommandErrorCode, Order, RulesIdentity, TickResult,
 //   SimulationOptions, ComponentType, PositionData, OwnerData, MovementData, OrdersData, HealthData,
-//   CombatData, KindData, MineralNodeData, BaseData, ConstructionData, CargoData, GatherPhase, SimulationHost,
+//   CombatData, KindData, MineralNodeData, BaseData, BarracksData, ConstructionData, CargoData, GatherPhase, SimulationHost,
 //   SimulationSnapshot, FormationOffset, GameState, PlayerState, UnitCombatStats
 // @rts/renderer types: GameRenderer, RenderFrame, RenderUnit, RenderBase, RenderMineralNode,
 //   RenderPlayer, RendererOptions, RendererCallbacks

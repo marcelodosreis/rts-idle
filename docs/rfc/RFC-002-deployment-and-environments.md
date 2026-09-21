@@ -127,6 +127,10 @@ Flow: `feature/* → PR into staging → validate on staging URL → merge stagi
 
 ### Branching, merge, and promotion procedure
 
+For dependent work, follow `docs/ai/STACKED-PR-WORKFLOW.md`. Stacked task
+branches target their parent branch and are rebased when the parent advances;
+they are not updated by merging the parent into the child.
+
 Create every new task branch from the current integration branch. Do not branch
 from another feature branch, even when that feature has already been merged;
 the merge or squash may have changed the commit ancestry.

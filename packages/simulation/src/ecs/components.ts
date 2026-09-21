@@ -1,4 +1,4 @@
-import type { Fixed, PlayerId, UnitKind } from '@rts/shared'
+import type { BuildingType, Fixed, PlayerId, UnitKind } from '@rts/shared'
 import type { CanonicalReader } from '../canonical/reader.js'
 import type { CanonicalWriter } from '../canonical/writer.js'
 import type { Order } from '../contracts/orders.js'
@@ -90,6 +90,15 @@ const ORDER_TAG_ATTACK_MOVE = 4
 const ORDER_TAG_GATHER = 5
 const ORDER_TAG_BUILD = 6
 
+function buildingTypeTag(buildingType: BuildingType): number {
+  switch (buildingType) {
+    case 'BASE':
+      return 0
+    case 'BARRACKS':
+      return 1
+  }
+}
+
 const GATHER_PHASE_TAGS = {
   TO_NODE: 0,
   GATHERING: 1,
@@ -152,7 +161,7 @@ function writeOrder(writer: CanonicalWriter, order: Order): void {
     case 'BUILD':
       writer.writeU8(ORDER_TAG_BUILD)
       writer.writeU32(order.buildingId)
-      writer.writeU8(order.buildingType === 'BASE' ? 0 : 255)
+      writer.writeU8(buildingTypeTag(order.buildingType))
       return
   }
 }
@@ -188,10 +197,10 @@ function readOrder(reader: CanonicalReader): Order {
     case ORDER_TAG_BUILD: {
       const buildingId = reader.readU32()
       const buildingType = reader.readU8()
-      if (buildingType !== 0) {
+      if (buildingType !== 0 && buildingType !== 1) {
         throw new Error(`Orders: invalid building type tag ${buildingType}`)
       }
-      return { type: 'BUILD', buildingId, buildingType: 'BASE' }
+      return { type: 'BUILD', buildingId, buildingType: buildingType === 0 ? 'BASE' : 'BARRACKS' }
     }
     default:
       // A bad tag is corruption, not a valid order.
@@ -319,6 +328,18 @@ export type BaseData = Record<string, never>
 
 export const Base: ComponentType<BaseData> = {
   name: 'base',
+  encode() {
+    // Presence in the canonical component stream fully represents this marker.
+  },
+  decode() {
+    return {}
+  }
+}
+
+export type BarracksData = Record<string, never>
+
+export const Barracks: ComponentType<BarracksData> = {
+  name: 'barracks',
   encode() {
     // Presence in the canonical component stream fully represents this marker.
   },
