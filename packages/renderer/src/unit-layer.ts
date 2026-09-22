@@ -7,7 +7,12 @@ import type { RenderUnit, UnitKind } from './types.js'
 import { economyFrameKey } from './unit-economy.js'
 import { FACTION_BY_OWNER, frameKey, TARGET_RADIUS, type UnitFrames, UnitSprite } from './unit-sprite.js'
 
-interface Point {
+interface WorldRenderPoint {
+  readonly x: number
+  readonly y: number
+}
+
+interface FixedPoint {
   readonly x: number
   readonly y: number
 }
@@ -22,20 +27,18 @@ export class UnitLayer {
   private readonly units = new Map<number, UnitSprite>()
   private readonly viewport: Viewport
   private readonly library: AssetLibrary
-  private readonly onUnitSelected: (id: number) => void
-  private previous: ReadonlyMap<number, Point> | null = null
-  private current: ReadonlyMap<number, Point> | null = null
+  private previous: ReadonlyMap<number, WorldRenderPoint> | null = null
+  private current: ReadonlyMap<number, WorldRenderPoint> | null = null
   private currentTime = 0
   private previousTime = 0
-  private readonly currentFixed = new Map<number, Point>()
-  private readonly lastFixed = new Map<number, Point>()
+  private readonly currentFixed = new Map<number, FixedPoint>()
+  private readonly lastFixed = new Map<number, FixedPoint>()
   private readonly framesByKind = new Map<string, UnitFrames>()
   private readonly loadState = new Map<string, 'loading' | 'loaded' | 'failed'>()
 
-  constructor(viewport: Viewport, library: AssetLibrary, onUnitSelected: (id: number) => void) {
+  constructor(viewport: Viewport, library: AssetLibrary) {
     this.viewport = viewport
     this.library = library
-    this.onUnitSelected = onUnitSelected
   }
 
   /** Preloads idle/run/attack frames for a unit kind (fire-and-forget, cached). */
@@ -78,8 +81,8 @@ export class UnitLayer {
   /** Diffs the given units against the current sprites and records the frame. */
   present(units: readonly RenderUnit[], now: number): void {
     const seen = new Set<number>()
-    const next = new Map<number, Point>()
-    const nextFixed = new Map<number, Point>()
+    const next = new Map<number, WorldRenderPoint>()
+    const nextFixed = new Map<number, FixedPoint>()
     for (const unit of units) {
       seen.add(unit.id)
       const position = { x: fixedToRenderPixels(unit.x), y: fixedToRenderPixels(unit.y) }
@@ -90,16 +93,6 @@ export class UnitLayer {
         const kind: UnitKind = unit.kind ?? 'pawn'
         const frames = this.framesFor(unit.owner, kind)
         sprite = new UnitSprite(kind, unit.owner, frames)
-        sprite.container.on('pointerdown', (event) => {
-          // Only a primary click selects. Secondary input (right-click,
-          // Control+click, Cmd+click) must neither select nor swallow the
-          // event, so it can reach the canvas command handling.
-          if (event.button !== 0 || event.ctrlKey || event.metaKey) {
-            return
-          }
-          event.stopPropagation()
-          this.onUnitSelected(unit.id)
-        })
         this.viewport.addChild(sprite.container)
         this.units.set(unit.id, sprite)
         this.preloadKind(unit.owner, kind)
@@ -189,10 +182,6 @@ export class UnitLayer {
     }
   }
 
-  has(id: number): boolean {
-    return this.units.has(id)
-  }
-
   /** Current interpolated sprite position in world space (render pixels). */
   position(id: number): { readonly x: number; readonly y: number } | undefined {
     const sprite = this.units.get(id)
@@ -200,15 +189,6 @@ export class UnitLayer {
       return undefined
     }
     return sprite.position()
-  }
-
-  /** All current sprite positions in render pixels (for selection queries). */
-  positionsPixels(): ReadonlyMap<number, { readonly x: number; readonly y: number }> {
-    const out = new Map<number, { readonly x: number; readonly y: number }>()
-    for (const [id, sprite] of this.units) {
-      out.set(id, sprite.position())
-    }
-    return out
   }
 
   /**

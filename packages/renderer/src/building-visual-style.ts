@@ -1,9 +1,9 @@
+import type { BuildingType } from '@rts/shared'
+
 const OWNER_COLORS = [0x2e7d32, 0xc62828, 0x1565c0, 0xf9a825]
 
-export type RenderBuildingType = 'BASE' | 'BARRACKS' | 'SUPPLY_DEPOT'
-
 export interface BuildingVisualStyle {
-  readonly kind: 'base' | 'barracks' | 'supply-depot' | 'foundation'
+  readonly kind: 'base' | 'completed' | 'foundation'
   readonly fillColor: number
   readonly fillAlpha: number
   readonly strokeColor: number
@@ -15,7 +15,7 @@ export function ownerColor(owner: number): number {
 
 /** Presentation contract for completed buildings and construction phases. */
 export function buildingVisualStyle(
-  buildingType: RenderBuildingType,
+  buildingType: BuildingType,
   status: 'FOUNDATION' | 'UNDER_CONSTRUCTION' | 'COMPLETED',
   owner: number
 ): BuildingVisualStyle {
@@ -24,7 +24,7 @@ export function buildingVisualStyle(
   }
   if (status === 'COMPLETED') {
     return {
-      kind: buildingType === 'BARRACKS' ? 'barracks' : 'supply-depot',
+      kind: 'completed',
       fillColor: ownerColor(owner),
       fillAlpha: 0.82,
       strokeColor: 0xf8fafc
