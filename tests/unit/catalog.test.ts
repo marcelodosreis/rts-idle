@@ -1,6 +1,6 @@
 import type { AssetEntry } from '@rts/shared'
 import { describe, expect, it } from 'vitest'
-import { buildCatalog, searchKeys } from '../../apps/web/src/sprites/catalog.js'
+import { buildCatalog, groupKeysByDepth, searchKeys } from '../../apps/web/src/sprites/catalog.js'
 
 function entry(partial: Partial<AssetEntry>): AssetEntry {
   return {
@@ -66,5 +66,43 @@ describe('searchKeys', () => {
 
   it('returns empty when nothing matches', () => {
     expect(searchKeys(keys, 'zzz')).toEqual([])
+  })
+})
+
+describe('groupKeysByDepth', () => {
+  it('returns empty when all groups have a single key', () => {
+    const keys = ['units.blue.archer.archer_idle', 'units.black.pawn.pawn_idle']
+    expect(groupKeysByDepth(keys, 2)).toEqual([])
+  })
+
+  it('groups by depth with single keys omitted', () => {
+    const keys = ['units.blue.archer.archer_idle', 'units.blue.archer.archer_run', 'units.blue.pawn.pawn_idle']
+    const groups = groupKeysByDepth(keys, 2)
+    expect(groups).toEqual([
+      { name: 'archer', keys: ['units.blue.archer.archer_idle', 'units.blue.archer.archer_run'] }
+    ])
+  })
+
+  it('returns sorted groups alphabetically', () => {
+    const keys = [
+      'units.blue.warrior.warrior_idle',
+      'units.blue.archer.archer_idle',
+      'units.blue.archer.archer_run',
+      'units.blue.warrior.warrior_run'
+    ]
+    const groups = groupKeysByDepth(keys, 2)
+    expect(groups.map((g) => g.name)).toEqual(['archer', 'warrior'])
+  })
+
+  it('uses last segment as fallback when depth exceeds key length', () => {
+    const keys = ['terrain.decorations.rock1', 'terrain.decorations.rock2']
+    const groups = groupKeysByDepth(keys, 4)
+    expect(groups).toEqual([])
+  })
+
+  it('handles depth 1 grouping (faction level)', () => {
+    const keys = ['units.blue.archer.archer_idle', 'units.blue.archer.archer_run', 'units.black.pawn.pawn_idle']
+    const groups = groupKeysByDepth(keys, 1)
+    expect(groups.map((g) => g.name)).toEqual(['blue'])
   })
 })

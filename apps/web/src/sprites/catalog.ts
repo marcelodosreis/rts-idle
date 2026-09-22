@@ -75,3 +75,31 @@ export function searchKeys(orderedKeys: readonly string[], query: string): reado
   }
   return orderedKeys.filter((key) => key.toLowerCase().includes(q))
 }
+
+export interface KeyGroup {
+  readonly name: string
+  readonly keys: readonly string[]
+}
+
+/**
+ * Groups keys by the segment at `depth`, skipping groups with only one key
+ * (they render as plain items). Keys with fewer segments than `depth` are
+ * placed in a catch-all group named after the last available segment.
+ */
+export function groupKeysByDepth(keys: readonly string[], depth: number): readonly KeyGroup[] {
+  const groups = new Map<string, string[]>()
+  for (const key of keys) {
+    const parts = key.split('.')
+    const segment = parts[depth] ?? parts[parts.length - 1] ?? key
+    const list = groups.get(segment)
+    if (list === undefined) {
+      groups.set(segment, [key])
+    } else {
+      list.push(key)
+    }
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .filter(([, ks]) => ks.length > 1)
+    .map(([name, groupKeys]) => ({ name, keys: groupKeys }))
+}
