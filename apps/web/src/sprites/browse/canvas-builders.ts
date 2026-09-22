@@ -1,9 +1,9 @@
 import { Container, Graphics, Sprite } from 'pixi.js'
-import { trackTexture } from '../lab/app.js'
-import { drawAnchor, drawCenteredCell, drawTileGrid } from '../lab/context.js'
-import { croppedFrames, nativeScale } from '../lab/crop.js'
-import { type BlendChoice, StripPlayer } from '../lab/player.js'
-import type { SectionContext } from '../sections/types.js'
+import { trackTexture } from '../core/app.js'
+import { drawAnchor, drawCenteredCell, drawTileGrid } from '../core/context.js'
+import { croppedFrames, nativeScale } from '../core/crop.js'
+import { type BlendChoice, StripPlayer } from '../core/player.js'
+import type { SectionContext } from '../core/types.js'
 import type { BuildKind, RenderOptions } from './canvas.js'
 
 export interface Active {
