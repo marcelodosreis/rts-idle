@@ -46,7 +46,7 @@ before changing code; do not load the entire document for a small task.
   `AGENTS.md`.
 - Run the smallest affected test first. Use `verify:fast`,
   `verify:simulation`, or a focused E2E during iteration.
-- Run `pnpm run verify` at feature completion. Add the full Chromium gate for
+- Run `pnpm run verify` at feature completion. Add the full Chromium + Firefox gate for
   browser/protocol changes, release, or CI.
 
 ## Completion checklist

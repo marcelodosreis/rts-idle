@@ -138,7 +138,7 @@ Do not create generic dumping-ground modules. A module belongs in `shared` only 
 
    ```bash
    pnpm run verify
-   pnpm run test:e2e -- --project=chromium
+    pnpm run test:e2e:all
    git diff --check
    ```
 
@@ -149,7 +149,7 @@ Do not create generic dumping-ground modules. A module belongs in `shared` only 
 - [ ] Removed MPA URLs are absent from source, build inputs, tests, and documentation.
 - [ ] Match, tools, transport, and UI have explicit ownership and no forbidden layer imports.
 - [ ] Existing game, editor, asset, determinism, and performance browser contracts remain covered.
-- [ ] Typecheck, lint, unit/integration/architecture suites, build, and Chromium E2E pass under Node 24.
+- [ ] Typecheck, lint, unit/integration/architecture suites, build, and Chromium + Firefox E2E pass under Node 24.
 - [ ] Stop after this migration; do not add lobby, account, visual redesign, or unrelated gameplay work.
 
 ## Risks and rollback

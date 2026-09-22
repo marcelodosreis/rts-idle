@@ -223,7 +223,7 @@ Do NOT produce large essays. Keep reports under 30 lines.
 |-------|------|----------|
 | Iteration | After intermediate edits | affected tests + relevant checks |
 | Per-feature | Feature complete | + integration + contracts + orders |
-| Completion | Feature completion; browser/protocol changes add explicit E2E | `pnpm run verify` (+ `pnpm run test:e2e -- --project=chromium` when required) |
+| Completion | Feature completion; browser/protocol changes add explicit E2E | `pnpm run verify` (+ `pnpm run test:e2e:all` when required) |
 | Milestone / release | Phase complete or version bump | Completion gate, plus any task-specific/manual checks |
 
 ## Documentation Rules

@@ -32,5 +32,5 @@ pnpm run typecheck
 pnpm run lint
 pnpm run test:unit
 pnpm run verify
-pnpm run test:e2e -- --project=chromium
+pnpm run test:e2e:all
 ```
