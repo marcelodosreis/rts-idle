@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import type { Catalog } from '../catalog.js'
+import { groupKeysByDepth } from '../catalog.js'
 import type { BrowseSelection } from './use-browse.js'
 
 export interface SidebarNavProps {
@@ -46,6 +47,124 @@ function groupAssets(keys: readonly string[]): readonly AssetGroup[] {
   return [...groups.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([name, groupKeys]) => ({ name, keys: groupKeys }))
+}
+
+function AssetKeyTree({
+  keys,
+  depth,
+  selectedKey,
+  focusedKey,
+  onSelect,
+  onFocus
+}: {
+  readonly keys: readonly string[]
+  readonly depth: number
+  readonly selectedKey: string
+  readonly focusedKey: string | null
+  readonly onSelect: (key: string) => void
+  readonly onFocus: (key: string | null) => void
+}) {
+  const groups = useMemo(() => groupKeysByDepth(keys, depth), [keys, depth])
+
+  if (groups.length === 0) {
+    return (
+      <>
+        {keys.map((key) => {
+          const isSelected = selectedKey === key
+          const parts = key.split('.')
+          const shortName = parts[parts.length - 1] ?? key
+          const category = parts[0] ?? ''
+          const style = CATEGORY_STYLES[category] ?? DEFAULT_STYLE
+
+          return (
+            <button
+              key={key}
+              type="button"
+              role="option"
+              aria-selected={isSelected}
+              ref={(el) => {
+                if (isSelected && el) {
+                  el.scrollIntoView({ block: 'nearest' })
+                }
+              }}
+              className={cn(
+                'flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left transition-all',
+                isSelected
+                  ? `${style.bg} font-medium text-foreground`
+                  : 'text-muted-foreground hover:bg-muted/30 hover:text-foreground',
+                focusedKey === key && 'ring-1 ring-ring'
+              )}
+              onClick={() => onSelect(key)}
+              onFocus={() => onFocus(key)}
+              onBlur={() => onFocus(null)}
+            >
+              <span className={cn('text-xs', style.color)}>{style.icon}</span>
+              <span className="flex-1 truncate text-[12px]">{shortName}</span>
+            </button>
+          )
+        })}
+      </>
+    )
+  }
+
+  const groupedSet = new Set(groups.flatMap((g) => g.keys))
+
+  return (
+    <>
+      {groups.map((group) => (
+        <div key={group.name} className="ml-2 mt-0.5">
+          <div className="flex items-center gap-1.5 px-2 py-0.5">
+            <span className="text-[10px] font-medium text-muted-foreground/70">{group.name}</span>
+            <span className="text-[9px] tabular-nums text-muted-foreground/40">{group.keys.length}</span>
+          </div>
+          <AssetKeyTree
+            keys={group.keys}
+            depth={depth + 1}
+            selectedKey={selectedKey}
+            focusedKey={focusedKey}
+            onSelect={onSelect}
+            onFocus={onFocus}
+          />
+        </div>
+      ))}
+      {keys
+        .filter((k) => !groupedSet.has(k))
+        .map((key) => {
+          const isSelected = selectedKey === key
+          const parts = key.split('.')
+          const shortName = parts[parts.length - 1] ?? key
+          const category = parts[0] ?? ''
+          const style = CATEGORY_STYLES[category] ?? DEFAULT_STYLE
+
+          return (
+            <button
+              key={key}
+              type="button"
+              role="option"
+              aria-selected={isSelected}
+              ref={(el) => {
+                if (isSelected && el) {
+                  el.scrollIntoView({ block: 'nearest' })
+                }
+              }}
+              className={cn(
+                'flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left transition-all',
+                isSelected
+                  ? `${style.bg} font-medium text-foreground`
+                  : 'text-muted-foreground hover:bg-muted/30 hover:text-foreground',
+                focusedKey === key && 'ring-1 ring-ring'
+              )}
+              onClick={() => onSelect(key)}
+              onFocus={() => onFocus(key)}
+              onBlur={() => onFocus(null)}
+            >
+              <span className={cn('text-xs', style.color)}>{style.icon}</span>
+              <span className="flex-1 truncate text-[12px]">{shortName}</span>
+            </button>
+          )
+        })}
+    </>
+  )
 }
 
 function CategoryCard({
@@ -127,7 +246,7 @@ export function SidebarNav({ catalog, selection, filteredKeys, onPatch, onSelect
     [catalog, selection.category]
   )
 
-  const [focusedList, setFocusedList] = useState<number | null>(null)
+  const [focusedKey, setFocusedKey] = useState<string | null>(null)
 
   const groups = useMemo(() => groupAssets(filteredKeys), [filteredKeys])
 
@@ -164,44 +283,46 @@ export function SidebarNav({ catalog, selection, filteredKeys, onPatch, onSelect
       </div>
 
       {/* Categories */}
-      <div className="shrink-0 border-b border-border/50 p-2">
-        <div className="mb-1.5 flex items-center justify-between px-1">
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Types</span>
+      <ScrollArea className="min-h-0 shrink border-b border-border/50">
+        <div className="p-2">
+          <div className="mb-1.5 flex items-center justify-between px-1">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Types</span>
+          </div>
+
+          <button
+            type="button"
+            className={cn(
+              'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-all',
+              expanded === null ? 'bg-muted font-medium' : 'hover:bg-muted/40'
+            )}
+            onClick={() => onPatch({ category: null, subcategory: null })}
+          >
+            <span className="text-sm">📋</span>
+            <span className="flex-1">All</span>
+            <Badge variant="secondary" className="h-4 px-1.5 text-[10px] tabular-nums">
+              {catalog.orderedKeys.length}
+            </Badge>
+          </button>
+
+          {catalog.categories.map((category) => (
+            <CategoryCard
+              key={category.name}
+              name={category.name}
+              count={category.count}
+              isExpanded={expanded === category.name}
+              onToggle={() =>
+                onPatch({
+                  category: expanded === category.name ? null : category.name,
+                  subcategory: null
+                })
+              }
+              subcategories={category.subcategories}
+              selection={selection}
+              onSelectSubcategory={(sub) => onPatch({ subcategory: sub })}
+            />
+          ))}
         </div>
-
-        <button
-          type="button"
-          className={cn(
-            'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-all',
-            expanded === null ? 'bg-muted font-medium' : 'hover:bg-muted/40'
-          )}
-          onClick={() => onPatch({ category: null, subcategory: null })}
-        >
-          <span className="text-sm">📋</span>
-          <span className="flex-1">All</span>
-          <Badge variant="secondary" className="h-4 px-1.5 text-[10px] tabular-nums">
-            {catalog.orderedKeys.length}
-          </Badge>
-        </button>
-
-        {catalog.categories.map((category) => (
-          <CategoryCard
-            key={category.name}
-            name={category.name}
-            count={category.count}
-            isExpanded={expanded === category.name}
-            onToggle={() =>
-              onPatch({
-                category: expanded === category.name ? null : category.name,
-                subcategory: null
-              })
-            }
-            subcategories={category.subcategories}
-            selection={selection}
-            onSelectSubcategory={(sub) => onPatch({ subcategory: sub })}
-          />
-        ))}
-      </div>
+      </ScrollArea>
 
       {/* Asset list header */}
       <div className="flex shrink-0 items-center gap-2 border-b border-border/50 px-3 py-1.5">
@@ -212,7 +333,7 @@ export function SidebarNav({ catalog, selection, filteredKeys, onPatch, onSelect
       </div>
 
       {/* Asset list */}
-      <ScrollArea className="min-h-0 flex-1">
+      <ScrollArea className="min-h-[220px] flex-1 lg:min-h-[320px]">
         <div className="p-1" role="listbox" aria-label="Assets">
           {filteredKeys.length === 0 && (
             <div className="py-8 text-center text-sm text-muted-foreground">no assets match</div>
@@ -225,40 +346,14 @@ export function SidebarNav({ catalog, selection, filteredKeys, onPatch, onSelect
                   <span className="text-[9px] tabular-nums text-muted-foreground/40">{group.keys.length}</span>
                 </div>
               )}
-              {group.keys.map((key, i) => {
-                const isSelected = selection.key === key
-                const parts = key.split('.')
-                const shortName = parts[parts.length - 1] ?? key
-                const category = parts[0] ?? ''
-                const style = CATEGORY_STYLES[category] ?? DEFAULT_STYLE
-
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    ref={(el) => {
-                      if (isSelected && el) {
-                        el.scrollIntoView({ block: 'nearest' })
-                      }
-                    }}
-                    className={cn(
-                      'flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left transition-all',
-                      isSelected
-                        ? `${style.bg} font-medium text-foreground`
-                        : 'text-muted-foreground hover:bg-muted/30 hover:text-foreground',
-                      focusedList === i && 'ring-1 ring-ring'
-                    )}
-                    onClick={() => onSelectKey(key)}
-                    onFocus={() => setFocusedList(i)}
-                    onBlur={() => setFocusedList(null)}
-                  >
-                    <span className={cn('text-xs', style.color)}>{style.icon}</span>
-                    <span className="flex-1 truncate text-[12px]">{shortName}</span>
-                  </button>
-                )
-              })}
+              <AssetKeyTree
+                keys={group.keys}
+                depth={2}
+                selectedKey={selection.key}
+                focusedKey={focusedKey}
+                onSelect={onSelectKey}
+                onFocus={setFocusedKey}
+              />
             </div>
           ))}
         </div>

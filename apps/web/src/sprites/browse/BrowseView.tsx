@@ -93,8 +93,8 @@ export function BrowseView({ onSelectReady }: BrowseViewProps) {
   const hasSelection = browse.selection.key !== ''
 
   return (
-    <div className="mt-3 grid grid-cols-1 gap-3 xl:h-[calc(100vh-140px)] xl:grid-cols-[260px_1fr_300px]">
-      <div className="order-2 h-[40vh] min-h-0 xl:order-none xl:h-full">
+    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[240px_1fr] lg:h-[calc(100vh-140px)] lg:grid-cols-[220px_1fr_260px] xl:grid-cols-[260px_1fr_300px]">
+      <div className="order-2 h-[45vh] min-h-[320px] min-w-0 md:order-none md:h-[60vh] lg:h-auto lg:min-h-0">
         <SidebarNav
           catalog={browse.catalog}
           selection={browse.selection}
@@ -105,7 +105,7 @@ export function BrowseView({ onSelectReady }: BrowseViewProps) {
       </div>
 
       {/* Center: canvas + breadcrumb + nav */}
-      <div className="order-1 flex h-[50vh] min-h-0 flex-col gap-2 xl:order-none xl:h-auto">
+      <div className="order-1 flex h-[55vh] min-h-[360px] min-w-0 flex-col gap-2 md:order-none md:h-[60vh] lg:h-auto lg:min-h-0">
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 rounded-lg border border-border/50 bg-card px-3 py-2 text-xs">
           <svg
@@ -140,8 +140,8 @@ export function BrowseView({ onSelectReady }: BrowseViewProps) {
         </div>
 
         {/* Canvas */}
-        <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-border/50 bg-background">
-          <div ref={hostRef} className="min-h-0 flex-1" />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-border/50 bg-background">
+          <div ref={hostRef} className="min-h-0 min-w-0 flex-1" />
         </div>
 
         {/* Navigation */}
@@ -177,7 +177,7 @@ export function BrowseView({ onSelectReady }: BrowseViewProps) {
       </div>
 
       {/* Inspector */}
-      <div className="order-3 xl:order-none">
+      <div className="order-3 min-w-0 md:order-none md:col-span-2 lg:col-span-1">
         <InspectorPanel
           key={browse.selection.key}
           kind={kind}
