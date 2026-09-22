@@ -50,3 +50,29 @@ test('right-clicking with a selection issues a command and shows a ping', async 
 
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getPing() ?? null)).not.toBeNull()
 })
+
+test('dragging shows the selection rectangle until release', async ({ page }) => {
+  await settleUnits(page)
+  const { screen } = await firstUnitScreen(page)
+  const start = { x: screen.x - 80, y: screen.y - 80 }
+  const end = { x: screen.x + 80, y: screen.y + 80 }
+
+  await page.mouse.move(start.x, start.y)
+  await page.mouse.down()
+  await page.mouse.move(end.x, end.y)
+
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getSelectionBoxState() ?? null))
+    .toMatchObject({
+      visible: true,
+      width: 160,
+      height: 160
+    })
+
+  await page.mouse.up()
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getSelectionBoxState() ?? null))
+    .toMatchObject({
+      visible: false
+    })
+})
