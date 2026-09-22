@@ -1,7 +1,7 @@
 import { FIXED_SCALE, fixedToRenderPixels } from '@rts/shared'
 import { Graphics } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
-import { buildingVisualStyle, ownerColor } from './building-visual-style.js'
+import { buildingVisualStyle } from './building-visual-style.js'
 import { BAR_BACKGROUND, BAR_BORDER, BAR_HEIGHT, BAR_RADIUS, clampRatio, drawProgressBar } from './progress-bar.js'
 import type { RenderBuilding, RenderBuildPreview, RenderMineralNode } from './types.js'
 
@@ -28,10 +28,9 @@ export class WorldObjectLayer {
   }
 
   present(buildings: readonly RenderBuilding[], mineralNodes: readonly RenderMineralNode[]): void {
-    const normalizedBuildings = buildings
     const seenBuildings = new Set<number>()
     this.constructionHitboxes.clear()
-    for (const building of normalizedBuildings) {
+    for (const building of buildings) {
       seenBuildings.add(building.id)
       let graphic = this.buildings.get(building.id)
       if (graphic === undefined) {
@@ -43,7 +42,7 @@ export class WorldObjectLayer {
       const style = buildingVisualStyle(building.buildingType, building.status, building.owner)
       const footprint = building.footprint
       if (style.kind === 'base') {
-        this.drawBase(graphic, building.owner, footprint)
+        this.drawBase(graphic, footprint, style)
       } else {
         const width = footprint.width * pixelsPerTile
         const height = footprint.height * pixelsPerTile
@@ -104,20 +103,20 @@ export class WorldObjectLayer {
 
   private drawBase(
     graphic: Graphics,
-    owner: number,
-    footprint: { readonly width: number; readonly height: number }
+    footprint: { readonly width: number; readonly height: number },
+    style: ReturnType<typeof buildingVisualStyle>
   ): void {
     // Building visuals share the top-left footprint anchor used by previews and foundations.
     const width = footprint.width * pixelsPerTile
     const height = footprint.height * pixelsPerTile
     graphic.clear()
     graphic.rect(0, 0, width, height)
-    graphic.fill({ color: ownerColor(owner), alpha: 0.8 })
-    graphic.stroke({ color: 0xf8fafc, width: 4 })
+    graphic.fill({ color: style.fillColor, alpha: style.fillAlpha })
+    graphic.stroke({ color: style.strokeColor, width: 4 })
     graphic.moveTo(0, 0)
     graphic.lineTo(width / 2, -22)
     graphic.lineTo(width, 0)
-    graphic.stroke({ color: 0xf8fafc, width: 4 })
+    graphic.stroke({ color: style.strokeColor, width: 4 })
   }
 
   setBuildPreview(preview: RenderBuildPreview | null): void {

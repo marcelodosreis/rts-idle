@@ -1,6 +1,7 @@
 import type { OrderState, SnapshotBuilding, SnapshotEconomy } from '@rts/protocol'
-import type { MapDefinition, PlayerId, SimulationEvent, UnitKind } from '@rts/shared'
+import type { MapDefinition, SimulationEvent, UnitKind } from '@rts/shared'
 import type { PointData } from 'pixi.js'
+import type { InputProfile, WorldInteraction } from './input/input-types.js'
 
 export type { UnitKind } from '@rts/shared'
 
@@ -19,15 +20,6 @@ export interface RenderUnit {
   readonly economy?: SnapshotEconomy
   /** True while the worker holds cargo, independent of its current order. */
   readonly carrying?: boolean
-}
-
-/** A competitive slot for the HUD (defeated state, wallet). */
-export interface RenderPlayer {
-  readonly id: PlayerId
-  readonly defeated: boolean
-  readonly gold: number
-  readonly usedSupply: number
-  readonly supplyCap: number
 }
 
 export type RenderBuilding = SnapshotBuilding
@@ -49,31 +41,18 @@ export interface RenderBuildPreview {
 
 /** A completed tick ready for presentation. */
 export interface RenderFrame {
+  /** Diagnostic frame number retained for renderer performance tooling. */
   readonly tick: number
   readonly units: readonly RenderUnit[]
   readonly buildings?: readonly RenderBuilding[]
   readonly mineralNodes?: readonly RenderMineralNode[]
-  readonly players?: readonly RenderPlayer[]
   /** Per-tick deterministic events that drive combat feedback. */
   readonly events?: readonly SimulationEvent[]
 }
 
 export interface RendererCallbacks {
-  readonly onUnitSelected?: (id: number) => void
-  readonly onBuildingSelected?: (id: number) => void
-  /** Primary click landed on a Mineral Node (informational selection). */
-  readonly onMineralSelected?: (id: number) => void
-  readonly onBoxSelected?: (ids: readonly number[]) => void
-  readonly onGroundCommand?: (worldX: number, worldY: number) => void
-  /** Primary click on the ground; return true when a mode consumes it. */
-  readonly onGroundClick?: (worldX: number, worldY: number) => boolean
-  readonly onGroundMove?: (worldX: number, worldY: number) => void
-  /** Right-click landed on a unit (used for attack targeting). */
-  readonly onUnitCommand?: (id: number) => void
-  /** Right-click landed on a construction (used for builder assignment). */
-  readonly onBuildingCommand?: (id: number) => void
-  /** Right-click landed on a Mineral Node (used for contextual gathering). */
-  readonly onMineralCommand?: (id: number) => void
+  /** The sole normalized input boundary from the renderer to the application. */
+  readonly onInteraction: (interaction: WorldInteraction) => void
 }
 
 export interface RendererOptions {
@@ -85,6 +64,8 @@ export interface RendererOptions {
   readonly assetsUrl?: string
   /** Map definition rendered as terrain (empty = no terrain). */
   readonly map?: MapDefinition
+  /** Camera gesture profile; defaults to the mouse contract. */
+  readonly inputProfile?: InputProfile
 }
 
 /** Public renderer contract: mount/present/resize/dispose plus camera and selection access. */
@@ -95,6 +76,13 @@ export interface GameRenderer {
   dispose(): void
   setSelection(ids: readonly number[]): void
   getSelection(): readonly number[]
+  getSelectionBoxState(): {
+    readonly visible: boolean
+    readonly x: number
+    readonly y: number
+    readonly width: number
+    readonly height: number
+  }
   getUnitPositions(): ReadonlyMap<number, { readonly x: number; readonly y: number }>
   /** Current animation frame of a unit's sprite, or `null` when in fallback. */
   getUnitAnimationFrame(id: number): number | null
@@ -112,6 +100,7 @@ export interface GameRenderer {
     readonly shape: 'circle' | 'square' | 'triangle' | null
   } | null
   getZoom(): number
+  setInputProfile(profile: InputProfile): void
   getPing(): { readonly x: number; readonly y: number } | null
   moveCamera(x: number, y: number): void
   worldToScreen(x: number, y: number): { readonly x: number; readonly y: number }
