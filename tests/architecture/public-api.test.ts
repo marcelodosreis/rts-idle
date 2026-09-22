@@ -16,13 +16,39 @@ import { describe, expect, it } from 'vitest'
 //   SimulationOptions, ComponentType, PositionData, OwnerData, MovementData, OrdersData, HealthData,
 //   CombatData, KindData, MineralNodeData, BuildingData, CargoData, GatherPhase, SimulationHost,
 //   SimulationSnapshot, FormationOffset, GameState, PlayerState, UnitCombatStats
-// @rts/renderer types: GameRenderer, RenderFrame, RenderUnit, RenderBase, RenderMineralNode,
-//   RenderPlayer, RendererOptions, RendererCallbacks
+// @rts/renderer types: GameRenderer, RenderFrame, RenderUnit, RenderBuilding,
+//   RenderMineralNode, RendererOptions, RendererCallbacks, InputProfile, WorldInteraction
 
 import * as protocol from '@rts/protocol'
+import type {
+  GameRenderer,
+  InputProfile,
+  RenderBuilding,
+  RendererCallbacks,
+  RendererOptions,
+  RenderFrame,
+  RenderMineralNode,
+  RenderUnit,
+  WorldInteraction
+} from '@rts/renderer'
 import * as renderer from '@rts/renderer'
 import * as shared from '@rts/shared'
 import * as simulation from '@rts/simulation'
+
+type Assert<T extends true> = T
+type RendererPublicTypeAssertions = [
+  Assert<GameRenderer extends { mount(host: HTMLElement, callbacks: RendererCallbacks): Promise<void> } ? true : false>,
+  Assert<GameRenderer extends { present(frame: RenderFrame): void; dispose(): void } ? true : false>,
+  Assert<RendererOptions extends { worldWidth: number; worldHeight: number } ? true : false>,
+  Assert<RenderFrame extends { tick: number; units: readonly RenderUnit[] } ? true : false>,
+  Assert<RenderBuilding extends object ? true : false>,
+  Assert<RenderMineralNode extends { id: number; remaining: number } ? true : false>,
+  Assert<InputProfile extends string ? true : false>,
+  Assert<WorldInteraction extends { type: string } ? true : false>
+]
+
+const rendererPublicTypeAssertions: RendererPublicTypeAssertions = [true, true, true, true, true, true, true, true]
+void rendererPublicTypeAssertions
 
 const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
   [
