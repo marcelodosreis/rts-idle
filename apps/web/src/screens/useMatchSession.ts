@@ -1,20 +1,21 @@
 import type { BuildCatalogEntry, MatchConfig, ScenarioSummary } from '@rts/protocol'
-import { type GameRenderer, PixiRenderer } from '@rts/renderer'
-import type { CommandIntent, MapDefinition } from '@rts/shared'
-import {
-  FIXED_SCALE,
-  fixedToRenderPixels,
-  placementBoundsFromMap,
-  renderPixelsToFixed,
-  TILE_PIXELS,
-  tilesToFixed,
-  validateBuildingPlacement
-} from '@rts/shared'
+import { type GameRenderer, type InputProfile, PixiRenderer } from '@rts/renderer'
+import type { CommandIntent } from '@rts/shared'
+import { FIXED_SCALE, fixedToRenderPixels, renderPixelsToFixed, TILE_PIXELS } from '@rts/shared'
 import { type RefObject, useEffect, useRef, useState } from 'react'
-import { type ConnectionHandlers, connectMatch, type MatchConnection, type SnapshotMessage } from '../client/connection'
-import { snapshotToFrame } from '../client/snapshot-to-frame'
+import { connectMatch } from '../client/connection'
 import type { HudConstruction, HudMineral, HudSelectionUnit } from '../hud/types'
-import { buildingTypeForMode, type CommandMode, isBuildMode, useCommandModes } from '../hud/useCommandModes'
+import { type CommandMode, isBuildMode, useCommandModes } from '../hud/useCommandModes'
+import { createWorldInteractionHandler } from '../interaction/create-world-interaction-handler'
+import { MatchInteractionController } from '../interaction/match-interaction-controller'
+import { selectUnitsInBox } from '../interaction/select-units-in-box'
+import { readInputPreferences, writeInputPreferences } from '../preferences/input-preferences'
+import { createRtsDebug } from './match-debug'
+import { createMatchSessionConnectionOwner } from './match-session-connection'
+import { createMatchSessionHandlers } from './match-session-handlers'
+import { placementFor } from './match-session-placement'
+import { createMatchRendererLifecycle } from './match-session-renderer'
+import { createMatchSessionRuntime } from './match-session-runtime'
 import { readPlaytestMap } from './playtest-map'
 import { type MessageLogEntry, useMessageLog } from './useMessageLog'
 
@@ -24,54 +25,12 @@ const AGGRESSION = (new URLSearchParams(window.location.search).get('aggression'
   | 'passive'
 const SPRITES_ENABLED = new URLSearchParams(window.location.search).get('sprites') !== 'off'
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'ws://localhost:8080'
-const PLAYER_BASE_CENTER_FIXED = { x: 2048, y: 2048 }
-const PLAYER_BASE_CENTER = {
-  x: fixedToRenderPixels(PLAYER_BASE_CENTER_FIXED.x),
-  y: fixedToRenderPixels(PLAYER_BASE_CENTER_FIXED.y)
-}
-
-interface RtsDebug {
-  getPositions(): Record<string, { readonly x: number; readonly y: number }>
-  getUnitOwners(): Record<string, number>
-  getConstructionStates(): Record<string, { readonly x: number; readonly y: number; readonly status: string }>
-  getAnimationFrame(id: number): number | null
-  getUnitHealth(id: number): { readonly current: number; readonly max: number } | null
-  getSpriteState(id: number): {
-    readonly visible: boolean
-    readonly frame: number | null
-    readonly anim: 'idle' | 'run' | 'attack' | 'gather' | 'carry_idle' | 'carry_run' | 'fallback'
-    readonly inTree: boolean
-    readonly facing: number
-    readonly scale: number
-    readonly glyph: string | null
-    readonly shape: 'circle' | 'square' | 'triangle' | null
-  } | null
-  getSelection(): readonly number[]
-  setSelection(ids: readonly number[]): void
-  worldToScreen(x: number, y: number): { readonly x: number; readonly y: number }
-  getZoom(): number
-  getPing(): { readonly x: number; readonly y: number } | null
-  moveCamera(x: number, y: number): void
-  getTick(): number
-  getMapInfo(): {
-    readonly width: number
-    readonly height: number
-    readonly decorations: number
-    readonly isPlaytest: boolean
-  }
-}
-
-declare global {
-  interface Window {
-    __rtsDebug?: RtsDebug
-  }
-}
-
+const PLAYER_BASE_CENTER = { x: fixedToRenderPixels(2048), y: fixedToRenderPixels(2048) }
+const HUMAN_PLAYER = 0
 export interface MatchSessionState {
   readonly status: string
   readonly messageLog: readonly MessageLogEntry[]
   readonly unitCount: number
-  readonly selectedCount: number
   readonly tick: number
   readonly selectionUnits: readonly HudSelectionUnit[]
   readonly selectedConstruction: HudConstruction | null
@@ -83,64 +42,27 @@ export interface MatchSessionState {
     readonly supplyCap: number
   } | null
   readonly commandMode: CommandMode
-  /** 'victory' | 'defeat' | 'draw' once the match is finished, else null. */
   readonly matchResult: 'victory' | 'defeat' | 'draw' | null
   readonly scenario: string
   readonly scenarios: readonly string[]
   readonly aggression: 'offensive' | 'passive'
   readonly spritesEnabled: boolean
+  readonly inputProfile: InputProfile
   readonly buildHint: string | null
   readonly buildings: readonly BuildCatalogEntry[]
   arm(mode: Exclude<CommandMode, 'idle'>): void
-  issueOrder(
-    type: 'STOP' | 'HOLD' | 'PATROL' | 'ATTACK_MOVE',
-    target?: { readonly x: number; readonly y: number }
-  ): void
+  issueOrder(type: 'STOP' | 'HOLD'): void
   surrender(): void
   newMatch(): void
   changeScenario(id: string): void
   setAggression(value: 'offensive' | 'passive'): void
   setSpritesEnabled(value: boolean): void
+  setInputProfile(value: InputProfile): void
 }
-
-/** The human player is always the demo's player 0. */
-const HUMAN_PLAYER = 0
-
-function resourcesForHuman(message: SnapshotMessage): MatchSessionState['resources'] {
-  const humanPlayer = message.players.find((player) => player.id === HUMAN_PLAYER)
-  if (humanPlayer === undefined) {
-    return null
-  }
-  return {
-    mineral: humanPlayer.gold,
-    energy: 0,
-    supply: humanPlayer.usedSupply,
-    supplyCap: humanPlayer.supplyCap
-  }
-}
-
-function unitForHud(unit: SnapshotMessage['units'][number]): Omit<HudSelectionUnit, 'id' | 'moving'> {
-  return {
-    kind: unit.kind ?? 'pawn',
-    owner: unit.owner,
-    ...(unit.orderState === undefined ? {} : { orderState: unit.orderState }),
-    ...(unit.hp === undefined ? {} : { hp: unit.hp, maxHp: unit.maxHp }),
-    ...(unit.economy === undefined ? {} : { economy: unit.economy }),
-    ...(unit.carrying === undefined ? {} : { carrying: unit.carrying })
-  }
-}
-
-/**
- * Owns the match screen lifecycle: renderer mount, server connection, snapshot
- * presentation, selection state, command dispatch, and the match result. The
- * `__rtsDebug` hook is exposed for E2E assertions only and is removed on
- * unmount.
- */
 export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): MatchSessionState {
   const [status, setStatus] = useState('connecting')
   const { messageLog, appendLog } = useMessageLog()
   const [unitCount, setUnitCount] = useState(0)
-  const [selectedCount, setSelectedCount] = useState(0)
   const [tick, setTick] = useState(0)
   const [selectionUnits, setSelectionUnits] = useState<readonly HudSelectionUnit[]>([])
   const [selectedConstruction, setSelectedConstruction] = useState<HudConstruction | null>(null)
@@ -148,445 +70,163 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
   const [buildHint, setBuildHint] = useState<string | null>(null)
   const [resources, setResources] = useState<MatchSessionState['resources']>(null)
   const [matchResult, setMatchResult] = useState<MatchSessionState['matchResult']>(null)
+  const [inputProfile, setInputProfileState] = useState<InputProfile>(
+    () => readInputPreferences(window.localStorage).inputProfile
+  )
+  const inputProfileRef = useRef(inputProfile)
   const [matchConfig, setMatchConfig] = useState<MatchConfig | null>(null)
   const [scenarios, setScenarios] = useState<readonly ScenarioSummary[]>([])
   const commandModes = useCommandModes()
-  const connectionRef = useRef<MatchConnection | null>(null)
-  const selectionRef = useRef<readonly number[]>([])
-
+  const connectionOwnerRef = useRef(createMatchSessionConnectionOwner())
+  const runtimeRef = useRef<ReturnType<typeof createMatchSessionRuntime> | null>(null)
+  const rendererRef = useRef<GameRenderer | null>(null)
+  const matchEndedRef = useRef(false)
   useEffect(() => {
     const host = hostRef.current
     if (host === null) {
       return
     }
-
     const playtestMap = readPlaytestMap(window.location.search, window.localStorage)
-    let map: MapDefinition | null = null
-    let buildCatalog: readonly BuildCatalogEntry[] = []
-    let renderer: GameRenderer | null = null
-    let rendererReady = false
-    let pendingFrame: ReturnType<typeof snapshotToFrame> | null = null
-    let sessionActive = true
-    let selection = new Set<number>()
-    let lastTick = 0
-    let matchEnded = false
-    const unitKinds = new Map<
-      number,
-      {
-        readonly kind: HudSelectionUnit['kind']
-        readonly owner: number
-        readonly hp?: number
-        readonly maxHp?: number
-        readonly economy?: HudSelectionUnit['economy']
-        readonly orderState?: HudSelectionUnit['orderState']
-        readonly carrying?: HudSelectionUnit['carrying']
-      }
-    >()
-    const unitOwners = new Map<number, number>()
-    const unitPositions = new Map<number, { readonly x: number; readonly y: number }>()
-    let prevFramePositions = new Map<number, { readonly x: number; readonly y: number }>()
-    let buildings: SnapshotMessage['buildings'] = []
-    let mineralNodes: SnapshotMessage['mineralNodes'] = []
-    let selectedConstructionId: number | null = null
-    let selectedMineralId: number | null = null
-    let connection: MatchConnection | null = null
-
-    const placementFor = (worldX: number, worldY: number) => {
-      const mode = commandModes.modeRef.current
-      const buildingType = buildingTypeForMode(mode)
-      if (buildingType === null || map === null) {
-        return null
-      }
-      const definition = buildCatalog.find((candidate) => candidate.type === buildingType)
-      if (definition === undefined) {
-        return null
-      }
-      const footprint = definition.footprint
-      const { width, height } = footprint
-      const x = Math.floor(renderPixelsToFixed(worldX) / FIXED_SCALE)
-      const y = Math.floor(renderPixelsToFixed(worldY) / FIXED_SCALE)
-      const result = validateBuildingPlacement(
-        placementBoundsFromMap(map),
-        buildings.map((building) => ({
-          x: building.x / FIXED_SCALE,
-          y: building.y / FIXED_SCALE,
-          ...building.footprint
-        })),
-        { x, y, width, height }
-      )
-      const reason = result.ok
-        ? null
-        : {
-            OUT_OF_BOUNDS: 'Outside the map.',
-            INVALID_TILE: 'This terrain cannot support construction.',
-            OVERLAP: 'Location is occupied.',
-            INVALID_FOOTPRINT: 'This terrain cannot support construction.'
-          }[result.reason]
-      return { x: tilesToFixed(x), y: tilesToFixed(y), width, height, valid: result.ok, reason }
+    const runtime = createMatchSessionRuntime()
+    runtimeRef.current = runtime
+    matchEndedRef.current = false
+    const updateSelection = (ids: readonly number[]): void => {
+      const selection = runtime.selectUnits(ids)
+      setSelectionUnits(selection.units)
+      setSelectedConstruction(selection.construction)
+      setSelectedMineral(selection.mineral)
     }
-
-    const updatePreview = (worldX: number, worldY: number): void => {
-      const placement = placementFor(worldX, worldY)
-      renderer?.setBuildPreview(placement)
-      setBuildHint(placement?.valid ? 'Valid location — click to build.' : (placement?.reason ?? null))
+    const updateConstructionSelection = (id: number): void => {
+      const selection = runtime.selectConstruction(id)
+      setSelectionUnits(selection.units)
+      setSelectedConstruction(selection.construction)
+      setSelectedMineral(selection.mineral)
     }
-
+    const updateMineralSelection = (id: number): void => {
+      const selection = runtime.selectMineral(id)
+      setSelectionUnits(selection.units)
+      setSelectedConstruction(selection.construction)
+      setSelectedMineral(selection.mineral)
+    }
     const cancelPlacement = (): void => {
       if (isBuildMode(commandModes.modeRef.current)) {
         commandModes.clear()
-        renderer?.setBuildPreview(null)
+        runtime.renderer?.setBuildPreview(null)
         setBuildHint(null)
       }
     }
-
-    const updateSelection = (ids: readonly number[]): void => {
-      selectedConstructionId = null
-      setSelectedConstruction(null)
-      selectedMineralId = null
-      setSelectedMineral(null)
-      selection = new Set(ids)
-      selectionRef.current = [...ids]
-      setSelectedCount(selection.size)
-      renderer?.setSelection(ids)
-      const units: HudSelectionUnit[] = []
-      for (const id of [...selection].sort((a, b) => a - b)) {
-        const kind = unitKinds.get(id)
-        const current = unitPositions.get(id)
-        const previous = prevFramePositions.get(id)
-        if (kind !== undefined && current !== undefined) {
-          units.push({
-            id,
-            kind: kind.kind,
-            owner: kind.owner,
-            moving: previous !== undefined && (previous.x !== current.x || previous.y !== current.y),
-            ...(kind.hp === undefined ? {} : { hp: kind.hp, maxHp: kind.maxHp }),
-            ...(kind.orderState === undefined ? {} : { orderState: kind.orderState }),
-            ...(kind.economy === undefined ? {} : { economy: kind.economy }),
-            ...(kind.carrying === undefined ? {} : { carrying: kind.carrying })
-          })
-        }
-      }
-      setSelectionUnits(units)
-    }
-
-    const updateConstructionSelection = (id: number): void => {
-      selectedMineralId = null
-      setSelectedMineral(null)
-      const construction = buildings.find((candidate) => candidate.id === id)
-      if (construction === undefined || construction.owner !== HUMAN_PLAYER) {
-        selectedConstructionId = null
-        setSelectedConstruction(null)
-        return
-      }
-      selectedConstructionId = id
-      selection.clear()
-      selectionRef.current = []
-      setSelectedCount(0)
-      setSelectionUnits([])
-      renderer?.setSelection([])
-      setSelectedConstruction({
-        id: construction.id,
-        buildingType: construction.buildingType,
-        owner: construction.owner,
-        status: construction.status !== 'COMPLETED' && construction.builderId == null ? 'PAUSED' : construction.status,
-        progressTicks: construction.progressTicks,
-        totalTicks: construction.totalTicks,
-        builderId: construction.builderId ?? null
-      })
-    }
-
-    const updateMineralSelection = (id: number): void => {
-      const node = mineralNodes.find((candidate) => candidate.id === id)
-      if (node === undefined) {
-        selectedMineralId = null
-        setSelectedMineral(null)
-        return
-      }
-      selectedMineralId = id
-      setSelectedConstruction(null)
-      selectedConstructionId = null
-      selection.clear()
-      selectionRef.current = []
-      setSelectedCount(0)
-      setSelectionUnits([])
-      renderer?.setSelection([])
-      setSelectedMineral({ id: node.id, remaining: node.remaining })
-    }
-
     const sendCommand = (intent: CommandIntent): void => {
-      if (connection !== null) {
+      if (connectionOwnerRef.current.send(intent, runtime.matchEnded)) {
         appendLog('command', `${intent.type} → ${JSON.stringify(intent.payload)}`)
-        connection.sendCommand(intent)
       }
     }
-
-    const presentFrame = (frame: ReturnType<typeof snapshotToFrame>): void => {
-      if (!rendererReady || renderer === null) {
-        pendingFrame = frame
-        return
-      }
-      renderer.present(frame)
+    const placement = (x: number, y: number) =>
+      placementFor(commandModes.modeRef.current, runtime.map, runtime.buildCatalog, runtime.buildings, x, y)
+    const updatePreview = (x: number, y: number): void => {
+      const value = placement(x, y)
+      runtime.renderer?.setBuildPreview(value)
+      setBuildHint(value?.valid ? 'Valid location — click to build.' : (value?.reason ?? null))
     }
-
-    const groundCommand = (worldX: number, worldY: number): void => {
-      if (isBuildMode(commandModes.modeRef.current)) {
-        cancelPlacement()
-        return
-      }
-      if (selection.size === 0) {
-        return
-      }
-      const x = Math.round(renderPixelsToFixed(worldX))
-      const y = Math.round(renderPixelsToFixed(worldY))
-      const unitIds = [...selection]
-      const mode = commandModes.modeRef.current
-      if (mode === 'patrol') {
-        sendCommand({ type: 'PATROL', payload: { unitIds, x, y } })
-        commandModes.clear()
-      } else if (mode === 'attack_move') {
-        sendCommand({ type: 'ATTACK_MOVE', payload: { unitIds, x, y } })
-        commandModes.clear()
-      } else {
-        sendCommand({ type: 'MOVE', payload: { unitIds, x, y } })
-      }
-    }
-
-    const groundClick = (worldX: number, worldY: number): boolean => {
-      const mode = commandModes.modeRef.current
-      const buildingType = buildingTypeForMode(mode)
-      if (buildingType === null) {
-        return false
-      }
-      const placement = placementFor(worldX, worldY)
-      const workerId = [...selection].find((id) => {
-        const unit = unitKinds.get(id)
-        return unit?.kind === 'pawn' && unit.owner === HUMAN_PLAYER
-      })
-      if (placement?.valid && workerId !== undefined) {
-        sendCommand({
-          type: 'BUILD',
-          payload: {
-            unitId: workerId,
-            buildingType,
-            x: placement.x / FIXED_SCALE,
-            y: placement.y / FIXED_SCALE
-          }
+    const interactionController = new MatchInteractionController({
+      isMatchEnded: () => runtime.matchEnded,
+      selectedUnitIds: () => runtime.selectedIds,
+      mode: () => commandModes.modeRef.current,
+      unitStates: runtime.unitStates,
+      buildings: () => runtime.buildings,
+      placementFor: placement,
+      toCommandPoint: (x, y) => ({ x: Math.round(renderPixelsToFixed(x)), y: Math.round(renderPixelsToFixed(y)) }),
+      placementToCommandPoint: (value) => ({ x: value.x / FIXED_SCALE, y: value.y / FIXED_SCALE }),
+      buildingToCommandPoint: (building) => ({ x: building.x / FIXED_SCALE, y: building.y / FIXED_SCALE }),
+      sendCommand,
+      clearMode: commandModes.clear,
+      cancelPlacement,
+      setBuildHint,
+      humanPlayer: HUMAN_PLAYER
+    })
+    const handler = createWorldInteractionHandler({
+      controller: interactionController,
+      updateSelection,
+      selectAtWorldPoint: (x, y) =>
+        updateSelection(
+          selectUnitsInBox(
+            runtime.unitPositions,
+            { x: renderPixelsToFixed(x), y: renderPixelsToFixed(y) },
+            { x: renderPixelsToFixed(x), y: renderPixelsToFixed(y) }
+          )
+        ),
+      selectBuilding: updateConstructionSelection,
+      selectMineral: updateMineralSelection,
+      selectBox: (value) =>
+        updateSelection(
+          selectUnitsInBox(
+            runtime.unitPositions,
+            { x: renderPixelsToFixed(value.worldFrom.x), y: renderPixelsToFixed(value.worldFrom.y) },
+            { x: renderPixelsToFixed(value.worldTo.x), y: renderPixelsToFixed(value.worldTo.y) }
+          )
+        ),
+      updatePreview
+    })
+    const rendererLifecycle = createMatchRendererLifecycle({
+      host,
+      runtime,
+      callbacks: { onInteraction: handler },
+      rendererFactory: (config) =>
+        new PixiRenderer({
+          worldWidth: config.map.width * TILE_PIXELS,
+          worldHeight: config.map.height * TILE_PIXELS,
+          initialZoom: 1,
+          initialCenter: PLAYER_BASE_CENTER,
+          assetsUrl: SPRITES_ENABLED ? '/assets' : '',
+          map: config.map,
+          inputProfile: inputProfileRef.current
+        }),
+      onReady: (renderer, config) => {
+        rendererRef.current = renderer
+        window.__rtsDebug = createRtsDebug({
+          renderer,
+          config,
+          isPlaytest: playtestMap !== null,
+          unitStates: runtime.unitStates,
+          buildings: () => runtime.buildings,
+          setSelection: updateSelection,
+          getTick: () => runtime.lastTick,
+          fixedToRenderPixels
         })
-        cancelPlacement()
-      }
-      if (placement !== null && !placement.valid) {
-        setBuildHint(placement.reason)
-      }
-      return true
-    }
-
-    const unitCommand = (id: number): void => {
-      if (isBuildMode(commandModes.modeRef.current)) {
-        cancelPlacement()
-        return
-      }
-      if (selection.size === 0) {
-        return
-      }
-      const mode = commandModes.modeRef.current
-      const isEnemy = (unitOwners.get(id) ?? 0) !== HUMAN_PLAYER
-      if (mode === 'attack' || isEnemy) {
-        sendCommand({ type: 'ATTACK', payload: { unitIds: [...selection], targetId: id } })
-        commandModes.clear()
-      }
-      // Right-click on a friendly unit with no armed order does nothing.
-    }
-
-    const constructionCommand = (id: number): void => {
-      const construction = buildings.find((candidate) => candidate.id === id)
-      if (construction === undefined) {
-        return
-      }
-      const ownedPawns = [...selection].filter((selectedId) => {
-        const unit = unitKinds.get(selectedId)
-        return unit?.kind === 'pawn' && unit.owner === HUMAN_PLAYER
-      })
-      if (construction.status === 'COMPLETED') {
-        // Right-clicking a completed owned Base sends carrying workers to
-        // deposit; non-carrying pawns have nothing to deliver.
-        const carrying = ownedPawns.filter((selectedId) => unitKinds.get(selectedId)?.carrying === true)
-        if (construction.owner === HUMAN_PLAYER && carrying.length > 0) {
-          sendCommand({ type: 'DEPOSIT', payload: { unitIds: carrying, buildingId: id } })
-        }
-        return
-      }
-      const workerId = ownedPawns[0]
-      if (workerId === undefined) {
-        return
-      }
-      sendCommand({
-        type: 'BUILD',
-        payload: {
-          unitId: workerId,
-          buildingType: construction.buildingType,
-          x: construction.x / FIXED_SCALE,
-          y: construction.y / FIXED_SCALE
-        }
-      })
-    }
-
-    const mountRenderer = (config: MatchConfig): void => {
-      if (!sessionActive || renderer !== null) {
-        return
-      }
-      map = config.map
-      buildCatalog = config.buildings
-      setMatchConfig(config)
-      setScenarios(config.scenarios)
-      appendLog('info', `Match config: ${config.scenario.id} (${config.buildings.length} buildings)`)
-      const configuredRenderer: GameRenderer = new PixiRenderer({
-        worldWidth: config.map.width * TILE_PIXELS,
-        worldHeight: config.map.height * TILE_PIXELS,
-        initialZoom: 1,
-        initialCenter: PLAYER_BASE_CENTER,
-        assetsUrl: SPRITES_ENABLED ? '/assets' : '',
-        map: config.map
-      })
-      renderer = configuredRenderer
-      void configuredRenderer
-        .mount(host, {
-          onUnitSelected: (id) => updateSelection([id]),
-          onBuildingSelected: updateConstructionSelection,
-          onMineralSelected: updateMineralSelection,
-          onBoxSelected: (ids) => updateSelection(ids),
-          onGroundCommand: groundCommand,
-          onGroundClick: groundClick,
-          onGroundMove: updatePreview,
-          onUnitCommand: unitCommand,
-          onBuildingCommand: constructionCommand,
-          onMineralCommand: (nodeId) => {
-            if (isBuildMode(commandModes.modeRef.current)) {
-              cancelPlacement()
-              return
-            }
-            if (selection.size === 0) {
-              return
-            }
-            sendCommand({ type: 'GATHER', payload: { unitIds: [...selection], nodeId } })
-            commandModes.clear()
-          }
-        })
-        .then(() => {
-          if (!sessionActive || renderer !== configuredRenderer) {
-            configuredRenderer.dispose()
-            return
-          }
-          rendererReady = true
-          if (pendingFrame !== null) {
-            configuredRenderer.present(pendingFrame)
-            pendingFrame = null
-          }
-          window.__rtsDebug = {
-            getPositions: () =>
-              Object.fromEntries([...configuredRenderer.getUnitPositions()].map(([id, pos]) => [String(id), pos])),
-            getUnitOwners: () => Object.fromEntries([...unitOwners].map(([id, owner]) => [String(id), owner])),
-            getConstructionStates: () =>
-              Object.fromEntries(
-                buildings.map((construction) => [
-                  String(construction.id),
-                  { x: construction.x, y: construction.y, status: construction.status }
-                ])
-              ),
-            getAnimationFrame: (id) => configuredRenderer.getUnitAnimationFrame(id),
-            getUnitHealth: (id) => configuredRenderer.getUnitHealth(id),
-            getSpriteState: (id) => configuredRenderer.getUnitSpriteState(id),
-            getSelection: () => configuredRenderer.getSelection(),
-            setSelection: (ids) => updateSelection(ids),
-            worldToScreen: (x, y) => configuredRenderer.worldToScreen(fixedToRenderPixels(x), fixedToRenderPixels(y)),
-            getZoom: () => configuredRenderer.getZoom(),
-            getPing: () => configuredRenderer.getPing(),
-            moveCamera: (x, y) => configuredRenderer.moveCamera(fixedToRenderPixels(x), fixedToRenderPixels(y)),
-            getTick: () => lastTick,
-            getMapInfo: () => ({
-              width: config.map.width,
-              height: config.map.height,
-              decorations: config.map.decorations?.length ?? 0,
-              isPlaytest: playtestMap !== null
-            })
-          }
-        })
-        .catch((error: unknown) => {
-          if (!sessionActive || renderer !== configuredRenderer) {
-            return
-          }
-          const message = error instanceof Error ? error.message : String(error)
-          appendLog('error', message)
-        })
-    }
-
-    const handlers: ConnectionHandlers = {
-      onMatchConfig: mountRenderer,
-      onSnapshot: (message: SnapshotMessage) => {
-        lastTick = message.tick
-        buildings = message.buildings
-        mineralNodes = message.mineralNodes
-        if (selectedConstructionId !== null) {
-          updateConstructionSelection(selectedConstructionId)
-        }
-        if (selectedMineralId !== null) {
-          const selectedNode = mineralNodes.find((node) => node.id === selectedMineralId)
-          if (selectedNode === undefined) {
-            selectedMineralId = null
-            setSelectedMineral(null)
-          } else {
-            setSelectedMineral({ id: selectedNode.id, remaining: selectedNode.remaining })
-          }
-        }
-        setTick(message.tick)
-        setUnitCount(message.units.length)
-        prevFramePositions = new Map(unitPositions)
-        unitPositions.clear()
-        unitOwners.clear()
-        for (const unit of message.units) {
-          unitKinds.set(unit.id, unitForHud(unit))
-          unitOwners.set(unit.id, unit.owner)
-          unitPositions.set(unit.id, { x: unit.x, y: unit.y })
-        }
-        setResources(resourcesForHuman(message))
-        for (const event of message.events) {
-          if (event.type === 'attackFired') {
-            appendLog('event', `attackFired: ${event.attackerId} → ${event.targetId}`)
-          } else if (event.type === 'damageDealt') {
-            appendLog('event', `damageDealt: ${event.targetId} -${event.amount} HP (${event.targetHp} left)`)
-          } else if (event.type === 'unitDied') {
-            appendLog('event', `unitDied: ${event.entityId} (P${event.owner}) killed by ${event.killerId ?? 'unknown'}`)
-          }
-        }
-        if (!matchEnded && message.phase === 'FINISHED') {
-          matchEnded = true
-          const active = message.players.filter((player) => !player.defeated)
-          if (active.length === 1) {
-            const result = active[0]!.id === HUMAN_PLAYER ? 'victory' : 'defeat'
-            appendLog('info', `Match result: ${result}`)
-            setMatchResult(result)
-          } else {
-            appendLog('info', 'Match result: draw')
-            setMatchResult('draw')
-          }
-        }
-        presentFrame(snapshotToFrame(message))
-        if (selection.size > 0) {
-          updateSelection([...selection])
-        }
-      },
-      onOpen: () => {
-        setStatus('connected')
-        appendLog('info', 'Connected')
       },
       onError: (error) => {
-        appendLog('error', error.message)
-        if (error.scenarios !== undefined) {
-          setScenarios(error.scenarios)
-        }
+        rendererRef.current = null
+        setStatus('error')
+        appendLog('error', error instanceof Error ? error.message : String(error))
       }
-    }
-
-    connection = connectMatch(
+    })
+    const handlers = createMatchSessionHandlers({
+      runtime,
+      clearCommandMode: commandModes.clear,
+      appendLog,
+      cancelPlacement,
+      updateConstructionSelection,
+      updateSelection,
+      setStatus,
+      setTick,
+      setUnitCount,
+      setResources,
+      setSelectedMineral,
+      setMatchResult: (result) => {
+        matchEndedRef.current = true
+        setMatchResult(result)
+      },
+      present: rendererLifecycle.present,
+      onMatchConfig: (config) => {
+        runtime.map = config.map
+        runtime.buildCatalog = config.buildings
+        setMatchConfig(config)
+        setScenarios(config.scenarios)
+        appendLog('info', `Match config: ${config.scenario.id} (${config.buildings.length} buildings)`)
+        rendererLifecycle.mount(config)
+      },
+      setScenarios
+    })
+    const connection = connectMatch(
       SERVER_URL,
       {
         type: 'match_request',
@@ -596,32 +236,34 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       },
       handlers
     )
-    connectionRef.current = connection
-
+    connectionOwnerRef.current.set(connection)
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
         cancelPlacement()
+        commandModes.clear()
       }
     }
+    const onWindowBlur = (): void => {
+      cancelPlacement()
+      commandModes.clear()
+    }
     window.addEventListener('keydown', onKeyDown)
-
+    window.addEventListener('blur', onWindowBlur)
     return () => {
-      sessionActive = false
-      rendererReady = false
-      pendingFrame = null
+      runtime.sessionActive = false
       window.removeEventListener('keydown', onKeyDown)
-      connection?.close()
-      connectionRef.current = null
-      renderer?.dispose()
+      window.removeEventListener('blur', onWindowBlur)
+      connectionOwnerRef.current.cleanup(connection)
+      rendererLifecycle.dispose()
+      rendererRef.current = null
+      runtimeRef.current = null
       delete window.__rtsDebug
     }
-  }, [hostRef, commandModes.modeRef, commandModes.clear])
-
+  }, [appendLog, hostRef, commandModes.modeRef, commandModes.clear])
   return {
     status,
     messageLog,
     unitCount,
-    selectedCount,
     tick,
     selectionUnits,
     selectedConstruction,
@@ -634,38 +276,22 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     buildings: matchConfig?.buildings ?? [],
     aggression: AGGRESSION,
     spritesEnabled: SPRITES_ENABLED,
+    inputProfile,
     buildHint,
     arm: commandModes.arm,
-    issueOrder: (type, target) => {
-      const connection = connectionRef.current
-      const unitIds = [...selectionRef.current]
-      if (connection === null || unitIds.length === 0) {
+    issueOrder: (type) => {
+      const unitIds = [...(runtimeRef.current?.selectedIds ?? [])]
+      if (
+        unitIds.length === 0 ||
+        !connectionOwnerRef.current.send({ type, payload: { unitIds } }, matchEndedRef.current)
+      ) {
         return
-      }
-      if (type === 'STOP' || type === 'HOLD') {
-        connection.sendCommand({ type, payload: { unitIds } })
-        return
-      }
-      if (target === undefined) {
-        return
-      }
-      const x = Math.round(renderPixelsToFixed(target.x))
-      const y = Math.round(renderPixelsToFixed(target.y))
-      if (type === 'PATROL') {
-        connection.sendCommand({ type: 'PATROL', payload: { unitIds, x, y } })
-      } else if (type === 'ATTACK_MOVE') {
-        connection.sendCommand({ type: 'ATTACK_MOVE', payload: { unitIds, x, y } })
       }
     },
     surrender: () => {
-      const connection = connectionRef.current
-      if (connection !== null) {
-        connection.sendCommand({ type: 'SURRENDER', payload: {} })
-      }
+      connectionOwnerRef.current.send({ type: 'SURRENDER', payload: {} }, matchEndedRef.current)
     },
-    newMatch: () => {
-      window.location.reload()
-    },
+    newMatch: () => window.location.reload(),
     changeScenario: (id) => {
       const params = new URLSearchParams(window.location.search)
       params.set('scenario', id)
@@ -686,6 +312,12 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
         params.set('sprites', 'off')
       }
       window.location.search = params.toString()
+    },
+    setInputProfile: (value) => {
+      inputProfileRef.current = value
+      setInputProfileState(value)
+      writeInputPreferences(window.localStorage, { inputProfile: value })
+      rendererRef.current?.setInputProfile(value)
     }
   }
 }

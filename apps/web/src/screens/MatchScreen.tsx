@@ -19,6 +19,7 @@ export function MatchScreen() {
     scenarios,
     aggression,
     spritesEnabled,
+    inputProfile,
     buildings,
     buildHint,
     arm,
@@ -27,7 +28,8 @@ export function MatchScreen() {
     newMatch,
     changeScenario,
     setAggression,
-    setSpritesEnabled
+    setSpritesEnabled,
+    setInputProfile
   } = useMatchSession(hostRef)
 
   return (
@@ -47,6 +49,7 @@ export function MatchScreen() {
       scenarios={scenarios}
       aggression={aggression}
       spritesEnabled={spritesEnabled}
+      inputProfile={inputProfile}
       onStop={() => issueOrder('STOP')}
       onHold={() => issueOrder('HOLD')}
       onSurrender={surrender}
@@ -60,6 +63,7 @@ export function MatchScreen() {
       onChangeScenario={changeScenario}
       onToggleAggression={() => setAggression(aggression === 'offensive' ? 'passive' : 'offensive')}
       onToggleSprites={() => setSpritesEnabled(!spritesEnabled)}
+      onInputProfileChange={setInputProfile}
     />
   )
 }
