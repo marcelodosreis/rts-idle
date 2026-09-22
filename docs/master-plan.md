@@ -2112,7 +2112,7 @@ pnpm run test:determinism
 pnpm run test:invariants
 pnpm run test:architecture
 pnpm run build
-pnpm run test:e2e -- --project=chromium
+pnpm run test:e2e:all
 ```
 
 Focused tests:

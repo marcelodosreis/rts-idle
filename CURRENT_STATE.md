@@ -117,7 +117,7 @@ pnpm run test:orders
 
 # Completion gate (at feature completion; choose E2E by changed risk)
 pnpm run verify
-pnpm run test:e2e -- --project=chromium  # browser/protocol changes, release, or CI
+pnpm run test:e2e:all  # Chromium + Firefox; browser/protocol changes, release, or CI
 ```
 
 ## Definition of Done

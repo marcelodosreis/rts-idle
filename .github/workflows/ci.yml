@@ -71,8 +71,8 @@ jobs:
         with:
           name: dist
           path: .
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm run test:e2e -- --project=chromium
+      - run: pnpm exec playwright install --with-deps chromium firefox
+      - run: pnpm run test:e2e:all
 
   release:
     name: Release
