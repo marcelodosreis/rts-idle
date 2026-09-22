@@ -1,5 +1,6 @@
+import { createCameraController } from '@rts/renderer'
 import { AnimatedSprite, Container, type Texture } from 'pixi.js'
-import { Viewport } from 'pixi-viewport'
+import type { Viewport } from 'pixi-viewport'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -38,6 +39,7 @@ export function StressView({
     }
 
     let viewport: Viewport | null = null
+    let camera: ReturnType<typeof createCameraController> | null = null
     let world: Container | null = null
     let sprites: AnimatedSprite[] = []
     let stopTicker = (): void => undefined
@@ -53,16 +55,15 @@ export function StressView({
         resume: () => app.ticker.start()
       })
       world = new Container()
-      viewport = new Viewport({
-        screenWidth: app.screen.width,
-        screenHeight: app.screen.height,
+      camera = createCameraController(app, {
+        initialCenter: { x: app.screen.width / 2, y: VIEW_H / 2 },
+        initialZoom: 1,
         worldWidth: app.screen.width,
         worldHeight: app.screen.height,
-        events: app.renderer.events
+        input: { profile: 'mouse', minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM }
       })
+      viewport = camera.viewport
       viewport.addChild(world)
-      viewport.drag({ mouseButtons: 'middle' }).wheel().clampZoom({ minScale: MIN_ZOOM, maxScale: MAX_ZOOM })
-      app.stage.addChild(viewport)
       hostResize = (width, height) => {
         viewport?.resize(width, height)
       }
@@ -132,6 +133,7 @@ export function StressView({
       app.ticker.add(tick)
       stopTicker = () => app.ticker.remove(tick)
       destroyApp = () => {
+        camera?.dispose()
         disposeSectionApp(app)
         app.destroy()
       }
