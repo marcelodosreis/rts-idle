@@ -74,17 +74,19 @@ Invariants:
 renderer/src/
   types.ts       Public contract: GameRenderer, RenderFrame, RenderUnit, options
   renderer.ts    PixiRenderer orchestrator (Application + viewport + wiring)
+  input/         Typed pointer/context input, hit testing, and shared camera policy
   unit-layer.ts  Unit lifecycle + positions + interpolation
   unit-sprite.ts One unit's sprite: idle/run/attack frames, HP bar, facing
   effects-layer.ts  Combat feedback: streaks, damage popups, explosions
   progress-bar.ts  Shared progress-bar primitive (ratio, color, fill, draw)
-  selection.ts   Box selection + selection rings + selection set
+  selection.ts   Box selection + selection rings (visual projection)
   ping.ts        Right-click command ping
   terrain-*      Terrain tileset/autotile/dressing presentation
 ```
 
-The renderer never computes gameplay; it presents frames and reports
-selection/commands outward through callbacks.
+The renderer never computes gameplay; it presents frames and reports typed world
+interactions outward. The web match layer translates those interactions into
+gameplay commands. Camera state remains presentation-only.
 
 ## Web layout
 
@@ -92,6 +94,8 @@ selection/commands outward through callbacks.
 web/src/
   app/          App root
   screens/      MatchScreen (thin), useMatchSession (lifecycle + debug API)
+  preferences/  Validated local input-profile preferences
+  interaction/  Match selection/mode/command ownership
   client/       connection.ts (WS + protocol guards), snapshot-to-frame.ts (pure)
   det/, perf/   Diagnostic harness pages (excluded from the dependency barrier)
 ```

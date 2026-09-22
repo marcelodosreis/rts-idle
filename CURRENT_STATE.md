@@ -24,6 +24,8 @@ See `docs/tasks/todo.md` for full phase list.
 - Economy v0: Worker → Mineral Node → cargo → owned Base → wallet deposit
 - Snapshot/hash/export/restore
 - PixiJS renderer (animated sprites, terrain autotile, combat effects, HP bars)
+- Centralized renderer input adapter with Mouse/Trackpad camera profiles, shared
+  camera setup, target precedence, pointer capture, and focus-loss cleanup
 - Unit selection (click + box), command bar, match overlay
 - Playable economy scenario with four controllable workers, 250 starting minerals,
   contextual GATHER, pickaxe/carry animations, progress feedback, and live Mineral HUD

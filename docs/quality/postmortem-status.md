@@ -1,15 +1,15 @@
 # Postmortem Status
 
 > Gerado automaticamente por `tools/quality/postmortem-status.ts`
-> Atualizado: 2026-09-21
+> Atualizado: 2026-09-22
 
 ## Resumo
 
 | Status | Quantidade |
 |--------|------------|
-| open | 11 |
+| open | 13 |
 | closed | 13 |
-| **total** | **24** |
+| **total** | **26** |
 
 ## Detalhes
 
@@ -39,6 +39,8 @@
 | 2026-09-20-renderer-snapshot-before-mount | open | presentation | — | 1 teste(s) |
 | 2026-09-21-carry-state-not-projected-without-order | closed | presentation | — | 2 teste(s) |
 | 2026-09-21-renderer-lockfile-drift | open | completion-gate | — | 1 teste(s) |
+| 2026-09-22-canvas-secondary-input-and-page-zoom | open | presentation | — | 2 teste(s) |
+| 2026-09-22-selection-box-feedback | open | presentation | — | 2 teste(s) |
 
 ## Legenda
 
