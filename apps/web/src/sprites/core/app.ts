@@ -1,10 +1,5 @@
 import { Application, type TextureSource } from 'pixi.js'
 
-export type FilterMode = 'nearest' | 'linear'
-
-const textureSources = new Set<TextureSource>()
-let mode: FilterMode = 'nearest'
-
 /** Every section app created by the lab, so the shell can pause hidden tabs. */
 const apps = new Set<Application>()
 let appsPaused = false
@@ -18,24 +13,6 @@ function measureHost(host: HTMLElement, fallbackHeight: number): { width: number
   return {
     width: Math.max(320, Math.round(rect.width) || 800),
     height: Math.max(160, Math.round(rect.height) || fallbackHeight)
-  }
-}
-
-/** Current global texture filter. Every section's sprites share this mode. */
-export function getFilterMode(): FilterMode {
-  return mode
-}
-
-/**
- * Applies a texture filter to every tracked source. The lab page uses this to
- * demonstrate the seam artifact: the game's terrain sprite is upscaled without
- * an explicit `scaleMode`, so Pixi defaults to `linear`. The lab defaults to
- * `nearest` so the intended look is the one we port back to the game.
- */
-export function setFilterMode(next: FilterMode): void {
-  mode = next
-  for (const source of textureSources) {
-    source.scaleMode = next
   }
 }
 
@@ -80,10 +57,9 @@ export function disposeSectionApp(app: Application): void {
   removeApp(app)
 }
 
-/** Registers a texture source so the global toggle controls it. */
+/** Configures a texture source for crisp pixel-art sampling. */
 export function trackTextureSource(source: TextureSource): void {
-  textureSources.add(source)
-  source.scaleMode = mode
+  source.scaleMode = 'nearest'
 }
 
 /** Convenience: registers the source behind any Pixi texture/frame. */
