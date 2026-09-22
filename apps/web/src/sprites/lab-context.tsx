@@ -1,6 +1,6 @@
 import { AssetLibrary } from '@rts/renderer'
 import { createContext, useContext } from 'react'
-import type { SectionContext } from './sections/types.js'
+import type { SectionContext } from './core/types.js'
 
 /** React context carrying the shared, read-only lab context (assets + art flag). */
 export const SpriteLabContext = createContext<SectionContext | null>(null)
