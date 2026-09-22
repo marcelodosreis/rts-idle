@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { SectionContext } from '../sections/types.js'
+import type { SectionContext } from '../core/types.js'
 import { type CanvasResult, createCanvas, type RenderOptions } from './canvas.js'
 
 export interface SpriteCanvasHandle {
