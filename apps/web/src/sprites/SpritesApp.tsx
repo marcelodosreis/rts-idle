@@ -1,8 +1,6 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getFilterMode, setFilterMode } from './core/app.js'
 import { SpriteLabContext } from './lab-context'
 import { useAssetLibrary } from './use-asset-library'
 import { type SpritesTab, useSpritesTab } from './use-sprites-tab'
@@ -17,7 +15,6 @@ const ReportView = lazy(() => import('./report/ReportView').then((m) => ({ defau
 declare global {
   interface Window {
     __spriteLab?: {
-      filterMode(): string
       browse(key: string): void
       tab(): string
     }
@@ -31,27 +28,15 @@ const TABS: readonly { readonly id: SpritesTab; readonly label: string }[] = [
   { id: 'report', label: 'Report' }
 ]
 
-function Header({
-  filterChecked,
-  onFilterToggle
-}: {
-  readonly filterChecked: boolean
-  readonly onFilterToggle: (checked: boolean) => void
-}) {
+function Header() {
   return (
     <header className="sticky top-0 z-20 border-b border-border/50 bg-background/80 backdrop-blur-sm">
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-4 px-6 py-2.5">
         <h1 className="text-sm font-semibold tracking-tight">Sprite Lab</h1>
         <span className="text-xs text-muted-foreground/60">Tiny Swords asset validation</span>
         <div className="ml-auto flex items-center gap-3">
-          {/* biome-ignore lint/a11y/noLabelWithoutControl: o controle (Switch) está aninhado */}
-          <label className="flex items-center gap-2 text-xs text-muted-foreground">
-            Filter
-            <Switch checked={filterChecked} onCheckedChange={onFilterToggle} aria-label="texture filter" />
-            <span className="w-12 font-mono text-[11px]">{getFilterMode()}</span>
-          </label>
           <Button variant="outline" size="sm" asChild={true} className="h-7 text-xs">
-            <a href="/">Back to game</a>
+            <a href="/">Return to Battle</a>
           </Button>
         </div>
       </div>
@@ -62,21 +47,14 @@ function Header({
 export function SpritesApp() {
   const { tab, setTab, readTab } = useSpritesTab()
   const { ctx } = useAssetLibrary('/assets')
-  const [filterChecked, setFilterChecked] = useState(true)
   const browseRef = useRef<((key: string) => void) | null>(null)
   const pendingBrowse = useRef<string | null>(null)
   const prevTab = useRef<SpritesTab>(tab)
   const levelCtrl = useRef<Pauseable | null>(null)
   const stressCtrl = useRef<Pauseable | null>(null)
 
-  const onFilterToggle = useCallback((checked: boolean): void => {
-    setFilterChecked(checked)
-    setFilterMode(checked ? 'nearest' : 'linear')
-  }, [])
-
   useEffect(() => {
     window.__spriteLab = {
-      filterMode: getFilterMode,
       browse(key: string): void {
         setTab('browse')
         const select = browseRef.current
@@ -127,7 +105,7 @@ export function SpritesApp() {
 
   return (
     <SpriteLabContext.Provider value={ctx}>
-      <Header filterChecked={filterChecked} onFilterToggle={onFilterToggle} />
+      <Header />
       <main className="mx-auto max-w-[1400px] px-4 py-3">
         <Tabs value={tab} onValueChange={(v) => setTab(v as SpritesTab)}>
           <TabsList className="mb-3">
