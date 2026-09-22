@@ -163,7 +163,7 @@ test('an interrupted carrying worker shows cargo and deposits by right-clicking 
       .toBe('carry_idle')
   }
 
-  const basePoint = await focusFixed(page, tilesToFixed(6), tilesToFixed(8))
+  const basePoint = await focusFixed(page, tilesToFixed(7), tilesToFixed(9))
   await page.mouse.click(basePoint.x, basePoint.y, { button: 'right' })
   await expect.poll(() => mineralValue(page), { timeout: 15_000 }).toBeGreaterThan(initialMinerals)
   await expect(page.getByTestId('economy-status')).toBeEmpty()
