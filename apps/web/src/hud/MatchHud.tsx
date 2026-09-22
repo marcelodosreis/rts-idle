@@ -1,4 +1,5 @@
 import type { BuildCatalogEntry } from '@rts/protocol'
+import type { InputProfile } from '@rts/renderer'
 import type { RefObject } from 'react'
 import type { MessageLogEntry } from '../screens/useMessageLog'
 import { CommandBar } from './CommandBar'
@@ -27,6 +28,7 @@ export interface MatchHudProps {
   readonly scenarios: readonly string[]
   readonly aggression: 'offensive' | 'passive'
   readonly spritesEnabled: boolean
+  readonly inputProfile: InputProfile
   readonly onStop: () => void
   readonly onHold: () => void
   readonly onSurrender: () => void
@@ -38,6 +40,7 @@ export interface MatchHudProps {
   readonly onChangeScenario: (id: string) => void
   readonly onToggleAggression: () => void
   readonly onToggleSprites: () => void
+  readonly onInputProfileChange: (profile: InputProfile) => void
 }
 
 /**
@@ -62,6 +65,7 @@ export function MatchHud({
   scenarios,
   aggression,
   spritesEnabled,
+  inputProfile,
   onStop,
   onHold,
   onSurrender,
@@ -72,7 +76,8 @@ export function MatchHud({
   onNewMatch,
   onChangeScenario,
   onToggleAggression,
-  onToggleSprites
+  onToggleSprites,
+  onInputProfileChange
 }: MatchHudProps) {
   return (
     <div className="relative flex h-screen flex-col overflow-hidden bg-background text-foreground">
@@ -90,11 +95,13 @@ export function MatchHud({
         onChangeScenario={onChangeScenario}
         onToggleAggression={onToggleAggression}
         onToggleSprites={onToggleSprites}
+        inputProfile={inputProfile}
+        onInputProfileChange={onInputProfileChange}
       />
       <main className="grid min-h-0 flex-1 place-items-center p-4">
         <div
           ref={hostRef}
-          className="aspect-square h-full max-w-full overflow-hidden rounded-xl border border-border/50 shadow-2xl"
+          className="aspect-square h-full max-h-full max-w-full min-h-0 min-w-0 overflow-hidden rounded-xl border border-border/50 shadow-2xl"
         />
       </main>
       <footer className="flex min-h-40 shrink-0 flex-wrap items-stretch justify-center gap-3 border-t bg-card/70 p-3 backdrop-blur">

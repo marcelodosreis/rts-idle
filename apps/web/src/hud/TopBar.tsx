@@ -1,3 +1,4 @@
+import type { InputProfile } from '@rts/renderer'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -20,6 +21,8 @@ interface TopBarProps {
   readonly onChangeScenario: (id: string) => void
   readonly onToggleAggression: () => void
   readonly onToggleSprites: () => void
+  readonly inputProfile: InputProfile
+  readonly onInputProfileChange: (profile: InputProfile) => void
 }
 
 function StatChip({
@@ -99,7 +102,9 @@ export function TopBar({
   spritesEnabled,
   onChangeScenario,
   onToggleAggression,
-  onToggleSprites
+  onToggleSprites,
+  inputProfile,
+  onInputProfileChange
 }: TopBarProps) {
   return (
     <header className="flex min-h-14 shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b bg-card/70 px-4 py-2 backdrop-blur">
@@ -178,6 +183,20 @@ export function TopBar({
           </Label>
           <Switch id="sprites" checked={spritesEnabled} onCheckedChange={onToggleSprites} aria-label="toggle sprites" />
         </div>
+
+        <Select value={inputProfile} onValueChange={(value) => onInputProfileChange(value as InputProfile)}>
+          <SelectTrigger aria-label="input profile" className="h-8 w-32 text-xs">
+            <SelectValue placeholder="input" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="mouse" className="text-xs">
+              Mouse
+            </SelectItem>
+            <SelectItem value="trackpad" className="text-xs">
+              Trackpad
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div data-testid="hud-topbar-stats" className="flex flex-wrap items-center gap-x-4 gap-y-1.5 sm:ml-auto">

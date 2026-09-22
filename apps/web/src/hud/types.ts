@@ -1,3 +1,5 @@
+import type { BuildingType } from '@rts/shared'
+
 /** A selected unit projected for the HUD (id, archetype, movement state). */
 export interface HudSelectionUnit {
   readonly id: number
@@ -20,7 +22,7 @@ export interface HudSelectionUnit {
 
 export interface HudConstruction {
   readonly id: number
-  readonly buildingType: 'BASE' | 'BARRACKS' | 'SUPPLY_DEPOT'
+  readonly buildingType: BuildingType
   readonly owner: number
   readonly status: 'FOUNDATION' | 'UNDER_CONSTRUCTION' | 'COMPLETED' | 'PAUSED'
   readonly progressTicks: number

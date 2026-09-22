@@ -3,6 +3,7 @@ import {
   type AutoTileTerrain,
   autotileTile,
   cliffBase,
+  createCameraController,
   createTerrainScene,
   DRESSING_ASSET_KEYS,
   type DressingKind,
@@ -13,7 +14,6 @@ import {
 } from '@rts/renderer'
 import type { DecorationPlacement, MapDefinition } from '@rts/shared'
 import { Container, Graphics, Sprite } from 'pixi.js'
-import { Viewport } from 'pixi-viewport'
 import { createSectionApp, disposeSectionApp } from '../core/app.js'
 import type { SectionContext } from '../core/types.js'
 import { type Cell, cellFromLocal } from './terrain-geometry.js'
@@ -203,15 +203,14 @@ export async function createTerrainController(
     waterRows
   })
 
-  const viewport = new Viewport({
-    screenWidth: app.screen.width,
-    screenHeight: app.screen.height,
+  const camera = createCameraController(app, {
+    initialCenter: { x: waterWidth / 2, y: waterHeight / 2 },
+    initialZoom: fitScale,
     worldWidth: waterWidth,
     worldHeight: waterHeight,
-    events: app.renderer.events
+    input: { profile: 'mouse', minZoom, maxZoom }
   })
-  viewport.drag({ mouseButtons: 'middle' }).wheel().clampZoom({ minScale: minZoom, maxScale: maxZoom })
-  app.stage.addChild(viewport)
+  const viewport = camera.viewport
 
   const worldContainer = new Container()
   // Center the grid inside the water area.
@@ -725,6 +724,7 @@ export async function createTerrainController(
       app.ticker.start()
     },
     destroy(): void {
+      camera.dispose()
       scene.destroy()
       disposeSectionApp(app)
       app.destroy()

@@ -35,7 +35,7 @@ window.__runRendererPerf = async (count, targetFrames = 120) => {
     initialZoom: 0.05,
     initialCenter: { x: 6144, y: 6144 }
   })
-  await renderer.mount(host, {})
+  await renderer.mount(host, { onInteraction: () => undefined })
 
   const units = Array.from({ length: count }, (_, i) => {
     const position = gridPosition(i, 64, FIXED_SCALE)
