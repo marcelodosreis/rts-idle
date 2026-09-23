@@ -18,7 +18,7 @@ function intersects(a: Box, b: Box): boolean {
 }
 
 for (const viewport of VIEWPORTS) {
-  test(`HUD nao sobrepoe nem estoura em ${viewport.width}x${viewport.height}`, async ({ page }) => {
+  test(`HUD does not overlap or overflow at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport)
     await page.goto('/')
     await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
@@ -46,7 +46,7 @@ for (const viewport of VIEWPORTS) {
       for (let j = i + 1; j < boxes.length; j++) {
         const a = boxes[i]!
         const b = boxes[j]!
-        expect(intersects(a, b), `${a.id} sobrepoe ${b.id}`).toBe(false)
+        expect(intersects(a, b), `${a.id} overlaps ${b.id}`).toBe(false)
       }
     }
 

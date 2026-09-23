@@ -318,7 +318,7 @@ function StatusBar({
         </>
       )}
       <div className="h-3 w-px bg-border/50" />
-      {/* biome-ignore lint/a11y/noLabelWithoutControl: o controle (Switch) está aninhado */}
+      {/* biome-ignore lint/a11y/noLabelWithoutControl: the control (Switch) is nested */}
       <label className="flex items-center gap-1.5 text-muted-foreground">
         Grid
         <Switch

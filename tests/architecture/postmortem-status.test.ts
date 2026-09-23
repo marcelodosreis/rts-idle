@@ -137,37 +137,37 @@ describe('postmortem status (QUAL-017)', () => {
         expect(['open', 'closed']).toContain(fm.status)
       })
 
-      it('has valid classe', () => {
+      it('has a valid class', () => {
         expect(VALID_CLASSES).toContain(fm.classe)
       })
 
-      it('has barreira (string or null)', () => {
+      it('has a barrier (string or null)', () => {
         expect(fm.barreira === null || typeof fm.barreira === 'string').toBe(true)
       })
 
-      it('has regressao as array', () => {
+      it('has regression metadata as an array', () => {
         expect(Array.isArray(fm.regressao)).toBe(true)
       })
 
       if (fm.status === 'closed') {
-        it('has regressao test files (closed requires regression)', () => {
+        it('has regression test files (closed requires regression)', () => {
           expect(fm.regressao.length).toBeGreaterThanOrEqual(1)
         })
       }
 
       if (fm.barreira !== null) {
-        it('barreira matches QUAL-xxx pattern', () => {
+        it('the barrier matches the QUAL-xxx pattern', () => {
           expect(fm.barreira).toMatch(/^QUAL-\d+$/)
         })
 
-        it('barreira QUAL id exists in TASK_INDEX', () => {
+        it('the barrier QUAL id exists in TASK_INDEX', () => {
           const qualIds = getQUALIds()
           expect(qualIds.has(fm.barreira!)).toBe(true)
         })
       }
 
       if (fm.regressao.length > 0) {
-        it('regressao files exist on disk', () => {
+        it('regression files exist on disk', () => {
           for (const testPath of fm.regressao) {
             const fullPath = join(WORKSPACE_ROOT, testPath)
             expect(existsSync(fullPath), `missing: ${testPath}`).toBe(true)

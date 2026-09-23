@@ -30,7 +30,7 @@ function Toggle({
   readonly onChange: (checked: boolean) => void
 }) {
   return (
-    // biome-ignore lint/a11y/noLabelWithoutControl: controle (Switch) aninhado
+    // biome-ignore lint/a11y/noLabelWithoutControl: nested control (Switch)
     <label className="flex items-center justify-between gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted/20">
       <span>{label}</span>
       <Switch checked={checked} onCheckedChange={onChange} />
@@ -205,7 +205,7 @@ export function InspectorPanel({
                 <SelectContent>
                   {Array.from({ length: slices }, (_, i) => (
                     <SelectItem
-                      // biome-ignore lint/suspicious/noArrayIndexKey: variantes sequenciais 0..n-1
+                      // biome-ignore lint/suspicious/noArrayIndexKey: sequential variants 0..n-1
                       key={i}
                       value={String(i)}
                     >
