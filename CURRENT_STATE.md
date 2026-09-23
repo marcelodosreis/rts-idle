@@ -123,10 +123,22 @@ pnpm run test:integration
 pnpm run test:contracts
 pnpm run test:orders
 
-# Completion gate (at feature completion; choose E2E by changed risk)
+# Completion gate (at feature completion)
 pnpm run verify
-pnpm run test:e2e:all  # Chromium + Firefox; browser/protocol changes, release, or CI
+
+# Browser iteration (functional coverage without heavy benchmarks)
+pnpm run test:e2e:fast
+
+# Performance iteration
+pnpm run test:e2e:perf
+
+# Complete browser/release gate: all tests, both browsers, including performance
+pnpm run test:e2e:all
 ```
+
+The CI runs `test:e2e:fast` and `test:e2e:perf` as independent jobs. Their union
+is equivalent to `test:e2e:all`, while keeping functional feedback independent
+from the heavy renderer benchmark.
 
 ## Definition of Done
 

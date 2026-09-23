@@ -134,9 +134,11 @@ Before declaring a feature complete or committing it as completed work, run:
 pnpm run verify
 ```
 
-For browser or protocol changes, also run the explicit E2E gate. For other
-changes, focused tests are sufficient locally and the full E2E suite belongs to
-CI/release validation.
+For browser or protocol changes, run the appropriate E2E gate. Use
+`pnpm run test:e2e:fast` for functional iteration, `pnpm run test:e2e:perf` for
+renderer benchmark changes, and `pnpm run test:e2e:all` for release or complete
+browser validation. CI runs the first two gates as parallel jobs; together they
+cover the same tests as `test:e2e:all`.
 
 Before any focused browser run, enumerate the target first:
 
@@ -234,7 +236,7 @@ Do NOT produce large essays. Keep reports under 30 lines.
 |-------|------|----------|
 | Iteration | After intermediate edits | affected tests + relevant checks |
 | Per-feature | Feature complete | + integration + contracts + orders |
-| Completion | Feature completion; browser/protocol changes add explicit E2E | `pnpm run verify` (+ `pnpm run test:e2e:all` when required) |
+| Completion | Feature completion; browser/protocol changes add explicit E2E | `pnpm run verify` + `test:e2e:fast` or `test:e2e:perf` as affected; `test:e2e:all` for complete/release validation |
 | Milestone / release | Phase complete or version bump | Completion gate, plus any task-specific/manual checks |
 
 ## Documentation Rules

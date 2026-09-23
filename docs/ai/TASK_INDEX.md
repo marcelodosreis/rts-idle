@@ -164,3 +164,9 @@ RFC: `docs/rfc/RFC-003-cost-scale-and-architecture-comparison.md` (Proposed).
 | architecture | Completion (included in verify) | `pnpm run test:architecture` |
 | e2e | Browser/protocol completion or CI | focused target with `--list`; full gate only when required |
 | verify | Completion | `pnpm run verify` |
+
+## Browser Validation
+
+| ID | Title | Status | Dependencies | Packages | Validation |
+|----|-------|--------|--------------|----------|------------|
+| E2E-001 | E2E gate stratification | done | - | web, renderer, quality | e2e, verify |
