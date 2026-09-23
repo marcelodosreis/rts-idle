@@ -1,7 +1,7 @@
 # QUAL-012 — expectAnim + barrier
 
 **Status:** pending
-**Phase:** Quality Hardening / Baratos
+**Phase:** Quality Hardening / Low Effort
 **Dependencies:** QUAL-000
 
 ## Objective
