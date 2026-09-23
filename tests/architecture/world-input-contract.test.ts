@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest'
 
 const rendererTypes = readFileSync(new URL('../../packages/renderer/src/types.ts', import.meta.url), 'utf8')
 const renderer = readFileSync(new URL('../../packages/renderer/src/renderer.ts', import.meta.url), 'utf8')
-const session = readFileSync(new URL('../../apps/web/src/screens/useMatchSession.ts', import.meta.url), 'utf8')
+const session = readFileSync(
+  new URL('../../apps/web/src/features/match/lifecycle/useMatchSession.ts', import.meta.url),
+  'utf8'
+)
 
 describe('unified world input contract', () => {
   it('does not reintroduce renderer callback APIs', () => {

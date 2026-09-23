@@ -63,6 +63,8 @@ for (const viewport of VIEWPORTS) {
 
     await expect(page.getByRole('button', { name: 'Stop' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Surrender' })).toBeVisible()
+    await page.getByRole('button', { name: 'Open DevTools menu' }).click()
+    await page.getByRole('button', { name: 'Toggle Match session' }).click()
     await expect(page.getByLabel('scenario')).toBeVisible()
   })
 }

@@ -1,10 +1,16 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const runtime = readFileSync(new URL('../../apps/web/src/screens/match-session-runtime.ts', import.meta.url), 'utf8')
-const sessionHook = readFileSync(new URL('../../apps/web/src/screens/useMatchSession.ts', import.meta.url), 'utf8')
+const runtime = readFileSync(
+  new URL('../../apps/web/src/features/match/lifecycle/match-session-runtime.ts', import.meta.url),
+  'utf8'
+)
+const sessionHook = readFileSync(
+  new URL('../../apps/web/src/features/match/lifecycle/useMatchSession.ts', import.meta.url),
+  'utf8'
+)
 const controller = readFileSync(
-  new URL('../../apps/web/src/interaction/match-interaction-controller.ts', import.meta.url),
+  new URL('../../apps/web/src/features/match/selection/match-interaction-controller.ts', import.meta.url),
   'utf8'
 )
 const unitLayer = readFileSync(new URL('../../packages/renderer/src/unit-layer.ts', import.meta.url), 'utf8')
