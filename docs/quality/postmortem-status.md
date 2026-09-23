@@ -1,15 +1,15 @@
 # Postmortem Status
 
 > Gerado automaticamente por `tools/quality/postmortem-status.ts`
-> Atualizado: 2026-09-22
+> Atualizado: 2026-09-23
 
 ## Resumo
 
 | Status | Quantidade |
 |--------|------------|
-| open | 13 |
+| open | 17 |
 | closed | 13 |
-| **total** | **26** |
+| **total** | **30** |
 
 ## Detalhes
 
@@ -41,6 +41,10 @@
 | 2026-09-21-renderer-lockfile-drift | open | completion-gate | — | 1 teste(s) |
 | 2026-09-22-canvas-secondary-input-and-page-zoom | open | presentation | — | 2 teste(s) |
 | 2026-09-22-selection-box-feedback | open | presentation | — | 2 teste(s) |
+| 2026-09-23-browser-types-collapsed-short-height | open | presentation | — | 1 teste(s) |
+| 2026-09-23-performance-canvas-outside-harness | open | presentation | — | 1 teste(s) |
+| 2026-09-23-performance-units-out-of-view | open | presentation | — | 1 teste(s) |
+| 2026-09-23-stress-canvas-growth | open | presentation | — | 1 teste(s) |
 
 ## Legenda
 
