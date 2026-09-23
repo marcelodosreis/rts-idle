@@ -1,7 +1,7 @@
-# QUAL-013 — Gate E2E por caminho
+# QUAL-013 — Path-based E2E gate
 
 **Status:** pending
-**Phase:** Quality Hardening / Condicionado
+**Phase:** Quality Hardening / Conditional
 **Dependencies:** QUAL-002, QUAL-005
 
 ## Objective

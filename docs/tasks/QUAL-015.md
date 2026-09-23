@@ -1,7 +1,7 @@
-# QUAL-015 — Base de branch
+# QUAL-015 — Branch baseline
 
 **Status:** pending
-**Phase:** Quality Hardening / Baratos
+**Phase:** Quality Hardening / Low Effort
 **Dependencies:** none
 
 ## Objective

@@ -1,7 +1,7 @@
 # QUAL-014 — Coverage ratchet
 
 **Status:** pending
-**Phase:** Quality Hardening / Condicionado
+**Phase:** Quality Hardening / Conditional
 **Dependencies:** QUAL-016
 
 ## Objective
