@@ -81,6 +81,9 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
   container.addChild(waterContainer, foamContainer, gridContainer, overlayContainer, dressingContainer)
 
   let foamCount = 0
+  let renderGeneration = 0
+  let paletteRequest = 0
+  let destroyed = false
 
   const clear = (host: Container): void => {
     const children = [...host.children]
@@ -230,7 +233,8 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
 
   const drawDressing = async (
     grid: readonly (readonly AutoTileTerrain[])[],
-    dressing: TerrainSceneDressing
+    dressing: TerrainSceneDressing,
+    generation: number
   ): Promise<void> => {
     const enabled = Object.values(dressing.counts).some((count) => count > 0)
     if (!enabled) {
@@ -244,6 +248,9 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
     let frameIndex = 0
     for (const item of items) {
       const frames = await dressingFrames(item.kind, item.variant)
+      if (destroyed || generation !== renderGeneration) {
+        return
+      }
       if (frames.length === 0) {
         continue
       }
@@ -267,7 +274,10 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
     }
   }
 
-  const drawManualDecorations = async (decorations: ReadonlyMap<string, ManualDecoration>): Promise<void> => {
+  const drawManualDecorations = async (
+    decorations: ReadonlyMap<string, ManualDecoration>,
+    generation: number
+  ): Promise<void> => {
     if (decorations.size === 0) {
       return
     }
@@ -277,6 +287,9 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
       const x = Number(parts[0] ?? 0)
       const y = Number(parts[1] ?? 0)
       const frames = await dressingFrames(entry.kind, entry.variant)
+      if (destroyed || generation !== renderGeneration) {
+        return
+      }
       if (frames.length === 0) {
         continue
       }
@@ -312,6 +325,7 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
     dressing: TerrainSceneDressing,
     manualDecorations: ReadonlyMap<string, ManualDecoration> = new Map()
   ): void => {
+    const generation = ++renderGeneration
     lastRender = { grid, stairs, dressing, manualDecorations }
     drawWater(grid)
     drawFoam(grid)
@@ -328,9 +342,9 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
     drawStairs(overlayContainer, stairs)
     // Explicit placements are authoritative; scatter is the fallback.
     if (manualDecorations.size > 0) {
-      void drawManualDecorations(manualDecorations)
+      void drawManualDecorations(manualDecorations, generation)
     } else {
-      void drawDressing(grid, dressing)
+      void drawDressing(grid, dressing, generation)
     }
   }
 
@@ -338,8 +352,13 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
     if (next === palette) {
       return
     }
+    const request = ++paletteRequest
+    const nextAtlas = await assets.tileTextures(`terrain.tileset.${next}`)
+    if (destroyed || request !== paletteRequest) {
+      return
+    }
     palette = next
-    atlas = await assets.tileTextures(`terrain.tileset.${palette}`)
+    atlas = nextAtlas
     if (lastRender !== null) {
       render(lastRender.grid, lastRender.stairs, lastRender.dressing, lastRender.manualDecorations)
     }
@@ -360,6 +379,9 @@ export async function createTerrainScene(assets: AssetLibrary, options?: Terrain
   const tileTexture = (index: number): Texture | null => atlas?.[index] ?? null
 
   const destroy = (): void => {
+    destroyed = true
+    renderGeneration += 1
+    paletteRequest += 1
     container.destroy({ children: true })
   }
 

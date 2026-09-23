@@ -34,7 +34,10 @@ export class TerrainLayer {
   }
 
   dispose(): void {
-    this.scene?.destroy()
+    if (this.scene !== null) {
+      this.viewport.removeChild(this.scene.container)
+      this.scene.destroy()
+    }
     this.scene = null
   }
 }

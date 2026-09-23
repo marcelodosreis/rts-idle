@@ -48,6 +48,7 @@ export class AssetLibrary {
     try {
       const url = `${this.baseUrl}/${entry.file}`
       const texture = await Assets.load<Texture>(url)
+      texture.source.scaleMode = 'nearest'
       this.textures.set(key, texture)
       return texture
     } catch {
@@ -126,11 +127,8 @@ export class AssetLibrary {
     return tiles
   }
 
-  /** Destroys cached textures (call on dispose). */
+  /** Releases this library's references without destroying Pixi's global cache. */
   destroy(): void {
-    for (const texture of this.textures.values()) {
-      texture.destroy()
-    }
     this.textures.clear()
     this.strips.clear()
     this.manifest = null
