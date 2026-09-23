@@ -9,7 +9,7 @@ export default defineConfig({
   forbidOnly: process.env.CI === 'true',
   retries: process.env.CI ? 1 : 0,
   workers: configuredWorkers === undefined ? defaultWorkers : Number(configuredWorkers),
-  reporter: 'line',
+  reporter: 'dot',
   use: {
     baseURL: 'http://localhost:5173'
   },
@@ -27,12 +27,16 @@ export default defineConfig({
     {
       command: 'pnpm --filter @rts/web dev',
       url: 'http://localhost:5173',
-      reuseExistingServer: !process.env.CI
+      reuseExistingServer: !process.env.CI,
+      stdout: 'ignore',
+      stderr: 'pipe'
     },
     {
       command: 'pnpm --filter @rts/server dev',
       url: 'http://localhost:8080/health',
-      reuseExistingServer: !process.env.CI
+      reuseExistingServer: !process.env.CI,
+      stdout: 'ignore',
+      stderr: 'pipe'
     }
   ]
 })

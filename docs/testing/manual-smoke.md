@@ -86,3 +86,14 @@ pnpm run verify                    # typecheck + lint + all vitest suites + buil
 pnpm run test:e2e:focused tests/e2e/<target>.spec.ts --list
 pnpm run test:e2e:focused tests/e2e/<target>.spec.ts  # browser e2e target
 ```
+
+Test runners use compact dot reporters by default to keep local output useful
+for humans and LLM tooling. Passing tests produce a short progress summary;
+failed tests still print their assertion details and stack traces. The compact
+reporter reduces output volume, not test execution time.
+
+The CI browser gate remains complete and runs both Chromium and Firefox:
+
+```bash
+pnpm run test:e2e:all
+```

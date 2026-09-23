@@ -5,7 +5,8 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.test.ts'],
     environment: 'node',
-    passWithNoTests: true
+    passWithNoTests: true,
+    reporters: ['dot']
   },
   resolve: {
     alias: {
