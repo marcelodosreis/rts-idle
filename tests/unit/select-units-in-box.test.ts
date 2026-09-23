@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { selectUnitsInBox } from '../../apps/web/src/interaction/select-units-in-box.js'
+import { selectUnitsInBox } from '../../apps/web/src/features/match/selection/select-units-in-box.js'
 
 describe('selectUnitsInBox', () => {
   const positions = new Map([

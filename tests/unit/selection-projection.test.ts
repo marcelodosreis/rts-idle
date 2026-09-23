@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { projectSelectionUnits } from '../../apps/web/src/interaction/selection-projection.js'
+import { projectSelectionUnits } from '../../apps/web/src/features/match/selection/selection-projection.js'
 
 describe('projectSelectionUnits', () => {
   it('deduplicates through the caller and sorts HUD rows while deriving movement', () => {

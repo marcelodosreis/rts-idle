@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createMatchSessionRuntime } from '../../apps/web/src/screens/match-session-runtime'
+import { createMatchSessionRuntime } from '../../apps/web/src/features/match/lifecycle/match-session-runtime'
 
 function runtimeWithState() {
   const runtime = createMatchSessionRuntime()
