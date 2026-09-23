@@ -333,7 +333,7 @@ export function SidebarNav({ catalog, selection, filteredKeys, onPatch, onSelect
       </div>
 
       {/* Asset list */}
-      <ScrollArea className="min-h-[220px] min-w-0 flex-1">
+      <ScrollArea className="min-h-[300px] min-w-0 flex-1">
         <div className="p-1" role="listbox" aria-label="Assets">
           {filteredKeys.length === 0 && (
             <div className="py-8 text-center text-sm text-muted-foreground">no assets match</div>
