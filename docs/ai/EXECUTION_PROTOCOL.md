@@ -123,7 +123,9 @@ Examples:
   pnpm run lint
 
 For faster iteration, prefer `pnpm run verify:fast` or
-`pnpm run verify:simulation` over repeating the complete gate.
+`pnpm run verify:simulation` over repeating the complete gate. Vitest uses a
+compact dot reporter across all suites; failed tests still include assertion
+details and stack traces.
 ```
 
 ### 5. Completion Gate
@@ -144,6 +146,10 @@ Before any focused browser run, enumerate the target first:
 pnpm run test:e2e:focused tests/e2e/<target>.spec.ts --list
 pnpm run test:e2e:focused tests/e2e/<target>.spec.ts
 ```
+
+Playwright also uses a compact dot reporter for focused and complete runs.
+Normal stdout from the web and server processes is suppressed while stderr is
+preserved, so startup noise is omitted without hiding process failures.
 
 Never use `pnpm run test:e2e -- <file>` for focused iteration. The guarded
 `test:e2e` script is reserved for explicitly scoped completion runs. Keep
