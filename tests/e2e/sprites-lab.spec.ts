@@ -9,10 +9,11 @@ import { hasArt } from './art.js'
 
 async function openLab(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/laboratory')
-  await page.waitForFunction(() => window.__spriteLab?.ready === true, null, { timeout: 20000 })
+  await page.waitForFunction(() => window.__spriteLab !== undefined, null, { timeout: 20000 })
   test.skip(!(await hasArt(page)), 'asset manifest not served (no art in CI)')
   await expect(page.getByRole('listbox', { name: 'Assets' })).toBeVisible({ timeout: 20000 })
   await expect(page.getByRole('option').first()).toBeVisible({ timeout: 20000 })
+  await page.waitForFunction(() => window.__spriteLab?.ready === true, null, { timeout: 20000 })
 }
 
 async function openEditor(page: import('@playwright/test').Page): Promise<void> {
