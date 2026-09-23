@@ -1,4 +1,4 @@
-import { Application, Graphics, TextureStyle, type Ticker } from 'pixi.js'
+import { Application, Graphics, type Ticker } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
 import { AssetLibrary } from './assets/asset-library.js'
 import { EffectsLayer } from './effects-layer.js'
@@ -35,6 +35,7 @@ export class PixiRenderer implements GameRenderer {
   private worldObjects: WorldObjectLayer | null = null
   private input: WorldInputAdapter | null = null
   private camera: ReturnType<typeof createCameraController> | null = null
+  private mountId = 0
   private readonly options: RendererOptions
   private callbacks!: RendererCallbacks
   /** Presentation asset library; null when the manifest/art is unavailable. */
@@ -49,10 +50,12 @@ export class PixiRenderer implements GameRenderer {
     if (this.app !== null) {
       throw new Error('PixiRenderer: already mounted')
     }
+    const mountId = ++this.mountId
     this.callbacks = callbacks
     await this.assets.load()
-
-    TextureStyle.defaultOptions.scaleMode = 'nearest'
+    if (mountId !== this.mountId) {
+      return
+    }
 
     const app = new Application()
     await app.init({
@@ -61,6 +64,13 @@ export class PixiRenderer implements GameRenderer {
       roundPixels: true,
       preference: 'webgl'
     })
+    if (mountId !== this.mountId) {
+      app.destroy(
+        { removeView: true, releaseGlobalResources: true },
+        { children: true, texture: false, textureSource: false }
+      )
+      return
+    }
 
     host.appendChild(app.canvas)
     app.canvas.style.display = 'block'
@@ -105,6 +115,15 @@ export class PixiRenderer implements GameRenderer {
     const terrain = new TerrainLayer(viewport, this.assets)
     if (this.options.map !== undefined) {
       await terrain.build(this.options.map)
+    }
+    if (mountId !== this.mountId) {
+      camera.dispose()
+      terrain.dispose()
+      app.destroy(
+        { removeView: true, releaseGlobalResources: true },
+        { children: true, texture: false, textureSource: false }
+      )
+      return
     }
 
     const hitTester = createWorldHitTester({
@@ -229,14 +248,18 @@ export class PixiRenderer implements GameRenderer {
   }
 
   dispose(): void {
+    this.mountId += 1
     this.input?.dispose()
     this.camera?.dispose()
+    this.terrain?.dispose()
+    this.assets.destroy()
     if (this.app !== null) {
-      this.app.destroy(true, { children: true, texture: true })
+      this.app.destroy(
+        { removeView: true, releaseGlobalResources: true },
+        { children: true, texture: false, textureSource: false }
+      )
       this.app = null
     }
-    this.assets.destroy()
-    this.terrain?.dispose()
     this.viewport = null
     this.units = null
     this.selection = null

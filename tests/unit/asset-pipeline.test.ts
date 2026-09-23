@@ -1,6 +1,6 @@
-import { createAnimation, sliceStrip } from '@rts/renderer'
-import { Rectangle, Texture, TextureSource } from 'pixi.js'
-import { describe, expect, it } from 'vitest'
+import { AssetLibrary, createAnimation, sliceStrip } from '@rts/renderer'
+import { Assets, Rectangle, Texture, TextureSource } from 'pixi.js'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 function testTexture(width: number, height: number): Texture {
   const source = new TextureSource({
@@ -10,6 +10,10 @@ function testTexture(width: number, height: number): Texture {
   })
   return new Texture({ source })
 }
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe('sliceStrip', () => {
   it('slices a strip texture into the expected number of frames', () => {
@@ -50,5 +54,27 @@ describe('createAnimation', () => {
     expect(sprite.anchor.y).toBe(1)
     expect(sprite.animationSpeed).toBeCloseTo(1000 / 120 / 60)
     expect(sprite.totalFrames).toBe(4)
+  })
+})
+
+describe('AssetLibrary lifecycle', () => {
+  it('does not destroy textures owned by PixiJS global asset cache', async () => {
+    const texture = testTexture(64, 64)
+    const destroy = vi.spyOn(texture, 'destroy')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ version: 1, assets: { hero: { key: 'hero', file: 'hero.png', kind: 'static' } } })
+      })
+    )
+    vi.spyOn(Assets, 'load').mockResolvedValue(texture as never)
+
+    const library = new AssetLibrary('/assets')
+    await library.load()
+    await library.texture('hero')
+    library.destroy()
+
+    expect(destroy).not.toHaveBeenCalled()
   })
 })

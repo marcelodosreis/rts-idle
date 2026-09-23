@@ -41,7 +41,7 @@ export class SelectionController {
     this.selectionRect.visible = true
     this.boxState = { visible: true, x: screen.x, y: screen.y, width: 0, height: 0 }
     this.selectionRect.clear()
-    this.selectionRect.rect(screen.x, screen.y, 0, 0).fill(BOX_FILL_COLOR, 0.15)
+    this.selectionRect.rect(screen.x, screen.y, 0, 0).fill({ color: BOX_FILL_COLOR, alpha: 0.15 })
     this.selectionRect.stroke({ width: 1, color: BOX_FILL_COLOR })
   }
 
@@ -55,7 +55,7 @@ export class SelectionController {
     const height = Math.abs(screen.y - this.selectionStart.y)
     this.boxState = { visible: true, x, y, width, height }
     this.selectionRect.clear()
-    this.selectionRect.rect(x, y, width, height).fill(BOX_FILL_COLOR, 0.15)
+    this.selectionRect.rect(x, y, width, height).fill({ color: BOX_FILL_COLOR, alpha: 0.15 })
     this.selectionRect.stroke({ width: 1, color: BOX_FILL_COLOR })
   }
 
