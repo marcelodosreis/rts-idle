@@ -9,6 +9,8 @@ import { useSpriteCanvas } from './use-sprite-canvas.js'
 
 export interface BrowseViewProps {
   readonly onSelectReady: (select: (key: string) => void) => void
+  readonly requestedBrowse: string | null
+  readonly onBrowseHandled: () => void
 }
 
 /**
@@ -16,7 +18,7 @@ export interface BrowseViewProps {
  * inspector). React owns selection + options; the Pixi canvas is a controlled
  * view rendered whenever key/options change.
  */
-export function BrowseView({ onSelectReady }: BrowseViewProps) {
+export function BrowseView({ onSelectReady, requestedBrowse, onBrowseHandled }: BrowseViewProps) {
   const browse = useBrowse()
   const hostRef = useRef<HTMLDivElement | null>(null)
   const [kind, setKind] = useState<BuildKind>('static')
@@ -54,6 +56,14 @@ export function BrowseView({ onSelectReady }: BrowseViewProps) {
     }
     onSelectReady(select)
   }, [browse.filteredKeys.length, onSelectReady, select])
+
+  useEffect(() => {
+    if (requestedBrowse === null) {
+      return
+    }
+    select(requestedBrowse)
+    onBrowseHandled()
+  }, [onBrowseHandled, requestedBrowse, select])
 
   const position = useMemo(() => {
     const index = browse.filteredKeys.indexOf(browse.selection.key)

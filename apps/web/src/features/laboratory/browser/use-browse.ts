@@ -76,8 +76,11 @@ export function useBrowse() {
     if (first === undefined) {
       return
     }
+    if (selection.key !== '' && filteredKeys.includes(selection.key)) {
+      return
+    }
     setSelection((prev) => (prev.key === first ? prev : { ...prev, key: first }))
-  }, [filteredKeys, selection.category, selection.subcategory])
+  }, [filteredKeys, selection.category, selection.subcategory, selection.key])
 
   return {
     ctx,

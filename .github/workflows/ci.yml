@@ -40,7 +40,7 @@ jobs:
 
   simulation:
     name: Simulation, Contracts, Orders & Invariants Tests
-    needs: unit_integration
+    needs: lint_typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -52,7 +52,7 @@ jobs:
 
   determinism_architecture:
     name: Determinism & Architecture Tests
-    needs: simulation
+    needs: lint_typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -62,8 +62,10 @@ jobs:
 
   e2e:
     name: End-to-End Tests
-    needs: determinism_architecture
+    needs: lint_typecheck
     runs-on: ubuntu-latest
+    env:
+      E2E_WORKERS: 1
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/ci-setup
@@ -71,13 +73,17 @@ jobs:
         with:
           name: dist
           path: .
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}
       - run: pnpm exec playwright install --with-deps chromium firefox
       - run: pnpm run test:e2e:all
 
   release:
     name: Release
     if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip ci]')
-    needs: e2e
+    needs: [lint_typecheck, unit_integration, simulation, determinism_architecture, e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: write
