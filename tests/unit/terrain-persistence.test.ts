@@ -5,7 +5,7 @@ import {
   loadEditorMap,
   parseMapJson,
   saveEditorMap
-} from '../../apps/web/src/sprites/terrain/terrain-persistence.js'
+} from '../../apps/web/src/features/laboratory/editor/terrain-persistence.js'
 
 const MAP: MapDefinition = {
   width: 2,

@@ -1,6 +1,10 @@
 import type { MapDefinition } from '@rts/game-data'
 import { describe, expect, it } from 'vitest'
-import { PLAYTEST_STORAGE_KEY, readPlaytestMap, writePlaytestMap } from '../../apps/web/src/screens/playtest-map.js'
+import {
+  PLAYTEST_STORAGE_KEY,
+  readPlaytestMap,
+  writePlaytestMap
+} from '../../apps/web/src/shared/config/playtest-map.js'
 
 function fakeStorage(initial: Record<string, string> = {}) {
   const data = new Map(Object.entries(initial))

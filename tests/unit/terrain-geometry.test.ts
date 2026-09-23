@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cellFromLocal } from '../../apps/web/src/sprites/terrain/terrain-geometry.js'
+import { cellFromLocal } from '../../apps/web/src/features/laboratory/editor/terrain-geometry.js'
 
 describe('cellFromLocal', () => {
   it('maps a local pixel inside a cell to its coordinates', () => {

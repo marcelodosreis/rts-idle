@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { constructionStatusLine, mineralRemainingLine } from '../../apps/web/src/hud/selection-panel-logic'
+import {
+  constructionStatusLine,
+  mineralRemainingLine
+} from '../../apps/web/src/features/match/selection/selection-panel-logic'
 
 describe('selection panel labels', () => {
   it('shows completed buildings as ready instead of unassigned', () => {
