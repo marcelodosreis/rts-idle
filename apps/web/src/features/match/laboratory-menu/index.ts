@@ -1,0 +1,1 @@
+export { LaboratoryMenu } from './LaboratoryMenu'
