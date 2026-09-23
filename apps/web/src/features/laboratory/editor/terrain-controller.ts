@@ -161,7 +161,7 @@ export const DEFAULT_TERRAIN_STATE: TerrainState = {
  * Terrain visuals render through the shared `TerrainScene` so the editor looks
  * exactly like the game.
  */
-// biome-ignore lint/complexity/noExcessiveLinesPerFunction: imperativo agrupado (draw + estado + render) por clareza de hot path
+// biome-ignore lint/complexity/noExcessiveLinesPerFunction: grouped imperative path (draw + state + render) keeps the hot path clear
 export async function createTerrainController(
   host: HTMLElement,
   ctx: SectionContext,
