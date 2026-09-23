@@ -92,12 +92,10 @@ gameplay commands. Camera state remains presentation-only.
 
 ```text
 web/src/
-  app/          App root
-  screens/      MatchScreen (thin), useMatchSession (lifecycle + debug API)
-  preferences/  Validated local input-profile preferences
-  interaction/  Match selection/mode/command ownership
-  client/       connection.ts (WS + protocol guards), snapshot-to-frame.ts (pure)
-  det/, perf/   Diagnostic harness pages (excluded from the dependency barrier)
+  app/          Bootstrap, providers, typed router, route errors
+  pages/        Route composition (`match/` and `laboratory/`)
+  features/     Match and Laboratory domain behaviour, state, and UI
+  shared/       Transport, config, reusable components, and UI primitives
 ```
 
 ## Shared reusable modules
@@ -115,8 +113,9 @@ web/src/
 
 - The simulation never imports protocol, renderer, ai, or platform APIs.
 - The renderer never imports the simulation's ECS/GameState.
-- The web app (excluding diagnostic harness pages) never imports the
-  simulation.
+- The playable web app never imports the simulation. The Laboratory determinism
+  route is an explicitly isolated browser diagnostic harness and is excluded
+  from the playable package dependency barrier.
 - No package imports another package's internals via relative paths; all
   cross-package access goes through the package's public exports.
 - The authorized mutability exception covers only the simulation core's

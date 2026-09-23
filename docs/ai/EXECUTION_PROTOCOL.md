@@ -6,19 +6,30 @@
 ## Mandatory local preflight
 
 This document is the operational source of truth for local project commands.
-Before running any project command, execute:
+Before running any project command, check the active Node version first:
 
 ```bash
+node --version
+```
+
+If it does not report `v24.x`, load NVM and select the version from `.nvmrc`:
+
+```bash
+source "$HOME/.nvm/nvm.sh"
 nvm install
 nvm use
 node --version
+```
+
+After `node --version` reports `v24.x`, enable Corepack:
+
+```bash
 corepack enable
 ```
 
-`node --version` must report `v24.x`. The required version is sourced only from
-`.nvmrc`; stop if NVM selects another major version. Running tests or builds
-with Node 20 is not valid project validation, even if those commands happen to
-pass locally.
+The required version is sourced only from `.nvmrc`; stop if NVM selects another
+major version. Running tests or builds with Node 20 is not valid project
+validation, even if those commands happen to pass locally.
 
 ## Context Loading Rules
 
