@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 17 |
+| open | 18 |
 | closed | 13 |
-| **total** | **30** |
+| **total** | **31** |
 
 ## Detalhes
 
@@ -42,6 +42,7 @@
 | 2026-09-22-canvas-secondary-input-and-page-zoom | open | presentation | — | 2 teste(s) |
 | 2026-09-22-selection-box-feedback | open | presentation | — | 2 teste(s) |
 | 2026-09-23-browser-types-collapsed-short-height | open | presentation | — | 1 teste(s) |
+| 2026-09-23-diagnostics-architecture-exclusion | open | presentation | — | 1 teste(s) |
 | 2026-09-23-performance-canvas-outside-harness | open | presentation | — | 1 teste(s) |
 | 2026-09-23-performance-units-out-of-view | open | presentation | — | 1 teste(s) |
 | 2026-09-23-stress-canvas-growth | open | presentation | — | 1 teste(s) |

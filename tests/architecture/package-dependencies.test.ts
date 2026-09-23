@@ -36,7 +36,7 @@ const MODULES: readonly ModuleEntry[] = [
     root: 'apps/web/src',
     // Diagnostic harnesses are browser-only tools, not part of the playable
     // client package dependency surface.
-    exclude: ['det', 'perf', 'determinism'],
+    exclude: ['diagnostics'],
     allowed: ['@rts/shared', '@rts/protocol', '@rts/renderer', '@rts/audio']
   },
   { name: 'benchmark', root: 'tools/benchmark/src', allowed: ['@rts/shared', '@rts/simulation'] },
