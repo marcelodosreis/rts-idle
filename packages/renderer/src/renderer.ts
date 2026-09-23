@@ -1,4 +1,4 @@
-import { Application, Graphics, type Ticker } from 'pixi.js'
+import { Application, Graphics, TextureStyle, type Ticker } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
 import { AssetLibrary } from './assets/asset-library.js'
 import { EffectsLayer } from './effects-layer.js'
@@ -52,11 +52,13 @@ export class PixiRenderer implements GameRenderer {
     this.callbacks = callbacks
     await this.assets.load()
 
+    TextureStyle.defaultOptions.scaleMode = 'nearest'
+
     const app = new Application()
     await app.init({
       resizeTo: host,
       background: WATER_BG,
-      antialias: true,
+      roundPixels: true,
       preference: 'webgl'
     })
 
