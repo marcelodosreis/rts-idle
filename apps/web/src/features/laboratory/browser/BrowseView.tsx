@@ -49,8 +49,11 @@ export function BrowseView({ onSelectReady }: BrowseViewProps) {
   )
 
   useEffect(() => {
+    if (browse.filteredKeys.length === 0) {
+      return
+    }
     onSelectReady(select)
-  }, [onSelectReady, select])
+  }, [browse.filteredKeys.length, onSelectReady, select])
 
   const position = useMemo(() => {
     const index = browse.filteredKeys.indexOf(browse.selection.key)
