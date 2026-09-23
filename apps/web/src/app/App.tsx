@@ -1,5 +1,10 @@
-import { MatchScreen } from '../screens/MatchScreen'
+import { BrowserRouter } from 'react-router-dom'
+import { AppRouter } from '../routes/router'
 
 export function App() {
-  return <MatchScreen />
+  return (
+    <BrowserRouter>
+      <AppRouter />
+    </BrowserRouter>
+  )
 }
