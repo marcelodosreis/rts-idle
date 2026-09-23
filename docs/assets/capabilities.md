@@ -108,7 +108,7 @@ UI kit). Kinds are derived from geometry at build time (`strip` when width is
 divisible by height). Unit keys follow the game contract
 `units.{faction}.{kind}.{anim}` (Lancer renamed from `lancer_idle` → `idle`).
 
-**Sprite lab (`/sprites/`, dev-only):** a validation page over the real
+**Laboratory (`/laboratory`, dev-only):** validation pages over the real
 `AssetLibrary` — the same foundation the game consumes. A tab shell
 (`Browse · Terrain · Stress · Report`) with a unified asset browser:
 
