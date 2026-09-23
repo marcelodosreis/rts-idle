@@ -1,7 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 import { hasArt } from './art.js'
 
-// Regression coverage for the sprite lab responsive layout.
+// Regression coverage for the Laboratory responsive layout.
 //
 // The lab's Browse grid and Level Editor toolbar used to switch between the
 // stacked mobile layout and the desktop layout only at `xl` (1280px). At
@@ -17,8 +17,8 @@ const VIEWPORTS = [910, 1024, 1278, 1440] as const
 
 async function openLab(page: Page, width: number, height = 900): Promise<void> {
   await page.setViewportSize({ width, height })
-  await page.goto('/sprites/')
-  await expect(page.getByRole('heading', { name: 'Sprite Lab' })).toBeVisible({ timeout: 20000 })
+  await page.goto('/laboratory')
+  await expect(page.getByTestId('laboratory-page-title')).toHaveText('Asset Browser', { timeout: 20000 })
 }
 
 async function documentOverflow(page: Page): Promise<{ scrollWidth: number; clientWidth: number }> {
@@ -78,11 +78,39 @@ test('browse canvas shrinks with the host when the viewport narrows', async ({ p
     .toBeLessThan(wide!.width - 100)
 })
 
+test('browse preserves usable Types and Assets panels on short desktop screens', async ({ page }) => {
+  await openLab(page, 1440, 656)
+
+  const scrollAreas = page.locator('[aria-label="Asset browser"] [data-slot="scroll-area"]')
+  const types = await scrollAreas.first().boundingBox()
+  const assets = await scrollAreas.last().boundingBox()
+  expect(types).not.toBeNull()
+  expect(assets).not.toBeNull()
+  expect(types!.height).toBeGreaterThanOrEqual(180)
+  expect(assets!.height).toBeGreaterThanOrEqual(220)
+})
+
+test('laboratory header aligns with the navigation content', async ({ page }) => {
+  await openLab(page, 1440, 656)
+
+  const headerContent = await page.locator('header > div').boundingBox()
+  const browserLink = await page
+    .getByRole('navigation', { name: 'Laboratory pages' })
+    .getByRole('link', { name: 'Browser' })
+    .boundingBox()
+  const headerPaddingLeft = await page
+    .locator('header > div')
+    .evaluate((element) => Number.parseFloat(getComputedStyle(element).paddingLeft))
+  expect(headerContent).not.toBeNull()
+  expect(browserLink).not.toBeNull()
+  expect(browserLink!.x).toBe(headerContent!.x + headerPaddingLeft)
+})
+
 test('level editor fits at 1278px and 910px', async ({ page }) => {
   await openLab(page, 1278)
   test.skip(!(await hasArt(page)), 'asset manifest not served (no art in CI)')
 
-  await page.getByRole('tab', { name: 'Level Editor' }).click()
+  await page.goto('/laboratory/editor')
   await expect(page.locator('[data-testid="terrain-canvas-host"][data-controller-ready="true"]')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Playtest' })).toBeVisible()
 

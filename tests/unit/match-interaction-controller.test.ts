@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   type MatchInteractionContext,
   MatchInteractionController
-} from '../../apps/web/src/interaction/match-interaction-controller.js'
+} from '../../apps/web/src/features/match/selection/match-interaction-controller.js'
 
 function context(overrides: Partial<MatchInteractionContext> = {}): MatchInteractionContext {
   const sent: CommandIntent[] = []
