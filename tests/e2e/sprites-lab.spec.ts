@@ -9,8 +9,10 @@ import { hasArt } from './art.js'
 
 async function openLab(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/laboratory')
-  await page.waitForFunction(() => window.__spriteLab !== undefined, null, { timeout: 20000 })
+  await page.waitForFunction(() => window.__spriteLab?.ready === true, null, { timeout: 20000 })
   test.skip(!(await hasArt(page)), 'asset manifest not served (no art in CI)')
+  await expect(page.getByRole('listbox', { name: 'Assets' })).toBeVisible({ timeout: 20000 })
+  await expect(page.getByRole('option').first()).toBeVisible({ timeout: 20000 })
 }
 
 async function openEditor(page: import('@playwright/test').Page): Promise<void> {
@@ -110,7 +112,8 @@ test('browse: overlay toggle defaults off and toggles cleanly', async ({ page })
 test('browse: multi-frame strips expose a slices grid with file + selected slice', async ({ page }) => {
   await openLab(page)
 
-  await page.evaluate(() => window.__spriteLab!.browse('fx.fire_01'))
+  await page.getByPlaceholder('Search…').fill('fire_01')
+  await page.getByRole('option', { name: 'fire_01' }).click()
   await expect(page.getByRole('complementary', { name: 'Asset inspector' })).toContainText('fx.fire_01')
 
   // Slices toggle appears for multi-frame assets and switches to the grid.

@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 18 |
+| open | 19 |
 | closed | 13 |
-| **total** | **31** |
+| **total** | **32** |
 
 ## Detalhes
 
@@ -43,6 +43,7 @@
 | 2026-09-22-selection-box-feedback | open | presentation | — | 2 teste(s) |
 | 2026-09-23-browser-types-collapsed-short-height | open | presentation | — | 1 teste(s) |
 | 2026-09-23-diagnostics-architecture-exclusion | open | presentation | — | 1 teste(s) |
+| 2026-09-23-e2e-laboratory-readiness-race | open | presentation | — | 2 teste(s) |
 | 2026-09-23-performance-canvas-outside-harness | open | presentation | — | 1 teste(s) |
 | 2026-09-23-performance-units-out-of-view | open | presentation | — | 1 teste(s) |
 | 2026-09-23-stress-canvas-growth | open | presentation | — | 1 teste(s) |

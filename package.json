@@ -27,7 +27,7 @@
     "test:invariants": "vitest run tests/invariants",
     "test:architecture": "vitest run tests/architecture",
     "test:e2e": "tsx tools/test-e2e.ts",
-    "test:e2e:all": "corepack pnpm run test:e2e -- --project=chromium --project=firefox --workers=1",
+    "test:e2e:all": "corepack pnpm run test:e2e -- --project=chromium --project=firefox --workers=2",
     "test:e2e:focused": "playwright test",
     "build": "corepack pnpm -r build",
     "balance": "tsx tools/balance/src/cli.ts",

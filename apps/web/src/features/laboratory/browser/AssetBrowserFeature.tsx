@@ -8,6 +8,7 @@ declare global {
     __spriteLab?: {
       browse(key: string): void
       tab(): string
+      ready: boolean
     }
   }
 }
@@ -27,7 +28,8 @@ export function AssetBrowserFeature() {
           pendingBrowse.current = key
         }
       },
-      tab: () => 'browse'
+      tab: () => 'browse',
+      ready: browseRef.current !== null
     }
     return () => {
       delete window.__spriteLab
@@ -40,6 +42,9 @@ export function AssetBrowserFeature() {
     if (queued !== null) {
       pendingBrowse.current = null
       select(queued)
+    }
+    if (window.__spriteLab !== undefined) {
+      window.__spriteLab.ready = true
     }
   }, [])
 
