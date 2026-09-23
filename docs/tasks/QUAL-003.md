@@ -1,7 +1,7 @@
-# QUAL-003 — Invariantes display list
+# QUAL-003 — Display list invariants
 
 **Status:** pending
-**Phase:** Quality Hardening / Núcleo
+**Phase:** Quality Hardening / Core
 **Dependencies:** QUAL-001
 
 ## Objective

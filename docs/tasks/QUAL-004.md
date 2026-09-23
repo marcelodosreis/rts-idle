@@ -1,7 +1,7 @@
-# QUAL-004 — Helper de input
+# QUAL-004 — Input helper
 
 **Status:** pending
-**Phase:** Quality Hardening / Baratos
+**Phase:** Quality Hardening / Low Effort
 **Dependencies:** QUAL-000
 
 ## Objective

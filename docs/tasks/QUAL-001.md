@@ -1,7 +1,7 @@
-# QUAL-001 — Harness estrutural
+# QUAL-001 — Structural harness
 
 **Status:** pending
-**Phase:** Quality Hardening / Núcleo
+**Phase:** Quality Hardening / Core
 **Dependencies:** QUAL-000
 
 ## Objective

@@ -1,7 +1,7 @@
-# QUAL-005 — Matriz de gestos
+# QUAL-005 — Gesture matrix
 
 **Status:** pending
-**Phase:** Quality Hardening / Núcleo
+**Phase:** Quality Hardening / Core
 **Dependencies:** QUAL-004
 
 ## Objective
