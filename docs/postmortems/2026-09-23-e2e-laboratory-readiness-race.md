@@ -19,7 +19,7 @@ CI reported missing Laboratory options such as `rubber_duck` and `rock1`, missin
 
 ## Root cause
 
-`openLab()` waited only for `window.__spriteLab`, which is registered before `useAssetLibrary()` finishes loading the manifest. Separately, `hasArt()` treated an HTTP 200 manifest response as proof that the renderer had loaded usable textures, although the active renderer could still be in fallback mode.
+`openLab()` waited only for `window.__spriteLab`, which is registered before `useAssetLibrary()` finishes loading the manifest. Separately, `hasArt()` treated an HTTP 200 manifest response as proof that the renderer had loaded usable textures, although the active renderer could still be in fallback mode. A valid but empty manifest also made the helper wait forever for a catalog readiness signal that could never be emitted.
 
 ## What we missed
 
@@ -28,7 +28,7 @@ The E2E readiness contract covered route and debug-bridge availability but not f
 ## Fix
 
 - `tests/e2e/sprites-lab.spec.ts` now waits for the Assets list and its first option after confirming art availability.
-- `tests/e2e/art.ts` now checks the active renderer sprite state and returns false when all units are still in fallback mode.
+- `tests/e2e/art.ts` now requires a non-empty manifest and checks the active renderer sprite state, returning false when usable art is unavailable.
 - `package.json` increases the full E2E run from one to two Playwright workers.
 
 ## Regression
