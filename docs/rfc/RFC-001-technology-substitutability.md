@@ -33,8 +33,8 @@ the repository and must remain intact. Every change below preserves it.
 |---|---|---|
 | Platform/browser | globals, storage, URL/env, networking, timing | spread across `apps/web`, `packages/renderer` |
 | Client runtime | bootstrap, app, screen, session hook | `apps/web/src` |
-| Client network | concrete connection, snapshot→frame translation | `apps/web/src/client/` |
-| UI/HUD | pure React chrome + Radix primitives | `apps/web/src/hud/`, `components/ui/` |
+| Client network | concrete connection, snapshot→frame translation | `apps/web/src/shared/transport/`, `features/match/projections/` |
+| UI/HUD | pure React chrome + Radix primitives | `apps/web/src/features/match/ui/`, `shared/ui/` |
 | Renderer | contract, Pixi orchestrator, layers, assets | `packages/renderer/src` |
 | Protocol | wire messages + runtime guards | `packages/protocol/src/messages` |
 | Shared kernel | fixed, rng, ids, players, commands, events | `packages/shared/src` |
@@ -64,17 +64,17 @@ Barrier weaknesses:
 
 - Only `@rts/*` imports are checked; direct third-party imports and browser
   globals are not.
-- `det/` and `perf/` exclusions are by directory name
-  (`package-dependencies.test.ts:34`).
-- `apps/web` may import `pixi.js`/`pixi-viewport` freely (the sprite lab does:
-  `apps/web/src/sprites/lab/app.ts:1`).
+- The Laboratory determinism harness is explicitly excluded from the playable
+  package dependency barrier (`package-dependencies.test.ts`).
+- Laboratory features may import `pixi.js`/`pixi-viewport`; the playable match
+  continues to consume Pixi only through the renderer package.
 
 ### 2.3 Dangerous couplings (evidence)
 
 | Coupling | Evidence |
 |---|---|
 | Server game logic → ECS internals | `apps/server/src/sessions/session.ts:137-213` (`world.store(Position/Owner/Health/Kind/Orders/Movement/Cargo/Base/MineralNode)`) |
-| Client runtime → platform globals | `apps/web/src/screens/useMatchSession.ts:13-19,128,363-384` |
+| Client runtime → platform globals | `apps/web/src/features/match/lifecycle/useMatchSession.ts` |
 | Client runtime → concrete Pixi | `useMatchSession.ts:2,130` |
 | Renderer contract → Pixi type | `packages/renderer/src/types.ts:4,77` (`PointData`) |
 | Renderer contract → protocol vocabulary | `packages/renderer/src/types.ts:2` (`EconomyPhase`, `OrderState`) |
@@ -82,7 +82,7 @@ Barrier weaknesses:
 | game-data → presentation | `packages/game-data/src/maps/types.ts:47-66` |
 | Shared → asset contract | `packages/shared/src/asset-manifest.ts` |
 | Test/debug global in runtime | `useMatchSession.ts:56-60,276-317` (`window.__rtsDebug`) |
-| Concrete transport on both sides | `apps/web/src/client/connection.ts:19`, `apps/server/src/main.ts:20` |
+| Concrete transport on both sides | `apps/web/src/shared/transport/connection.ts`, `apps/server/src/main.ts:20` |
 
 Not found (good): gameplay → Pixi, entity → sprite, renderer mutating gameplay,
 package cycles.

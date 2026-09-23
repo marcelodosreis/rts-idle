@@ -12,8 +12,11 @@
 
 - The match remains at `/`; there is no lobby.
 - Use `react-router-dom` with `BrowserRouter` and real URLs.
-- Developer tools share the same React application and are available from a discreet Developer tools menu in the match HUD.
+- Laboratory tools share the same React application and are available from a discreet Laboratory menu in the match `TopBar`.
 - The former MPA URLs `/sprites/`, `/det.html`, and `/perf.html` are intentionally removed; no redirects are provided.
+- Laboratory routes use the `/laboratory` namespace, with `/laboratory` serving the asset browser.
+- Each laboratory tool is an independent feature.
+- Browser-server transport belongs in `shared/transport`; `shared/ui` contains only UI primitives and reusable application components belong in `shared/components`.
 - The frontend follows a feature-first dependency direction:
 
   ```text
@@ -27,12 +30,13 @@
 | Route | Behaviour |
 | --- | --- |
 | `/` | Starts and renders the current match experience. Query params `scenario`, `aggression`, `sprites`, and `map=local` retain their existing semantics. |
-| `/tools/sprites` | Asset browser. |
-| `/tools/editor` | Map editor. |
-| `/tools/stress` | Renderer stress tool. |
-| `/tools/report` | Asset validation report. |
-| `/tools/determinism` | Determinism browser harness. |
-| `/tools/perf` | Renderer performance browser harness. |
+| `/laboratory` | Asset browser. |
+| `/laboratory/editor` | Map editor. |
+| `/laboratory/diagnostics` | Combined stress, determinism, and renderer performance tools. |
+| `/laboratory/report` | Asset validation report. |
+| `/laboratory/stress` | Redirects to `/laboratory/diagnostics`. |
+| `/laboratory/determinism` | Redirects to `/laboratory/diagnostics`. |
+| `/laboratory/performance` | Redirects to `/laboratory/diagnostics`. |
 | `*` | Not-found page. |
 
 The match page owns query normalization and serialisation. A query change that creates a new match must dispose the previous renderer and WebSocket session before starting the replacement session. `map=local` continues to use the existing local-storage bridge.
@@ -44,19 +48,21 @@ apps/web/src/
   app/             bootstrap, providers, router, route errors
   pages/           route composition only
     match/
-    tools/
+    laboratory/
   features/
     match/         match lifecycle, commands, selection, HUD, URL state
-    developer-tools/  HUD menu and tool navigation
-    sprite-lab/     browser, editor, stress, report
-    diagnostics/    determinism and renderer-performance pages
-  entities/
-    match/          stable UI-facing match models and projections
+      laboratory-menu/  HUD navigation to laboratory routes
+    laboratory/
+      browser/     asset browser
+      editor/      map editor
+       report/      asset validation report
+       diagnostics/ combined stress, determinism, and performance tools
   shared/
-    api/            browser-facing transport ports/adapters
+    transport/      browser-facing transport ports/adapters
     config/         route-safe application configuration
     lib/            generic helpers only
-    ui/             Radix/shadcn primitives and shared application chrome
+    components/     reusable application components
+    ui/             Radix/shadcn primitives only
     types/
 ```
 
@@ -84,11 +90,11 @@ Do not create generic dumping-ground modules. A module belongs in `shared` only 
   - command mode and building-placement handling;
   - E2E-only debug bridge.
 - Preserve protocol validation at the transport boundary, renderer ownership rules, existing selection and command behaviour, and cleanup on unmount.
-- Move HUD components, types, and pure logic into the match feature or match entity according to ownership. The Developer tools menu is a separate feature consumed by the top bar.
+- Move HUD components, types, and pure logic into the match feature or match entity according to ownership. The Laboratory menu belongs to the match feature because it is rendered in the top bar and only owns navigation links.
 
 ### 3. Tool migration
 
-- Convert Sprite Lab sections into lazy tool routes rather than a second React root and tabs-as-navigation.
+- Convert Sprite Lab sections into independent lazy Laboratory routes rather than a second React root and tabs-as-navigation.
 - Keep asset loading, Pixi resource pause/resume/dispose, editor local persistence, playtest-map handoff, and the existing browser hooks intact.
 - Preserve `window.__spriteLab`, `window.__runDetFixture`, and `window.__runRendererPerf` as explicitly test-only browser contracts, colocated with the feature that supplies each one.
 - The editor's "playtest" action navigates to `/?map=local`; the match route consumes the persisted map as it does today.
@@ -107,10 +113,10 @@ Do not create generic dumping-ground modules. A module belongs in `shared` only 
 - `docs/rfc/RFC-002-deployment-and-environments.md`
 - `apps/web/vite.config.ts`
 - `apps/web/src/app/App.tsx`
-- `apps/web/src/screens/MatchScreen.tsx`
-- `apps/web/src/screens/useMatchSession.ts`
-- `apps/web/src/client/connection.ts`
-- `apps/web/src/sprites/SpritesApp.tsx`
+- `apps/web/src/features/match/ui/MatchScreen.tsx`
+- `apps/web/src/features/match/lifecycle/useMatchSession.ts`
+- `apps/web/src/shared/transport/connection.ts`
+- `apps/web/src/features/laboratory/browser/AssetBrowserFeature.tsx`
 - `tests/e2e/scenarios.spec.ts`
 - `tests/e2e/sprites-lab.spec.ts`
 - `playwright.config.ts`
@@ -124,7 +130,7 @@ Do not create generic dumping-ground modules. A module belongs in `shared` only 
    - direct navigation and refresh for every tool route;
    - `/` with each existing scenario/query combination;
    - scenario replacement disposes/restarts a match cleanly;
-   - Developer tools menu navigation;
+   - Laboratory menu navigation from the match `TopBar`;
    - not-found rendering;
    - editor playtest navigation to `/?map=local`.
 5. Before each focused browser run:
@@ -144,13 +150,13 @@ Do not create generic dumping-ground modules. A module belongs in `shared` only 
 
 ## Acceptance and stop conditions
 
-- [ ] `/` remains a fully working match with all current query-param behaviour.
-- [ ] Every tool is a lazy route in the same React app and reachable through the Developer tools menu.
-- [ ] Removed MPA URLs are absent from source, build inputs, tests, and documentation.
-- [ ] Match, tools, transport, and UI have explicit ownership and no forbidden layer imports.
-- [ ] Existing game, editor, asset, determinism, and performance browser contracts remain covered.
-- [ ] Typecheck, lint, unit/integration/architecture suites, build, and Chromium + Firefox E2E pass under Node 24.
-- [ ] Stop after this migration; do not add lobby, account, visual redesign, or unrelated gameplay work.
+- [x] `/` remains a fully working match with all current query-param behaviour.
+- [x] Every laboratory tool is a lazy route in the same React app and reachable through the Laboratory menu in the match `TopBar`.
+- [x] Removed MPA URLs are absent from source, build inputs, tests, and documentation.
+- [x] Match, laboratory, transport, and UI have explicit ownership and no forbidden layer imports.
+- [x] Existing game, editor, asset, determinism, and performance browser contracts remain covered.
+- [x] Typecheck, lint, unit/integration/architecture suites, build, and Chromium + Firefox E2E pass under Node 24.
+- [x] Stop after this migration; do not add lobby, account, visual redesign, or unrelated gameplay work.
 
 ## Risks and rollback
 

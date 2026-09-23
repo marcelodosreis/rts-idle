@@ -53,8 +53,8 @@ The biggest real constraint is **not** instance hours; it is **outbound bandwidt
 | One simulation session per connection, `setInterval` 50 ms | `apps/server/src/main.ts:39-78` |
 | Port from `process.env.PORT ?? 8080` | `apps/server/src/main.ts:7` |
 | Health endpoint `/health` | `apps/server/src/main.ts:11-15` |
-| Vite MPA (index, det, perf, sprites) + `/sprites` redirect | `apps/web/vite.config.ts:34-49` |
-| Client WebSocket URL is **build-time** | `apps/web/src/screens/useMatchSession.ts:19` |
+| Vite SPA with lazy match and Laboratory routes | `apps/web/vite.config.ts` and `apps/web/src/app/App.tsx` |
+| Client WebSocket URL is **build-time** | `apps/web/src/features/match/lifecycle/useMatchSession.ts` |
 | `WS_ORIGIN` declared but unused | `.env.example:4` |
 | No DB/Redis; all state in memory | `apps/server/src/main.ts` |
 | Web build ≈ 5.9 MB `dist` + 4.6 MB `public` | local `du` |
@@ -357,8 +357,8 @@ These are code changes tracked as tasks; the RFC only specifies them.
    for local/split deployments. Removes the build-time coupling
    (`useMatchSession.ts:19`). Coordinate with RFC-001 PR3 (PlatformServices).
 2. **Static serving (server).** Serve `apps/web/dist` with MPA semantics:
-   `/` → `index.html`; `/sprites` → `301 /sprites/`; `/sprites/` →
-   `sprites/index.html`; exact files otherwise; `404` fallback (no SPA rewrite).
+    `/` and non-asset Laboratory routes fall back to `index.html`; exact
+    assets, `/health`, and WebSocket handling remain explicit.
    Hashed `/assets/*` get long-lived immutable cache headers; HTML is
    `no-cache`.
 3. **Graceful shutdown (server).** On `SIGTERM`, stop accepting connections,

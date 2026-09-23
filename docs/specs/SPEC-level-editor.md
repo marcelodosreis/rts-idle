@@ -4,7 +4,7 @@ Initiative id: `level-editor`
 
 ## Objective
 
-Turn the Sprite Lab's **Level Editor** tab (`/sprites/`, "Level Editor") into a
+The Laboratory's **Map Editor** route (`/laboratory/editor`) provides a
 reliable map-authoring tool whose output is exactly what the game renders. The
 editor must stop offering capabilities the game discards, gain the editing
 affordances that make authoring practical, support explicit decoration/resource
@@ -47,7 +47,7 @@ Interface boundaries:
 
 TypeScript, React 19, PixiJS + pixi-viewport, Vitest, Playwright, Biome.
 Shared map data lives in `@rts/game-data`; rendering in `@rts/renderer`; the
-editor UI in `apps/web/src/sprites`.
+editor UI in `apps/web/src/features/laboratory/editor`.
 
 ## Commands
 
@@ -72,7 +72,7 @@ packages/renderer/src/
 ├── terrain-dressing.ts   # scatter + asset keys (imports DressingKind from game-data)
 ├── terrain-scene.ts      # shared render: terrain, stairs, decorations
 └── terrain-layer.ts      # game entry point
-apps/web/src/sprites/tabs/
+apps/web/src/features/laboratory/editor/
 ├── TerrainView.tsx       # editor UI (toolbar, status, modals)
 ├── terrain-controller.ts # editor engine (split into focused modules)
 └── terrain-*.ts          # paint / overlays / persistence helpers
