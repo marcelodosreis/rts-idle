@@ -128,12 +128,12 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
   await expect.poll(() => mineralValue(page), { timeout: 20_000 }).toBeGreaterThan(initialMinerals)
 
   await page.getByRole('button', { name: 'Stop' }).click()
+  await expect(page.getByTestId('economy-status')).toBeEmpty()
   const stopped = await workerPosition(page, id)
   const stoppedMinerals = await mineralValue(page)
   await page.waitForTimeout(700)
   expect(await workerPosition(page, id)).toEqual(stopped)
   expect(await mineralValue(page)).toBe(stoppedMinerals)
-  await expect(page.getByTestId('economy-status')).toBeEmpty()
   if (art) {
     await expect.poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id)).toBe('idle')
   }
