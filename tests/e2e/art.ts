@@ -7,10 +7,22 @@ import type { Page } from '@playwright/test'
  */
 export async function hasArt(page: Page): Promise<boolean> {
   return page
-    .evaluate(() =>
-      fetch('/assets/manifest.json')
-        .then((r) => r.ok)
+    .evaluate(() => {
+      return fetch('/assets/manifest.json')
+        .then(async (response) => {
+          if (!response.ok) {
+            return false
+          }
+
+          const debug = window.__rtsDebug
+          if (debug === undefined) {
+            return true
+          }
+
+          const unitIds = Object.keys(debug.getUnitOwners())
+          return unitIds.length > 0 && unitIds.some((id) => debug.getSpriteState(Number(id))?.anim !== 'fallback')
+        })
         .catch(() => false)
-    )
+    })
     .catch(() => false)
 }
