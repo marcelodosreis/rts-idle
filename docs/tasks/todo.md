@@ -245,3 +245,6 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Latest completed task packet:
 ### Conditional
 - [ ] QUAL-013 Path-based E2E gate (deps: QUAL-002, QUAL-005)
 - [ ] QUAL-014 Coverage ratchet (deps: QUAL-016)
+
+### Browser Validation
+- [x] E2E-001 Gate stratification: complete, functional, and performance gates

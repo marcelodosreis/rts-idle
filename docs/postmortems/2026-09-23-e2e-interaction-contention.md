@@ -35,17 +35,19 @@ of consistently waiting on authoritative transitions.
 
 ## Fix
 
-- The CI uses one Playwright worker for the timing-sensitive full suite.
+- The CI uses one Playwright worker for each timing-sensitive E2E job.
 - The worker count is configurable through `E2E_WORKERS` instead of conflicting
   package-script and Playwright settings.
-- Independent CI jobs run in parallel so reducing browser concurrency does not
-  serialize the entire pipeline.
+- Functional and renderer-performance E2E jobs run in parallel, so reducing
+  browser concurrency does not serialize the entire pipeline.
 - The affected tests remain required and are validated in both browsers.
 
 ## Regression
 
-The four affected interaction files are run together in Chromium and Firefox
-with the CI worker setting. They must finish without failed or flaky results.
+The functional E2E gate runs the four affected interaction files together in
+Chromium and Firefox with the CI worker setting. The performance gate runs the
+renderer benchmark independently. Both jobs must finish without failed or flaky
+results.
 
 ## Prevention
 
@@ -56,4 +58,6 @@ runner rather than only local execution.
 ## Verification
 
 - `pnpm run test:e2e:focused tests/e2e/hud-commands.spec.ts tests/e2e/hud-order-states.spec.ts tests/e2e/control-click-attack.spec.ts tests/e2e/economy-playable.spec.ts --project=chromium --project=firefox --workers=1`
+- `E2E_WORKERS=1 pnpm run test:e2e:fast`
+- `E2E_WORKERS=1 pnpm run test:e2e:perf`
 - `E2E_WORKERS=1 pnpm run test:e2e:all`

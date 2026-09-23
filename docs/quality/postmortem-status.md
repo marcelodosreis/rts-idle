@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 20 |
+| open | 24 |
 | closed | 13 |
-| **total** | **33** |
+| **total** | **37** |
 
 ## Details
 
@@ -45,8 +45,12 @@
 | 2026-09-23-diagnostics-architecture-exclusion | open | presentation | — | 1 test(s) |
 | 2026-09-23-e2e-interaction-contention | open | presentation | — | 4 test(s) |
 | 2026-09-23-e2e-laboratory-readiness-race | open | presentation | — | 2 test(s) |
+| 2026-09-23-economy-stop-observation-race | open | completion-gate | — | 1 test(s) |
+| 2026-09-23-firefox-renderer-lifecycle-timeout | open | presentation | — | 1 test(s) |
 | 2026-09-23-performance-canvas-outside-harness | open | presentation | — | 1 test(s) |
 | 2026-09-23-performance-units-out-of-view | open | presentation | — | 1 test(s) |
+| 2026-09-23-pixi-asset-cache-lifecycle | open | presentation | — | 1 test(s) |
+| 2026-09-23-pixi-terrain-render-race | open | presentation | — | 1 test(s) |
 | 2026-09-23-stress-canvas-growth | open | presentation | — | 1 test(s) |
 
 ## Legend
