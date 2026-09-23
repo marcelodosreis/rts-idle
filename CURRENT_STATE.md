@@ -36,6 +36,10 @@ See `docs/tasks/todo.md` for full phase list.
 - Authoritative supply accounting: Base capacity, unit usage, completed Supply
   Depot capacity, over-cap handling, canonical snapshots, and Supply HUD
 - WebSocket server (isolated per-connection sessions)
+- React SPA with BrowserRouter, lazy match/Laboratory routes, and not-found handling
+- Feature-first web layout with independent Laboratory browser, editor, stress,
+  report, determinism, and performance features
+- Match HUD Laboratory menu and enforced web import boundaries
 - Automated suites and architecture barriers green
 
 ## Current Gameplay
@@ -72,6 +76,10 @@ reserved supply, and VS-02 have not started.
 Quality Hardening (QUAL-000..018) is in progress. The Concept Authority closure
 (AUTH-005A through AUTH-018) is complete; its audit records the authority and
 validation evidence. See `docs/tasks/todo.md` for the remaining quality board.
+
+WEB-ARCH-001 Web Frontend Architecture Restructure is complete. The old MPA
+entries `/sprites/`, `/det.html`, and `/perf.html` were removed; Laboratory
+routes now live under `/laboratory`.
 
 Architecture evolution is tracked in `docs/rfc/RFC-001-technology-substitutability.md`
 (Proposed; no implementation started).
