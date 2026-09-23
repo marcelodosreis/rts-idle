@@ -1,8 +1,8 @@
 import type { MatchConfig } from '@rts/protocol'
 import type { GameRenderer, RenderFrame } from '@rts/renderer'
 import { describe, expect, it, vi } from 'vitest'
-import { createMatchRendererLifecycle } from '../../apps/web/src/screens/match-session-renderer'
-import { createMatchSessionRuntime } from '../../apps/web/src/screens/match-session-runtime'
+import { createMatchRendererLifecycle } from '../../apps/web/src/features/match/lifecycle/match-session-renderer'
+import { createMatchSessionRuntime } from '../../apps/web/src/features/match/lifecycle/match-session-runtime'
 
 function fakeRenderer(mount: () => Promise<void>): GameRenderer & { presented: RenderFrame[]; disposed: number } {
   const value = {

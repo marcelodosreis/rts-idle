@@ -1,6 +1,6 @@
 import type { AssetEntry } from '@rts/shared'
 import { describe, expect, it } from 'vitest'
-import { buildCatalog, groupKeysByDepth, searchKeys } from '../../apps/web/src/sprites/catalog.js'
+import { buildCatalog, groupKeysByDepth, searchKeys } from '../../apps/web/src/features/laboratory/browser/catalog.js'
 
 function entry(partial: Partial<AssetEntry>): AssetEntry {
   return {

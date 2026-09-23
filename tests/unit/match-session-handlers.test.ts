@@ -1,7 +1,7 @@
 import type { MatchConfig, SnapshotMessage } from '@rts/protocol'
 import { describe, expect, it, vi } from 'vitest'
-import { createMatchSessionHandlers } from '../../apps/web/src/screens/match-session-handlers'
-import { createMatchSessionRuntime } from '../../apps/web/src/screens/match-session-runtime'
+import { createMatchSessionHandlers } from '../../apps/web/src/features/match/lifecycle/match-session-handlers'
+import { createMatchSessionRuntime } from '../../apps/web/src/features/match/lifecycle/match-session-runtime'
 
 function snapshot(overrides: Partial<SnapshotMessage> = {}): SnapshotMessage {
   return {
