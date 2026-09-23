@@ -5,6 +5,8 @@ test('the game remains playable with sprites disabled', async ({ page }) => {
   await page.goto('/?sprites=off')
   await settleUnits(page)
 
+  await page.getByRole('button', { name: 'Open DevTools menu' }).click()
+  await page.getByRole('button', { name: 'Toggle Match options' }).click()
   await expect(page.getByRole('switch', { name: 'toggle sprites' })).not.toBeChecked()
   const spriteState = await page.evaluate(() => {
     const positions = window.__rtsDebug?.getPositions() ?? {}
@@ -19,6 +21,7 @@ test('the game remains playable with sprites disabled', async ({ page }) => {
 
 test('fallback circles keep their size after units engage in combat', async ({ page }) => {
   await page.goto('/?sprites=off')
+  await page.getByRole('button', { name: 'Open DevTools menu' }).click()
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
 
   // Combat fires `attackFired`, which is what used to shrink the fallback body.

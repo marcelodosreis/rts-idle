@@ -1,4 +1,4 @@
-import { test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { runDeterminismFixture } from '@rts/simulation/fixtures'
 import { SEEDS } from '../fixtures/index.js'
 
@@ -32,7 +32,8 @@ function mismatchSummary(expected: readonly string[], actual: readonly string[])
 }
 
 test('simulation state hashes match between Node and Chromium', async ({ page }) => {
-  await page.goto('/det.html')
+  await page.goto('/laboratory/diagnostics')
+  await page.waitForFunction(() => typeof window.__runDetFixture === 'function')
 
   for (const seed of SEED_LIST) {
     const browserHashes = await page.evaluate(([s, t]) => window.__runDetFixture!(s, t), [seed, TICKS] as const)
@@ -43,4 +44,19 @@ test('simulation state hashes match between Node and Chromium', async ({ page })
       throw new Error(mismatchSummary(nodeHashes, browserHashes))
     }
   }
+})
+
+test('determinism page runs a browser consistency check and displays hashes', async ({ page }) => {
+  await page.goto('/laboratory/diagnostics')
+  await page.waitForFunction(() => typeof window.__runDetFixture === 'function')
+
+  await page.getByLabel('Seed').fill('7')
+  await page.getByLabel('Ticks').fill('12')
+  await page.getByRole('button', { name: 'Run Determinism Check' }).click()
+
+  const result = page.getByTestId('determinism-result')
+  await expect(result).toContainText('Passed')
+  await expect(result).toContainText('12 ticks produced identical hashes')
+  await expect(result).toContainText('First hash')
+  await expect(result).toContainText('Last hash')
 })
