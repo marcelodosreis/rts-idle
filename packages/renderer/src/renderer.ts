@@ -7,6 +7,7 @@ import type { WorldInteraction } from './input/input-types.js'
 import { createWorldHitTester } from './input/world-hit-tester.js'
 import { WorldInputAdapter } from './input/world-input-adapter.js'
 import { CommandPing } from './ping.js'
+import { RenderLayers } from './render-layers.js'
 import { SelectionController } from './selection.js'
 import { TerrainLayer } from './terrain-layer.js'
 import type { GameRenderer, RenderBuildPreview, RendererCallbacks, RendererOptions, RenderFrame } from './types.js'
@@ -95,6 +96,7 @@ export class PixiRenderer implements GameRenderer {
       }
     })
     const viewport = camera.viewport
+    const layers = new RenderLayers(viewport)
 
     app.ticker.add((ticker) => this.tick(ticker))
 
@@ -103,16 +105,16 @@ export class PixiRenderer implements GameRenderer {
     selectionRect.eventMode = 'none'
     app.stage.addChild(selectionRect)
 
-    const units = new UnitLayer(viewport, this.assets)
+    const units = new UnitLayer(layers.units, this.assets)
     const selection = new SelectionController({
-      viewport,
+      selectionLayer: layers.selection,
       units,
       selectionRect
     })
-    const ping = new CommandPing(viewport)
-    const effects = new EffectsLayer(viewport)
-    const worldObjects = new WorldObjectLayer(viewport)
-    const terrain = new TerrainLayer(viewport, this.assets)
+    const ping = new CommandPing(layers.interaction)
+    const effects = new EffectsLayer(layers.effects)
+    const worldObjects = new WorldObjectLayer(layers.worldObjects, layers.interaction)
+    const terrain = new TerrainLayer(layers.terrain, this.assets)
     if (this.options.map !== undefined) {
       await terrain.build(this.options.map)
     }

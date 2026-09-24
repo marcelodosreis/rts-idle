@@ -1,6 +1,5 @@
 import { fixedToRenderPixels, type SimulationEvent } from '@rts/shared'
 import { Container, Graphics, Text } from 'pixi.js'
-import type { Viewport } from 'pixi-viewport'
 
 const STREAK_LIFETIME_MS = 120
 const STREAK_COLOR = 0xffd54f
@@ -30,12 +29,12 @@ function toRenderPixels(point: Point): Point {
  * presentation-only — never deterministic, never fed back into the simulation.
  */
 export class EffectsLayer {
-  private readonly viewport: Viewport
+  private readonly effectsLayer: Container
   private readonly active: ActiveEffect[] = []
   private readonly positions = new Map<number, Point>()
 
-  constructor(viewport: Viewport) {
-    this.viewport = viewport
+  constructor(effectsLayer: Container) {
+    this.effectsLayer = effectsLayer
   }
 
   /** Records the frame's unit positions and spawns effects for its events. */
@@ -70,7 +69,7 @@ export class EffectsLayer {
       const effect = this.active[index]!
       if (now > effect.expiresAt) {
         this.active.splice(index, 1)
-        this.viewport.removeChild(effect.display)
+        this.effectsLayer.removeChild(effect.display)
         effect.display.destroy()
       } else {
         index += 1
@@ -90,7 +89,7 @@ export class EffectsLayer {
     graphics.moveTo(a.x, a.y).lineTo(b.x, b.y)
     graphics.stroke({ color: STREAK_COLOR, width: 2, alpha: 1 })
     graphics.eventMode = 'none'
-    this.viewport.addChild(graphics)
+    this.effectsLayer.addChild(graphics)
     this.active.push({
       display: graphics,
       expiresAt: now + STREAK_LIFETIME_MS,
@@ -115,7 +114,7 @@ export class EffectsLayer {
     label.eventMode = 'none'
     const container = new Container()
     container.addChild(label)
-    this.viewport.addChild(container)
+    this.effectsLayer.addChild(container)
     this.active.push({
       display: container,
       expiresAt: now + POPUP_LIFETIME_MS,
@@ -135,7 +134,7 @@ export class EffectsLayer {
     const position = toRenderPixels(point)
     const graphics = new Graphics()
     graphics.eventMode = 'none'
-    this.viewport.addChild(graphics)
+    this.effectsLayer.addChild(graphics)
     const radius = 18
     this.active.push({
       display: graphics,

@@ -1,6 +1,5 @@
 import { fixedToRenderPixels } from '@rts/shared'
-import type { Ticker } from 'pixi.js'
-import type { Viewport } from 'pixi-viewport'
+import type { Container, Ticker } from 'pixi.js'
 import type { AssetLibrary } from './assets/asset-library.js'
 import { interpolationAlpha, lerpPoint } from './interpolation.js'
 import type { RenderUnit, UnitKind } from './types.js'
@@ -25,7 +24,7 @@ interface FixedPoint {
  */
 export class UnitLayer {
   private readonly units = new Map<number, UnitSprite>()
-  private readonly viewport: Viewport
+  private readonly unitsLayer: Container
   private readonly library: AssetLibrary
   private previous: ReadonlyMap<number, WorldRenderPoint> | null = null
   private current: ReadonlyMap<number, WorldRenderPoint> | null = null
@@ -36,8 +35,8 @@ export class UnitLayer {
   private readonly framesByKind = new Map<string, UnitFrames>()
   private readonly loadState = new Map<string, 'loading' | 'loaded' | 'failed'>()
 
-  constructor(viewport: Viewport, library: AssetLibrary) {
-    this.viewport = viewport
+  constructor(unitsLayer: Container, library: AssetLibrary) {
+    this.unitsLayer = unitsLayer
     this.library = library
   }
 
@@ -94,7 +93,7 @@ export class UnitLayer {
         const kind: UnitKind = unit.kind ?? 'pawn'
         const frames = this.framesFor(unit.owner, kind)
         sprite = new UnitSprite(kind, unit.owner, frames)
-        this.viewport.addChild(sprite.container)
+        this.unitsLayer.addChild(sprite.container)
         this.units.set(unit.id, sprite)
         this.preloadKind(unit.owner, kind)
       }
@@ -121,7 +120,7 @@ export class UnitLayer {
     }
     for (const [id, sprite] of [...this.units]) {
       if (!seen.has(id)) {
-        this.viewport.removeChild(sprite.container)
+        this.unitsLayer.removeChild(sprite.container)
         sprite.destroy()
         this.units.delete(id)
         this.lastFixed.delete(id)

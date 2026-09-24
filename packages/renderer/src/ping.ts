@@ -1,5 +1,5 @@
+import type { Container } from 'pixi.js'
 import { Graphics } from 'pixi.js'
-import type { Viewport } from 'pixi-viewport'
 
 const PING_COLOR = 0xffffff
 const PING_LIFETIME_MS = 800
@@ -12,11 +12,11 @@ export class CommandPing {
   private readonly graphics: Graphics
   private pingUntil = 0
 
-  constructor(viewport: Viewport) {
+  constructor(interactionLayer: Container) {
     this.graphics = new Graphics()
     this.graphics.visible = false
     this.graphics.eventMode = 'none'
-    viewport.addChild(this.graphics)
+    interactionLayer.addChild(this.graphics)
   }
 
   show(worldX: number, worldY: number): void {

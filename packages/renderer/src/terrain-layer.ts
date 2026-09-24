@@ -1,5 +1,5 @@
 import type { MapDefinition } from '@rts/shared'
-import type { Viewport } from 'pixi-viewport'
+import type { Container } from 'pixi.js'
 import type { AssetLibrary } from './assets/asset-library.js'
 import { mapToTerrainSceneInput } from './terrain-conversion.js'
 import { createTerrainScene, type TerrainScene } from './terrain-scene.js'
@@ -11,12 +11,12 @@ import { createTerrainScene, type TerrainScene } from './terrain-scene.js'
  * simulation never sees this.
  */
 export class TerrainLayer {
-  private readonly viewport: Viewport
+  private readonly terrainLayer: Container
   private readonly library: AssetLibrary
   private scene: TerrainScene | null = null
 
-  constructor(viewport: Viewport, library: AssetLibrary) {
-    this.viewport = viewport
+  constructor(terrainLayer: Container, library: AssetLibrary) {
+    this.terrainLayer = terrainLayer
     this.library = library
   }
 
@@ -28,14 +28,14 @@ export class TerrainLayer {
     )
     const input = mapToTerrainSceneInput(map)
     scene.render(input.grid, input.stairs, input.dressing, input.decorations)
-    this.viewport.addChild(scene.container)
+    this.terrainLayer.addChild(scene.container)
     this.scene = scene
     return true
   }
 
   dispose(): void {
     if (this.scene !== null) {
-      this.viewport.removeChild(this.scene.container)
+      this.terrainLayer.removeChild(this.scene.container)
       this.scene.destroy()
     }
     this.scene = null

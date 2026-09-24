@@ -1,5 +1,4 @@
-import { Graphics, type PointData } from 'pixi.js'
-import type { Viewport } from 'pixi-viewport'
+import { type Container, Graphics, type PointData } from 'pixi.js'
 import type { UnitLayer } from './unit-layer.js'
 import { UNIT_RADIUS } from './unit-sprite.js'
 
@@ -8,7 +7,7 @@ const BOX_FILL_COLOR = 0x1565c0
 const RING_PADDING = 4
 
 export interface SelectionControllerOptions {
-  readonly viewport: Viewport
+  readonly selectionLayer: Container
   readonly units: UnitLayer
   /** Screen-space rectangle graphics, owned by the renderer and drawn above the viewport. */
   readonly selectionRect: Graphics
@@ -20,7 +19,7 @@ export interface SelectionControllerOptions {
  * application layer; unit positions come from the UnitLayer for ring updates.
  */
 export class SelectionController {
-  private readonly viewport: Viewport
+  private readonly selectionLayer: Container
   private readonly units: UnitLayer
   private readonly selectionRect: Graphics
   private readonly selection = new Set<number>()
@@ -30,7 +29,7 @@ export class SelectionController {
   private boxState = { visible: false, x: 0, y: 0, width: 0, height: 0 }
 
   constructor(options: SelectionControllerOptions) {
-    this.viewport = options.viewport
+    this.selectionLayer = options.selectionLayer
     this.units = options.units
     this.selectionRect = options.selectionRect
   }
@@ -120,7 +119,7 @@ export class SelectionController {
       ring = new Graphics()
       ring.circle(0, 0, UNIT_RADIUS + RING_PADDING).stroke({ color: SELECTION_COLOR, width: 2 })
       ring.eventMode = 'none'
-      this.viewport.addChild(ring)
+      this.selectionLayer.addChild(ring)
       this.selectionRings.set(id, ring)
     }
     ring.position.set(x, y)
@@ -131,7 +130,7 @@ export class SelectionController {
     if (ring === undefined) {
       return
     }
-    this.viewport.removeChild(ring)
+    this.selectionLayer.removeChild(ring)
     ring.destroy()
     this.selectionRings.delete(id)
   }

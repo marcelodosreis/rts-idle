@@ -1,6 +1,5 @@
 import { FIXED_SCALE, fixedToRenderPixels } from '@rts/shared'
-import { Graphics } from 'pixi.js'
-import type { Viewport } from 'pixi-viewport'
+import { type Container, Graphics } from 'pixi.js'
 import { buildingVisualStyle } from './building-visual-style.js'
 import { BAR_BACKGROUND, BAR_BORDER, BAR_HEIGHT, BAR_RADIUS, clampRatio, drawProgressBar } from './progress-bar.js'
 import type { RenderBuilding, RenderBuildPreview, RenderMineralNode } from './types.js'
@@ -12,7 +11,8 @@ const pixelsPerTile = fixedToRenderPixels(FIXED_SCALE)
 
 /** Minimal static presentation and hit testing for economy world objects. */
 export class WorldObjectLayer {
-  private readonly viewport: Viewport
+  private readonly worldObjectsLayer: Container
+  private readonly interactionLayer: Container
   private readonly buildings = new Map<number, Graphics>()
   private readonly constructionHitboxes = new Map<
     number,
@@ -22,9 +22,11 @@ export class WorldObjectLayer {
   private readonly mineralNodePositions = new Map<number, { readonly x: number; readonly y: number }>()
   private readonly activeMineralNodes = new Set<number>()
   private preview: RenderBuildPreview | null = null
+  private previewGraphic: Graphics | null = null
 
-  constructor(viewport: Viewport) {
-    this.viewport = viewport
+  constructor(worldObjectsLayer: Container, interactionLayer: Container) {
+    this.worldObjectsLayer = worldObjectsLayer
+    this.interactionLayer = interactionLayer
   }
 
   present(buildings: readonly RenderBuilding[], mineralNodes: readonly RenderMineralNode[]): void {
@@ -36,7 +38,7 @@ export class WorldObjectLayer {
       if (graphic === undefined) {
         graphic = new Graphics()
         graphic.eventMode = 'none'
-        this.viewport.addChild(graphic)
+        this.worldObjectsLayer.addChild(graphic)
         this.buildings.set(building.id, graphic)
       }
       const style = buildingVisualStyle(building.buildingType, building.status, building.owner)
@@ -85,7 +87,7 @@ export class WorldObjectLayer {
         graphic.poly([0, -34, 28, 0, 0, 34, -28, 0]).fill({ color: MINERAL_COLOR, alpha: 0.9 })
         graphic.poly([0, -34, 28, 0, 0, 34, -28, 0]).stroke({ color: 0xfef3c7, width: 4 })
         graphic.eventMode = 'none'
-        this.viewport.addChild(graphic)
+        this.worldObjectsLayer.addChild(graphic)
         this.mineralNodes.set(node.id, graphic)
       }
       const x = fixedToRenderPixels(node.x)
@@ -125,22 +127,20 @@ export class WorldObjectLayer {
   }
 
   private renderPreview(): void {
-    const id = -1
-    let graphic = this.buildings.get(id)
     if (this.preview === null) {
-      if (graphic !== undefined) {
-        this.viewport.removeChild(graphic)
-        graphic.destroy()
-        this.buildings.delete(id)
+      if (this.previewGraphic !== null) {
+        this.interactionLayer.removeChild(this.previewGraphic)
+        this.previewGraphic.destroy()
+        this.previewGraphic = null
       }
       return
     }
-    if (graphic === undefined) {
-      graphic = new Graphics()
-      graphic.eventMode = 'none'
-      this.viewport.addChild(graphic)
-      this.buildings.set(id, graphic)
+    if (this.previewGraphic === null) {
+      this.previewGraphic = new Graphics()
+      this.previewGraphic.eventMode = 'none'
+      this.interactionLayer.addChild(this.previewGraphic)
     }
+    const graphic = this.previewGraphic
     const width = this.preview.width * pixelsPerTile
     const height = this.preview.height * pixelsPerTile
     graphic.clear()
@@ -187,7 +187,7 @@ export class WorldObjectLayer {
       if (seen.has(id)) {
         continue
       }
-      this.viewport.removeChild(graphic)
+      this.worldObjectsLayer.removeChild(graphic)
       graphic.destroy()
       graphics.delete(id)
     }
