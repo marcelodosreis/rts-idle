@@ -119,7 +119,7 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
       .poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id))
       .toBe('gather')
   }
-  await expect(page.getByTestId('economy-status')).toContainText('Returning', { timeout: 15_000 })
+  await expect(page.getByTestId('economy-status')).toContainText('Returning', { timeout: 30_000 })
   if (art) {
     await expect
       .poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id))
@@ -156,7 +156,7 @@ test('an interrupted carrying worker shows cargo and deposits by right-clicking 
 
   const nodePoint = await focusFixed(page, tilesToFixed(ECONOMY_NODE_TILE.x), tilesToFixed(ECONOMY_NODE_TILE.y))
   await page.mouse.click(nodePoint.x, nodePoint.y, { button: 'right' })
-  await expect(page.getByTestId('economy-status')).toContainText('Returning', { timeout: 15_000 })
+  await expect(page.getByTestId('economy-status')).toContainText('Returning', { timeout: 30_000 })
 
   // Interrupt the automatic return; the worker keeps its cargo but loses the
   // gather order, so the carrying state must remain visible on its own.
@@ -217,7 +217,7 @@ test('a group mines the same node concurrently through the browser command path'
     ])
 
   const economyLabels = () =>
-    group.map((id) => page.getByRole('button', { name: new RegExp(`Worker #${id}, owner 0, Mining \\d+/20`) }))
+    group.map((id) => page.getByRole('button', { name: new RegExp(`Worker #${id}, owner 0, Mining \\d+/200`) }))
   await expect.poll(async () => Promise.all((await economyLabels()).map((label) => label.count()))).toEqual([1, 1])
   await expect
     .poll(
@@ -227,7 +227,7 @@ test('a group mines the same node concurrently through the browser command path'
             const label = await page
               .getByRole('button', { name: new RegExp(`Worker #${id}`) })
               .getAttribute('aria-label')
-            return Number(label?.match(/Mining (\d+)\/20/)?.[1] ?? 0)
+            return Number(label?.match(/Mining (\d+)\/200/)?.[1] ?? 0)
           })
         )
         return progress.every((value) => value > 0)

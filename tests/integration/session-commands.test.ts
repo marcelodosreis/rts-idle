@@ -86,7 +86,13 @@ describe('game session commands', () => {
     expect(session.advance().rejected).toEqual([])
     expect(session.projectUnits()[0]!.x).not.toBe(worker.x)
     expect(session.projectUnits()[0]!.economy).toEqual(
-      expect.objectContaining({ phase: 'to_node', cargoAmount: 0, cargoCapacity: 10, progressMax: 20, nodeId: node.id })
+      expect.objectContaining({
+        phase: 'to_node',
+        cargoAmount: 0,
+        cargoCapacity: 10,
+        progressMax: 200,
+        nodeId: node.id
+      })
     )
     for (let tick = 0; tick < 100 && session.projectUnits()[0]!.economy?.phase !== 'gathering'; tick += 1) {
       session.advance()

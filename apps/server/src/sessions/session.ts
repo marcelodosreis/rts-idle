@@ -16,6 +16,7 @@ import {
   GATHER_TICKS_PER_MINERAL,
   Health,
   Kind,
+  MINERAL_CARGO_CAPACITY,
   MineralNode,
   Movement,
   type Order,
@@ -79,7 +80,7 @@ function deriveEconomy(
     cargoAmount: cargo.amount,
     cargoCapacity: cargo.capacity,
     progressTicks: front.progressTicks,
-    progressMax: GATHER_TICKS_PER_MINERAL,
+    progressMax: GATHER_TICKS_PER_MINERAL * MINERAL_CARGO_CAPACITY,
     nodeId: front.nodeId
   }
 }
