@@ -185,4 +185,16 @@ describe('central invariants (P1.08)', () => {
 
     expect(() => sim.step()).toThrow(/deposit order without Worker state/)
   })
+
+  it('rejects a BUILD order referencing a missing construction', () => {
+    const world = worldWithOwners([0])
+    const id = world.aliveIds()[0]!
+    world.store(Kind).set(id, 'pawn')
+    world.store(Orders).set(id, {
+      queue: [{ type: 'BUILD', buildingId: 99, buildingType: 'BASE', workPoint: { x: 0, y: 0 } }]
+    })
+    const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
+
+    expect(() => sim.step()).toThrow(/build order referencing missing construction/)
+  })
 })

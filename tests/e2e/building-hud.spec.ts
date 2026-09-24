@@ -50,6 +50,15 @@ async function constructionAt(
   )
 }
 
+async function mineralValue(page: import('@playwright/test').Page): Promise<number> {
+  const text = await page.getByTestId('hud-resource-mineral').textContent()
+  const value = Number(text?.match(/\d+/)?.[0])
+  if (!Number.isFinite(value)) {
+    throw new Error('Mineral HUD value is missing')
+  }
+  return value
+}
+
 test('construction HUD uses the concise building labels and preserves costs', async ({ page }) => {
   await startMatch(page)
 
@@ -178,4 +187,31 @@ test('a construction can pause and resume with another worker through the HUD', 
 
   await expect.poll(() => page.getByTestId('construction-status').textContent()).not.toBe(pausedProgress)
   await expect(page.getByTestId('construction-panel')).toContainText('Construction complete.', { timeout: 15_000 })
+  await expect(page.getByTestId('cancel-construction')).toHaveCount(0)
+})
+
+test('an in-progress construction can be cancelled through the HUD with a partial refund', async ({ page }) => {
+  test.setTimeout(30_000)
+  await startMatch(page)
+
+  const workerId = (await workerIds(page))[0]!
+  await selectWorker(page, workerId)
+  await page.getByRole('button', { name: 'Base · 100', exact: true }).click()
+
+  const target = { x: tilesToFixed(10), y: tilesToFixed(9) }
+  const targetPoint = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
+  await page.mouse.click(targetPoint.x, targetPoint.y)
+  await expect.poll(() => constructionAt(page, target)).toMatchObject({ status: 'FOUNDATION' })
+
+  const mineralBefore = await mineralValue(page)
+  await page.mouse.click(targetPoint.x, targetPoint.y)
+  const cancel = page.getByTestId('cancel-construction')
+  await expect(cancel).toBeVisible()
+  await cancel.click()
+  await expect(cancel).toContainText('Confirm')
+  await cancel.click()
+
+  await expect.poll(() => constructionAt(page, target)).toBeNull()
+  await expect.poll(() => mineralValue(page)).toBeGreaterThan(mineralBefore)
+  await expect(page.getByTestId('construction-panel')).toHaveCount(0)
 })
