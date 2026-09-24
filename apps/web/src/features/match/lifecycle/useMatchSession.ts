@@ -52,6 +52,7 @@ export interface MatchSessionState {
   readonly buildings: readonly BuildCatalogEntry[]
   arm(mode: Exclude<CommandMode, 'idle'>): void
   issueOrder(type: 'STOP' | 'HOLD'): void
+  cancelConstruction(buildingId: number): void
   surrender(): void
   newMatch(): void
   changeScenario(id: string): void
@@ -290,6 +291,9 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     },
     surrender: () => {
       connectionOwnerRef.current.send({ type: 'SURRENDER', payload: {} }, matchEndedRef.current)
+    },
+    cancelConstruction: (buildingId) => {
+      connectionOwnerRef.current.send({ type: 'CANCEL_CONSTRUCTION', payload: { buildingId } }, matchEndedRef.current)
     },
     newMatch: () => window.location.reload(),
     changeScenario: (id) => {

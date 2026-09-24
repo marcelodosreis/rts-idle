@@ -1,6 +1,14 @@
+import type { BuildCatalogEntry } from '@rts/protocol'
+import { useState } from 'react'
+import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
-import { constructionStatusLine, mineralRemainingLine } from '../selection/selection-panel-logic'
+import {
+  canCancelConstruction,
+  cancelRefundEstimate,
+  constructionStatusLine,
+  mineralRemainingLine
+} from '../selection/selection-panel-logic'
 import { type HudConstruction, type HudMineral, type HudSelectionUnit, KIND_LABEL, OWNER_COLORS } from './types'
 
 export { constructionStatusLine, mineralRemainingLine } from '../selection/selection-panel-logic'
@@ -9,6 +17,9 @@ interface SelectionPanelProps {
   readonly selection: readonly HudSelectionUnit[]
   readonly construction: HudConstruction | null
   readonly mineral: HudMineral | null
+  readonly buildings: readonly BuildCatalogEntry[]
+  readonly humanPlayer: number
+  readonly onCancelConstruction: (buildingId: number) => void
 }
 
 function kindSummary(selection: readonly HudSelectionUnit[]): string {
@@ -153,7 +164,15 @@ function constructionHint(status: HudConstruction['status']): string {
   return 'Select the builder and press Stop to pause.'
 }
 
-export function SelectionPanel({ selection, construction, mineral }: SelectionPanelProps) {
+export function SelectionPanel({
+  selection,
+  construction,
+  mineral,
+  buildings,
+  humanPlayer,
+  onCancelConstruction
+}: SelectionPanelProps) {
+  const [confirmingId, setConfirmingId] = useState<number | null>(null)
   const activeEconomy =
     selection
       .map((unit) => economyLabel(unit) ?? (unit.carrying === true ? 'Carrying cargo' : null))
@@ -161,6 +180,10 @@ export function SelectionPanel({ selection, construction, mineral }: SelectionPa
   if (construction !== null) {
     const label = constructionLabel(construction)
     const status = constructionTitleStatus(construction.status)
+    const cost = buildings.find((building) => building.type === construction.buildingType)?.costMinerals ?? 0
+    const refund = cancelRefundEstimate(construction, cost)
+    const canCancel = canCancelConstruction(construction, humanPlayer)
+    const confirming = confirmingId === construction.id
     return (
       <Card
         className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1"
@@ -176,8 +199,37 @@ export function SelectionPanel({ selection, construction, mineral }: SelectionPa
             </p>
           )}
         </CardHeader>
-        <CardContent className="px-2 py-0.5 text-[11px] text-muted-foreground" aria-live="polite">
-          {constructionHint(construction.status)}
+        <CardContent className="flex flex-col gap-1 px-2 py-0.5 text-[11px] text-muted-foreground">
+          <span className="leading-snug" aria-live="polite">
+            {constructionHint(construction.status)}
+          </span>
+          {canCancel && (
+            <Tooltip>
+              <TooltipTrigger asChild={true}>
+                <Button
+                  type="button"
+                  variant={confirming ? 'destructive' : 'outline'}
+                  size="sm"
+                  className="h-6 shrink-0 self-start whitespace-nowrap px-1.5 text-[11px]"
+                  data-testid="cancel-construction"
+                  aria-label={confirming ? 'Confirm construction cancellation' : 'Cancel construction'}
+                  onClick={() => {
+                    if (!confirming) {
+                      setConfirmingId(construction.id)
+                      return
+                    }
+                    setConfirmingId(null)
+                    onCancelConstruction(construction.id)
+                  }}
+                >
+                  {confirming ? 'Confirm' : 'Cancel'}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={6}>
+                {confirming ? `Click again to confirm · refund ~${refund}` : `Estimated refund ~${refund} minerals`}
+              </TooltipContent>
+            </Tooltip>
+          )}
         </CardContent>
       </Card>
     )

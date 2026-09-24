@@ -33,6 +33,7 @@ export interface MatchHudProps {
   readonly onHold: () => void
   readonly onSurrender: () => void
   readonly onArm: (mode: Exclude<CommandMode, 'idle'>) => void
+  readonly onCancelConstruction: (buildingId: number) => void
   readonly workerSelected: boolean
   readonly buildings: readonly BuildCatalogEntry[]
   readonly buildHint: string | null
@@ -70,6 +71,7 @@ export function MatchHud({
   onHold,
   onSurrender,
   onArm,
+  onCancelConstruction,
   workerSelected,
   buildings,
   buildHint,
@@ -105,7 +107,14 @@ export function MatchHud({
         />
       </main>
       <footer className="flex min-h-40 shrink-0 flex-wrap items-stretch justify-center gap-3 border-t bg-card/70 p-3 backdrop-blur">
-        <SelectionPanel selection={selection} construction={construction} mineral={mineral} />
+        <SelectionPanel
+          selection={selection}
+          construction={construction}
+          mineral={mineral}
+          buildings={buildings}
+          humanPlayer={0}
+          onCancelConstruction={onCancelConstruction}
+        />
         <CommandBar
           disabled={selection.length === 0}
           mode={commandMode}
