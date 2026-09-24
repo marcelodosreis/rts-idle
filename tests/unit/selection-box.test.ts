@@ -4,7 +4,7 @@ import { SelectionController } from '../../packages/renderer/src/selection.js'
 
 function controller(): SelectionController {
   return new SelectionController({
-    viewport: { addChild: () => undefined, removeChild: () => undefined } as never,
+    selectionLayer: new Graphics(),
     units: {} as never,
     selectionRect: new Graphics()
   })
