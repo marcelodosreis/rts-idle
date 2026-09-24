@@ -70,6 +70,27 @@ test('economy HUD shows authoritative starting supply', async ({ page }) => {
   await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 10')
 })
 
+test('a pawn remains selectable while standing on a mineral node', async ({ page }) => {
+  await page.goto('/?scenario=economy&aggression=passive')
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
+    .toBeGreaterThan(0)
+
+  const id = (await workerIds(page))[0]!
+  const start = await workerPosition(page, id)
+  const workerPoint = await canvasPointForFixed(page, start.x, start.y)
+  await page.mouse.click(workerPoint.x, workerPoint.y)
+  await expect(page.getByText('1 · Worker')).toBeVisible()
+
+  const nodePoint = await focusFixed(page, tilesToFixed(ECONOMY_NODE_TILE.x), tilesToFixed(ECONOMY_NODE_TILE.y))
+  await page.mouse.click(nodePoint.x, nodePoint.y, { button: 'right' })
+  await expect.poll(async () => (await workerPosition(page, id)).x).toBe(tilesToFixed(ECONOMY_NODE_TILE.x))
+
+  await page.mouse.click(nodePoint.x, nodePoint.y)
+  await expect(page.getByText('1 · Worker')).toBeVisible()
+  await expect(page.getByTestId('mineral-panel')).toHaveCount(0)
+})
+
 async function boxSelect(page: Page, positions: readonly { readonly x: number; readonly y: number }[]): Promise<void> {
   const points = await Promise.all(positions.map((position) => canvasPointForFixed(page, position.x, position.y)))
   await page.mouse.move(

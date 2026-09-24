@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 25 |
+| open | 26 |
 | closed | 13 |
-| **total** | **38** |
+| **total** | **39** |
 
 ## Details
 
@@ -53,6 +53,7 @@
 | 2026-09-23-pixi-terrain-render-race | open | presentation | — | 1 test(s) |
 | 2026-09-23-stress-canvas-growth | open | presentation | — | 1 test(s) |
 | 2026-09-24-partial-mining-carry-state | open | presentation | — | 2 test(s) |
+| 2026-09-24-pawn-selection-over-mineral | open | presentation | — | 2 test(s) |
 
 ## Legend
 
