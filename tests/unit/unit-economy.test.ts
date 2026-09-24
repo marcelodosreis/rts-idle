@@ -16,6 +16,7 @@ function fakeSprite(): AnimatedSprite {
 
 describe('economyAnimation', () => {
   const frames: EconomyFrames = {
+    build: fakeSprite(),
     gather: fakeSprite(),
     carryIdle: fakeSprite(),
     carryRun: fakeSprite()
@@ -24,6 +25,11 @@ describe('economyAnimation', () => {
   it('shows the gather sprite while gathering, moving or not', () => {
     expect(economyAnimation(frames, 'gathering', false)).toBe(frames.gather)
     expect(economyAnimation(frames, 'gathering', true)).toBe(frames.gather)
+  })
+
+  it('shows the hammer sprite while building', () => {
+    expect(economyAnimation(frames, undefined, false, false, true)).toBe(frames.build)
+    expect(economyAnimation(frames, undefined, true, false, true)).toBe(frames.build)
   })
 
   it('shows carry_run while moving back to base', () => {
@@ -53,6 +59,10 @@ describe('economyAnimation', () => {
 })
 
 describe('economyFrameKey', () => {
+  it('maps build to the hammer interaction sprite', () => {
+    expect(economyFrameKey(0, 'build')).toBe('units.blue.pawn.pawn_interact_hammer')
+  })
+
   it('maps gather to the pickaxe interaction sprite', () => {
     expect(economyFrameKey(0, 'gather')).toBe('units.blue.pawn.pawn_interact_pickaxe')
   })
