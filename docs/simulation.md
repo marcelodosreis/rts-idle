@@ -82,14 +82,14 @@ liveness.
 ## Economy v0
 
 `GATHER` is valid for owned pawn Workers with Cargo and a live Mineral Node.
-Workers move through the existing straight-line Movement component, collect one
-mineral per 20 ticks independently of every other Worker at the node, up to
-capacity 10, then return to the nearest owned Base (distance, then entity id).
-Nodes permit any number of simultaneous Workers. When a node has fewer
-remaining minerals than simultaneously completed cycles, ascending Worker
-entity id allocates the final minerals deterministically. `PlayerState.gold` is the internal v0
-mineral wallet and changes only on deposit. Nodes, cargo, order phase/progress,
-and wallet balances are canonical; a dead Worker loses its Cargo component.
+Workers move through the existing straight-line Movement component, complete
+one atomic 10-mineral batch after 200 ticks, then return to the nearest owned
+Base (distance, then entity id). Nodes permit any number of simultaneous
+Workers, and only nodes with complete 10-mineral batches can be gathered.
+Partial batch progress is discarded when an order is interrupted; the node and
+Cargo remain unchanged. `PlayerState.gold` is the internal v0 mineral wallet
+and changes only on deposit. Nodes, cargo, order phase/progress, and wallet
+balances are canonical; a dead Worker loses its Cargo component.
 
 ## Serialization
 

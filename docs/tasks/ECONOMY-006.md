@@ -6,10 +6,10 @@
 - Objective: Let a player send a cargo-carrying worker to deposit at an owned
   completed Base with a right-click, and show the carry animation whenever a
   worker holds cargo, even without an active `GATHER` order.
-- Why: After a manual `MOVE`/`STOP` interrupts a gather cycle, the worker keeps
-  its `Cargo` but loses its order. Today it cannot be sent to deposit by
-  clicking the Base (only by re-issuing `GATHER` on the Mine), and its sprite
-  falls back to `run`/`idle`, hiding the fact that it is carrying.
+- Why: After a completed 10-mineral batch, a manual `MOVE`/`STOP` interrupts
+  the return order while the worker keeps its `Cargo`. Today it cannot be sent
+  to deposit by clicking the Base (only by re-issuing `GATHER` on the Mine), and
+  its sprite falls back to `run`/`idle`, hiding the fact that it is carrying.
 - Scope: `shared`, `protocol`, `simulation`, `server`, `renderer`, `web`.
 - Non-goals: renaming the `Cargo` component; auto-return without an order;
   resuming the previous Mine after a manual deposit; an economy bar for
@@ -37,6 +37,9 @@
 - New snapshot field `SnapshotUnit.carrying?: boolean`, projected whenever
   `Cargo.amount > 0`, independent of the front order. `SnapshotEconomy` is
   unchanged.
+- Mining progress is atomic: a worker receives exactly 10 minerals after 200
+  ticks. Interrupting before completion discards progress without changing the
+  node or Cargo; nodes without a complete 10-mineral batch reject `GATHER`.
 - Renderer priority: gather → attack → carry (`to_base` or `carrying`) →
   run → idle.
 - Playable surface: right-clicking an owned completed Base with carrying pawns
