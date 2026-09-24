@@ -137,13 +137,13 @@ describe('central invariants (P1.08)', () => {
     expect(() => sim.step()).toThrow(/invalid cargo/)
   })
 
-  it('rejects gather progress outside one collection interval', () => {
+  it('rejects gather progress outside one complete batch', () => {
     const world = worldWithOwners([0])
     const id = world.aliveIds()[0]!
     world.store(Kind).set(id, 'pawn')
     world.store(Cargo).set(id, { amount: 0, capacity: 10 })
     world.store(Orders).set(id, {
-      queue: [{ type: 'GATHER', nodeId: 99, baseId: null, phase: 'TO_NODE', progressTicks: 20 }]
+      queue: [{ type: 'GATHER', nodeId: 99, baseId: null, phase: 'TO_NODE', progressTicks: 200 }]
     })
     world.store(Movement).set(id, {
       speedTilesPerSecond: 4,

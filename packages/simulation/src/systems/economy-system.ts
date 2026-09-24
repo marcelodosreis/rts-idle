@@ -1,6 +1,6 @@
 import { distSquaredFixed, type EntityId, type Fixed, type PlayerId } from '@rts/shared'
 import type { Order } from '../contracts/orders.js'
-import { GATHER_TICKS_PER_MINERAL } from '../data/economy-rules.js'
+import { GATHER_TICKS_PER_BATCH, MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
 import { isActiveConstruction, isCloserCandidate, isCompletedBase } from '../domain/building-predicates.js'
 import { Building } from '../ecs/building-component.js'
 import { Cargo, Kind, MineralNode, Movement, Orders, Owner, Position } from '../ecs/components.js'
@@ -126,16 +126,17 @@ function updateGathering(state: GameState, workerId: EntityId, order: GatherOrde
   const node = nodes.get(order.nodeId)
   const nodePosition = state.world.store(Position).get(order.nodeId)
   const cargo = state.world.store(Cargo).get(workerId)!
-  if (cargo.amount >= cargo.capacity) {
+  if (cargo.amount > 0) {
     beginReturn(state, workerId, order, owner)
     return
   }
-  if (node === undefined || node.remaining === 0 || nodePosition === undefined) {
-    if (cargo.amount > 0) {
-      beginReturn(state, workerId, order, owner)
-    } else {
-      removeFrontOrder(state, workerId)
-    }
+  if (
+    node === undefined ||
+    node.remaining < MINERAL_CARGO_CAPACITY ||
+    node.remaining % MINERAL_CARGO_CAPACITY !== 0 ||
+    nodePosition === undefined
+  ) {
+    removeFrontOrder(state, workerId)
     return
   }
   const workerPosition = state.world.store(Position).get(workerId)!
@@ -145,12 +146,12 @@ function updateGathering(state: GameState, workerId: EntityId, order: GatherOrde
     return
   }
   const progressTicks = order.progressTicks + 1
-  if (progressTicks < GATHER_TICKS_PER_MINERAL) {
+  if (progressTicks < GATHER_TICKS_PER_BATCH) {
     replaceFrontOrder(state, workerId, { ...order, phase: 'GATHERING', progressTicks })
     return
   }
-  const amount = cargo.amount + 1
-  const remaining = node.remaining - 1
+  const amount = MINERAL_CARGO_CAPACITY
+  const remaining = node.remaining - MINERAL_CARGO_CAPACITY
   state.world.store(Cargo).set(workerId, { ...cargo, amount })
   nodes.set(order.nodeId, { remaining })
   const nextOrder = { ...order, phase: 'GATHERING' as const, progressTicks: 0 }

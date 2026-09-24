@@ -81,6 +81,29 @@ describe('GATHER command contract', () => {
     }
   })
 
+  it('rejects a mineral node without a complete ten-mineral batch', () => {
+    const scenario = economyWorld()
+    scenario.world.store(MineralNode).set(scenario.node, { remaining: 9 })
+    const simulation = createSimulation({
+      seed: SEEDS.integration.moveOwn,
+      identity: TEST_IDENTITY,
+      initialWorld: scenario.world
+    })
+
+    const result = simulation.step([
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'GATHER', payload: { unitIds: [scenario.firstWorker], nodeId: scenario.node } }
+      }
+    ])
+
+    expect(result.rejected[0]?.code).toBe('ENTITY_UNAVAILABLE')
+    expect(simulation.inspectState().world.store(Orders).get(scenario.firstWorker)).toBeUndefined()
+    expect(simulation.inspectState().world.store(MineralNode).get(scenario.node)?.remaining).toBe(9)
+  })
+
   it('rejects a mixed worker selection without mutating any entity', () => {
     const scenario = economyWorld('warrior')
     const controlScenario = economyWorld('warrior')
