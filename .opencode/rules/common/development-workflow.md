@@ -42,3 +42,10 @@ The Feature Implementation Workflow describes the development pipeline: research
    - Resolve any merge conflicts
    - Ensure branch is up to date with target branch
    - Only request review after these checks pass
+
+## Local Temporary Files
+
+Never write project artifacts to the machine temp directory (`/tmp`,
+`/var/folders`, `$TMPDIR`, `os.tmpdir()`, `mkdtemp`). Use the project-local
+`tmp/` directory at the repository root; create it if missing and keep its
+contents gitignored. Delete temporary files after the task.

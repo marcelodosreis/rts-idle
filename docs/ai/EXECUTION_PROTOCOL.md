@@ -31,6 +31,13 @@ The required version is sourced only from `.nvmrc`; stop if NVM selects another
 major version. Running tests or builds with Node 20 is not valid project
 validation, even if those commands happen to pass locally.
 
+## Local scratch directory
+
+Never write project artifacts to the machine temp directory (`/tmp`,
+`/var/folders`, `$TMPDIR`, `os.tmpdir()`, `mkdtemp`). Use the project-local
+`tmp/` directory at the repository root (gitignored); create it if missing and
+delete temporary files after the task.
+
 ## Context Loading Rules
 
 ### DO NOT

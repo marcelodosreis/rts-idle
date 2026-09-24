@@ -103,3 +103,7 @@ A bug fix without a postmortem and a regression test is not done. See `docs/mast
 - Limit edits to files directly required by the task.
 - Review `git diff --check` and the final diff before completion.
 - All documentation and new content is written in English.
+- Never write project artifacts to the machine temp directory (`/tmp`,
+  `/var/folders`, `$TMPDIR`, `os.tmpdir()`, `mkdtemp`). Use the project-local
+  `tmp/` directory at the repository root (gitignored); create it if missing and
+  delete temporary files after the task.
