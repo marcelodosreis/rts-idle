@@ -3,8 +3,8 @@ import type { AssetEntry } from '@rts/shared'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { check, registerChecks } from '../lab/checks.js'
-import { frameRgba } from '../lab/pixels.js'
+import { check, registerChecks } from '../core/checks.js'
+import { frameRgba } from '../core/pixels.js'
 import { useLabContext } from '../lab-context'
 
 interface Row {

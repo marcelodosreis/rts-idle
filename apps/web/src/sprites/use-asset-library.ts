@@ -1,6 +1,6 @@
 import { AssetLibrary } from '@rts/renderer'
 import { useEffect, useState } from 'react'
-import type { SectionContext } from './sections/types.js'
+import type { SectionContext } from './core/types.js'
 
 export interface LabSession {
   ctx: SectionContext | null

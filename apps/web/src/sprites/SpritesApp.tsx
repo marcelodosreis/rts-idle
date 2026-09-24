@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getFilterMode, setFilterMode } from './lab/app.js'
+import { getFilterMode, setFilterMode } from './core/app.js'
 import { SpriteLabContext } from './lab-context'
 import { useAssetLibrary } from './use-asset-library'
 import { type SpritesTab, useSpritesTab } from './use-sprites-tab'
@@ -10,9 +10,9 @@ import { type SpritesTab, useSpritesTab } from './use-sprites-tab'
 type Pauseable = { readonly pause: () => void; readonly resume: () => void }
 
 const BrowseView = lazy(() => import('./browse/BrowseView').then((m) => ({ default: m.BrowseView })))
-const TerrainView = lazy(() => import('./tabs/TerrainView').then((m) => ({ default: m.TerrainView })))
-const StressView = lazy(() => import('./tabs/StressView').then((m) => ({ default: m.StressView })))
-const ReportView = lazy(() => import('./tabs/ReportView').then((m) => ({ default: m.ReportView })))
+const TerrainView = lazy(() => import('./terrain/TerrainView').then((m) => ({ default: m.TerrainView })))
+const StressView = lazy(() => import('./stress/StressView').then((m) => ({ default: m.StressView })))
+const ReportView = lazy(() => import('./report/ReportView').then((m) => ({ default: m.ReportView })))
 
 declare global {
   interface Window {

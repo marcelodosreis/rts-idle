@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
-import { createSectionApp, trackTexture } from '../lab/app.js'
-import { check, registerChecks } from '../lab/checks.js'
+import { createSectionApp, disposeSectionApp, trackTexture } from '../core/app.js'
+import { check, registerChecks } from '../core/checks.js'
 import { useLabContext } from '../lab-context'
 
 const VIEW_H = 340
@@ -46,7 +46,8 @@ export function StressView({
     const framesByKey = new Map<string, Texture[]>()
 
     void (async () => {
-      const app = await createSectionApp(host, VIEW_H)
+      let hostResize: ((width: number, height: number) => void) | null = null
+      const app = await createSectionApp(host, VIEW_H, (width, height) => hostResize?.(width, height))
       onControllerReady?.({
         pause: () => app.ticker.stop(),
         resume: () => app.ticker.start()
@@ -54,14 +55,17 @@ export function StressView({
       world = new Container()
       viewport = new Viewport({
         screenWidth: app.screen.width,
-        screenHeight: VIEW_H,
+        screenHeight: app.screen.height,
         worldWidth: app.screen.width,
-        worldHeight: VIEW_H,
+        worldHeight: app.screen.height,
         events: app.renderer.events
       })
       viewport.addChild(world)
       viewport.drag({ mouseButtons: 'middle' }).wheel().clampZoom({ minScale: MIN_ZOOM, maxScale: MAX_ZOOM })
       app.stage.addChild(viewport)
+      hostResize = (width, height) => {
+        viewport?.resize(width, height)
+      }
 
       const pool = ctx.assets
         .keys()
@@ -127,7 +131,10 @@ export function StressView({
       }
       app.ticker.add(tick)
       stopTicker = () => app.ticker.remove(tick)
-      destroyApp = () => app.destroy()
+      destroyApp = () => {
+        disposeSectionApp(app)
+        app.destroy()
+      }
 
       const timer = setInterval(() => {
         if (viewport !== null) {

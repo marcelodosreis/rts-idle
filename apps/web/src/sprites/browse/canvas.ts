@@ -1,9 +1,9 @@
 import { Container, Graphics } from 'pixi.js'
-import { createSectionApp } from '../lab/app.js'
-import { checkerboard, drawGridLines } from '../lab/context.js'
-import { croppedFrames, croppedTiles } from '../lab/crop.js'
-import type { BlendChoice } from '../lab/player.js'
-import type { SectionContext } from '../sections/types.js'
+import { createSectionApp, disposeSectionApp } from '../core/app.js'
+import { checkerboard, drawGridLines } from '../core/context.js'
+import { croppedFrames, croppedTiles } from '../core/crop.js'
+import type { BlendChoice } from '../core/player.js'
+import type { SectionContext } from '../core/types.js'
 import {
   type Active,
   type BuildContext,
@@ -89,7 +89,8 @@ export async function createCanvas(
   selectSlice: (index: number) => void
   destroy: () => void
 }> {
-  const app = await createSectionApp(host, CANVAS_H)
+  let hostResize: (() => void) | null = null
+  const app = await createSectionApp(host, CANVAS_H, () => hostResize?.())
   const content = new Container()
   app.stage.addChild(content)
 
@@ -243,11 +244,20 @@ export async function createCanvas(
     return result
   }
 
+  // Re-render the current asset when the host box changes: builders position
+  // and scale content from `app.screen`, so a stale size would misalign them.
+  hostResize = () => {
+    if (lastKey !== '') {
+      void render(lastKey, lastOptions)
+    }
+  }
+
   return {
     render,
     selectSlice,
     destroy: () => {
       clear()
+      disposeSectionApp(app)
       app.destroy()
     }
   }

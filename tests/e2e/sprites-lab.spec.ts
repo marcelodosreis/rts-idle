@@ -33,6 +33,36 @@ test('sprite lab mounts the browse tab with art and all assets', async ({ page }
   await expect(page.getByRole('listbox', { name: 'Assets' })).toBeVisible()
 })
 
+test('browse: the first asset of the selected type is auto-selected', async ({ page }) => {
+  await openLab(page)
+
+  // On mount an asset is auto-selected, so the canvas is never left empty.
+  const inspector = page.getByRole('complementary', { name: 'Asset inspector' })
+  await expect(page.locator('[role="option"][aria-selected="true"]')).toHaveCount(1)
+  await expect(inspector).not.toContainText('select an asset')
+
+  // Changing the selected type selects the first asset of that list.
+  await page.getByRole('button', { name: /units/i }).click()
+  await expect(page.getByRole('option').first()).toHaveAttribute('aria-selected', 'true')
+  await expect(inspector).toContainText('units.')
+})
+
+test('browse: the asset list keeps a minimum height when types expand', async ({ page }) => {
+  await openLab(page)
+
+  // Expanding the category with the most subcategories used to squeeze the
+  // asset list down to a sliver. The types section must shrink/scroll instead.
+  await page.locator('[aria-label="Asset browser"] button:has(span:text-is("ui"))').click()
+
+  const list = page.locator('[aria-label="Asset browser"] [data-slot="scroll-area"]').last()
+  await expect(list).toBeVisible()
+  await expect(page.getByRole('option').first()).toBeVisible()
+
+  const box = await list.boundingBox()
+  expect(box).not.toBeNull()
+  expect(box!.height).toBeGreaterThanOrEqual(300)
+})
+
 test('browse: selecting an asset via the hook renders the canvas and inspector', async ({ page }) => {
   await openLab(page)
 
@@ -256,4 +286,26 @@ test('terrain: download produces a map.json file', async ({ page }) => {
   await page.getByRole('button', { name: 'Download' }).click()
   const download = await downloadPromise
   expect(download.suggestedFilename()).toBe('map.json')
+})
+
+test('browse: asset list shows nested sub-headers within groups', async ({ page }) => {
+  await openLab(page)
+
+  // Expand units and select the blue subcategory.
+  await page.getByRole('button', { name: /units/i }).click()
+  await page.getByRole('button', { name: /blue/i }).click()
+
+  // The kind-level sub-headers (archer, lancer, monk, pawn, warrior) are visible.
+  await expect(page.getByText('archer', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('lancer', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('monk', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('pawn', { exact: true }).first()).toBeVisible()
+  await expect(page.getByText('warrior', { exact: true }).first()).toBeVisible()
+
+  // Selecting an item still works.
+  const archerIdle = page.getByRole('option', { name: 'archer_idle' })
+  await archerIdle.click()
+  await expect(page.getByRole('complementary', { name: 'Asset inspector' })).toContainText(
+    'units.blue.archer.archer_idle'
+  )
 })

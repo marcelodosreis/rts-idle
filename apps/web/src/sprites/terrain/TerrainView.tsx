@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { writePlaytestMap } from '../../screens/playtest-map'
-import { check, registerChecks } from '../lab/checks.js'
+import { check, registerChecks } from '../core/checks.js'
 import { useLabContext } from '../lab-context'
 import {
   createTerrainController,
@@ -400,7 +400,7 @@ function LevelModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <button type="button" aria-label="Close dialog" className="absolute inset-0 cursor-default" onClick={onClose} />
-      <div className="relative w-[500px] rounded-xl border border-border/50 bg-card p-4 shadow-lg">
+      <div className="relative w-[min(500px,calc(100vw-2rem))] rounded-xl border border-border/50 bg-card p-4 shadow-lg">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-medium">{mode === 'export' ? 'Copy Level' : 'Paste Level'}</h3>
           <div className="flex items-center gap-2">
@@ -675,9 +675,9 @@ export function TerrainView({
 
   /* ── Sidebar ───────────────────────────────────────────────────── */
   return (
-    <div className="mt-3 flex flex-col gap-3 xl:h-[calc(100vh-140px)] xl:flex-row">
+    <div className="mt-3 flex flex-col gap-3 lg:h-[calc(100vh-140px)] lg:flex-row">
       {/* Left toolbar */}
-      <div className="flex w-full shrink-0 flex-col gap-2 rounded-xl border border-border/50 bg-card p-2 xl:w-[200px]">
+      <div className="flex w-full shrink-0 flex-col gap-2 rounded-xl border border-border/50 bg-card p-2 lg:w-[200px]">
         <Tabs
           value={state.editorTab}
           onValueChange={(v) => set({ editorTab: v as EditorTab })}
@@ -709,7 +709,7 @@ export function TerrainView({
           {/* ── Terrain tab ─────────────────────────────────────────── */}
           <TabsContent value="terrain" className="mt-0 flex-1">
             <ScrollArea className="h-full">
-              <div className="grid grid-cols-3 gap-1 pr-2">
+              <div className="grid grid-cols-3 gap-1 pr-2 sm:grid-cols-6 lg:grid-cols-3">
                 {TERRAIN_BRUSHES.map((brush) => (
                   <BrushButton
                     key={brush.value}
@@ -750,56 +750,43 @@ export function TerrainView({
 
           <div className="h-px bg-border/50" />
 
-          {/* Import/Export */}
-          <div className="flex gap-1">
-            <Button variant="outline" size="sm" onClick={handleExport} className="flex-1 text-[11px]">
+          {/* File + camera actions: wrap into a compact grid on tablet/desktop */}
+          <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-2">
+            <Button variant="outline" size="sm" onClick={handleExport} className="text-[11px]">
               Export
             </Button>
-            <Button variant="outline" size="sm" onClick={handleImport} className="flex-1 text-[11px]">
+            <Button variant="outline" size="sm" onClick={handleImport} className="text-[11px]">
               Import
             </Button>
-          </div>
-
-          <div className="flex gap-1">
-            <Button variant="outline" size="sm" onClick={handleDownload} className="flex-1 text-[11px]">
+            <Button variant="outline" size="sm" onClick={handleDownload} className="text-[11px]">
               Download
             </Button>
-            <Button variant="outline" size="sm" onClick={handleUploadClick} className="flex-1 text-[11px]">
+            <Button variant="outline" size="sm" onClick={handleUploadClick} className="text-[11px]">
               Upload
             </Button>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json,.json"
-            aria-label="upload map json"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-
-          <Button variant="ghost" size="sm" onClick={handleClearSaved} className="w-full text-[11px]">
-            Clear saved
-          </Button>
-
-          <div className="h-px bg-border/50" />
-
-          <Button variant="outline" size="sm" onClick={handlePlaytest} className="w-full text-[11px]">
-            Playtest
-          </Button>
-
-          <div className="h-px bg-border/50" />
-
-          {/* Camera + Reset */}
-          <div className="flex gap-1">
+            <Button variant="outline" size="sm" onClick={handlePlaytest} className="text-[11px]">
+              Playtest
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleClearSaved} className="text-[11px]">
+              Clear saved
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/json,.json"
+              aria-label="upload map json"
+              className="hidden"
+              onChange={handleFileChange}
+            />
             <Button
               variant="outline"
               size="sm"
               onClick={() => controllerRef.current?.resetCamera()}
-              className="flex-1 text-[11px]"
+              className="text-[11px]"
             >
               Fit
             </Button>
-            <Button variant="destructive" size="sm" onClick={reset} className="flex-1 text-[11px]">
+            <Button variant="destructive" size="sm" onClick={reset} className="text-[11px]">
               Reset
             </Button>
           </div>
@@ -807,13 +794,13 @@ export function TerrainView({
       </div>
 
       {/* Canvas area */}
-      <div className="flex h-[55vh] min-h-0 min-w-0 flex-1 flex-col gap-2 xl:h-auto">
+      <div className="flex h-[55vh] min-h-[420px] min-w-0 flex-1 flex-col gap-2 lg:h-auto lg:min-h-0">
         <StatusBar state={state} readout={readout} cursor={cursor} onPatch={set} />
         <div
           ref={hostRef}
           data-testid="terrain-canvas-host"
           data-controller-ready={ready ? 'true' : 'false'}
-          className="min-h-0 flex-1 rounded-xl border border-border/50 bg-background"
+          className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border border-border/50 bg-background"
         />
       </div>
 

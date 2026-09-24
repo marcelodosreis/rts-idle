@@ -1,7 +1,7 @@
 import { validateAsset } from '@rts/renderer'
 import type { AssetEntry } from '@rts/shared'
-import { frameRgba } from '../lab/pixels.js'
-import type { SectionContext } from '../sections/types.js'
+import { frameRgba } from '../core/pixels.js'
+import type { SectionContext } from '../core/types.js'
 
 /** Runs the shared validator over a key and formats the result for the readout. */
 export async function validateEntry(ctx: SectionContext, key: string, entry: AssetEntry): Promise<string> {

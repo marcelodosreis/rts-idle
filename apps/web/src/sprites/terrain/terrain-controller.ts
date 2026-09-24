@@ -14,8 +14,8 @@ import {
 import type { DecorationPlacement, MapDefinition } from '@rts/shared'
 import { Container, Graphics, Sprite } from 'pixi.js'
 import { Viewport } from 'pixi-viewport'
-import { createSectionApp, removeApp } from '../lab/app.js'
-import type { SectionContext } from '../sections/types.js'
+import { createSectionApp, disposeSectionApp } from '../core/app.js'
+import type { SectionContext } from '../core/types.js'
 import { type Cell, cellFromLocal } from './terrain-geometry.js'
 
 const SIZE = 32
@@ -170,30 +170,32 @@ export async function createTerrainController(
   onChange: () => void
 ): Promise<TerrainController> {
   const hostRect = host.getBoundingClientRect()
-  const hostWidth = Math.max(320, Math.round(hostRect.width) || 800)
-  const hostHeight = Math.max(320, Math.round(hostRect.height) || 600)
+  let hostWidth = Math.max(320, Math.round(hostRect.width) || 800)
+  let hostHeight = Math.max(320, Math.round(hostRect.height) || 600)
   // Base zoom fits the 32×32 grid with a moderate water border; wheel zooms
   // in/out and middle-drag pans (pixi-viewport camera).
   const TERRAIN_OCCUPANCY = 0.8
   const EDGE_MARGIN = 24
-  const fitScale = Math.min(
-    ((hostWidth - EDGE_MARGIN * 2) / GRID_PX) * TERRAIN_OCCUPANCY,
-    ((hostHeight - EDGE_MARGIN * 2) / GRID_PX) * TERRAIN_OCCUPANCY,
-    1
-  )
+  const fitScaleFor = (width: number, height: number): number =>
+    Math.min(
+      ((width - EDGE_MARGIN * 2) / GRID_PX) * TERRAIN_OCCUPANCY,
+      ((height - EDGE_MARGIN * 2) / GRID_PX) * TERRAIN_OCCUPANCY,
+      1
+    )
+  let fitScale = fitScaleFor(hostWidth, hostHeight)
   // Camera limits: can't zoom out below the full-map fit, can zoom in up to
   // 8×, and the pan is clamped to the grid plus a fixed water margin.
-  const minZoom = fitScale
-  const maxZoom = fitScale * 8
+  let minZoom = fitScale
+  let maxZoom = fitScale * 8
   const WATER_MARGIN = 8
   const waterCols = SIZE + WATER_MARGIN * 2
   const waterRows = SIZE + WATER_MARGIN * 2
   const waterWidth = waterCols * TILE
   const waterHeight = waterRows * TILE
 
-  const app = await createSectionApp(host, hostHeight)
+  let hostResize: ((width: number, height: number) => void) | null = null
+  const app = await createSectionApp(host, hostHeight, (width, height) => hostResize?.(width, height))
   app.renderer.background.color = WATER_BG
-  const appWidth = app.screen.width
 
   const scene = await createTerrainScene(ctx.assets, {
     palette: DEFAULT_TERRAIN_STATE.palette,
@@ -238,6 +240,30 @@ export async function createTerrainController(
   const decorations = new Map<string, ManualDecoration>()
   let hoveredCell: Cell | null = null
   let state: TerrainState = { ...DEFAULT_TERRAIN_STATE }
+
+  // Re-fits the camera and canvas when the host box changes (window resize or
+  // crossing a responsive breakpoint). In matrix-overlay mode the canvas uses
+  // the overlay's own aspect instead of the host height.
+  const applyResize = (width: number, height: number): void => {
+    hostWidth = width
+    hostHeight = height
+    fitScale = fitScaleFor(width, height)
+    minZoom = fitScale
+    maxZoom = fitScale * 8
+    viewport.clampZoom({ minScale: minZoom, maxScale: maxZoom })
+    const matrix = state.matrixKind
+    const renderHeight = matrix === null ? height : Math.round(MATRIX_HEIGHT * fitScale)
+    app.renderer.resize(width, renderHeight)
+    viewport.resize(width, renderHeight)
+    if (matrix !== null) {
+      renderMatrix(matrix)
+      viewport.setZoom(fitScale)
+      viewport.moveCenter(worldContainer.x + MATRIX_SIZE / 2, worldContainer.y + MATRIX_SIZE / 2)
+    } else {
+      resetCamera()
+    }
+  }
+  hostResize = applyResize
 
   const snapshot = (): LevelSnapshot => ({
     grid: grid.map((row) => [...row]),
@@ -297,8 +323,8 @@ export async function createTerrainController(
       onCursor(null)
     }
     const height = matrixKind === null ? hostHeight : Math.round(MATRIX_HEIGHT * fitScale)
-    app.renderer.resize(appWidth, height)
-    viewport.resize(appWidth, height)
+    app.renderer.resize(app.screen.width, height)
+    viewport.resize(app.screen.width, height)
     if (matrixKind !== null) {
       renderMatrix(matrixKind)
       viewport.setZoom(fitScale)
@@ -700,7 +726,7 @@ export async function createTerrainController(
     },
     destroy(): void {
       scene.destroy()
-      removeApp(app)
+      disposeSectionApp(app)
       app.destroy()
     }
   }
