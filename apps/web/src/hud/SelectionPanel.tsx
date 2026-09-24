@@ -49,6 +49,9 @@ function orderLabel(unit: HudSelectionUnit): string {
   if (unit.economy !== undefined) {
     return economyLabel(unit) ?? 'Idle'
   }
+  if (unit.carrying === true) {
+    return 'Carrying cargo'
+  }
   switch (unit.orderState) {
     case 'moving':
       return 'Moving'
@@ -151,7 +154,10 @@ function constructionHint(status: HudConstruction['status']): string {
 }
 
 export function SelectionPanel({ selection, construction, mineral }: SelectionPanelProps) {
-  const activeEconomy = selection.map(economyLabel).find((label) => label !== null) ?? null
+  const activeEconomy =
+    selection
+      .map((unit) => economyLabel(unit) ?? (unit.carrying === true ? 'Carrying cargo' : null))
+      .find((label) => label !== null) ?? null
   if (construction !== null) {
     const label = constructionLabel(construction)
     const status = constructionTitleStatus(construction.status)

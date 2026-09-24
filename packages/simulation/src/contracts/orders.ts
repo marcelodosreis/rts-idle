@@ -22,6 +22,10 @@ export type Order =
       readonly progressTicks: number
     }
   | {
+      readonly type: 'DEPOSIT'
+      readonly buildingId: EntityId
+    }
+  | {
       readonly type: 'BUILD'
       readonly buildingId: EntityId
       readonly buildingType: BuildingType

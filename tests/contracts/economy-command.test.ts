@@ -1,6 +1,7 @@
 import { isCommandMessage } from '@rts/protocol'
 import { START_ENTITY_ID, tilesToFixed } from '@rts/shared'
 import {
+  Building,
   Cargo,
   createSimulation,
   createWorld,
@@ -111,7 +112,7 @@ describe('GATHER command contract', () => {
     expect(simulation.hashState()).toBe(control.hashState())
   })
 
-  it('rejects a target that is not a mineral node without mutation', () => {
+  it('rejects a mixed worker selection without mutating any entity', () => {
     const scenario = economyWorld()
     const controlScenario = economyWorld()
     const simulation = createSimulation({
@@ -134,6 +135,97 @@ describe('GATHER command contract', () => {
           type: 'GATHER',
           payload: { unitIds: [scenario.firstWorker], nodeId: scenario.secondWorker }
         }
+      }
+    ])
+    control.step()
+
+    expect(result.rejected[0]?.code).toBe('ENTITY_UNAVAILABLE')
+    expect(simulation.hashState()).toBe(control.hashState())
+  })
+})
+
+function depositWorld() {
+  const world = createWorld()
+  const base = START_ENTITY_ID
+  const worker = START_ENTITY_ID + 1
+  world.createEntity(base)
+  world.store(Position).set(base, { x: 0, y: 0 })
+  world.store(Owner).set(base, { owner: 0 })
+  world.store(Building).set(base, {
+    buildingType: 'BASE',
+    status: 'COMPLETED',
+    progressTicks: 1,
+    totalTicks: 1,
+    builderId: null,
+    footprint: { x: 0, y: 0, width: 2, height: 2 }
+  })
+  world.createEntity(worker)
+  world.store(Position).set(worker, { x: tilesToFixed(4), y: 0 })
+  world.store(Owner).set(worker, { owner: 0 })
+  world.store(Kind).set(worker, 'pawn')
+  world.store(Cargo).set(worker, { amount: 4, capacity: 10 })
+  return { world, base, worker }
+}
+
+describe('DEPOSIT command contract', () => {
+  it('accepts the integer wire shape and rejects fractional building ids', () => {
+    expect(
+      isCommandMessage({
+        type: 'command',
+        intent: { type: 'DEPOSIT', payload: { unitIds: [1, 2], buildingId: 3 } }
+      })
+    ).toBe(true)
+    expect(
+      isCommandMessage({
+        type: 'command',
+        intent: { type: 'DEPOSIT', payload: { unitIds: [1], buildingId: 3.5 } }
+      })
+    ).toBe(false)
+  })
+
+  it('starts owned workers toward the ordered Base', () => {
+    const { world, base, worker } = depositWorld()
+    const simulation = createSimulation({
+      seed: SEEDS.integration.moveOwn,
+      identity: TEST_IDENTITY,
+      initialWorld: world
+    })
+
+    const result = simulation.step([
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'DEPOSIT', payload: { unitIds: [worker], buildingId: base } }
+      }
+    ])
+    const state = simulation.inspectState().world
+
+    expect(result.rejected).toEqual([])
+    expect(state.store(Orders).get(worker)?.queue).toEqual([{ type: 'DEPOSIT', buildingId: base }])
+    expect(state.store(Movement).get(worker)).toMatchObject({ destX: 0, destY: 0 })
+  })
+
+  it('rejects a target that is not a completed owned Base without mutation', () => {
+    const { world, worker } = depositWorld()
+    const controlWorld = depositWorld().world
+    const simulation = createSimulation({
+      seed: SEEDS.integration.moveMissing,
+      identity: TEST_IDENTITY,
+      initialWorld: world
+    })
+    const control = createSimulation({
+      seed: SEEDS.integration.moveMissing,
+      identity: TEST_IDENTITY,
+      initialWorld: controlWorld
+    })
+
+    const result = simulation.step([
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'DEPOSIT', payload: { unitIds: [worker], buildingId: worker } }
       }
     ])
     control.step()

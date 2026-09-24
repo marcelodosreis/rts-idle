@@ -123,7 +123,8 @@ function unitForHud(unit: SnapshotMessage['units'][number]): Omit<HudSelectionUn
     owner: unit.owner,
     ...(unit.orderState === undefined ? {} : { orderState: unit.orderState }),
     ...(unit.hp === undefined ? {} : { hp: unit.hp, maxHp: unit.maxHp }),
-    ...(unit.economy === undefined ? {} : { economy: unit.economy })
+    ...(unit.economy === undefined ? {} : { economy: unit.economy }),
+    ...(unit.carrying === undefined ? {} : { carrying: unit.carrying })
   }
 }
 
@@ -175,6 +176,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
         readonly maxHp?: number
         readonly economy?: HudSelectionUnit['economy']
         readonly orderState?: HudSelectionUnit['orderState']
+        readonly carrying?: HudSelectionUnit['carrying']
       }
     >()
     const unitOwners = new Map<number, number>()
@@ -256,7 +258,8 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
             moving: previous !== undefined && (previous.x !== current.x || previous.y !== current.y),
             ...(kind.hp === undefined ? {} : { hp: kind.hp, maxHp: kind.maxHp }),
             ...(kind.orderState === undefined ? {} : { orderState: kind.orderState }),
-            ...(kind.economy === undefined ? {} : { economy: kind.economy })
+            ...(kind.economy === undefined ? {} : { economy: kind.economy }),
+            ...(kind.carrying === undefined ? {} : { carrying: kind.carrying })
           })
         }
       }
@@ -392,11 +395,24 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
 
     const constructionCommand = (id: number): void => {
       const construction = buildings.find((candidate) => candidate.id === id)
-      const workerId = [...selection].find((selectedId) => {
+      if (construction === undefined) {
+        return
+      }
+      const ownedPawns = [...selection].filter((selectedId) => {
         const unit = unitKinds.get(selectedId)
         return unit?.kind === 'pawn' && unit.owner === HUMAN_PLAYER
       })
-      if (construction === undefined || workerId === undefined || construction.status === 'COMPLETED') {
+      if (construction.status === 'COMPLETED') {
+        // Right-clicking a completed owned Base sends carrying workers to
+        // deposit; non-carrying pawns have nothing to deliver.
+        const carrying = ownedPawns.filter((selectedId) => unitKinds.get(selectedId)?.carrying === true)
+        if (construction.owner === HUMAN_PLAYER && carrying.length > 0) {
+          sendCommand({ type: 'DEPOSIT', payload: { unitIds: carrying, buildingId: id } })
+        }
+        return
+      }
+      const workerId = ownedPawns[0]
+      if (workerId === undefined) {
         return
       }
       sendCommand({

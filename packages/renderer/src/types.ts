@@ -17,6 +17,8 @@ export interface RenderUnit {
   /** Authoritative behavior state from the simulation (drives idle/run). */
   readonly orderState?: OrderState
   readonly economy?: SnapshotEconomy
+  /** True while the worker holds cargo, independent of its current order. */
+  readonly carrying?: boolean
 }
 
 /** A competitive slot for the HUD (defeated state, wallet). */

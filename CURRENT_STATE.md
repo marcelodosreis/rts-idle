@@ -17,7 +17,7 @@ See `docs/tasks/todo.md` for full phase list.
 - ECS engine (10 components, custom, Map-based stores)
 - Fixed timestep (20 ticks/s, single-writer `step()`)
 - Deterministic simulation (xoshiro128**, fixed-point, SHA-256 hashes)
-- 8 commands: MOVE, STOP, HOLD, PATROL, ATTACK, ATTACK_MOVE, GATHER, SURRENDER
+- 9 commands: MOVE, STOP, HOLD, PATROL, ATTACK, ATTACK_MOVE, GATHER, DEPOSIT, SURRENDER
 - 8 pipeline systems: orders → movement → economy → combat → death → supply → victory → invariants
 - 3 unit types: pawn (100hp/10dmg), warrior (150hp/15dmg), archer (60hp/8dmg/range 3)
 - Combat with simultaneous death, victory/draw/tick-limit
@@ -27,6 +27,8 @@ See `docs/tasks/todo.md` for full phase list.
 - Unit selection (click + box), command bar, match overlay
 - Playable economy scenario with four controllable workers, 250 starting minerals,
   contextual GATHER, pickaxe/carry animations, progress feedback, and live Mineral HUD
+- Manual DEPOSIT: a worker that keeps cargo after a manual move shows the carry
+  pose and deposits when the player right-clicks an owned completed Base
 - Unified Building construction with HUD placement feedback, shared selection,
   pause/resume, worker reassignment, and completion status
 - Authoritative supply accounting: Base capacity, unit usage, completed Supply
@@ -59,6 +61,7 @@ No production, real AI, pathfinding, fog of war, or multiplayer.
 ## Active Task
 
 VS-01B Playable Economy Integration is complete, including visible mining/carrying feedback.
+ECONOMY-006 Manual cargo deposit and visible carrying state is complete.
 Building lifecycle coverage is complete for Base and Barracks through the shared
 Building component and `buildings` snapshot collection.
 BUILD-004 Supply Depot and Supply HUD is complete. Production queues, training,

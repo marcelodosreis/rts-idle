@@ -114,7 +114,7 @@ export class UnitLayer {
         ((unit.orderState === 'attacking' || unit.orderState === 'attack_move' || unit.orderState === 'patrol') &&
           deltaMoved)
       sprite.setHealth(unit.hp, unit.maxHp)
-      sprite.setState(moving, unit.x < (last?.x ?? unit.x), now, unit.economy)
+      sprite.setState(moving, unit.x < (last?.x ?? unit.x), now, unit.economy, unit.carrying ?? false)
       sprite.setEconomyBar(unit.economy)
       sprite.setPosition(position.x, position.y)
     }
