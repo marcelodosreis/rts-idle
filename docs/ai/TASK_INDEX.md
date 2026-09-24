@@ -39,6 +39,7 @@
 | BUILD-002 | Base construction | done | BUILD-001, ECONOMY-005 | simulation, game-data | unit, simulation |
 | BUILD-003 | Barracks construction | done | BUILD-002 | simulation, game-data | unit, simulation |
 | BUILD-004 | Supply depot construction | done | BUILD-002 | simulation, game-data, protocol, web | unit, simulation, contracts, e2e |
+| BUILD-005 | Construction cancellation (P2.05) | done | BUILD-002 | shared, protocol, simulation, web | unit, simulation, contracts, invariants, e2e |
 | PROD-001 | Production queue component | pending | — | simulation | unit, simulation |
 | PROD-002 | Unit training system | pending | PROD-001, BUILD-003 | simulation | unit, simulation |
 | PROD-003 | Supply cap system | done | BUILD-004 | simulation | unit, simulation |

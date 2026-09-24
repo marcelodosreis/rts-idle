@@ -104,8 +104,8 @@ active and pending packets remain here. See [`docs/tasks/README.md`](README.md).
 ## Phase 2 — Economy and production
 
 Execution plan: `docs/tasks/done/VS-01-plan.md`. Latest completed task packet:
-`docs/tasks/done/BUILD-004.md`. No active packet; next candidate is the
-production queue (`PROD-001`/`PROD-002`, P2.07).
+`docs/tasks/done/BUILD-005.md` (construction cancellation). No active packet; next
+candidate is the production queue (`PROD-001`/`PROD-002`, P2.07).
 
 ### VS-01 — Economy v0 (P2.01–P2.02)
 
@@ -166,6 +166,14 @@ production queue (`PROD-001`/`PROD-002`, P2.07).
 - [x] Canonical snapshot, restore, hash, replay, protocol guard, and projection
 - [x] Supply HUD and browser scenario coverage
 - [x] Completion gates passed; no production queue or reserved supply
+
+### BUILD-005 — Construction cancellation (P2.05)
+
+- [x] Autonomous `constructionRefund` formula in `@rts/shared` and `CANCEL_CONSTRUCTION` command
+- [x] Atomic cancellation of owned not-yet-completed constructions with `INVALID_STATE` guard
+- [x] Builder detachment, footprint release, and dangling-`BUILD`-order invariant
+- [x] Two-step HUD action with estimated refund and reduced-scope browser coverage
+- [x] Completion gates passed; no production, demolition, or resource/queue work
 
 ### Remaining Phase 2
 
