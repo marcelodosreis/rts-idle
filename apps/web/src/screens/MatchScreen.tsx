@@ -6,6 +6,7 @@ export function MatchScreen() {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const {
     status,
+    messageLog,
     unitCount,
     tick,
     selectionUnits,
@@ -32,6 +33,7 @@ export function MatchScreen() {
   return (
     <MatchHud
       status={status}
+      messageLog={messageLog}
       unitCount={unitCount}
       tick={tick}
       selection={selectionUnits}

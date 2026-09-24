@@ -52,7 +52,8 @@ test('a failed local map keeps the server-provided scenario selector available',
   })
   await page.goto('/?map=local')
 
-  await expect(page.getByRole('status')).toContainText('scenario spawn is outside or on invalid terrain')
+  await page.getByRole('status').click()
+  await expect(page.getByText('scenario spawn is outside or on invalid terrain')).toBeVisible()
   await page.getByRole('combobox', { name: 'scenario' }).click()
   await expect(page.getByRole('option', { name: '4v4' })).toBeVisible()
   await page.getByRole('option', { name: '4v4' }).click()

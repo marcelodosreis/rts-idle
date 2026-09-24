@@ -16,6 +16,7 @@ import { snapshotToFrame } from '../client/snapshot-to-frame'
 import type { HudConstruction, HudMineral, HudSelectionUnit } from '../hud/types'
 import { buildingTypeForMode, type CommandMode, isBuildMode, useCommandModes } from '../hud/useCommandModes'
 import { readPlaytestMap } from './playtest-map'
+import { type MessageLogEntry, useMessageLog } from './useMessageLog'
 
 const SCENARIO = new URLSearchParams(window.location.search).get('scenario') ?? '6v6'
 const AGGRESSION = (new URLSearchParams(window.location.search).get('aggression') ?? 'offensive') as
@@ -68,6 +69,7 @@ declare global {
 
 export interface MatchSessionState {
   readonly status: string
+  readonly messageLog: readonly MessageLogEntry[]
   readonly unitCount: number
   readonly selectedCount: number
   readonly tick: number
@@ -136,6 +138,7 @@ function unitForHud(unit: SnapshotMessage['units'][number]): Omit<HudSelectionUn
  */
 export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): MatchSessionState {
   const [status, setStatus] = useState('connecting')
+  const { messageLog, appendLog } = useMessageLog()
   const [unitCount, setUnitCount] = useState(0)
   const [selectedCount, setSelectedCount] = useState(0)
   const [tick, setTick] = useState(0)
@@ -312,6 +315,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
 
     const sendCommand = (intent: CommandIntent): void => {
       if (connection !== null) {
+        appendLog('command', `${intent.type} → ${JSON.stringify(intent.payload)}`)
         connection.sendCommand(intent)
       }
     }
@@ -434,6 +438,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
       buildCatalog = config.buildings
       setMatchConfig(config)
       setScenarios(config.scenarios)
+      appendLog('info', `Match config: ${config.scenario.id} (${config.buildings.length} buildings)`)
       const configuredRenderer: GameRenderer = new PixiRenderer({
         worldWidth: config.map.width * TILE_PIXELS,
         worldHeight: config.map.height * TILE_PIXELS,
@@ -509,7 +514,8 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
           if (!sessionActive || renderer !== configuredRenderer) {
             return
           }
-          setStatus(`error: ${error instanceof Error ? error.message : String(error)}`)
+          const message = error instanceof Error ? error.message : String(error)
+          appendLog('error', message)
         })
     }
 
@@ -542,12 +548,24 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
           unitPositions.set(unit.id, { x: unit.x, y: unit.y })
         }
         setResources(resourcesForHuman(message))
+        for (const event of message.events) {
+          if (event.type === 'attackFired') {
+            appendLog('event', `attackFired: ${event.attackerId} → ${event.targetId}`)
+          } else if (event.type === 'damageDealt') {
+            appendLog('event', `damageDealt: ${event.targetId} -${event.amount} HP (${event.targetHp} left)`)
+          } else if (event.type === 'unitDied') {
+            appendLog('event', `unitDied: ${event.entityId} (P${event.owner}) killed by ${event.killerId ?? 'unknown'}`)
+          }
+        }
         if (!matchEnded && message.phase === 'FINISHED') {
           matchEnded = true
           const active = message.players.filter((player) => !player.defeated)
           if (active.length === 1) {
-            setMatchResult(active[0]!.id === HUMAN_PLAYER ? 'victory' : 'defeat')
+            const result = active[0]!.id === HUMAN_PLAYER ? 'victory' : 'defeat'
+            appendLog('info', `Match result: ${result}`)
+            setMatchResult(result)
           } else {
+            appendLog('info', 'Match result: draw')
             setMatchResult('draw')
           }
         }
@@ -556,9 +574,12 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
           updateSelection([...selection])
         }
       },
-      onOpen: () => setStatus('connected'),
+      onOpen: () => {
+        setStatus('connected')
+        appendLog('info', 'Connected')
+      },
       onError: (error) => {
-        setStatus(error.message)
+        appendLog('error', error.message)
         if (error.scenarios !== undefined) {
           setScenarios(error.scenarios)
         }
@@ -598,6 +619,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
 
   return {
     status,
+    messageLog,
     unitCount,
     selectedCount,
     tick,
