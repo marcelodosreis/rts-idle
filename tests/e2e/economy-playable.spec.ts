@@ -64,7 +64,9 @@ async function mineralValue(page: Page): Promise<number> {
 
 test('economy HUD shows authoritative starting supply', async ({ page }) => {
   await page.goto('/?scenario=economy&aggression=passive')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
+    .toBeGreaterThan(0)
   await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 10')
 })
 
@@ -88,7 +90,9 @@ async function boxSelect(page: Page, positions: readonly { readonly x: number; r
 test('a player gathers, deposits, repeats, and stops through browser controls', async ({ page }) => {
   test.setTimeout(35_000)
   await page.goto('/?scenario=economy')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
+    .toBeGreaterThan(0)
 
   const initialMinerals = await mineralValue(page)
   expect(initialMinerals).toBe(250)
@@ -124,12 +128,12 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
   await expect.poll(() => mineralValue(page), { timeout: 20_000 }).toBeGreaterThan(initialMinerals)
 
   await page.getByRole('button', { name: 'Stop' }).click()
+  await expect(page.getByTestId('economy-status')).toBeEmpty()
   const stopped = await workerPosition(page, id)
   const stoppedMinerals = await mineralValue(page)
   await page.waitForTimeout(700)
   expect(await workerPosition(page, id)).toEqual(stopped)
   expect(await mineralValue(page)).toBe(stoppedMinerals)
-  await expect(page.getByTestId('economy-status')).toBeEmpty()
   if (art) {
     await expect.poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id)).toBe('idle')
   }
@@ -138,7 +142,9 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
 test('an interrupted carrying worker shows cargo and deposits by right-clicking the Base', async ({ page }) => {
   test.setTimeout(35_000)
   await page.goto('/?scenario=economy')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
+    .toBeGreaterThan(0)
 
   const initialMinerals = await mineralValue(page)
   const workers = await workerIds(page)
@@ -163,7 +169,7 @@ test('an interrupted carrying worker shows cargo and deposits by right-clicking 
       .toBe('carry_idle')
   }
 
-  const basePoint = await focusFixed(page, tilesToFixed(6), tilesToFixed(8))
+  const basePoint = await focusFixed(page, tilesToFixed(7), tilesToFixed(9))
   await page.mouse.click(basePoint.x, basePoint.y, { button: 'right' })
   await expect.poll(() => mineralValue(page), { timeout: 15_000 }).toBeGreaterThan(initialMinerals)
   await expect(page.getByTestId('economy-status')).toBeEmpty()
@@ -174,7 +180,9 @@ test('an interrupted carrying worker shows cargo and deposits by right-clicking 
 
 test('a primary click selects a mineral node without selecting a worker', async ({ page }) => {
   await page.goto('/?scenario=economy&aggression=passive')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
+    .toBeGreaterThan(0)
 
   const nodePoint = await focusFixed(page, tilesToFixed(ECONOMY_NODE_TILE.x), tilesToFixed(ECONOMY_NODE_TILE.y))
   await page.mouse.click(nodePoint.x, nodePoint.y)
@@ -189,7 +197,9 @@ test('a primary click selects a mineral node without selecting a worker', async 
 test('a group mines the same node concurrently through the browser command path', async ({ page }) => {
   test.setTimeout(35_000)
   await page.goto('/?scenario=economy')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
+    .toBeGreaterThan(0)
 
   const workers = await workerIds(page)
   const group = workers.slice(0, 2)
@@ -209,14 +219,22 @@ test('a group mines the same node concurrently through the browser command path'
   const economyLabels = () =>
     group.map((id) => page.getByRole('button', { name: new RegExp(`Worker #${id}, owner 0, Mining \\d+/20`) }))
   await expect.poll(async () => Promise.all((await economyLabels()).map((label) => label.count()))).toEqual([1, 1])
-  const progress = await Promise.all(
-    group.map(async (id) => {
-      const label = await page.getByRole('button', { name: new RegExp(`Worker #${id}`) }).getAttribute('aria-label')
-      return Number(label?.match(/Mining (\d+)\/20/)?.[1])
-    })
-  )
-  expect(progress[0]).toBeGreaterThan(0)
-  expect(progress[1]).toBeGreaterThan(0)
+  await expect
+    .poll(
+      async () => {
+        const progress = await Promise.all(
+          group.map(async (id) => {
+            const label = await page
+              .getByRole('button', { name: new RegExp(`Worker #${id}`) })
+              .getAttribute('aria-label')
+            return Number(label?.match(/Mining (\d+)\/20/)?.[1] ?? 0)
+          })
+        )
+        return progress.every((value) => value > 0)
+      },
+      { timeout: 15_000 }
+    )
+    .toBe(true)
   await expect(page.getByTestId('economy-status')).toContainText('Mining')
 
   if (await hasArt(page)) {

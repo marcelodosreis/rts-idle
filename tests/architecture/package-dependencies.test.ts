@@ -34,8 +34,9 @@ const MODULES: readonly ModuleEntry[] = [
   {
     name: 'web',
     root: 'apps/web/src',
-    // det/ and perf/ are diagnostic harness pages, not the playable app.
-    exclude: ['det', 'perf'],
+    // Diagnostic harnesses are browser-only tools, not part of the playable
+    // client package dependency surface.
+    exclude: ['diagnostics'],
     allowed: ['@rts/shared', '@rts/protocol', '@rts/renderer', '@rts/audio']
   },
   { name: 'benchmark', root: 'tools/benchmark/src', allowed: ['@rts/shared', '@rts/simulation'] },

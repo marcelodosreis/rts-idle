@@ -1,7 +1,11 @@
 import { Application, Graphics, type Ticker } from 'pixi.js'
-import { Viewport } from 'pixi-viewport'
+import type { Viewport } from 'pixi-viewport'
 import { AssetLibrary } from './assets/asset-library.js'
 import { EffectsLayer } from './effects-layer.js'
+import { createCameraController } from './input/camera-controller.js'
+import type { WorldInteraction } from './input/input-types.js'
+import { createWorldHitTester } from './input/world-hit-tester.js'
+import { WorldInputAdapter } from './input/world-input-adapter.js'
 import { CommandPing } from './ping.js'
 import { SelectionController } from './selection.js'
 import { TerrainLayer } from './terrain-layer.js'
@@ -29,8 +33,11 @@ export class PixiRenderer implements GameRenderer {
   private effects: EffectsLayer | null = null
   private terrain: TerrainLayer | null = null
   private worldObjects: WorldObjectLayer | null = null
+  private input: WorldInputAdapter | null = null
+  private camera: ReturnType<typeof createCameraController> | null = null
+  private mountId = 0
   private readonly options: RendererOptions
-  private callbacks: RendererCallbacks = {}
+  private callbacks!: RendererCallbacks
   /** Presentation asset library; null when the manifest/art is unavailable. */
   readonly assets: AssetLibrary
 
@@ -43,46 +50,51 @@ export class PixiRenderer implements GameRenderer {
     if (this.app !== null) {
       throw new Error('PixiRenderer: already mounted')
     }
+    const mountId = ++this.mountId
     this.callbacks = callbacks
     await this.assets.load()
+    if (mountId !== this.mountId) {
+      return
+    }
 
     const app = new Application()
     await app.init({
       resizeTo: host,
       background: WATER_BG,
-      antialias: true,
+      roundPixels: true,
       preference: 'webgl'
     })
+    if (mountId !== this.mountId) {
+      app.destroy(
+        { removeView: true, releaseGlobalResources: true },
+        { children: true, texture: false, textureSource: false }
+      )
+      return
+    }
 
     host.appendChild(app.canvas)
-    app.canvas.addEventListener('contextmenu', (event) => {
-      event.preventDefault()
-      if (this.viewport === null || this.units === null || this.worldObjects === null || this.ping === null) {
-        return
-      }
-      const rect = app.canvas.getBoundingClientRect()
-      const globalX = event.clientX - rect.left
-      const globalY = event.clientY - rect.top
-      this.dispatchCommand(globalX, globalY)
-    })
-
-    const viewport = new Viewport({
-      screenWidth: app.screen.width,
-      screenHeight: app.screen.height,
-      worldWidth: this.options.worldWidth,
-      worldHeight: this.options.worldHeight,
-      events: app.renderer.events
-    })
-    app.stage.addChild(viewport)
-    viewport.drag({ mouseButtons: 'middle' }).wheel().clampZoom({ minScale: MIN_ZOOM, maxScale: MAX_ZOOM })
-
+    app.canvas.style.display = 'block'
+    app.canvas.style.width = '100%'
+    app.canvas.style.height = '100%'
+    app.canvas.style.touchAction = 'none'
+    app.canvas.style.overscrollBehavior = 'contain'
     const zoom = this.options.initialZoom ?? 1
     const center = this.options.initialCenter ?? {
       x: this.options.worldWidth / 2,
       y: this.options.worldHeight / 2
     }
-    viewport.setZoom(zoom)
-    viewport.moveCenter(center.x, center.y)
+    const camera = createCameraController(app, {
+      worldWidth: this.options.worldWidth,
+      worldHeight: this.options.worldHeight,
+      initialCenter: center,
+      initialZoom: zoom,
+      input: {
+        profile: this.options.inputProfile ?? 'mouse',
+        minZoom: MIN_ZOOM,
+        maxZoom: MAX_ZOOM
+      }
+    })
+    const viewport = camera.viewport
 
     app.ticker.add((ticker) => this.tick(ticker))
 
@@ -91,16 +103,11 @@ export class PixiRenderer implements GameRenderer {
     selectionRect.eventMode = 'none'
     app.stage.addChild(selectionRect)
 
-    const units = new UnitLayer(viewport, this.assets, (id) => {
-      this.callbacks.onUnitSelected?.(id)
-    })
+    const units = new UnitLayer(viewport, this.assets)
     const selection = new SelectionController({
       viewport,
       units,
-      selectionRect,
-      onBoxSelected: (ids) => {
-        this.callbacks.onBoxSelected?.(ids)
-      }
+      selectionRect
     })
     const ping = new CommandPing(viewport)
     const effects = new EffectsLayer(viewport)
@@ -109,37 +116,27 @@ export class PixiRenderer implements GameRenderer {
     if (this.options.map !== undefined) {
       await terrain.build(this.options.map)
     }
+    if (mountId !== this.mountId) {
+      camera.dispose()
+      terrain.dispose()
+      app.destroy(
+        { removeView: true, releaseGlobalResources: true },
+        { children: true, texture: false, textureSource: false }
+      )
+      return
+    }
 
-    viewport.eventMode = 'static'
-    viewport.on('pointerdown', (event) => {
-      // Only a primary click starts a selection box. Right-click and
-      // Control+click are secondary input, routed through the canvas
-      // `contextmenu` listener instead.
-      if (event.button === 0 && !event.ctrlKey && !event.metaKey) {
-        const world = viewport.toWorld(event.global.x, event.global.y)
-        if (this.callbacks.onGroundClick?.(world.x, world.y) === true) {
-          return
-        }
-        const building = worldObjects.buildingAt(world.x, world.y)
-        if (building !== null) {
-          this.callbacks.onBuildingSelected?.(building)
-          return
-        }
-        const mineralNode = worldObjects.mineralNodeAt(world.x, world.y)
-        if (mineralNode !== null) {
-          this.callbacks.onMineralSelected?.(mineralNode)
-          return
-        }
-        selection.startBox(event.global)
-      }
+    const hitTester = createWorldHitTester({
+      unitAt: (x, y) => units.unitAt(x, y),
+      buildingAt: (x, y) => worldObjects.buildingAt(x, y),
+      mineralNodeAt: (x, y) => worldObjects.mineralNodeAt(x, y)
     })
-    viewport.on('pointermove', (event) => {
-      const world = viewport.toWorld(event.global.x, event.global.y)
-      this.callbacks.onGroundMove?.(world.x, world.y)
-      selection.updateBox(event.global)
-    })
-    viewport.on('pointerup', (event) => {
-      selection.endBox(event.global)
+    const input = new WorldInputAdapter({
+      canvas: app.canvas,
+      viewport,
+      hitTester,
+      onInteraction: (interaction) => this.handleInteraction(interaction, selection),
+      dragThresholdPx: 6
     })
 
     this.app = app
@@ -150,6 +147,8 @@ export class PixiRenderer implements GameRenderer {
     this.effects = effects
     this.terrain = terrain
     this.worldObjects = worldObjects
+    this.input = input
+    this.camera = camera
   }
 
   present(frame: RenderFrame): void {
@@ -186,34 +185,19 @@ export class PixiRenderer implements GameRenderer {
     this.effects.handleEvents(frame.events ?? [], now)
   }
 
-  /**
-   * Routes a right-click command (attack, gather, move) to the appropriate
-   * callback based on what is under the cursor. Used by both the PixiJS
-   * `rightdown` event (mouse) and the DOM `contextmenu` event (trackpad).
-   */
-  private dispatchCommand(globalX: number, globalY: number): void {
-    if (this.viewport === null || this.units === null || this.worldObjects === null || this.ping === null) {
-      return
+  private handleInteraction(interaction: WorldInteraction, selection: SelectionController): void {
+    if (interaction.type === 'selection-start') {
+      selection.beginBox(interaction.screen)
+    } else if (interaction.type === 'selection-update') {
+      selection.updateBox(interaction.screen)
+    } else if (interaction.type === 'selection-end') {
+      selection.finishBox()
+    } else if (interaction.type === 'cancel') {
+      selection.cancelBox()
+    } else if (interaction.type === 'secondary-activate' && interaction.target.kind === 'ground') {
+      this.ping?.show(interaction.target.position.x, interaction.target.position.y)
     }
-    const world = this.viewport.toWorld(globalX, globalY)
-    const mineralNode = this.worldObjects.mineralNodeAt(world.x, world.y)
-    if (mineralNode !== null) {
-      this.ping.show(world.x, world.y)
-      this.callbacks.onMineralCommand?.(mineralNode)
-      return
-    }
-    const hit = this.units.unitAt(world.x, world.y)
-    if (hit !== null) {
-      this.callbacks.onUnitCommand?.(hit)
-      return
-    }
-    const building = this.worldObjects.buildingAt(world.x, world.y)
-    if (building !== null) {
-      this.callbacks.onBuildingCommand?.(building)
-    } else {
-      this.ping.show(world.x, world.y)
-      this.callbacks.onGroundCommand?.(world.x, world.y)
-    }
+    this.callbacks.onInteraction(interaction)
   }
 
   /** Visual-loop tick: advances animations and eases interpolated positions. */
@@ -237,6 +221,16 @@ export class PixiRenderer implements GameRenderer {
     return this.selection?.get() ?? []
   }
 
+  getSelectionBoxState(): {
+    readonly visible: boolean
+    readonly x: number
+    readonly y: number
+    readonly width: number
+    readonly height: number
+  } {
+    return this.selection?.getBoxState() ?? { visible: false, x: 0, y: 0, width: 0, height: 0 }
+  }
+
   getPing(): { readonly x: number; readonly y: number } | null {
     return this.ping?.position() ?? null
   }
@@ -254,12 +248,18 @@ export class PixiRenderer implements GameRenderer {
   }
 
   dispose(): void {
+    this.mountId += 1
+    this.input?.dispose()
+    this.camera?.dispose()
+    this.terrain?.dispose()
+    this.assets.destroy()
     if (this.app !== null) {
-      this.app.destroy(true, { children: true, texture: true })
+      this.app.destroy(
+        { removeView: true, releaseGlobalResources: true },
+        { children: true, texture: false, textureSource: false }
+      )
       this.app = null
     }
-    this.assets.destroy()
-    this.terrain?.dispose()
     this.viewport = null
     this.units = null
     this.selection = null
@@ -267,6 +267,8 @@ export class PixiRenderer implements GameRenderer {
     this.effects = null
     this.terrain = null
     this.worldObjects = null
+    this.input = null
+    this.camera = null
   }
 
   getUnitPositions(): ReadonlyMap<number, { readonly x: number; readonly y: number }> {
@@ -301,6 +303,10 @@ export class PixiRenderer implements GameRenderer {
       return 0
     }
     return this.viewport.scale.x
+  }
+
+  setInputProfile(profile: NonNullable<RendererOptions['inputProfile']>): void {
+    this.camera?.setProfile(profile)
   }
 
   worldToScreen(x: number, y: number): { readonly x: number; readonly y: number } {

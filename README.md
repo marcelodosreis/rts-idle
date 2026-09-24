@@ -83,7 +83,7 @@ test or build under Node 20 does not count as verification.
 ### E2E (Playwright)
 
 ```bash
-corepack pnpm exec playwright install chromium
+corepack pnpm exec playwright install chromium firefox
 corepack pnpm run test:e2e:focused tests/e2e/<target>.spec.ts --list
 corepack pnpm run test:e2e:focused tests/e2e/<target>.spec.ts
 ```
@@ -91,7 +91,7 @@ corepack pnpm run test:e2e:focused tests/e2e/<target>.spec.ts
 On WSL2/Linux, system libraries may be required (Playwright needs sudo; make sure the pnpm in your nvm PATH is visible to it):
 
 ```bash
-sudo env "PATH=$PATH" corepack pnpm exec playwright install-deps chromium
+sudo env "PATH=$PATH" corepack pnpm exec playwright install-deps chromium firefox
 ```
 
 ## Scripts
@@ -102,9 +102,12 @@ sudo env "PATH=$PATH" corepack pnpm exec playwright install-deps chromium
 | `corepack pnpm run verify` | Full local gate: typecheck, lint, all suites, build |
 | `corepack pnpm run verify:fast` | Typecheck, lint, and unit tests for quick iteration |
 | `corepack pnpm run verify:simulation` | Simulation, contracts, orders, determinism, architecture, invariants |
-| `corepack pnpm run verify:browser` | Build and explicitly scoped Chromium E2E gate |
+| `corepack pnpm run verify:browser` | Build and run the complete Chromium + Firefox E2E gate |
+| `corepack pnpm run test:e2e:all` | Complete Chromium + Firefox E2E gate, including performance benchmarks |
+| `corepack pnpm run test:e2e:fast` | Functional Chromium + Firefox E2E gate without heavy performance benchmarks |
+| `corepack pnpm run test:e2e:perf` | Chromium + Firefox performance benchmark gate |
 | `corepack pnpm run test:e2e:focused <file>` | Run one E2E target; use `--list` first to confirm test count |
-| `corepack pnpm run test:e2e -- --project=chromium` | Explicitly scoped full Chromium E2E gate |
+| `corepack pnpm run test:e2e -- --project=<browser>` | Explicitly scoped E2E gate for one browser |
 | `corepack pnpm run typecheck` | `tsc --noEmit` across all packages |
 | `corepack pnpm run lint` / `lint:fix` | Biome check / check + fix |
 | `corepack pnpm run test:*` | unit, integration, simulation, contracts, orders, determinism, invariants, architecture, e2e |

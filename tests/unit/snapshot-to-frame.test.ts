@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { snapshotToFrame } from '../../apps/web/src/client/snapshot-to-frame.js'
+import { snapshotToFrame } from '../../apps/web/src/features/match/projections/snapshot-to-frame.js'
 
 describe('snapshot to frame mapping', () => {
   it('forwards the carrying flag to the render unit', () => {
@@ -62,7 +62,6 @@ describe('snapshot to frame mapping', () => {
       ],
       events: [{ type: 'damageDealt', targetId: 1, amount: 10, targetHp: 90 }]
     })
-    expect(frame.tick).toBe(3)
     expect(frame.units).toEqual([
       {
         id: 1,
@@ -98,10 +97,6 @@ describe('snapshot to frame mapping', () => {
       }
     ])
     expect(frame.mineralNodes).toEqual([{ id: 4, x: 700, y: 800, remaining: 25 }])
-    expect(frame.players).toEqual([
-      { id: 0, defeated: false, gold: 0, usedSupply: 2, supplyCap: 10 },
-      { id: 1, defeated: true, gold: 5, usedSupply: 0, supplyCap: 0 }
-    ])
     expect(frame.events).toEqual([{ type: 'damageDealt', targetId: 1, amount: 10, targetHp: 90 }])
   })
 
@@ -122,7 +117,6 @@ describe('snapshot to frame mapping', () => {
       units: [],
       buildings: [],
       mineralNodes: [],
-      players: [],
       events: []
     })
   })

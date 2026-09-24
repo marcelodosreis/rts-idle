@@ -1,7 +1,7 @@
 # QUAL-010 — Barrier singleton
 
 **Status:** pending
-**Phase:** Quality Hardening / Núcleo
+**Phase:** Quality Hardening / Core
 **Dependencies:** QUAL-000
 
 ## Objective

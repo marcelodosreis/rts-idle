@@ -1,7 +1,7 @@
-# QUAL-011 — Flip paralelismo CI
+# QUAL-011 — Toggle CI parallelism
 
 **Status:** pending
-**Phase:** Quality Hardening / Estrutural
+**Phase:** Quality Hardening / Structural
 **Dependencies:** QUAL-009, QUAL-010
 
 ## Objective

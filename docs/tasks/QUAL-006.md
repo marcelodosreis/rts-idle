@@ -1,7 +1,7 @@
 # QUAL-006 — WebKit/touch
 
 **Status:** pending
-**Phase:** Quality Hardening / Estrutural
+**Phase:** Quality Hardening / Structural
 **Dependencies:** QUAL-005
 
 ## Objective

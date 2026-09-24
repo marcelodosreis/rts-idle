@@ -1,7 +1,7 @@
 # QUAL-007 — Barrier input
 
 **Status:** pending
-**Phase:** Quality Hardening / Baratos
+**Phase:** Quality Hardening / Low Effort
 **Dependencies:** QUAL-004
 
 ## Objective

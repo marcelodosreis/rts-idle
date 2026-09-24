@@ -12,37 +12,36 @@ export interface SelectionControllerOptions {
   readonly units: UnitLayer
   /** Screen-space rectangle graphics, owned by the renderer and drawn above the viewport. */
   readonly selectionRect: Graphics
-  readonly onBoxSelected: (ids: readonly number[]) => void
 }
 
 /**
- * Selection state and feedback: box selection over screen coordinates, the
- * selection-id set, and per-unit selection rings. Coordinates are translated
- * to world space through the viewport; unit positions come from the UnitLayer.
+ * Selection feedback: box selection over screen coordinates, the selection-id
+ * set, and per-unit selection rings. Logical box membership is owned by the
+ * application layer; unit positions come from the UnitLayer for ring updates.
  */
 export class SelectionController {
   private readonly viewport: Viewport
   private readonly units: UnitLayer
   private readonly selectionRect: Graphics
-  private readonly onBoxSelected: (ids: readonly number[]) => void
   private readonly selection = new Set<number>()
   private readonly selectionRings = new Map<number, Graphics>()
   private selecting = false
   private selectionStart: PointData | null = null
+  private boxState = { visible: false, x: 0, y: 0, width: 0, height: 0 }
 
   constructor(options: SelectionControllerOptions) {
     this.viewport = options.viewport
     this.units = options.units
     this.selectionRect = options.selectionRect
-    this.onBoxSelected = options.onBoxSelected
   }
 
-  startBox(screen: PointData): void {
+  beginBox(screen: PointData): void {
     this.selecting = true
     this.selectionStart = { x: screen.x, y: screen.y }
     this.selectionRect.visible = true
+    this.boxState = { visible: true, x: screen.x, y: screen.y, width: 0, height: 0 }
     this.selectionRect.clear()
-    this.selectionRect.rect(screen.x, screen.y, 0, 0).fill(BOX_FILL_COLOR, 0.15)
+    this.selectionRect.rect(screen.x, screen.y, 0, 0).fill({ color: BOX_FILL_COLOR, alpha: 0.15 })
     this.selectionRect.stroke({ width: 1, color: BOX_FILL_COLOR })
   }
 
@@ -54,39 +53,33 @@ export class SelectionController {
     const y = Math.min(this.selectionStart.y, screen.y)
     const width = Math.abs(screen.x - this.selectionStart.x)
     const height = Math.abs(screen.y - this.selectionStart.y)
+    this.boxState = { visible: true, x, y, width, height }
     this.selectionRect.clear()
-    this.selectionRect.rect(x, y, width, height).fill(BOX_FILL_COLOR, 0.15)
+    this.selectionRect.rect(x, y, width, height).fill({ color: BOX_FILL_COLOR, alpha: 0.15 })
     this.selectionRect.stroke({ width: 1, color: BOX_FILL_COLOR })
   }
 
-  endBox(screen: PointData): void {
-    if (!this.selecting || this.selectionStart === null) {
+  finishBox(): void {
+    if (!this.selecting) {
       return
     }
     this.selecting = false
     this.selectionRect.visible = false
     this.selectionRect.clear()
+    this.selectionStart = null
+    this.boxState = { ...this.boxState, visible: false }
+  }
 
-    const x0 = Math.min(this.selectionStart.x, screen.x)
-    const y0 = Math.min(this.selectionStart.y, screen.y)
-    const x1 = Math.max(this.selectionStart.x, screen.x)
-    const y1 = Math.max(this.selectionStart.y, screen.y)
+  cancelBox(): void {
+    this.selecting = false
+    this.selectionStart = null
+    this.selectionRect.visible = false
+    this.selectionRect.clear()
+    this.boxState = { ...this.boxState, visible: false }
+  }
 
-    const topLeft = this.viewport.toWorld(x0, y0)
-    const bottomRight = this.viewport.toWorld(x1, y1)
-
-    const selected: number[] = []
-    for (const [id, position] of this.units.positionsPixels()) {
-      if (
-        position.x >= topLeft.x &&
-        position.x <= bottomRight.x &&
-        position.y >= topLeft.y &&
-        position.y <= bottomRight.y
-      ) {
-        selected.push(id)
-      }
-    }
-    this.onBoxSelected(selected)
+  getBoxState(): Readonly<typeof this.boxState> {
+    return { ...this.boxState }
   }
 
   /** Replaces the selected id set and (re)creates rings for visible units. */

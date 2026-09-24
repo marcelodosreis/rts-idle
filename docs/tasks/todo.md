@@ -223,25 +223,28 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Latest completed task packet:
 - [ ] QUAL-018 Board + tracking guard + protocolo
 - [ ] QUAL-016 Higiene de saída (test output)
 
-### Baratos
-- [ ] QUAL-004 Helper de input (deps: QUAL-000)
+### Low Effort
+- [ ] QUAL-004 Input helper (deps: QUAL-000)
 - [ ] QUAL-007 Barrier input (deps: QUAL-004)
 - [ ] QUAL-012 expectAnim + barrier (deps: QUAL-000)
-- [ ] QUAL-008 Geometria dinâmica (deps: QUAL-002)
-- [ ] QUAL-015 Base de branch (deps: none)
+- [ ] QUAL-008 Dynamic geometry (deps: QUAL-002)
+- [ ] QUAL-015 Branch baseline (deps: none)
 
-### Núcleo
-- [ ] QUAL-001 Harness estrutural (deps: QUAL-000)
-- [ ] QUAL-002 Contrato HUD (deps: QUAL-001)
-- [ ] QUAL-003 Invariantes display list (deps: QUAL-001)
-- [ ] QUAL-005 Matriz de gestos (deps: QUAL-004)
-- [ ] QUAL-009 Isolamento concorrente (deps: QUAL-000)
+### Core
+- [ ] QUAL-001 Structural harness (deps: QUAL-000)
+- [ ] QUAL-002 HUD contract (deps: QUAL-001)
+- [ ] QUAL-003 Display list invariants (deps: QUAL-001)
+- [ ] QUAL-005 Gesture matrix (deps: QUAL-004)
+- [ ] QUAL-009 Concurrent isolation (deps: QUAL-000)
 - [ ] QUAL-010 Barrier singleton (deps: QUAL-000)
 
-### Estrutural
-- [ ] QUAL-011 Flip paralelismo CI (deps: QUAL-009, QUAL-010)
+### Structural
+- [ ] QUAL-011 Toggle CI parallelism (deps: QUAL-009, QUAL-010)
 - [ ] QUAL-006 WebKit/touch (deps: QUAL-005)
 
-### Condicionado
-- [ ] QUAL-013 Gate E2E por caminho (deps: QUAL-002, QUAL-005)
+### Conditional
+- [ ] QUAL-013 Path-based E2E gate (deps: QUAL-002, QUAL-005)
 - [ ] QUAL-014 Coverage ratchet (deps: QUAL-016)
+
+### Browser Validation
+- [x] E2E-001 Gate stratification: complete, functional, and performance gates

@@ -74,26 +74,28 @@ Invariants:
 renderer/src/
   types.ts       Public contract: GameRenderer, RenderFrame, RenderUnit, options
   renderer.ts    PixiRenderer orchestrator (Application + viewport + wiring)
+  input/         Typed pointer/context input, hit testing, and shared camera policy
   unit-layer.ts  Unit lifecycle + positions + interpolation
   unit-sprite.ts One unit's sprite: idle/run/attack frames, HP bar, facing
   effects-layer.ts  Combat feedback: streaks, damage popups, explosions
   progress-bar.ts  Shared progress-bar primitive (ratio, color, fill, draw)
-  selection.ts   Box selection + selection rings + selection set
+  selection.ts   Box selection + selection rings (visual projection)
   ping.ts        Right-click command ping
   terrain-*      Terrain tileset/autotile/dressing presentation
 ```
 
-The renderer never computes gameplay; it presents frames and reports
-selection/commands outward through callbacks.
+The renderer never computes gameplay; it presents frames and reports typed world
+interactions outward. The web match layer translates those interactions into
+gameplay commands. Camera state remains presentation-only.
 
 ## Web layout
 
 ```text
 web/src/
-  app/          App root
-  screens/      MatchScreen (thin), useMatchSession (lifecycle + debug API)
-  client/       connection.ts (WS + protocol guards), snapshot-to-frame.ts (pure)
-  det/, perf/   Diagnostic harness pages (excluded from the dependency barrier)
+  app/          Bootstrap, providers, typed router, route errors
+  pages/        Route composition (`match/` and `laboratory/`)
+  features/     Match and Laboratory domain behaviour, state, and UI
+  shared/       Transport, config, reusable components, and UI primitives
 ```
 
 ## Shared reusable modules
@@ -111,8 +113,9 @@ web/src/
 
 - The simulation never imports protocol, renderer, ai, or platform APIs.
 - The renderer never imports the simulation's ECS/GameState.
-- The web app (excluding diagnostic harness pages) never imports the
-  simulation.
+- The playable web app never imports the simulation. The Laboratory determinism
+  route is an explicitly isolated browser diagnostic harness and is excluded
+  from the playable package dependency barrier.
 - No package imports another package's internals via relative paths; all
   cross-package access goes through the package's public exports.
 - The authorized mutability exception covers only the simulation core's

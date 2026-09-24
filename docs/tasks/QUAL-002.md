@@ -1,7 +1,7 @@
-# QUAL-002 — Contrato HUD
+# QUAL-002 — HUD contract
 
 **Status:** pending
-**Phase:** Quality Hardening / Núcleo
+**Phase:** Quality Hardening / Core
 **Dependencies:** QUAL-001
 
 ## Objective

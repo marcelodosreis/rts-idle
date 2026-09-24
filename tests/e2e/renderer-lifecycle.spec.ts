@@ -20,6 +20,7 @@ test('mounting the renderer twice does not duplicate state', async ({ page }) =>
 })
 
 test('renders the initial snapshot after an asset-delayed mount', async ({ page }) => {
+  test.setTimeout(30_000)
   const pageErrors: string[] = []
   page.on('pageerror', (error) => pageErrors.push(error.message))
   await page.route('**/assets/manifest.json', async (route) => {
@@ -29,9 +30,19 @@ test('renders the initial snapshot after an asset-delayed mount', async ({ page 
 
   await page.goto('/')
 
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
+    .toBeGreaterThan(0)
   await expect.poll(() => page.locator('canvas').count()).toBe(1)
   const positions = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})
   expect(Object.keys(positions).length).toBeGreaterThan(0)
   expect(pageErrors.some((error) => error.includes('PixiRenderer: not mounted'))).toBe(false)
+})
+
+test('cleans up the debug bridge and renderer across reload', async ({ page }) => {
+  await page.goto('/')
+  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await page.reload()
+  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await expect(page.locator('canvas')).toHaveCount(1)
 })

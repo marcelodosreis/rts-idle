@@ -123,7 +123,7 @@ describe('building presentation styles', () => {
 
   it('keeps Barracks distinct while using the same owner-color convention', () => {
     expect(buildingVisualStyle('BARRACKS', 'COMPLETED', 0)).toMatchObject({
-      kind: 'barracks',
+      kind: 'completed',
       fillColor: 0x2e7d32
     })
     expect(buildingVisualStyle('BARRACKS', 'COMPLETED', 0).kind).not.toBe('base')

@@ -38,6 +38,8 @@ test('switching the scenario in the top bar reloads into the new match', async (
   await settleUnits(page)
   expect(Object.keys(await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})).length).toBe(12)
 
+  await page.getByRole('button', { name: 'Open DevTools menu' }).click()
+  await page.getByRole('button', { name: 'Toggle Match session' }).click()
   await page.getByRole('combobox', { name: 'scenario' }).click()
   await page.getByRole('option', { name: '4v4' }).click()
 
@@ -52,7 +54,9 @@ test('a failed local map keeps the server-provided scenario selector available',
   })
   await page.goto('/?map=local')
 
-  await page.getByRole('status').click()
+  await page.getByRole('button', { name: 'Open DevTools menu' }).click()
+  await page.getByRole('button', { name: 'Toggle Server Log' }).click()
+  await page.getByRole('button', { name: 'Toggle Match session' }).click()
   await expect(page.getByText('scenario spawn is outside or on invalid terrain')).toBeVisible()
   await page.getByRole('combobox', { name: 'scenario' }).click()
   await expect(page.getByRole('option', { name: '4v4' })).toBeVisible()

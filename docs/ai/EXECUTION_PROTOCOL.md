@@ -6,19 +6,30 @@
 ## Mandatory local preflight
 
 This document is the operational source of truth for local project commands.
-Before running any project command, execute:
+Before running any project command, check the active Node version first:
 
 ```bash
+node --version
+```
+
+If it does not report `v24.x`, load NVM and select the version from `.nvmrc`:
+
+```bash
+source "$HOME/.nvm/nvm.sh"
 nvm install
 nvm use
 node --version
+```
+
+After `node --version` reports `v24.x`, enable Corepack:
+
+```bash
 corepack enable
 ```
 
-`node --version` must report `v24.x`. The required version is sourced only from
-`.nvmrc`; stop if NVM selects another major version. Running tests or builds
-with Node 20 is not valid project validation, even if those commands happen to
-pass locally.
+The required version is sourced only from `.nvmrc`; stop if NVM selects another
+major version. Running tests or builds with Node 20 is not valid project
+validation, even if those commands happen to pass locally.
 
 ## Context Loading Rules
 
@@ -123,9 +134,11 @@ Before declaring a feature complete or committing it as completed work, run:
 pnpm run verify
 ```
 
-For browser or protocol changes, also run the explicit E2E gate. For other
-changes, focused tests are sufficient locally and the full E2E suite belongs to
-CI/release validation.
+For browser or protocol changes, run the appropriate E2E gate. Use
+`pnpm run test:e2e:fast` for functional iteration, `pnpm run test:e2e:perf` for
+renderer benchmark changes, and `pnpm run test:e2e:all` for release or complete
+browser validation. CI runs the first two gates as parallel jobs; together they
+cover the same tests as `test:e2e:all`.
 
 Before any focused browser run, enumerate the target first:
 
@@ -223,7 +236,7 @@ Do NOT produce large essays. Keep reports under 30 lines.
 |-------|------|----------|
 | Iteration | After intermediate edits | affected tests + relevant checks |
 | Per-feature | Feature complete | + integration + contracts + orders |
-| Completion | Feature completion; browser/protocol changes add explicit E2E | `pnpm run verify` (+ `pnpm run test:e2e -- --project=chromium` when required) |
+| Completion | Feature completion; browser/protocol changes add explicit E2E | `pnpm run verify` + `test:e2e:fast` or `test:e2e:perf` as affected; `test:e2e:all` for complete/release validation |
 | Milestone / release | Phase complete or version bump | Completion gate, plus any task-specific/manual checks |
 
 ## Documentation Rules

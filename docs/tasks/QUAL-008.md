@@ -1,7 +1,7 @@
-# QUAL-008 — Geometria dinâmica
+# QUAL-008 — Dynamic geometry
 
 **Status:** pending
-**Phase:** Quality Hardening / Baratos
+**Phase:** Quality Hardening / Low Effort
 **Dependencies:** QUAL-002
 
 ## Objective

@@ -1,7 +1,7 @@
-# QUAL-009 — Isolamento concorrente
+# QUAL-009 — Concurrent isolation
 
 **Status:** pending
-**Phase:** Quality Hardening / Núcleo
+**Phase:** Quality Hardening / Core
 **Dependencies:** QUAL-000
 
 ## Objective

@@ -1,0 +1,1 @@
+export { AssetReportFeature } from './AssetReportFeature'

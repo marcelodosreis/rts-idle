@@ -1,32 +1,35 @@
 import { expect, test } from '@playwright/test'
 import { hasArt } from './art.js'
 
-// E2E for the React + shadcn sprite lab (/sprites/). The page is a tab shell
-// (Browse / Terrain / Stress / Report) with a unified asset browser: sidebar
-// search + categories, central Pixi canvas, and a shadcn inspector. The debug
-// hook window.__spriteLab exposes programmatic selection + the active tab.
-// Every test needs art (the lab browses real assets), so skip when the asset
-// manifest is not served (CI has no assets; ADR-015 CI-safe-without-art).
+// E2E for the React + shadcn asset browser (/laboratory). The browser is an
+// independent Laboratory route with sidebar search + categories, central Pixi
+// canvas, and a shadcn inspector.
+// Asset-browser assertions require the optional curated manifest. The rest of
+// the Laboratory, including editor and terrain coverage, must run in fallback.
 
-async function openLab(page: import('@playwright/test').Page): Promise<void> {
-  await page.goto('/sprites/')
+async function openLaboratory(page: import('@playwright/test').Page): Promise<void> {
+  await page.goto('/laboratory')
+  await expect(page.getByTestId('laboratory-page-title')).toHaveText('Asset Browser', { timeout: 20000 })
+}
+
+async function openAssetBrowser(page: import('@playwright/test').Page): Promise<void> {
+  await openLaboratory(page)
   await page.waitForFunction(() => window.__spriteLab !== undefined, null, { timeout: 20000 })
   test.skip(!(await hasArt(page)), 'asset manifest not served (no art in CI)')
+  await expect(page.getByRole('listbox', { name: 'Assets' })).toBeVisible({ timeout: 20000 })
+  await expect(page.getByRole('option').first()).toBeVisible({ timeout: 20000 })
+  await page.waitForFunction(() => window.__spriteLab?.ready === true, null, { timeout: 20000 })
 }
 
 async function openEditor(page: import('@playwright/test').Page): Promise<void> {
-  await page.getByRole('tab', { name: 'Level Editor' }).click()
+  await page.goto('/laboratory/editor')
   await page.locator('[data-testid="terrain-canvas-host"][data-controller-ready="true"]').waitFor()
 }
 
 test('sprite lab mounts the browse tab with art and all assets', async ({ page }) => {
-  await openLab(page)
+  await openAssetBrowser(page)
 
-  await expect(page.getByRole('heading', { name: 'Sprite Lab' })).toBeVisible()
-  await expect(page.getByRole('tab', { name: 'Browse' })).toHaveAttribute('data-state', 'active')
-  await expect(page.getByRole('tab', { name: 'Stress' })).toBeVisible()
-  await expect(page.getByRole('tab', { name: 'Level Editor' })).toBeVisible()
-  await expect(page.getByRole('tab', { name: 'Report' })).toBeVisible()
+  await expect(page.getByTestId('laboratory-page-title')).toHaveText('Asset Browser')
 
   // The sidebar lists assets (listbox role) and the search input is present.
   await expect(page.getByPlaceholder('Search…')).toBeVisible()
@@ -34,7 +37,7 @@ test('sprite lab mounts the browse tab with art and all assets', async ({ page }
 })
 
 test('browse: the first asset of the selected type is auto-selected', async ({ page }) => {
-  await openLab(page)
+  await openAssetBrowser(page)
 
   // On mount an asset is auto-selected, so the canvas is never left empty.
   const inspector = page.getByRole('complementary', { name: 'Asset inspector' })
@@ -48,7 +51,7 @@ test('browse: the first asset of the selected type is auto-selected', async ({ p
 })
 
 test('browse: the asset list keeps a minimum height when types expand', async ({ page }) => {
-  await openLab(page)
+  await openAssetBrowser(page)
 
   // Expanding the category with the most subcategories used to squeeze the
   // asset list down to a sliver. The types section must shrink/scroll instead.
@@ -63,10 +66,11 @@ test('browse: the asset list keeps a minimum height when types expand', async ({
   expect(box!.height).toBeGreaterThanOrEqual(300)
 })
 
-test('browse: selecting an asset via the hook renders the canvas and inspector', async ({ page }) => {
-  await openLab(page)
+test('browse: selecting an asset renders the canvas and inspector', async ({ page }) => {
+  await openAssetBrowser(page)
 
-  await page.evaluate(() => window.__spriteLab!.browse('units.blue.pawn.pawn_idle'))
+  await page.getByPlaceholder('Search…').fill('units.blue.pawn.pawn_idle')
+  await page.getByRole('option', { name: /pawn_idle$/ }).click()
 
   // Readout is aria-live; wait for the asset summary to appear.
   await expect(page.getByText('units.blue.pawn.pawn_idle', { exact: false }).first()).toBeVisible()
@@ -74,7 +78,7 @@ test('browse: selecting an asset via the hook renders the canvas and inspector',
 })
 
 test('browse: sidebar search filters and selects a unique asset', async ({ page }) => {
-  await openLab(page)
+  await openAssetBrowser(page)
 
   await page.getByPlaceholder('Search…').fill('rubber_duck')
   const item = page.getByRole('option', { name: 'rubber_duck' })
@@ -86,7 +90,7 @@ test('browse: sidebar search filters and selects a unique asset', async ({ page 
 })
 
 test('browse: unique assets are present via search', async ({ page }) => {
-  await openLab(page)
+  await openAssetBrowser(page)
 
   const search = page.getByPlaceholder('Search…')
   await search.fill('rock1')
@@ -96,9 +100,10 @@ test('browse: unique assets are present via search', async ({ page }) => {
 })
 
 test('browse: overlay toggle defaults off and toggles cleanly', async ({ page }) => {
-  await openLab(page)
+  await openAssetBrowser(page)
 
-  await page.evaluate(() => window.__spriteLab!.browse('buildings.blue.castle'))
+  await page.getByPlaceholder('Search…').fill('buildings.blue.castle')
+  await page.getByRole('option', { name: 'castle' }).click()
   await expect(page.getByRole('complementary', { name: 'Asset inspector' })).toContainText('buildings.blue.castle')
 
   // Open the Overlays section first
@@ -113,9 +118,10 @@ test('browse: overlay toggle defaults off and toggles cleanly', async ({ page })
 })
 
 test('browse: multi-frame strips expose a slices grid with file + selected slice', async ({ page }) => {
-  await openLab(page)
+  await openAssetBrowser(page)
 
-  await page.evaluate(() => window.__spriteLab!.browse('fx.fire_01'))
+  await page.getByPlaceholder('Search…').fill('fire_01')
+  await page.getByRole('option', { name: 'fire_01' }).click()
   await expect(page.getByRole('complementary', { name: 'Asset inspector' })).toContainText('fx.fire_01')
 
   // Slices toggle appears for multi-frame assets and switches to the grid.
@@ -129,33 +135,48 @@ test('browse: multi-frame strips expose a slices grid with file + selected slice
   await expect(page.getByRole('complementary', { name: 'Asset inspector' })).toContainText('selected: slice 1/8')
 })
 
-test('tabs: switching to Stress and Report mounts their sections', async ({ page }) => {
-  await openLab(page)
+test('laboratory routes mount the stress and report sections', async ({ page }) => {
+  await openLaboratory(page)
 
-  await page.getByRole('tab', { name: 'Stress' }).click()
-  await expect(page.getByRole('tab', { name: 'Stress' })).toHaveAttribute('data-state', 'active')
+  await page.goto('/laboratory/diagnostics')
+  await expect(page.getByRole('heading', { name: 'Stress Test' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Stress Test' })).toBeVisible()
   await expect(page.getByRole('status')).toContainText('zoom')
 
-  await page.getByRole('tab', { name: 'Report' }).click()
-  await expect(page.getByRole('tab', { name: 'Report' })).toHaveAttribute('data-state', 'active')
+  await page.goto('/laboratory/report')
+  await expect(page.getByTestId('laboratory-page-title')).toHaveText('Asset Report')
   await expect(page.getByText('Game contracts', { exact: false })).toBeVisible()
 })
 
 test('stress: camera pan/zoom is available with a reset', async ({ page }) => {
-  await openLab(page)
+  await openLaboratory(page)
 
-  await page.getByRole('tab', { name: 'Stress' }).click()
+  await page.goto('/laboratory/diagnostics')
   await expect(page.getByRole('status')).toContainText('zoom')
 
   const reset = page.getByRole('button', { name: 'reset camera' })
   await expect(reset).toBeVisible()
 })
 
-test('terrain: playground mounts with paint controls and camera', async ({ page }) => {
-  await openLab(page)
+test('stress: renderer host keeps a stable viewport height', async ({ page }) => {
+  await openLaboratory(page)
 
-  await page.getByRole('tab', { name: 'Level Editor' }).click()
-  await expect(page.getByRole('tab', { name: 'Level Editor' })).toHaveAttribute('data-state', 'active')
+  await page.goto('/laboratory/diagnostics')
+  const host = page.getByTestId('stress-canvas-host')
+  await expect(host).toBeVisible()
+  await expect(host.locator('canvas')).toBeVisible()
+
+  const initial = await host.boundingBox()
+  expect(initial).not.toBeNull()
+  expect(initial!.height).toBe(340)
+
+  await expect.poll(async () => (await host.boundingBox())?.height ?? 0, { timeout: 5000 }).toBe(initial!.height)
+})
+
+test('terrain: playground mounts with paint controls and camera', async ({ page }) => {
+  await openLaboratory(page)
+
+  await page.goto('/laboratory/editor')
   await expect(page.getByRole('button', { name: /Grass/ })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Reset' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Fit' })).toBeVisible()
@@ -163,9 +184,9 @@ test('terrain: playground mounts with paint controls and camera', async ({ page 
 })
 
 test('terrain: cell grid overlay toggles', async ({ page }) => {
-  await openLab(page)
+  await openLaboratory(page)
 
-  await page.getByRole('tab', { name: 'Level Editor' }).click()
+  await page.goto('/laboratory/editor')
   const gridToggle = page.getByRole('switch', { name: 'toggle cell grid' })
   await expect(gridToggle).toBeChecked()
   await gridToggle.click()
@@ -175,7 +196,7 @@ test('terrain: cell grid overlay toggles', async ({ page }) => {
 })
 
 test('terrain: status bar reports the hovered cell', async ({ page }) => {
-  await openLab(page)
+  await openLaboratory(page)
 
   await openEditor(page)
   const cell = page.getByTestId('cursor-cell')
@@ -191,9 +212,9 @@ test('terrain: status bar reports the hovered cell', async ({ page }) => {
 })
 
 test('terrain: decoration palette enables every kind', async ({ page }) => {
-  await openLab(page)
+  await openLaboratory(page)
 
-  await page.getByRole('tab', { name: 'Level Editor' }).click()
+  await page.goto('/laboratory/editor')
   await page.getByRole('tab', { name: 'Decor' }).click()
   const tree = page.getByRole('button', { name: /trees/ })
   await expect(tree).toBeEnabled()
@@ -202,7 +223,7 @@ test('terrain: decoration palette enables every kind', async ({ page }) => {
 })
 
 test('terrain: placed decoration round-trips through the game export', async ({ page }) => {
-  await openLab(page)
+  await openLaboratory(page)
 
   await openEditor(page)
   await page.getByRole('tab', { name: 'Decor' }).click()
@@ -223,7 +244,7 @@ test('terrain: placed decoration round-trips through the game export', async ({ 
 })
 
 test('terrain: playtest opens the authored map in the game', async ({ page }) => {
-  await openLab(page)
+  await openLaboratory(page)
 
   await openEditor(page)
   await page.getByRole('tab', { name: 'Decor' }).click()
@@ -247,7 +268,7 @@ test('terrain: playtest opens the authored map in the game', async ({ page }) =>
 })
 
 test('terrain: autosave restores the map after reload', async ({ page }) => {
-  await openLab(page)
+  await openLaboratory(page)
 
   await openEditor(page)
   await page.getByRole('tab', { name: 'Decor' }).click()
@@ -261,13 +282,13 @@ test('terrain: autosave restores the map after reload', async ({ page }) => {
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
   await page.waitForTimeout(700)
 
-  await openLab(page)
+  await openLaboratory(page)
   await openEditor(page)
   await expect(page.getByText('Restored your saved map.')).toBeVisible()
 })
 
 test('terrain: upload rejects invalid json with a specific error', async ({ page }) => {
-  await openLab(page)
+  await openLaboratory(page)
 
   await openEditor(page)
   await page.getByLabel('upload map json').setInputFiles({
@@ -279,7 +300,7 @@ test('terrain: upload rejects invalid json with a specific error', async ({ page
 })
 
 test('terrain: download produces a map.json file', async ({ page }) => {
-  await openLab(page)
+  await openLaboratory(page)
 
   await openEditor(page)
   const downloadPromise = page.waitForEvent('download')
@@ -289,7 +310,7 @@ test('terrain: download produces a map.json file', async ({ page }) => {
 })
 
 test('browse: asset list shows nested sub-headers within groups', async ({ page }) => {
-  await openLab(page)
+  await openAssetBrowser(page)
 
   // Expand units and select the blue subcategory.
   await page.getByRole('button', { name: /units/i }).click()

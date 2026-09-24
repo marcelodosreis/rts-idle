@@ -8,10 +8,12 @@ describe('E2E scope guard', () => {
     expect(hasExplicitE2eScope([], existingSpec)).toBe(false)
   })
 
-  it('accepts a spec file, grep, and project selectors', () => {
+  it('accepts a spec file, grep, and browser project selectors', () => {
     expect(hasExplicitE2eScope(['tests/e2e/economy.spec.ts'], existingSpec)).toBe(true)
     expect(hasExplicitE2eScope(['--grep', 'economy'], existingSpec)).toBe(true)
     expect(hasExplicitE2eScope(['--project=chromium'], existingSpec)).toBe(true)
+    expect(hasExplicitE2eScope(['--project=firefox'], existingSpec)).toBe(true)
+    expect(hasExplicitE2eScope(['--project=chromium', '--project=firefox'], existingSpec)).toBe(true)
   })
 
   it('ignores the pnpm argument separator before checking selectors', () => {
