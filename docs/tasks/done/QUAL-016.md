@@ -1,6 +1,6 @@
 # QUAL-016 — Higiene de saída
 
-**Status:** pending
+**Status:** done
 **Phase:** Quality Hardening / Fundação
 **Dependencies:** none
 
@@ -28,7 +28,7 @@ failure diagnostics or creating unnecessary artifacts.
   architecture, and invariant suites use compact output
 - [x] Playwright focused and complete runs use compact output
 - [x] Failed tests retain their error details and stack traces
-- [ ] CI continues to run the complete Chromium and Firefox E2E gate
+- [x] CI continues to run the complete Chromium and Firefox E2E gate
 
 ## Validation
 

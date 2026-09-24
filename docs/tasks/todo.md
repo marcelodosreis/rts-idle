@@ -220,8 +220,11 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Latest completed task packet:
 ### Fundação
 - [ ] QUAL-000 Spec + ADR
 - [x] QUAL-017 Front-matter + guard + resumo (postmortem tracking)
-- [ ] QUAL-018 Board + tracking guard + protocolo
-- [ ] QUAL-016 Higiene de saída (test output)
+- [x] QUAL-018 Board + tracking guard + protocolo
+- [x] QUAL-016 Higiene de saída (test output)
+
+> QUAL-016 e QUAL-018 foram concluídas. As demais tasks de Quality Hardening
+> permanecem adiadas até o fechamento das fases principais.
 
 ### Low Effort
 - [ ] QUAL-004 Input helper (deps: QUAL-000)

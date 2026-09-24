@@ -73,9 +73,10 @@ Building component and `buildings` snapshot collection.
 BUILD-004 Supply Depot and Supply HUD is complete. Production queues, training,
 reserved supply, and VS-02 have not started.
 
-Quality Hardening (QUAL-000..018) is in progress. The Concept Authority closure
-(AUTH-005A through AUTH-018) is complete; its audit records the authority and
-validation evidence. See `docs/tasks/todo.md` for the remaining quality board.
+Quality Hardening remains deferred after the completed QUAL-016 output hygiene
+and QUAL-018 tracking work. The Concept Authority closure (AUTH-005A through
+AUTH-018) is complete; its audit records the authority and validation evidence.
+See `docs/tasks/todo.md` for the remaining quality board.
 
 WEB-ARCH-001 Web Frontend Architecture Restructure is complete. The old MPA
 entries `/sprites/`, `/det.html`, and `/perf.html` were removed; Laboratory

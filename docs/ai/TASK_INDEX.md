@@ -170,3 +170,27 @@ RFC: `docs/rfc/RFC-003-cost-scale-and-architecture-comparison.md` (Proposed).
 | ID | Title | Status | Dependencies | Packages | Validation |
 |----|-------|--------|--------------|----------|------------|
 | E2E-001 | E2E gate stratification | done | - | web, renderer, quality | e2e, verify |
+
+## Quality Hardening
+
+| ID | Title | Status | Dependencies | Packages | Validation |
+|----|-------|--------|--------------|----------|------------|
+| QUAL-000 | Spec + ADR | pending | — | docs | lint |
+| QUAL-001 | Structural harness | pending | QUAL-000 | quality | unit |
+| QUAL-002 | HUD contract | pending | QUAL-001 | web, quality | unit, e2e |
+| QUAL-003 | Display list invariants | pending | QUAL-001 | renderer, quality | unit |
+| QUAL-004 | Input helper | pending | QUAL-000 | web, quality | unit |
+| QUAL-005 | Gesture matrix | pending | QUAL-004 | web, quality | e2e |
+| QUAL-006 | WebKit/touch | pending | QUAL-005 | web, quality | e2e |
+| QUAL-007 | Barrier input | pending | QUAL-004 | web, quality | unit |
+| QUAL-008 | Dynamic geometry | pending | QUAL-002 | renderer, quality | unit |
+| QUAL-009 | Concurrent isolation | pending | QUAL-000 | quality | integration |
+| QUAL-010 | Barrier singleton | pending | QUAL-000 | quality | unit |
+| QUAL-011 | Toggle CI parallelism | pending | QUAL-009, QUAL-010 | quality, infra | CI |
+| QUAL-012 | expectAnim + barrier | pending | QUAL-000 | quality | unit, e2e |
+| QUAL-013 | Path-based E2E gate | pending | QUAL-002, QUAL-005 | quality, CI | e2e |
+| QUAL-014 | Coverage ratchet | pending | QUAL-016 | quality, CI | unit |
+| QUAL-015 | Branch baseline | pending | — | quality, CI | CI |
+| QUAL-016 | Output hygiene | done | — | quality, CI | unit, verify, e2e |
+| QUAL-017 | Postmortem tracking | done | — | quality, docs | unit |
+| QUAL-018 | Board and tracking guard | done | QUAL-017 | quality, docs | unit |
