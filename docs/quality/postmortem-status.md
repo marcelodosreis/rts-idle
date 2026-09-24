@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 27 |
+| open | 28 |
 | closed | 13 |
-| **total** | **40** |
+| **total** | **41** |
 
 ## Details
 
@@ -55,6 +55,7 @@
 | 2026-09-24-builder-hammer-animation | open | presentation | — | 3 test(s) |
 | 2026-09-24-partial-mining-carry-state | open | presentation | — | 2 test(s) |
 | 2026-09-24-pawn-selection-over-mineral | open | presentation | — | 2 test(s) |
+| 2026-09-24-render-layer-order | open | presentation | — | 1 test(s) |
 
 ## Legend
 
