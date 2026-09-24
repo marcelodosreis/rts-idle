@@ -101,6 +101,9 @@ function checkEconomyEntity(state: GameState, id: number): void {
   ) {
     fail(`entity ${id} has deposit order without Worker state`)
   }
+  if (frontOrder?.type === 'BUILD' && state.world.store(Building).get(frontOrder.buildingId) === undefined) {
+    fail(`entity ${id} has build order referencing missing construction ${frontOrder.buildingId}`)
+  }
   const gatherOrder = frontOrder
   if (
     gatherOrder?.type === 'GATHER' &&
