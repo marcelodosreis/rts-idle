@@ -5,35 +5,17 @@ import { buildingVisualStyle } from '../../packages/renderer/src/building-visual
 if (typeof navigator === 'undefined') {
   Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { userAgent: '' } })
 }
-const { Graphics } = await import('pixi.js')
+const { Container } = await import('pixi.js')
 const { WorldObjectLayer } = await import('../../packages/renderer/src/world-object-layer.js')
 
-function viewportStub(): {
-  readonly children: InstanceType<typeof Graphics>[]
-  addChild: (graphic: InstanceType<typeof Graphics>) => InstanceType<typeof Graphics>
-  removeChild: (graphic: InstanceType<typeof Graphics>) => InstanceType<typeof Graphics>
-} {
-  const children: Graphics[] = []
-  return {
-    children,
-    addChild: (graphic) => {
-      children.push(graphic)
-      return graphic
-    },
-    removeChild: (graphic) => {
-      const index = children.indexOf(graphic)
-      if (index >= 0) {
-        children.splice(index, 1)
-      }
-      return graphic
-    }
-  }
+function layerContainers(): { readonly worldObjects: Container; readonly interaction: Container } {
+  return { worldObjects: new Container(), interaction: new Container() }
 }
 
 describe('WorldObjectLayer construction anchors', () => {
   it('uses the snapshot footprint for foundation, preview, and completed BASE geometry', () => {
-    const viewport = viewportStub()
-    const layer = new WorldObjectLayer(viewport as never)
+    const layers = layerContainers()
+    const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
     const baseFootprint = BASE_BUILDING.footprint
     const construction = {
       id: 42,
@@ -48,7 +30,7 @@ describe('WorldObjectLayer construction anchors', () => {
     }
 
     layer.present([construction], [])
-    const foundation = viewport.children[0]!
+    const foundation = layers.worldObjects.children[0]!
     const foundationPosition = { x: foundation.position.x, y: foundation.position.y }
     expect(foundationPosition).toEqual({ x: 192, y: 128 })
     const foundationBounds = foundation.getLocalBounds()
@@ -66,14 +48,17 @@ describe('WorldObjectLayer construction anchors', () => {
       height: baseFootprint.height,
       valid: true
     })
-    const preview = viewport.children[1]!
+    const preview = layers.interaction.children[0]!
     expect({ x: preview.position.x, y: preview.position.y }).toEqual(foundationPosition)
     expect(preview.getLocalBounds().width).toBe(baseFootprint.width * 64 + 4)
     expect(preview.getLocalBounds().height).toBe(baseFootprint.height * 64 + 4)
 
+    layer.present([construction], [])
+    expect(layers.interaction.children).toEqual([preview])
+
     layer.setBuildPreview(null)
     layer.present([{ ...construction, status: 'COMPLETED', progressTicks: 100 }], [])
-    const completed = viewport.children[0]!
+    const completed = layers.worldObjects.children[0]!
     expect({ x: completed.position.x, y: completed.position.y }).toEqual(foundationPosition)
     expect(completed.getLocalBounds().width).toBeCloseTo(foundationWidth, 0)
     expect(completed.getLocalBounds().height).toBeGreaterThanOrEqual(baseFootprint.height * 64)
@@ -81,8 +66,8 @@ describe('WorldObjectLayer construction anchors', () => {
   })
 
   it('uses the snapshot footprint for Barracks geometry', () => {
-    const viewport = viewportStub()
-    const layer = new WorldObjectLayer(viewport as never)
+    const layers = layerContainers()
+    const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
     layer.present(
       [
         {
@@ -99,7 +84,7 @@ describe('WorldObjectLayer construction anchors', () => {
       ],
       []
     )
-    const barracks = viewport.children[0]!
+    const barracks = layers.worldObjects.children[0]!
     expect(barracks.getLocalBounds().width).toBe(BARRACKS_BUILDING.footprint.width * 64 + 4)
     expect(barracks.getLocalBounds().height).toBe(BARRACKS_BUILDING.footprint.height * 64 + 4)
   })
@@ -141,8 +126,8 @@ describe('building presentation styles', () => {
 
 describe('WorldObjectLayer hit testing', () => {
   it('selects a mineral node across consecutive presentation frames', () => {
-    const viewport = viewportStub()
-    const layer = new WorldObjectLayer(viewport as never)
+    const layers = layerContainers()
+    const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
     const node = { id: 9, x: 640, y: 384, remaining: 300 }
 
     layer.present([], [node])
@@ -153,8 +138,8 @@ describe('WorldObjectLayer hit testing', () => {
   })
 
   it('keeps building and mineral hit targets distinct', () => {
-    const viewport = viewportStub()
-    const layer = new WorldObjectLayer(viewport as never)
+    const layers = layerContainers()
+    const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
 
     layer.present(
       [

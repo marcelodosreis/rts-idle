@@ -70,6 +70,27 @@ test('economy HUD shows authoritative starting supply', async ({ page }) => {
   await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 10')
 })
 
+test('a pawn remains selectable while standing on a mineral node', async ({ page }) => {
+  await page.goto('/?scenario=economy&aggression=passive')
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
+    .toBeGreaterThan(0)
+
+  const id = (await workerIds(page))[0]!
+  const start = await workerPosition(page, id)
+  const workerPoint = await canvasPointForFixed(page, start.x, start.y)
+  await page.mouse.click(workerPoint.x, workerPoint.y)
+  await expect(page.getByText('1 · Worker')).toBeVisible()
+
+  const nodePoint = await focusFixed(page, tilesToFixed(ECONOMY_NODE_TILE.x), tilesToFixed(ECONOMY_NODE_TILE.y))
+  await page.mouse.click(nodePoint.x, nodePoint.y, { button: 'right' })
+  await expect.poll(async () => (await workerPosition(page, id)).x).toBe(tilesToFixed(ECONOMY_NODE_TILE.x))
+
+  await page.mouse.click(nodePoint.x, nodePoint.y)
+  await expect(page.getByText('1 · Worker')).toBeVisible()
+  await expect(page.getByTestId('mineral-panel')).toHaveCount(0)
+})
+
 async function boxSelect(page: Page, positions: readonly { readonly x: number; readonly y: number }[]): Promise<void> {
   const points = await Promise.all(positions.map((position) => canvasPointForFixed(page, position.x, position.y)))
   await page.mouse.move(
@@ -119,7 +140,7 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
       .poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id))
       .toBe('gather')
   }
-  await expect(page.getByTestId('economy-status')).toContainText('Returning', { timeout: 15_000 })
+  await expect(page.getByTestId('economy-status')).toContainText('Returning', { timeout: 30_000 })
   if (art) {
     await expect
       .poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id))
@@ -156,7 +177,7 @@ test('an interrupted carrying worker shows cargo and deposits by right-clicking 
 
   const nodePoint = await focusFixed(page, tilesToFixed(ECONOMY_NODE_TILE.x), tilesToFixed(ECONOMY_NODE_TILE.y))
   await page.mouse.click(nodePoint.x, nodePoint.y, { button: 'right' })
-  await expect(page.getByTestId('economy-status')).toContainText('Returning', { timeout: 15_000 })
+  await expect(page.getByTestId('economy-status')).toContainText('Returning', { timeout: 30_000 })
 
   // Interrupt the automatic return; the worker keeps its cargo but loses the
   // gather order, so the carrying state must remain visible on its own.
@@ -217,7 +238,7 @@ test('a group mines the same node concurrently through the browser command path'
     ])
 
   const economyLabels = () =>
-    group.map((id) => page.getByRole('button', { name: new RegExp(`Worker #${id}, owner 0, Mining \\d+/20`) }))
+    group.map((id) => page.getByRole('button', { name: new RegExp(`Worker #${id}, owner 0, Mining \\d+/200`) }))
   await expect.poll(async () => Promise.all((await economyLabels()).map((label) => label.count()))).toEqual([1, 1])
   await expect
     .poll(
@@ -227,7 +248,7 @@ test('a group mines the same node concurrently through the browser command path'
             const label = await page
               .getByRole('button', { name: new RegExp(`Worker #${id}`) })
               .getAttribute('aria-label')
-            return Number(label?.match(/Mining (\d+)\/20/)?.[1] ?? 0)
+            return Number(label?.match(/Mining (\d+)\/200/)?.[1] ?? 0)
           })
         )
         return progress.every((value) => value > 0)

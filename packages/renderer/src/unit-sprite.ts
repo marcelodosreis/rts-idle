@@ -64,6 +64,7 @@ function cloneUnitFrames(template: UnitFrames): UnitFrames {
     idle: cloneAnimation(template.idle),
     run: cloneAnimation(template.run),
     attack: template.attack === null ? null : cloneAnimation(template.attack),
+    build: template.build === null ? null : cloneAnimation(template.build),
     gather: template.gather === null ? null : cloneAnimation(template.gather),
     carryIdle: template.carryIdle === null ? null : cloneAnimation(template.carryIdle),
     carryRun: template.carryRun === null ? null : cloneAnimation(template.carryRun)
@@ -71,7 +72,15 @@ function cloneUnitFrames(template: UnitFrames): UnitFrames {
 }
 
 function installFrames(container: Container, frames: UnitFrames): void {
-  const allFrames = [frames.idle, frames.run, frames.attack, frames.gather, frames.carryIdle, frames.carryRun]
+  const allFrames = [
+    frames.idle,
+    frames.run,
+    frames.attack,
+    frames.build,
+    frames.gather,
+    frames.carryIdle,
+    frames.carryRun
+  ]
   for (const frame of allFrames) {
     if (frame !== null) {
       frame.visible = false
@@ -191,7 +200,14 @@ export class UnitSprite {
   }
 
   /** Shows idle, run, or attack by current state and flips by direction. */
-  setState(moving: boolean, facingLeft: boolean, now: number, economy: RenderUnit['economy'], carrying = false): void {
+  setState(
+    moving: boolean,
+    facingLeft: boolean,
+    now: number,
+    economy: RenderUnit['economy'],
+    carrying = false,
+    building = false
+  ): void {
     if (this.frames === null) {
       return
     }
@@ -202,9 +218,9 @@ export class UnitSprite {
     }
     const attacking = now < this.attackUntil && this.frames.attack !== null
     let next: AnimatedSprite
-    const economyFrame = economyAnimation(this.frames, economy?.phase, moving, carrying)
-    if (economyFrame !== null && economyFrame === this.frames.gather) {
-      // Gathering outranks combat; the carry pose does not (see below).
+    const economyFrame = economyAnimation(this.frames, economy?.phase, moving, carrying, building)
+    if (economyFrame !== null && (economyFrame === this.frames.gather || economyFrame === this.frames.build)) {
+      // Work animations outrank combat; the carry pose does not (see below).
       next = economyFrame
     } else if (attacking) {
       next = this.frames.attack!
@@ -322,7 +338,7 @@ export class UnitSprite {
   }
 
   /** Which animation is currently shown. */
-  stateName(): 'idle' | 'run' | 'attack' | 'gather' | 'carry_idle' | 'carry_run' | 'fallback' {
+  stateName(): 'idle' | 'run' | 'attack' | 'build' | 'gather' | 'carry_idle' | 'carry_run' | 'fallback' {
     if (this.frames === null) {
       return 'fallback'
     }
@@ -331,6 +347,9 @@ export class UnitSprite {
     }
     if (this.body === this.frames.attack) {
       return 'attack'
+    }
+    if (this.body === this.frames.build) {
+      return 'build'
     }
     if (this.body === this.frames.gather) {
       return 'gather'

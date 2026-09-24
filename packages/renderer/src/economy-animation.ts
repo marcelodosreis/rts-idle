@@ -4,6 +4,7 @@ import type { AnimatedSprite } from 'pixi.js'
 export const FACTION_BY_OWNER: readonly ('blue' | 'red' | 'purple' | 'yellow')[] = ['blue', 'red', 'purple', 'yellow']
 
 export interface EconomyFrames {
+  readonly build: AnimatedSprite | null
   readonly gather: AnimatedSprite | null
   readonly carryIdle: AnimatedSprite | null
   readonly carryRun: AnimatedSprite | null
@@ -12,6 +13,9 @@ export interface EconomyFrames {
 export function economyFrameKey(owner: number, anim: keyof EconomyFrames): string {
   const faction = FACTION_BY_OWNER[owner % FACTION_BY_OWNER.length] ?? 'blue'
   let subtype = 'run_gold'
+  if (anim === 'build') {
+    subtype = 'interact_hammer'
+  }
   if (anim === 'gather') {
     subtype = 'interact_pickaxe'
   }
@@ -25,8 +29,12 @@ export function economyAnimation(
   frames: EconomyFrames,
   phase: EconomyPhase | undefined,
   moving: boolean,
-  carrying = false
+  carrying = false,
+  building = false
 ): AnimatedSprite | null {
+  if (building) {
+    return frames.build
+  }
   if (phase === 'gathering') {
     return frames.gather
   }

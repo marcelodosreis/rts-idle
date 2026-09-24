@@ -1,6 +1,5 @@
 import { fixedToRenderPixels } from '@rts/shared'
-import type { Ticker } from 'pixi.js'
-import type { Viewport } from 'pixi-viewport'
+import type { Container, Ticker } from 'pixi.js'
 import type { AssetLibrary } from './assets/asset-library.js'
 import { interpolationAlpha, lerpPoint } from './interpolation.js'
 import type { RenderUnit, UnitKind } from './types.js'
@@ -25,7 +24,7 @@ interface FixedPoint {
  */
 export class UnitLayer {
   private readonly units = new Map<number, UnitSprite>()
-  private readonly viewport: Viewport
+  private readonly unitsLayer: Container
   private readonly library: AssetLibrary
   private previous: ReadonlyMap<number, WorldRenderPoint> | null = null
   private current: ReadonlyMap<number, WorldRenderPoint> | null = null
@@ -36,8 +35,8 @@ export class UnitLayer {
   private readonly framesByKind = new Map<string, UnitFrames>()
   private readonly loadState = new Map<string, 'loading' | 'loaded' | 'failed'>()
 
-  constructor(viewport: Viewport, library: AssetLibrary) {
-    this.viewport = viewport
+  constructor(unitsLayer: Container, library: AssetLibrary) {
+    this.unitsLayer = unitsLayer
     this.library = library
   }
 
@@ -52,10 +51,11 @@ export class UnitLayer {
       this.library.animated(frameKey(owner, kind, 'idle')),
       this.library.animated(frameKey(owner, kind, 'run')),
       this.library.animated(frameKey(owner, kind, 'attack')),
+      kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'build')) : Promise.resolve(null),
       kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'gather')) : Promise.resolve(null),
       kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'carryIdle')) : Promise.resolve(null),
       kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'carryRun')) : Promise.resolve(null)
-    ]).then(([idle, run, attack, gather, carryIdle, carryRun]) => {
+    ]).then(([idle, run, attack, build, gather, carryIdle, carryRun]) => {
       if (idle === null || run === null) {
         this.loadState.set(cacheKey, 'failed')
         return
@@ -63,7 +63,7 @@ export class UnitLayer {
       idle.play()
       run.play()
       attack?.play()
-      const frames: UnitFrames = { idle, run, attack, gather, carryIdle, carryRun }
+      const frames: UnitFrames = { idle, run, attack, build, gather, carryIdle, carryRun }
       this.framesByKind.set(cacheKey, frames)
       this.loadState.set(cacheKey, 'loaded')
       for (const sprite of this.units.values()) {
@@ -93,7 +93,7 @@ export class UnitLayer {
         const kind: UnitKind = unit.kind ?? 'pawn'
         const frames = this.framesFor(unit.owner, kind)
         sprite = new UnitSprite(kind, unit.owner, frames)
-        this.viewport.addChild(sprite.container)
+        this.unitsLayer.addChild(sprite.container)
         this.units.set(unit.id, sprite)
         this.preloadKind(unit.owner, kind)
       }
@@ -107,13 +107,20 @@ export class UnitLayer {
         ((unit.orderState === 'attacking' || unit.orderState === 'attack_move' || unit.orderState === 'patrol') &&
           deltaMoved)
       sprite.setHealth(unit.hp, unit.maxHp)
-      sprite.setState(moving, unit.x < (last?.x ?? unit.x), now, unit.economy, unit.carrying ?? false)
+      sprite.setState(
+        moving,
+        unit.x < (last?.x ?? unit.x),
+        now,
+        unit.economy,
+        unit.carrying ?? false,
+        unit.orderState === 'building'
+      )
       sprite.setEconomyBar(unit.economy)
       sprite.setPosition(position.x, position.y)
     }
     for (const [id, sprite] of [...this.units]) {
       if (!seen.has(id)) {
-        this.viewport.removeChild(sprite.container)
+        this.unitsLayer.removeChild(sprite.container)
         sprite.destroy()
         this.units.delete(id)
         this.lastFixed.delete(id)
@@ -250,7 +257,7 @@ export class UnitLayer {
   spriteState(id: number): {
     readonly visible: boolean
     readonly frame: number | null
-    readonly anim: 'idle' | 'run' | 'attack' | 'gather' | 'carry_idle' | 'carry_run' | 'fallback'
+    readonly anim: 'idle' | 'run' | 'attack' | 'build' | 'gather' | 'carry_idle' | 'carry_run' | 'fallback'
     readonly inTree: boolean
     readonly facing: number
     readonly scale: number

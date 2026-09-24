@@ -1,4 +1,4 @@
-import { GATHER_TICKS_PER_MINERAL, MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
+import { GATHER_TICKS_PER_BATCH, MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
 import { MAX_SUPPLY_CAPACITY } from '../data/supply-rules.js'
 import { Building } from '../ecs/building-component.js'
 import { Cargo, Combat, Health, Kind, MineralNode, Orders, Owner, Position } from '../ecs/components.js'
@@ -106,7 +106,7 @@ function checkEconomyEntity(state: GameState, id: number): void {
     gatherOrder?.type === 'GATHER' &&
     (!Number.isInteger(gatherOrder.progressTicks) ||
       gatherOrder.progressTicks < 0 ||
-      gatherOrder.progressTicks >= GATHER_TICKS_PER_MINERAL)
+      gatherOrder.progressTicks >= GATHER_TICKS_PER_BATCH)
   ) {
     fail(`entity ${id} has invalid gather progress ${gatherOrder.progressTicks}`)
   }

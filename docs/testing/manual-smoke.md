@@ -51,7 +51,7 @@ Open `http://localhost:5173/?scenario=economy`.
 |---|---|---|
 | 1 | Left-click the Worker | The Worker gets a yellow selection ring and the selection panel reads `1 · Worker`. |
 | 2 | Right-click the amber Mineral Node | A command ping appears and the Worker travels to the node. |
-| 3 | Watch the Worker at the node | The Worker uses the pickaxe animation; an amber progress bar and `Mining N/20` status show collection progress. |
+| 3 | Watch the Worker at the node | The Worker uses the pickaxe animation; an amber progress bar and `Mining N/200` status show collection progress. |
 | 4 | Wait for a full cargo | The Worker returns using the gold-carrying animation; the green cargo bar/status reaches `10/10`, then the Mineral chip changes from `0` to `10`. |
 | 5 | Continue watching | The Worker automatically starts another trip to the Mineral Node. |
 | 6 | Click **Stop** | The Worker stops, returns to idle, and the economy bar/status and node highlight disappear. |

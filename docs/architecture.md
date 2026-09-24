@@ -72,6 +72,7 @@ Invariants:
 
 ```text
 renderer/src/
+  render-layers.ts  Stable world-space container order for all renderer visuals
   types.ts       Public contract: GameRenderer, RenderFrame, RenderUnit, options
   renderer.ts    PixiRenderer orchestrator (Application + viewport + wiring)
   input/         Typed pointer/context input, hit testing, and shared camera policy
@@ -87,6 +88,10 @@ renderer/src/
 The renderer never computes gameplay; it presents frames and reports typed world
 interactions outward. The web match layer translates those interactions into
 gameplay commands. Camera state remains presentation-only.
+All world-space visuals are mounted through the persistent containers owned by
+`RenderLayers`; renderer components do not add gameplay visuals directly to the
+viewport. The layer order is terrain, world objects, units, selection, effects,
+interaction, and debug.
 
 ## Web layout
 

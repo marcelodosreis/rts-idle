@@ -89,7 +89,7 @@ describe('Economy v0 gathering loop', () => {
     })
   })
 
-  it('transfers one mineral after 20 gather ticks', () => {
+  it('transfers one full batch after 200 gather ticks', () => {
     const scenario = economyScenario({ nodeX: 0 })
     const worker = scenario.workers[0]!
     const simulation = createSimulation({
@@ -99,13 +99,14 @@ describe('Economy v0 gathering loop', () => {
     })
 
     simulation.step([gatherCommand([worker], scenario.node)])
-    for (let tick = 1; tick < 20; tick += 1) {
+    for (let tick = 1; tick < 200; tick += 1) {
       simulation.step()
     }
     const state = simulation.inspectState()
 
-    expect(state.world.store(Cargo).get(worker)?.amount).toBe(1)
-    expect(state.world.store(MineralNode).get(scenario.node)?.remaining).toBe(2_999)
+    expect(state.world.store(Cargo).get(worker)?.amount).toBe(10)
+    expect(state.world.store(MineralNode).get(scenario.node)?.remaining).toBe(2_990)
+    expect(state.world.store(Orders).get(worker)?.queue[0]).toMatchObject({ phase: 'TO_BASE' })
     expect(state.players[0]?.gold).toBe(0)
   })
 
@@ -152,16 +153,16 @@ describe('Economy v0 gathering loop', () => {
         progressTicks: 7
       })
     }
-    for (let tick = 7; tick < 20; tick += 1) {
+    for (let tick = 7; tick < 200; tick += 1) {
       simulation.step()
     }
     const state = simulation.inspectState().world
 
     for (const worker of scenario.workers) {
-      expect(state.store(Cargo).get(worker)?.amount).toBe(1)
-      expect(state.store(Orders).get(worker)?.queue[0]).toMatchObject({ phase: 'GATHERING', progressTicks: 0 })
+      expect(state.store(Cargo).get(worker)?.amount).toBe(10)
+      expect(state.store(Orders).get(worker)?.queue[0]).toMatchObject({ phase: 'TO_BASE' })
     }
-    expect(state.store(MineralNode).get(scenario.node)?.remaining).toBe(2_996)
+    expect(state.store(MineralNode).get(scenario.node)?.remaining).toBe(2_960)
   })
 
   it('starts each worker progress independently when workers reach the node at different ticks', () => {
@@ -253,20 +254,20 @@ describe('Economy v0 gathering loop', () => {
         intent: { type: 'GATHER', payload: { unitIds: scenario.workers.slice(2), nodeId: secondNode } }
       }
     ])
-    for (let tick = 1; tick < 20; tick += 1) {
+    for (let tick = 1; tick < 200; tick += 1) {
       simulation.step()
     }
     const state = simulation.inspectState().world
 
     for (const worker of scenario.workers) {
-      expect(state.store(Cargo).get(worker)?.amount).toBe(1)
+      expect(state.store(Cargo).get(worker)?.amount).toBe(10)
     }
-    expect(state.store(MineralNode).get(scenario.node)?.remaining).toBe(2_998)
-    expect(state.store(MineralNode).get(secondNode)?.remaining).toBe(2_998)
+    expect(state.store(MineralNode).get(scenario.node)?.remaining).toBe(2_980)
+    expect(state.store(MineralNode).get(secondNode)?.remaining).toBe(2_980)
   })
 
   it('allocates simultaneous scarce final minerals by ascending worker id without underflow', () => {
-    const scenario = economyScenario({ workerCount: 3, nodeX: 0, nodeMinerals: 2 })
+    const scenario = economyScenario({ workerCount: 3, nodeX: 0, nodeMinerals: 20 })
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,
@@ -274,22 +275,22 @@ describe('Economy v0 gathering loop', () => {
     })
 
     simulation.step([gatherCommand(scenario.workers, scenario.node)])
-    for (let tick = 1; tick < 20; tick += 1) {
+    for (let tick = 1; tick < 200; tick += 1) {
       simulation.step()
     }
     const state = simulation.inspectState().world
 
-    expect(state.store(Cargo).get(scenario.workers[0]!)?.amount).toBe(1)
-    expect(state.store(Cargo).get(scenario.workers[1]!)?.amount).toBe(1)
+    expect(state.store(Cargo).get(scenario.workers[0]!)?.amount).toBe(10)
+    expect(state.store(Cargo).get(scenario.workers[1]!)?.amount).toBe(10)
     expect(state.store(Cargo).get(scenario.workers[2]!)?.amount).toBe(0)
     expect(state.store(MineralNode).get(scenario.node)?.remaining).toBe(0)
     expect(state.store(Orders).get(scenario.workers[2]!)).toBeUndefined()
   })
 
   it('returns and deposits pre-existing cargo after missing a scarce final mineral', () => {
-    const scenario = economyScenario({ workerCount: 2, nodeX: 0, nodeMinerals: 1 })
-    scenario.world.store(Cargo).set(scenario.workers[0]!, { amount: 9, capacity: 10 })
-    scenario.world.store(Cargo).set(scenario.workers[1]!, { amount: 3, capacity: 10 })
+    const scenario = economyScenario({ workerCount: 2, nodeX: 0, nodeMinerals: 10 })
+    scenario.world.store(Cargo).set(scenario.workers[0]!, { amount: 10, capacity: 10 })
+    scenario.world.store(Cargo).set(scenario.workers[1]!, { amount: 10, capacity: 10 })
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,
@@ -297,20 +298,17 @@ describe('Economy v0 gathering loop', () => {
     })
 
     simulation.step([gatherCommand(scenario.workers, scenario.node)])
-    for (let tick = 1; tick < 20; tick += 1) {
-      simulation.step()
-    }
-    for (let tick = 20; tick < 22; tick += 1) {
+    for (let tick = 1; tick < 22; tick += 1) {
       simulation.step()
     }
     const state = simulation.inspectState().world
 
-    expect(simulation.inspectState().players[0]?.gold).toBe(13)
-    expect(state.store(MineralNode).get(scenario.node)?.remaining).toBe(0)
+    expect(simulation.inspectState().players[0]?.gold).toBe(20)
+    expect(state.store(MineralNode).get(scenario.node)?.remaining).toBe(10)
     expect(state.store(Cargo).get(scenario.workers[0]!)?.amount).toBe(0)
     expect(state.store(Cargo).get(scenario.workers[1]!)?.amount).toBe(0)
-    expect(state.store(Orders).get(scenario.workers[0]!)).toBeUndefined()
-    expect(state.store(Orders).get(scenario.workers[1]!)).toBeUndefined()
+    expect(state.store(Orders).get(scenario.workers[0]!)?.queue[0]).toMatchObject({ type: 'GATHER' })
+    expect(state.store(Orders).get(scenario.workers[1]!)?.queue[0]).toMatchObject({ type: 'GATHER' })
   })
 
   it('stops every selected parallel worker without later economy changes', () => {

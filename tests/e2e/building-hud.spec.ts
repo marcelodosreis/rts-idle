@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { FIXED_SCALE, tilesToFixed } from '@rts/shared'
+import { hasArt } from './art.js'
 
 async function canvasPointForFixed(page: import('@playwright/test').Page, x: number, y: number) {
   return page.evaluate(
@@ -108,6 +109,9 @@ test('construction stays at the clicked location while the worker travels', asyn
   await expect
     .poll(() => constructionAt(page, target))
     .toMatchObject({ x: target.x, y: target.y, status: 'FOUNDATION' })
+  if (await hasArt(page)) {
+    await expect.poll(() => page.evaluate((id) => window.__rtsDebug?.getSpriteState(id)?.anim, workerId)).toBe('build')
+  }
   await expect
     .poll(() => constructionAt(page, target), { timeout: 20_000 })
     .toMatchObject({

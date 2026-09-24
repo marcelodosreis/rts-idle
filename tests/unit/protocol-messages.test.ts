@@ -157,7 +157,7 @@ describe('protocol snapshot message', () => {
       cargoAmount: 3,
       cargoCapacity: 10,
       progressTicks: 12,
-      progressMax: 20,
+      progressMax: 200,
       nodeId: 4
     }
     expect(isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], economy }] })).toBe(true)

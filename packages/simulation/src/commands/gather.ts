@@ -1,5 +1,6 @@
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { CommandRejectedError } from '../contracts/commands.js'
+import { MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
 import { Cargo, Kind, MineralNode, Movement, Orders, Position } from '../ecs/components.js'
 import type { GameState } from '../state/state.js'
 import { UNIT_SPEED_TILES_PER_SECOND } from './move.js'
@@ -17,7 +18,12 @@ export function applyGather(state: GameState, command: ScheduledCommand): void {
   const cargo = state.world.store(Cargo)
   const node = state.world.store(MineralNode).get(nodeId)
   const nodePosition = positions.get(nodeId)
-  if (node === undefined || node.remaining <= 0 || nodePosition === undefined) {
+  if (
+    node === undefined ||
+    node.remaining < MINERAL_CARGO_CAPACITY ||
+    node.remaining % MINERAL_CARGO_CAPACITY !== 0 ||
+    nodePosition === undefined
+  ) {
     throw new CommandRejectedError('ENTITY_UNAVAILABLE', command, `GATHER: target ${nodeId} is not an available node`)
   }
   for (const unitId of unitIds) {

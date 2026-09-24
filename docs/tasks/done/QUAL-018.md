@@ -1,6 +1,6 @@
 # QUAL-018 — Board + tracking guard + protocolo
 
-**Status:** in-progress
+**Status:** done
 **Phase:** Quality Hardening / Fundação
 **Dependencies:** QUAL-017
 
@@ -20,10 +20,10 @@ Create resumable board, task packets, tracking guard, and update bug response pr
 
 ## Acceptance Criteria
 
-- [ ] All 19 QUAL tasks have packets
-- [ ] Guard validates board ↔ packets ↔ TASK_INDEX consistency
-- [ ] Anti-duplication rule enforced
-- [ ] CURRENT_STATE.md updated
+- [x] All 19 QUAL tasks have packets
+- [x] Guard validates board ↔ packets ↔ TASK_INDEX consistency
+- [x] Anti-duplication rule enforced
+- [x] CURRENT_STATE.md updated
 
 ## Validation
 

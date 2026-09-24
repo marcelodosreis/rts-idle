@@ -31,6 +31,16 @@ function getBoardTasks(): string[] {
   return ids
 }
 
+function getTaskIndexTasks(): string[] {
+  const content = readFileSync(join(WORKSPACE_ROOT, 'docs', 'ai', 'TASK_INDEX.md'), 'utf-8')
+  const matches = content.matchAll(/^\| (QUAL-\d+) \|/gm)
+  const ids: string[] = []
+  for (const m of matches) {
+    ids.push(m[1])
+  }
+  return ids
+}
+
 describe('quality tracking (QUAL-018)', () => {
   it('has QUAL task packets', () => {
     const packets = getQUALPackets()
@@ -53,6 +63,21 @@ describe('quality tracking (QUAL-018)', () => {
     for (const task of board) {
       expect(packets).toContain(task)
     }
+  })
+
+  it('TASK_INDEX references all board QUAL tasks', () => {
+    const board = getBoardTasks()
+    const taskIndex = getTaskIndexTasks()
+
+    for (const task of board) {
+      expect(taskIndex).toContain(task)
+    }
+  })
+
+  it('TASK_INDEX has no duplicate QUAL ids', () => {
+    const taskIndex = getTaskIndexTasks()
+    const unique = new Set(taskIndex)
+    expect(unique.size).toBe(taskIndex.length)
   })
 
   it('no duplicate QUAL ids in board', () => {

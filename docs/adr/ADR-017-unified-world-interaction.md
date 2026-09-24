@@ -12,7 +12,9 @@ World input was distributed across Pixi viewport handlers, unit sprites, DOM `co
 
 Renderer input is normalized into typed, gameplay-independent `WorldInteraction` events. The renderer owns browser events, screen/world coordinate conversion, hit testing, camera gestures, pointer capture, and gesture cancellation. The web match layer owns selection state, command modes, target validation, and `CommandIntent` creation.
 
-The renderer uses one target precedence policy: mineral, unit, building, ground. The visual renderer does not authorize gameplay commands.
+The renderer uses one target precedence policy: unit, mineral, building, ground. A
+unit remains the direct target when it overlaps a resource node. The visual
+renderer does not authorize gameplay commands.
 
 Camera controls are shared through a renderer camera controller. Mouse and Trackpad are explicit web preferences because browsers do not reliably distinguish a physical mouse wheel from a two-finger trackpad `wheel` event.
 

@@ -14,13 +14,13 @@ export interface WorldHitTesterSources {
 export function createWorldHitTester(sources: WorldHitTesterSources): WorldHitTester {
   return {
     targetAt(position) {
-      const mineral = sources.mineralNodeAt(position.x, position.y)
-      if (mineral !== null) {
-        return { kind: 'mineral', id: mineral }
-      }
       const unit = sources.unitAt(position.x, position.y)
       if (unit !== null) {
         return { kind: 'unit', id: unit }
+      }
+      const mineral = sources.mineralNodeAt(position.x, position.y)
+      if (mineral !== null) {
+        return { kind: 'mineral', id: mineral }
       }
       const building = sources.buildingAt(position.x, position.y)
       if (building !== null) {

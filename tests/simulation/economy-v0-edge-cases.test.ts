@@ -17,8 +17,8 @@ import { SEEDS, TEST_IDENTITY } from '../fixtures/index.js'
 import { economyScenario, gatherCommand } from './economy-v0-fixtures.js'
 
 describe('Economy v0 edge cases', () => {
-  it('returns and deposits a partial load when the node is exhausted', () => {
-    const scenario = economyScenario({ nodeX: 0, nodeMinerals: 3 })
+  it('returns and deposits one full batch when the node is exhausted', () => {
+    const scenario = economyScenario({ nodeX: 0, nodeMinerals: 10 })
     const worker = scenario.workers[0]!
     const simulation = createSimulation({
       seed: SEEDS.simulation.deterministicPair,
@@ -27,19 +27,19 @@ describe('Economy v0 edge cases', () => {
     })
 
     simulation.step([gatherCommand([worker], scenario.node)])
-    for (let tick = 1; tick < 100 && simulation.inspectState().players[0]?.gold === 0; tick += 1) {
+    for (let tick = 1; tick < 400 && simulation.inspectState().players[0]?.gold === 0; tick += 1) {
       simulation.step()
     }
     const state = simulation.inspectState()
 
-    expect(state.players[0]?.gold).toBe(3)
+    expect(state.players[0]?.gold).toBe(10)
     expect(state.world.store(MineralNode).get(scenario.node)?.remaining).toBe(0)
     expect(state.world.store(Cargo).get(worker)?.amount).toBe(0)
     expect(state.world.store(Orders).get(worker)).toBeUndefined()
   })
 
   it('keeps cargo and waits when no owned Base is available', () => {
-    const scenario = economyScenario({ includeBase: false, nodeX: 0, nodeMinerals: 1 })
+    const scenario = economyScenario({ includeBase: false, nodeX: 0, nodeMinerals: 10 })
     const worker = scenario.workers[0]!
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
@@ -48,13 +48,13 @@ describe('Economy v0 edge cases', () => {
     })
 
     simulation.step([gatherCommand([worker], scenario.node)])
-    for (let tick = 1; tick < 20; tick += 1) {
+    for (let tick = 1; tick < 200; tick += 1) {
       simulation.step()
     }
     const state = simulation.inspectState()
 
     expect(state.players[0]?.gold).toBe(0)
-    expect(state.world.store(Cargo).get(worker)?.amount).toBe(1)
+    expect(state.world.store(Cargo).get(worker)?.amount).toBe(10)
     expect(state.world.store(Orders).get(worker)?.queue[0]).toMatchObject({
       type: 'GATHER',
       phase: 'WAITING_FOR_BASE',
@@ -83,7 +83,7 @@ describe('Economy v0 edge cases', () => {
       footprint: { x: 2, y: 0, width: 2, height: 2 }
     })
     scenario.world.store(Position).set(worker, { x: tilesToFixed(1), y: 0 })
-    scenario.world.store(Cargo).set(worker, { amount: 9, capacity: 10 })
+    scenario.world.store(Cargo).set(worker, { amount: 10, capacity: 10 })
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,
@@ -91,9 +91,6 @@ describe('Economy v0 edge cases', () => {
     })
 
     simulation.step([gatherCommand([worker], scenario.node)])
-    for (let tick = 1; tick < 20; tick += 1) {
-      simulation.step()
-    }
 
     expect(simulation.inspectState().world.store(Orders).get(worker)?.queue[0]).toMatchObject({
       phase: 'TO_BASE',
@@ -104,7 +101,7 @@ describe('Economy v0 edge cases', () => {
   it('keeps carried minerals when another command cancels gathering', () => {
     const scenario = economyScenario({ nodeX: 0 })
     const worker = scenario.workers[0]!
-    scenario.world.store(Cargo).set(worker, { amount: 5, capacity: 10 })
+    scenario.world.store(Cargo).set(worker, { amount: 10, capacity: 10 })
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,
@@ -117,9 +114,62 @@ describe('Economy v0 edge cases', () => {
     ])
     const state = simulation.inspectState()
 
-    expect(state.world.store(Cargo).get(worker)?.amount).toBe(5)
+    expect(state.world.store(Cargo).get(worker)?.amount).toBe(10)
     expect(state.players[0]?.gold).toBe(0)
     expect(state.world.store(Orders).get(worker)).toBeUndefined()
+  })
+
+  it('does not create cargo or consume minerals when a partial batch is cancelled', () => {
+    const scenario = economyScenario({ nodeX: 0, nodeMinerals: 10 })
+    const worker = scenario.workers[0]!
+    const simulation = createSimulation({
+      seed: SEEDS.simulation.fixedTick,
+      identity: TEST_IDENTITY,
+      initialWorld: scenario.world
+    })
+
+    simulation.step([gatherCommand([worker], scenario.node)])
+    for (let tick = 1; tick < 100; tick += 1) {
+      simulation.step()
+    }
+    simulation.step([
+      {
+        tick: 101,
+        playerId: 0,
+        sequence: 2,
+        intent: { type: 'STOP', payload: { unitIds: [worker] } }
+      }
+    ])
+
+    expect(simulation.inspectState().world.store(Cargo).get(worker)?.amount).toBe(0)
+    expect(simulation.inspectState().world.store(MineralNode).get(scenario.node)?.remaining).toBe(10)
+  })
+
+  it('keeps a moved worker from showing cargo after partial mining', () => {
+    const scenario = economyScenario({ nodeX: 0, nodeMinerals: 10 })
+    const worker = scenario.workers[0]!
+    const simulation = createSimulation({
+      seed: SEEDS.simulation.fixedTick,
+      identity: TEST_IDENTITY,
+      initialWorld: scenario.world
+    })
+
+    simulation.step([gatherCommand([worker], scenario.node)])
+    for (let tick = 1; tick < 100; tick += 1) {
+      simulation.step()
+    }
+    simulation.step([
+      {
+        tick: 101,
+        playerId: 0,
+        sequence: 2,
+        intent: { type: 'MOVE', payload: { unitIds: [worker], x: tilesToFixed(2), y: 0 } }
+      }
+    ])
+
+    expect(simulation.inspectState().world.store(Cargo).get(worker)?.amount).toBe(0)
+    expect(simulation.inspectState().world.store(MineralNode).get(scenario.node)?.remaining).toBe(10)
+    expect(simulation.inspectState().world.store(Orders).get(worker)).toBeUndefined()
   })
 
   it('returns an already-full cargo before gathering from a newly commanded node', () => {
