@@ -10,7 +10,7 @@ import {
 } from '@rts/shared'
 
 /** High-level unit behavior for the renderer (drives idle/run/attack). */
-export type OrderState = 'idle' | 'moving' | 'attacking' | 'hold' | 'patrol' | 'attack_move'
+export type OrderState = 'idle' | 'moving' | 'building' | 'attacking' | 'hold' | 'patrol' | 'attack_move'
 
 export type EconomyPhase = 'to_node' | 'gathering' | 'to_base' | 'waiting_for_base'
 
@@ -141,7 +141,7 @@ function isSnapshotMineralNode(value: unknown): boolean {
   return typeof remaining === 'number' && Number.isInteger(remaining) && remaining >= 0
 }
 
-const ORDER_STATES: readonly string[] = ['idle', 'moving', 'attacking', 'hold', 'patrol', 'attack_move']
+const ORDER_STATES: readonly string[] = ['idle', 'moving', 'building', 'attacking', 'hold', 'patrol', 'attack_move']
 const ECONOMY_PHASES: readonly string[] = ['to_node', 'gathering', 'to_base', 'waiting_for_base']
 
 function isOptionalNonNegativeInteger(value: unknown): boolean {

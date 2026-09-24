@@ -110,6 +110,35 @@ describe('game session commands', () => {
     expect(session.projectPlayers().find((player) => player.id === 0)?.gold).toBe(0)
   })
 
+  it('projects a builder as moving, then building at its work point', () => {
+    const session = createAuthoritativeMatch({
+      type: 'match_request',
+      scenarioId: 'economy',
+      aggression: 'passive',
+      map: { source: 'catalog' }
+    }).session
+    const worker = session.projectUnits()[0]!
+
+    session.submit(0, [
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'BUILD', payload: { unitId: worker.id, buildingType: 'BASE', x: 10, y: 9 } }
+      }
+    ])
+    expect(session.advance().rejected).toEqual([])
+    expect(session.projectUnits().find((unit) => unit.id === worker.id)?.orderState).toBe('moving')
+
+    for (let tick = 0; tick < 100; tick += 1) {
+      session.advance()
+      if (session.projectUnits().find((unit) => unit.id === worker.id)?.orderState === 'building') {
+        break
+      }
+    }
+    expect(session.projectUnits().find((unit) => unit.id === worker.id)?.orderState).toBe('building')
+  })
+
   it('projects units, Bases, and Mineral Nodes as distinct observations', () => {
     const world = createWorld()
     world.createEntity(1)

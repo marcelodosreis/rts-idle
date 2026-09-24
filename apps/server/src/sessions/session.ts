@@ -56,6 +56,9 @@ function deriveOrderState(front: Order | undefined, hasMovement: boolean): Order
   if (front?.type === 'PATROL') {
     return 'patrol'
   }
+  if (front?.type === 'BUILD') {
+    return hasMovement ? 'moving' : 'building'
+  }
   if (hasMovement) {
     return 'moving'
   }

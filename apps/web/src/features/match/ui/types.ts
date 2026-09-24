@@ -6,7 +6,7 @@ export interface HudSelectionUnit {
   readonly kind: 'pawn' | 'warrior' | 'archer'
   readonly owner: number
   readonly moving: boolean
-  readonly orderState?: 'idle' | 'moving' | 'attacking' | 'hold' | 'patrol' | 'attack_move'
+  readonly orderState?: 'idle' | 'moving' | 'building' | 'attacking' | 'hold' | 'patrol' | 'attack_move'
   readonly hp?: number
   readonly maxHp?: number
   readonly economy?: {
