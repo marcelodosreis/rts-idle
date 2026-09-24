@@ -110,6 +110,13 @@ Spec: `docs/specs/SPEC-level-editor.md`. Completed plan: `docs/tasks/done/level-
 | EDITOR-040 | Local autosave + restore | done | EDITOR-001 | web | e2e |
 | EDITOR-041 | JSON download/upload + schema validation | done | EDITOR-001 | web | unit, e2e |
 
+## Web Platform
+
+| ID | Title | Status | Dependencies | Packages | Validation |
+|----|-------|--------|-------------|----------|------------|
+| WEB-ARCH-001 | Web frontend architecture restructure | done | — | web | unit, integration, architecture, e2e |
+| INPUT-001 | Unified world interaction | done | — | renderer, web | unit, e2e |
+
 ## Architecture Evolution (RFC-001)
 
 RFC: `docs/rfc/RFC-001-technology-substitutability.md` (Proposed).

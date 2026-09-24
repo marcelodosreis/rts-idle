@@ -104,7 +104,8 @@ active and pending packets remain here. See [`docs/tasks/README.md`](README.md).
 ## Phase 2 — Economy and production
 
 Execution plan: `docs/tasks/done/VS-01-plan.md`. Latest completed task packet:
-`docs/tasks/done/BUILD-003.md`. Active packet: `docs/tasks/BUILD-004.md`.
+`docs/tasks/done/BUILD-004.md`. No active packet; next candidate is the
+production queue (`PROD-001`/`PROD-002`, P2.07).
 
 ### VS-01 — Economy v0 (P2.01–P2.02)
 

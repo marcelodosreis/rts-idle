@@ -37,5 +37,6 @@ refunds, pathfinding, collision, repair, and additional building types.
 - [x] Generalized BUILD foundation creation and resource validation
 - [x] Barracks marker activation with existing pause/takeover behavior
 - [x] Determinism and regression coverage
-- [x] Validation gates passed (Node 23; repository pnpm wrapper could not verify
-  its pinned pnpm signature in this environment)
+- [x] Validation gates passed (repository pnpm wrapper could not verify its
+  pinned pnpm signature in this environment; the shared construction flow was
+  later re-validated under Node 24 by BUILD-004)

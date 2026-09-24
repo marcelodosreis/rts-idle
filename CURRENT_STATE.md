@@ -66,12 +66,13 @@ No production, real AI, pathfinding, fog of war, or multiplayer.
 
 ## Active Task
 
-VS-01B Playable Economy Integration is complete, including visible mining/carrying feedback.
-ECONOMY-006 Manual cargo deposit and visible carrying state is complete.
-Building lifecycle coverage is complete for Base and Barracks through the shared
-Building component and `buildings` snapshot collection.
-BUILD-004 Supply Depot and Supply HUD is complete. Production queues, training,
-reserved supply, and VS-02 have not started.
+No active task packet. The latest completed packet is BUILD-004 Supply Depot and
+Supply HUD. The full construction lifecycle (Base, Barracks, Supply Depot) is
+complete, including pause, takeover, resume, and completion, and all completed
+packets (ECONOMY-006, BUILD-004, WEB-ARCH-001, INPUT-001) are archived in
+`docs/tasks/done/`. The next candidate is the production queue (`PROD-001`/
+`PROD-002`, P2.07). Production queues, training, and reserved supply have not
+started.
 
 Quality Hardening remains deferred after the completed QUAL-016 output hygiene
 and QUAL-018 tracking work. The Concept Authority closure (AUTH-005A through
