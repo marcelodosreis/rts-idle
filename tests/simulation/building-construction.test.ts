@@ -1,4 +1,4 @@
-import { START_ENTITY_ID } from '@rts/shared'
+import { constructionRefund, START_ENTITY_ID } from '@rts/shared'
 import {
   Building,
   createSimulation,
@@ -50,6 +50,13 @@ const buildDepot = (workerId: number, sequence: number) => ({
   playerId: 0,
   sequence,
   intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'SUPPLY_DEPOT' as const, x: 0, y: 0 } }
+})
+
+const cancelConstruction = (buildingId: number, sequence: number) => ({
+  tick: 2,
+  playerId: 0,
+  sequence,
+  intent: { type: 'CANCEL_CONSTRUCTION' as const, payload: { buildingId } }
 })
 
 describe('BUILD simulation lifecycle', () => {
@@ -189,5 +196,44 @@ describe('BUILD simulation lifecycle', () => {
     }
     sim.step()
     expect(sim.inspectState().players[0]?.supplyCap).toBe(8)
+  })
+
+  it('cancels a construction, refunds, and frees the footprint for rebuilding', () => {
+    const sim = scenario(200)
+    sim.step([build(START_ENTITY_ID, 1, 4, 4)])
+    const buildingId = START_ENTITY_ID + 3
+    const result = sim.step([cancelConstruction(buildingId, 2)])
+    const state = sim.inspectState()
+    expect(result.rejected).toEqual([])
+    expect(state.world.store(Building).has(buildingId)).toBe(false)
+    expect(state.players[0]?.gold).toBe(175)
+    expect(state.world.store(Orders).get(START_ENTITY_ID)?.queue[0]?.type).not.toBe('BUILD')
+    expect(sim.step([build(START_ENTITY_ID, 3, 4, 4)]).rejected).toEqual([])
+  })
+
+  it('refunds proportionally to the remaining construction progress', () => {
+    const sim = scenario(100, { [START_ENTITY_ID]: { x: 256, y: 0 } })
+    sim.step([build(START_ENTITY_ID, 1)])
+    const buildingId = START_ENTITY_ID + 3
+    let progress = 0
+    for (let i = 0; i < 100 && progress === 0; i += 1) {
+      sim.step()
+      progress = sim.inspectState().world.store(Building).get(buildingId)?.progressTicks ?? 0
+    }
+    expect(progress).toBeGreaterThan(0)
+    sim.step([cancelConstruction(buildingId, 2)])
+    expect(sim.inspectState().players[0]?.gold).toBe(constructionRefund(100, progress, 100))
+  })
+
+  it('leaves the builder where it is when cancelling a construction in progress', () => {
+    const sim = scenario()
+    sim.step([build(START_ENTITY_ID, 1, 4, 4)])
+    const buildingId = START_ENTITY_ID + 3
+    for (let i = 0; i < 5; i += 1) {
+      sim.step()
+    }
+    const before = sim.inspectState().world.store(Position).get(START_ENTITY_ID)
+    sim.step([cancelConstruction(buildingId, 2)])
+    expect(sim.inspectState().world.store(Position).get(START_ENTITY_ID)).toEqual(before)
   })
 })

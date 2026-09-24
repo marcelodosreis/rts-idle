@@ -39,6 +39,7 @@
 | BUILD-002 | Base construction | done | BUILD-001, ECONOMY-005 | simulation, game-data | unit, simulation |
 | BUILD-003 | Barracks construction | done | BUILD-002 | simulation, game-data | unit, simulation |
 | BUILD-004 | Supply depot construction | done | BUILD-002 | simulation, game-data, protocol, web | unit, simulation, contracts, e2e |
+| BUILD-005 | Construction cancellation (P2.05) | done | BUILD-002 | shared, protocol, simulation, web | unit, simulation, contracts, invariants, e2e |
 | PROD-001 | Production queue component | pending | — | simulation | unit, simulation |
 | PROD-002 | Unit training system | pending | PROD-001, BUILD-003 | simulation | unit, simulation |
 | PROD-003 | Supply cap system | done | BUILD-004 | simulation | unit, simulation |
@@ -109,6 +110,13 @@ Spec: `docs/specs/SPEC-level-editor.md`. Completed plan: `docs/tasks/done/level-
 | EDITOR-031 | Playtest e2e coverage | done | EDITOR-030 | web | e2e |
 | EDITOR-040 | Local autosave + restore | done | EDITOR-001 | web | e2e |
 | EDITOR-041 | JSON download/upload + schema validation | done | EDITOR-001 | web | unit, e2e |
+
+## Web Platform
+
+| ID | Title | Status | Dependencies | Packages | Validation |
+|----|-------|--------|-------------|----------|------------|
+| WEB-ARCH-001 | Web frontend architecture restructure | done | — | web | unit, integration, architecture, e2e |
+| INPUT-001 | Unified world interaction | done | — | renderer, web | unit, e2e |
 
 ## Architecture Evolution (RFC-001)
 

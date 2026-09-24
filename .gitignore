@@ -15,6 +15,8 @@ test-results/
 # husky generated shims
 /.husky/_
 # license-pending asset sources and curated copies
-/tmp/
 /apps/web/public/assets/
+# project-local scratch directory (never use the machine temp)
+/tmp/*
+!/tmp/.gitkeep
 .pnpm-store/

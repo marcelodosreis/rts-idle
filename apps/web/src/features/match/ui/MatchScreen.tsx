@@ -24,6 +24,7 @@ export function MatchScreen() {
     buildHint,
     arm,
     issueOrder,
+    cancelConstruction,
     surrender,
     newMatch,
     changeScenario,
@@ -54,6 +55,7 @@ export function MatchScreen() {
       onHold={() => issueOrder('HOLD')}
       onSurrender={surrender}
       onArm={arm}
+      onCancelConstruction={cancelConstruction}
       workerSelected={
         selectionUnits.length === 1 && selectionUnits[0]?.kind === 'pawn' && selectionUnits[0]?.owner === 0
       }

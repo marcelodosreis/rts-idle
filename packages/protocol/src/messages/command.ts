@@ -60,6 +60,10 @@ function isCommandIntent(value: unknown): boolean {
         isInteger(p.y)
       )
     }
+    case 'CANCEL_CONSTRUCTION': {
+      const p = payload as Record<string, unknown>
+      return isInteger(p.buildingId)
+    }
     case 'SURRENDER':
       return Object.keys(payload).length === 0
     default:

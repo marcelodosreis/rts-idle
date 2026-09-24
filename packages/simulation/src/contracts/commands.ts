@@ -5,6 +5,7 @@ export type {
   AttackPayload,
   BuildingType,
   BuildPayload,
+  CancelConstructionPayload,
   CommandIntent,
   GatherPayload,
   HoldPayload,
@@ -25,6 +26,7 @@ export type CommandErrorCode =
   | 'INVALID_PAYLOAD'
   | 'INVALID_PHASE'
   | 'INVALID_PLACEMENT'
+  | 'INVALID_STATE'
   | 'INSUFFICIENT_RESOURCES'
   | 'NOT_OWNER'
   | 'ENTITY_UNAVAILABLE'

@@ -48,6 +48,7 @@ describe('protocol command message', () => {
       { type: 'command', intent: { type: 'PATROL', payload: { unitIds: [1], x: 100, y: 200 } } },
       { type: 'command', intent: { type: 'ATTACK', payload: { unitIds: [1], targetId: 5 } } },
       { type: 'command', intent: { type: 'ATTACK_MOVE', payload: { unitIds: [1], x: 100, y: 200 } } },
+      { type: 'command', intent: { type: 'CANCEL_CONSTRUCTION', payload: { buildingId: 5 } } },
       { type: 'command', intent: { type: 'SURRENDER', payload: {} } }
     ]
     for (const message of commands) {
@@ -69,6 +70,9 @@ describe('protocol command message', () => {
       isCommandMessage({ type: 'command', intent: { type: 'ATTACK', payload: { unitIds: [1], targetId: 2.5 } } })
     ).toBe(false)
     expect(isCommandMessage({ type: 'command', intent: { type: 'SURRENDER', payload: { unitIds: [1] } } })).toBe(false)
+    expect(
+      isCommandMessage({ type: 'command', intent: { type: 'CANCEL_CONSTRUCTION', payload: { buildingId: 1.5 } } })
+    ).toBe(false)
     expect(isCommandMessage({ type: 'command', intent: { type: 'FLY', payload: {} } })).toBe(false)
   })
 })

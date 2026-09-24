@@ -17,7 +17,7 @@ See `docs/tasks/todo.md` for full phase list.
 - ECS engine (10 components, custom, Map-based stores)
 - Fixed timestep (20 ticks/s, single-writer `step()`)
 - Deterministic simulation (xoshiro128**, fixed-point, SHA-256 hashes)
-- 9 commands: MOVE, STOP, HOLD, PATROL, ATTACK, ATTACK_MOVE, GATHER, DEPOSIT, SURRENDER
+- 11 commands: MOVE, STOP, HOLD, PATROL, ATTACK, ATTACK_MOVE, GATHER, DEPOSIT, BUILD, CANCEL_CONSTRUCTION, SURRENDER
 - 8 pipeline systems: orders → movement → economy → combat → death → supply → victory → invariants
 - 3 unit types: pawn (100hp/10dmg), warrior (150hp/15dmg), archer (60hp/8dmg/range 3)
 - Combat with simultaneous death, victory/draw/tick-limit
@@ -66,12 +66,15 @@ No production, real AI, pathfinding, fog of war, or multiplayer.
 
 ## Active Task
 
-VS-01B Playable Economy Integration is complete, including visible mining/carrying feedback.
-ECONOMY-006 Manual cargo deposit and visible carrying state is complete.
-Building lifecycle coverage is complete for Base and Barracks through the shared
-Building component and `buildings` snapshot collection.
-BUILD-004 Supply Depot and Supply HUD is complete. Production queues, training,
-reserved supply, and VS-02 have not started.
+No active task packet. The latest completed packet is BUILD-005 Construction
+cancellation (P2.05): owned not-yet-completed constructions can be cancelled
+through `CANCEL_CONSTRUCTION`, refunding part of the cost and freeing the
+footprint and builder, with a two-step HUD action. The full construction
+lifecycle (Base, Barracks, Supply Depot) now includes pause, takeover, resume,
+completion, and cancellation; all completed packets are archived in
+`docs/tasks/done/`. The next candidate is the production queue (`PROD-001`/
+`PROD-002`, P2.07). Production queues, training, and reserved supply have not
+started.
 
 Quality Hardening remains deferred after the completed QUAL-016 output hygiene
 and QUAL-018 tracking work. The Concept Authority closure (AUTH-005A through
