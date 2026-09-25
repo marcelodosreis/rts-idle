@@ -39,11 +39,6 @@ function checkConstruction(state: GameState, id: number): void {
   if (construction === undefined) {
     return
   }
-  // Legacy marker aliases are intentionally accepted only at the boundary of
-  // old in-memory fixtures; new canonical worlds always use full Building data.
-  if (construction.buildingType === undefined) {
-    return
-  }
   if (owners.get(id) === undefined) {
     fail(`construction ${id} has no owner`)
   }

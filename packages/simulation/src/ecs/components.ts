@@ -1,7 +1,8 @@
-import type { BuildingType, Fixed, PlayerId, UnitKind } from '@rts/shared'
+import type { Fixed, PlayerId, UnitKind } from '@rts/shared'
 import type { CanonicalReader } from '../canonical/reader.js'
 import type { CanonicalWriter } from '../canonical/writer.js'
 import type { Order } from '../contracts/orders.js'
+import { buildingTypeFromTag, buildingTypeTag, kindFromTag, kindTag } from './codecs.js'
 
 export interface ComponentType<T> {
   readonly name: string
@@ -90,27 +91,6 @@ const ORDER_TAG_ATTACK_MOVE = 4
 const ORDER_TAG_GATHER = 5
 const ORDER_TAG_BUILD = 6
 const ORDER_TAG_DEPOSIT = 7
-
-function buildingTypeTag(buildingType: BuildingType): number {
-  switch (buildingType) {
-    case 'BASE':
-      return 0
-    case 'BARRACKS':
-      return 1
-    case 'SUPPLY_DEPOT':
-      return 2
-  }
-}
-
-function buildingTypeFromTag(tag: number): BuildingType {
-  if (tag === 0) {
-    return 'BASE'
-  }
-  if (tag === 1) {
-    return 'BARRACKS'
-  }
-  return 'SUPPLY_DEPOT'
-}
 
 const GATHER_PHASE_TAGS = {
   TO_NODE: 0,
@@ -215,14 +195,11 @@ function readOrder(reader: CanonicalReader): Order {
     }
     case ORDER_TAG_BUILD: {
       const buildingId = reader.readU32()
-      const buildingType = reader.readU8()
-      if (buildingType !== 0 && buildingType !== 1 && buildingType !== 2) {
-        throw new Error(`Orders: invalid building type tag ${buildingType}`)
-      }
+      const buildingType = buildingTypeFromTag(reader.readU8())
       return {
         type: 'BUILD',
         buildingId,
-        buildingType: buildingTypeFromTag(buildingType),
+        buildingType,
         workPoint: { x: reader.readI32(), y: reader.readI32() }
       }
     }
@@ -299,40 +276,13 @@ export const Combat: ComponentType<CombatData> = {
 
 export type KindData = UnitKind
 
-// Kind tags in the canonical stream. The numeric values are part of the schema;
-// reordering them changes serialized bytes and the golden hash.
-const KIND_TAG_PAWN = 0
-const KIND_TAG_WARRIOR = 1
-const KIND_TAG_ARCHER = 2
-
 export const Kind: ComponentType<KindData> = {
   name: 'kind',
   encode(writer, value) {
-    switch (value) {
-      case 'pawn':
-        writer.writeU8(KIND_TAG_PAWN)
-        return
-      case 'warrior':
-        writer.writeU8(KIND_TAG_WARRIOR)
-        return
-      case 'archer':
-        writer.writeU8(KIND_TAG_ARCHER)
-        return
-    }
+    writer.writeU8(kindTag(value))
   },
   decode(reader) {
-    const tag = reader.readU8()
-    switch (tag) {
-      case KIND_TAG_PAWN:
-        return 'pawn'
-      case KIND_TAG_WARRIOR:
-        return 'warrior'
-      case KIND_TAG_ARCHER:
-        return 'archer'
-      default:
-        // A bad tag is corruption, not a valid unit kind.
-        throw new Error(`Kind: invalid kind tag ${tag}`)
-    }
+    return kindFromTag(reader.readU8())
   }
 }
 

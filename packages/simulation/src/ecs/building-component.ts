@@ -1,9 +1,10 @@
-import type { BuildingType } from '@rts/shared'
+import type { BuildingStatus, BuildingType } from '@rts/shared'
 import type { CanonicalReader } from '../canonical/reader.js'
 import type { CanonicalWriter } from '../canonical/writer.js'
+import { buildingTypeFromTag, buildingTypeTag } from './codecs.js'
 import type { ComponentType } from './components.js'
 
-export type BuildingStatus = 'FOUNDATION' | 'UNDER_CONSTRUCTION' | 'COMPLETED'
+export type { BuildingStatus }
 
 export interface BuildingData {
   readonly buildingType: BuildingType
@@ -14,27 +15,16 @@ export interface BuildingData {
   readonly footprint: { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
 }
 
-const STATUS_TAGS = { FOUNDATION: 0, UNDER_CONSTRUCTION: 1, COMPLETED: 2 } as const
-
-function buildingTypeTag(buildingType: BuildingType): number {
-  switch (buildingType) {
-    case 'BASE':
-      return 0
-    case 'BARRACKS':
-      return 1
-    case 'SUPPLY_DEPOT':
-      return 2
-  }
+const STATUS_TAGS: Readonly<Record<BuildingStatus, number>> = {
+  FOUNDATION: 0,
+  UNDER_CONSTRUCTION: 1,
+  COMPLETED: 2
 }
 
-function buildingTypeFromTag(tag: number): BuildingType {
-  if (tag === 0) {
-    return 'BASE'
-  }
-  if (tag === 1) {
-    return 'BARRACKS'
-  }
-  return 'SUPPLY_DEPOT'
+const STATUS_BY_TAG: Readonly<Record<number, BuildingStatus>> = {
+  0: 'FOUNDATION',
+  1: 'UNDER_CONSTRUCTION',
+  2: 'COMPLETED'
 }
 
 export const Building: ComponentType<BuildingData> = {
@@ -54,14 +44,9 @@ export const Building: ComponentType<BuildingData> = {
     writer.writeI32(value.footprint.height)
   },
   decode(reader: CanonicalReader) {
-    const buildingType = reader.readU8()
-    if (buildingType !== 0 && buildingType !== 1 && buildingType !== 2) {
-      throw new Error(`Building: invalid building type tag ${buildingType}`)
-    }
+    const buildingType = buildingTypeFromTag(reader.readU8())
     const statusTag = reader.readU8()
-    const status = (Object.keys(STATUS_TAGS) as BuildingStatus[]).find(
-      (candidate) => STATUS_TAGS[candidate] === statusTag
-    )
+    const status = STATUS_BY_TAG[statusTag]
     if (status === undefined) {
       throw new Error(`Building: invalid status tag ${statusTag}`)
     }
@@ -73,7 +58,7 @@ export const Building: ComponentType<BuildingData> = {
     }
     const builderId = builderPresent === 1 ? reader.readU32() : null
     return {
-      buildingType: buildingTypeFromTag(buildingType),
+      buildingType,
       status,
       progressTicks,
       totalTicks,
