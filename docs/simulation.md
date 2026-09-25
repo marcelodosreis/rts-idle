@@ -9,7 +9,7 @@ The deterministic core. This document is the operational reference for
 - The core imports no platform APIs: it runs identically in Node, the browser,
   tests, replay, and fuzzing (`tests/architecture/simulation-isolation.test.ts`).
 - All randomness is seeded (`createRng`); all arithmetic is integer
-  (`shared/fixed.ts`, `movement-step.ts`).
+  (`packages/shared/src/primitives/fixed.ts`, `packages/simulation/src/movement/destination.ts`).
 - The canonical byte format and the state hash are pinned by
   `tests/simulation/hash-golden.test.ts` and the determinism suites. Changing
   the format is a deliberate act (regen the golden).
@@ -39,7 +39,7 @@ The pipeline order is part of the deterministic contract:
 | 8 | `invariants` | Validate the state (never mutates, throws on violation) |
 
 Appending a step is a deliberate change; reordering is forbidden
-(`tests/simulation/pipeline-order.test.ts`).
+(`tests/simulation/lifecycle/pipeline-order.test.ts`).
 
 ## Components
 

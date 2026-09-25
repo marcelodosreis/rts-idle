@@ -2,7 +2,7 @@ import { expect, type Page, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
 import { hasArt } from '../support/art.js'
 
-/** Economy scenario Mineral Node tile (see apps/server/src/demo/scenarios.ts). */
+/** Economy scenario Mineral Node tile (see apps/server/src/content/demo/scenarios.ts). */
 const ECONOMY_NODE_TILE = { x: 14, y: 7 }
 
 async function canvasPointForFixed(page: Page, x: number, y: number) {

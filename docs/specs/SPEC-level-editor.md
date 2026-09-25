@@ -56,8 +56,8 @@ pnpm run typecheck
 pnpm run lint
 pnpm run test:unit
 pnpm run verify:fast
-pnpm run test:e2e:focused tests/e2e/sprites-lab.spec.ts --list
-pnpm run test:e2e:focused tests/e2e/sprites-lab.spec.ts
+pnpm run test:e2e:focused tests/e2e/laboratory/editor/terrain-editor.spec.ts --list
+pnpm run test:e2e:focused tests/e2e/laboratory/editor/terrain-editor.spec.ts
 pnpm run verify
 ```
 
@@ -67,20 +67,20 @@ pnpm run verify
 packages/game-data/src/maps/
 ├── types.ts              # MapDefinition, MapTileKind, StairEntry, DecorationPlacement, DressingKind
 └── competitive.ts
-packages/renderer/src/
-├── terrain-conversion.ts # grid ↔ MapDefinition (lossless)
-├── terrain-dressing.ts   # scatter + asset keys (imports DressingKind from game-data)
-├── terrain-scene.ts      # shared render: terrain, stairs, decorations
-└── terrain-layer.ts      # game entry point
+packages/renderer/src/terrain/
+├── conversion.ts         # grid ↔ MapDefinition (lossless)
+├── dressing.ts           # scatter + asset keys (imports DressingKind from game-data)
+├── scene.ts               # shared render: terrain, stairs, decorations
+└── layer.ts               # game entry point
 apps/web/src/features/laboratory/editor/
 ├── TerrainView.tsx       # editor UI (toolbar, status, modals)
 ├── terrain-controller.ts # editor engine (split into focused modules)
 └── terrain-*.ts          # paint / overlays / persistence helpers
-tests/unit/
+tests/unit/renderer/
 ├── terrain-conversion.test.ts
-├── terrain-dressing.test.ts
-└── terrain-parity.test.ts
-tests/e2e/sprites-lab.spec.ts
+└── terrain-dressing.test.ts
+tests/unit/terrain-parity.test.ts
+tests/e2e/laboratory/editor/terrain-editor.spec.ts
 ```
 
 ## Data Contract
@@ -128,13 +128,13 @@ readonly interfaces; explicit return types on public functions.
 
 ## Testing Strategy
 
-- `tests/unit/terrain-conversion.test.ts` — lossless round-trip for terrain and
+- `tests/unit/renderer/terrain-conversion.test.ts` — lossless round-trip for terrain and
   stairs.
-- `tests/unit/terrain-dressing.test.ts` — scatter determinism and explicit
+- `tests/unit/renderer/terrain-dressing.test.ts` — scatter determinism and explicit
   placement precedence.
 - `tests/unit/terrain-parity.test.ts` (new) — same grid + stairs + decorations
   produce identical scene input for editor and game.
-- `tests/e2e/sprites-lab.spec.ts` — grid toggle, highlight, decoration
+- `tests/e2e/laboratory/editor/terrain-editor.spec.ts` — grid toggle, highlight, decoration
   placement, autosave restore, and playtest entry point.
 - `tests/architecture/public-api.test.ts` and `package-dependencies.test.ts`
   must stay green (no removed exports; renderer may import game-data, not the

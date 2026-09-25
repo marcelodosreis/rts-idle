@@ -76,11 +76,11 @@ Barrier weaknesses:
 | Server game logic → ECS internals | `apps/server/src/sessions/session.ts:137-213` (`world.store(Position/Owner/Health/Kind/Orders/Movement/Cargo/Base/MineralNode)`) |
 | Client runtime → platform globals | `apps/web/src/features/match/lifecycle/useMatchSession.ts` |
 | Client runtime → concrete Pixi | `useMatchSession.ts:2,130` |
-| Renderer contract → Pixi type | `packages/renderer/src/types.ts:4,77` (`PointData`) |
-| Renderer contract → protocol vocabulary | `packages/renderer/src/types.ts:2` (`EconomyPhase`, `OrderState`) |
-| Content → server code | `apps/server/src/demo.ts`, `apps/server/src/demo/scenarios.ts` |
+| Renderer contract → Pixi type | `packages/renderer/src/core/types.ts:3,80` (`PointData`) |
+| Renderer contract → protocol vocabulary | `packages/renderer/src/core/types.ts:1` (`EconomyPhase`, `OrderState`) |
+| Content → server code | `apps/server/src/content/demo/demo-session.ts`, `apps/server/src/content/demo/scenarios.ts` |
 | game-data → presentation | `packages/game-data/src/maps/types.ts:47-66` |
-| Shared → asset contract | `packages/shared/src/asset-manifest.ts` |
+| Shared → asset contract | `packages/shared/src/assets/asset-manifest.ts` |
 | Test/debug global in runtime | `useMatchSession.ts:56-60,276-317` (`window.__rtsDebug`) |
 | Concrete transport on both sides | `apps/web/src/shared/transport/connection.ts`, `apps/server/src/main.ts:20` |
 
@@ -191,21 +191,20 @@ export function projectObservation(
 
 ### 3.3 `MatchConnection` as a real port
 
-- **Current:** `apps/web/src/client/connection.ts` defines `MatchConnection`/
-  `ConnectionHandlers` **and** `connectMatch()` with `new WebSocket` (`:19`);
-  `useMatchSession.ts:6,274` imports the concrete.
+- **Current:** `apps/web/src/shared/transport/connection.ts` defines
+  `MatchConnection`/`ConnectionHandlers` **and** `connectMatch()` with
+  `new WebSocket`; `features/match/lifecycle/match-session-start.ts` imports it.
 - **Problem:** port and adapter in one file; swapping transport edits the runtime.
-- **Files:** split `connection.ts` into `client/match-connection.ts` (types) and
-  `client/websocket-transport.ts` (adapter); update `useMatchSession.ts`.
+- **Files:** split `shared/transport/connection.ts` into a port and adapter;
+  update `features/match/lifecycle/match-session-start.ts`.
 - **New boundary:** `match-connection.ts` holds only `MatchConnection` and
   `ConnectionHandlers`; `websocket-transport.ts` exports
   `connectWebSocket(url, handlers): MatchConnection`. No factory interface.
 - **Direction:** before `runtime → connectMatch(WS)`; after
   `runtime → MatchConnection` and `composition root → connectWebSocket`.
 - **Minimal API:** already exists; only relocated.
-- **Imports removed:** `useMatchSession.ts` no longer imports `connectMatch`.
-- **Imports added:** `useMatchSession.ts` imports port types from
-  `client/match-connection` and `connectWebSocket` from `client/websocket-transport`.
+- **Imports removed:** `match-session-start.ts` no longer imports `connectMatch`.
+- **Imports added:** `match-session-start.ts` imports the port and transport adapter.
 - **Risk:** low (move code).
 - **Tests:** typecheck + E2E `select-and-move`, `economy-playable`,
   `renderer-lifecycle`.
@@ -231,8 +230,8 @@ export function projectObservation(
 ### 3.5 `PlatformServices`
 
 - **Current capabilities used by the playable client:**
-  - env: `import.meta.env.VITE_SERVER_URL` (`useMatchSession.ts:19`)
-  - query: `window.location.search` at module scope (`:13-18`) and in the effect
+  - env: `import.meta.env.VITE_SERVER_URL` (`apps/web/src/features/match/lifecycle/useMatchSession.ts:19`)
+  - query: `window.location.search` at module scope (`apps/web/src/features/match/lifecycle/useMatchSession.ts:13-18`) and in the effect
     (`:128`); mutation at `:369,375,384`
   - storage: `window.localStorage` (`:128`)
   - navigation: `window.location.reload()` (`:363`)
@@ -241,8 +240,9 @@ export function projectObservation(
 - **Problem:** runtime tied to globals; Tauri/desktop port contaminates runtime.
 - **Files:** new `apps/web/src/platform/platform.ts`,
   `apps/web/src/platform/browser-platform.ts`, `apps/web/src/client/debug.ts`;
-  `useMatchSession.ts`, `screens/playtest-map.ts` (move `StorageReader`),
-  `screens/MatchScreen.tsx`, `app/App.tsx`.
+  `apps/web/src/features/match/lifecycle/useMatchSession.ts`,
+  `apps/web/src/shared/config/playtest-map.ts` (move `StorageReader`),
+  `apps/web/src/features/match/ui/MatchScreen.tsx`, `apps/web/src/app/App.tsx`.
 - **New boundary (flat, derived from real usage — no hierarchy):**
 
 ```ts
@@ -268,7 +268,7 @@ export interface DebugBridge {
 - **Risk:** medium — module-scope constants (`SCENARIO`, `AGGRESSION`,
   `SPRITES_ENABLED`, `SERVER_URL`) move into the hook preserving behavior;
   validate scenario/navigation E2E.
-- **Tests:** E2E `scenarios`, `sprites-lab` (`getMapInfo`/`map=local`),
+- **Tests:** E2E `scenarios`, `sprites-lab-responsive` (`getMapInfo`/`map=local`),
   `economy-playable`.
 - **Benefit:** enables Tauri/Steam without touching gameplay; removes globals
   from the runtime.
@@ -290,12 +290,12 @@ export interface DebugBridge {
 
 ### 3.7 `GameRenderer` contract cleanup
 
-- **Current:** `packages/renderer/src/types.ts` imports `PointData` from
+- **Current:** `packages/renderer/src/core/types.ts` imports `PointData` from
   `pixi.js` (`:4`) and uses it in `RendererOptions.initialCenter` (`:77`);
   `GameRenderer` (`:84-111`) mixes presentation and diagnostics.
 - **Problem:** a Pixi type appears in the contract.
-- **Files:** `packages/renderer/src/types.ts`, `renderer.ts`, `index.ts`,
-  `apps/web/src/perf/main.ts` (already pure), `useMatchSession.ts`.
+- **Files:** `packages/renderer/src/core/types.ts`, `core/renderer.ts`, `index.ts`,
+  `apps/web/src/features/match/lifecycle/useMatchSession.ts`.
 - **New boundary (minimal production contract):**
 
 ```ts
@@ -313,7 +313,8 @@ export interface GameRenderer {
 `initialCenter?: { readonly x: number; readonly y: number }`.
 
 - **Direction:** `Client → GameRenderer ← PixiRenderer`; zero Pixi in the contract.
-- **Imports removed:** `import type { PointData } from 'pixi.js'` in `types.ts`.
+- **Imports removed:** `import type { PointData } from 'pixi.js'` in
+  `core/types.ts`.
 - **Imports added:** none.
 - **Risk:** low; `resize` is currently unused by the app (the sprite lab has its
   own path) but remains part of the lifecycle.
@@ -326,7 +327,7 @@ export interface GameRenderer {
 - **Current:** diagnostics live on the contract (`getUnitPositions`,
   `getUnitAnimationFrame`, `getUnitHealth`, `getUnitSpriteState`, `getSelection`,
   `getZoom`, `getPing`, `worldToScreen`), used only by `__rtsDebug`
-  (`useMatchSession.ts:279-299`). Production uses `mount`, `present`,
+  (`apps/web/src/features/match/lifecycle/useMatchSession.ts:279-299`). Production uses `mount`, `present`,
   `setSelection`, `dispose` (+ `moveCamera`).
 - **Problem:** any alternative renderer must fake Pixi concepts (`glyph`,
   `shape`, `inTree`, `facing`, `scale`).
@@ -367,15 +368,16 @@ export interface RendererDebug {
 
 ### 3.9 Content/scenarios out of the server
 
-- **Current:** `apps/server/src/demo.ts` builds the `World` via `world.store`
-  (`:43-79`); `apps/server/src/demo/scenarios.ts` holds the catalog + seed.
-  `packages/game-data` exists and is unused by the server; the barrier
-  (`package-dependencies.test.ts:29`) does not even allow `server → game-data`.
+- **Current:** `apps/server/src/content/demo/demo-session.ts` builds the demo
+  session; `apps/server/src/content/demo/scenarios.ts` holds the catalog + seed.
+  `packages/game-data` is used for maps and building definitions, while the demo
+  scenario catalog remains server-owned; the dependency barrier
+  (`package-dependencies.test.ts:29`) allows `server → game-data`.
 - **Problem:** content hardcoded in server code; `game-data` is the natural home.
 - **Files:** new `packages/game-data/src/scenarios/{types,catalog}.ts`,
   `game-data/src/index.ts`; new `packages/simulation/src/scenarios/build-world.ts`,
-  `simulation/src/index.ts`; `apps/server/src/demo.ts` (thin); delete
-  `apps/server/src/demo/scenarios.ts`; `tests/architecture/package-dependencies.test.ts`,
+  `simulation/src/index.ts`; `apps/server/src/content/demo/demo-session.ts`,
+  `apps/server/src/content/demo/scenarios.ts`; `tests/architecture/package-dependencies.test.ts`,
   `docs/engineering-standard.md`, `docs/architecture.md`.
 - **New boundary:**
 
@@ -392,12 +394,12 @@ export function buildWorldFromScenario(
 ): World
 ```
 
-`apps/server/src/demo.ts` becomes ~10 lines: `scenarioById` +
+`apps/server/src/content/demo/demo-session.ts` becomes ~10 lines: `scenarioById` +
 `buildWorldFromScenario` + `GameSession.create`.
 
 - **Direction:** before `content → server(ECS)`; after
   `game-data (data) → simulation (builder) ← server`.
-- **Imports removed:** `demo.ts` drops `allocateEntityId`,
+- **Imports removed:** `demo-session.ts` drops `allocateEntityId`,
   `Base/Cargo/Combat/Health/Kind/MineralNode/Movement/Orders/Owner/Position/createWorld`;
   the server loses scenario literals.
 - **Imports added:** server imports `@rts/game-data` (update the barrier) and
@@ -466,8 +468,8 @@ Each PR leaves the project working with all tests green.
 ### PR 1 — Renderer contract + debug separation (§3.7, §3.8)
 
 - **Objective:** pure, small `GameRenderer`; `RendererDebug` separate.
-- **Files:** `packages/renderer/src/types.ts`, `renderer.ts`, `index.ts`;
-  `apps/web/src/screens/useMatchSession.ts`; verify `apps/web/src/perf/main.ts`.
+- **Files:** `packages/renderer/src/core/types.ts`, `core/renderer.ts`, `index.ts`;
+  `apps/web/src/features/match/lifecycle/useMatchSession.ts`.
 - **Change:** remove `PointData`; add `RendererDebug`; `PixiRenderer` implements
   both and exposes `debug`.
 - **Tests:** typecheck, lint, renderer/feedback E2E.
@@ -489,11 +491,13 @@ Each PR leaves the project working with all tests green.
 
 - **Objective:** remove browser globals from the runtime.
 - **Files:** new `apps/web/src/platform/{platform,browser-platform}.ts`,
-  `apps/web/src/client/debug.ts` (move `RtsDebug`); `useMatchSession.ts`,
-  `screens/playtest-map.ts`, `screens/MatchScreen.tsx`, `app/App.tsx`.
+  `apps/web/src/client/debug.ts` (move `RtsDebug`);
+  `apps/web/src/features/match/lifecycle/useMatchSession.ts`,
+  `apps/web/src/shared/config/playtest-map.ts`,
+  `apps/web/src/features/match/ui/MatchScreen.tsx`, `apps/web/src/app/App.tsx`.
 - **Change:** `useMatchSession(host, platform)`; module constants move into the
   hook; debug via `platform.debug`.
-- **Tests:** typecheck + E2E `scenarios`, `sprites-lab`, `economy-playable`.
+- **Tests:** typecheck + E2E `scenarios`, `sprites-lab-responsive`, `economy-playable`.
 - **Completion:** `useMatchSession.ts` has no `window`/`localStorage`/`import.meta.env`.
 
 ### PR 4 — `PlayerObservation` in the simulation (§3.1)
@@ -526,8 +530,8 @@ Each PR leaves the project working with all tests green.
 - **Objective:** content in `game-data`; instantiation in `simulation`.
 - **Files:** new `packages/game-data/src/scenarios/{types,catalog}.ts`,
   `game-data/src/index.ts`; new `packages/simulation/src/scenarios/build-world.ts`,
-  `simulation/src/index.ts`; `apps/server/src/demo.ts`; delete
-  `apps/server/src/demo/scenarios.ts`; `tests/architecture/package-dependencies.test.ts`;
+  `simulation/src/index.ts`; `apps/server/src/content/demo/demo-session.ts`,
+  `apps/server/src/content/demo/scenarios.ts`; `tests/architecture/package-dependencies.test.ts`;
   `docs/engineering-standard.md`, `docs/architecture.md`.
 - **Change:** scenario data in `game-data`; `buildWorldFromScenario` in
   `simulation`; thin server; allow `server → game-data` in the barrier and ban
