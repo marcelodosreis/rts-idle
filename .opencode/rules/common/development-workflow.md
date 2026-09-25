@@ -4,6 +4,11 @@
 
 The Feature Implementation Workflow describes the development pipeline: research, planning, TDD, code review, and then committing to git.
 
+> **Mandatory in everything:** clean code, SOLID, and typed domain strings
+> (`docs/engineering-standard.md`) apply to every package, app, tool, test, and
+> config. `pnpm run lint` and `pnpm run test:architecture` must pass; pre-commit
+> and pre-push enforce the same bar.
+
 ## Feature Implementation Workflow
 
 0. **Research & Reuse** _(mandatory before any new implementation)_

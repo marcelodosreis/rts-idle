@@ -54,6 +54,37 @@ type UserWithRole = User & {
 }
 ```
 
+### Typed Domain Strings (mandatory)
+
+Every closed string set is an `as const` registry with a derived union type,
+defined once (`docs/engineering-standard.md` → "Typed domain strings"). At
+runtime boundaries, narrow with the `@rts/shared` parse helpers
+(`isRecord`/`field`/`isInteger`) — never `as string`/`as unknown`, and never
+`Record<string, X>` for a known key set. Discriminated dispatch ends with
+`assertNever`.
+
+```typescript
+// WRONG: loose domain strings and unsafe casts
+type Status = string
+const status = input as string
+const isDone = status === 'COMPLETED'
+const table: Record<string, number> = { FOUNDATION: 0 }
+
+// CORRECT: single-source registry, guard, exhaustive dispatch
+export const STATUSES = ['FOUNDATION', 'UNDER_CONSTRUCTION', 'COMPLETED'] as const
+export type Status = (typeof STATUSES)[number]
+const status = field(input, 'status')
+if (!isOneOf(STATUSES, status)) throw new Error('invalid status')
+switch (status) {
+  case 'FOUNDATION':
+  case 'UNDER_CONSTRUCTION':
+  case 'COMPLETED':
+    break
+  default:
+    assertNever(status)
+}
+```
+
 ### Avoid `any`
 
 - Avoid `any` in application code
@@ -177,20 +208,23 @@ async function loadUser(userId: string): Promise<User> {
 
 ## Input Validation
 
-Use Zod for schema-based validation and infer types from the schema:
+Validate untrusted input at every boundary with typed guards that return the
+narrowed value. In this repository, use the shared parse helpers rather than
+`as` casts or schema libraries inside the simulation (which must stay
+dependency-free).
 
 ```typescript
-import { z } from 'zod'
+import { field, isInteger, isRecord } from '@rts/shared'
 
-const userSchema = z.object({
-  email: z.string().email(),
-  age: z.number().int().min(0).max(150)
-})
-
-type UserInput = z.infer<typeof userSchema>
-
-const validated: UserInput = userSchema.parse(input)
+// CORRECT: fail-closed structural validation with typed narrowing
+function readPort(value: unknown): number | null {
+  const port = isRecord(value) ? field(value, 'port') : undefined
+  return isInteger(port) ? port : null
+}
 ```
+
+Prefer returning a typed result (`{ ok: true, value } | { ok: false, errors }`)
+over throwing from parsers, so callers handle failure explicitly.
 
 ## Console.log
 

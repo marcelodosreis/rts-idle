@@ -32,6 +32,27 @@ Rationale: Immutable data prevents hidden side effects, makes debugging easier, 
 - Avoid speculative generality
 - Start simple, then refactor when the pressure is real
 
+## SOLID
+
+Apply SOLID adapted to this repository (canonical detail in
+`docs/engineering-standard.md`):
+
+- **SRP** — one responsibility per module/system/handler (validate vs mutate).
+- **OCP** — extend through registries (components, order tags, command
+  variants, game-data) instead of growing conditional chains.
+- **LSP** — honour interface contracts (e.g. `ComponentType<T>` round-trips).
+- **ISP** — keep interfaces and handlers narrow; no unused parameters.
+- **DIP** — depend on pure helpers and stores, not concrete globals.
+
+## Typed domain strings
+
+Closed domain sets (command/order/event/message types, statuses, kinds, phases,
+input profiles, routes) are `as const` registries with derived union types,
+defined once. Boundary input is narrowed with `isRecord`/`field` guards; never
+use `as string`/`as unknown`, and never type known key sets as `Record<string, X>`.
+Discriminated dispatch ends with `assertNever`. See
+`tests/architecture/typed-domain.test.ts`.
+
 ## File Organization
 
 MANY SMALL FILES > FEW LARGE FILES:

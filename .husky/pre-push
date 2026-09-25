@@ -26,3 +26,25 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "✅ TypeScript check passed."
+
+echo "🔍 Checking lint and architecture barriers before push..."
+
+corepack pnpm run lint
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Push blocked: lint violations found (clean code / SOLID / typed strings)."
+  echo "   Fix the errors above before pushing."
+  echo ""
+  exit 1
+fi
+
+corepack pnpm run test:architecture
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Push blocked: architecture or typed-domain barriers failed."
+  echo "   Fix the errors above before pushing."
+  echo ""
+  exit 1
+fi
+
+echo "✅ Lint and architecture barriers passed."

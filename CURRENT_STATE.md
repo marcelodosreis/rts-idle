@@ -41,6 +41,10 @@ See `docs/tasks/todo.md` for full phase list.
   report, determinism, and performance features
 - Match HUD Laboratory menu and enforced web import boundaries
 - Automated suites and architecture barriers green
+- Strong-typing baseline: single-source domain registries, boundary parsers,
+  `assertNever` exhaustive dispatch, canonical tag codecs, hardened tsconfig
+  (`verbatimModuleSyntax`, `noImplicitReturns`, `noPropertyAccessFromIndexSignature`),
+  and an AST typed-domain guard (`tests/architecture/typed-domain.test.ts`)
 
 ## Current Gameplay
 
@@ -66,15 +70,26 @@ No production, real AI, pathfinding, fog of war, or multiplayer.
 
 ## Active Task
 
-No active task packet. The latest completed packet is BUILD-005 Construction
-cancellation (P2.05): owned not-yet-completed constructions can be cancelled
-through `CANCEL_CONSTRUCTION`, refunding part of the cost and freeing the
-footprint and builder, with a two-step HUD action. The full construction
-lifecycle (Base, Barracks, Supply Depot) now includes pause, takeover, resume,
-completion, and cancellation; all completed packets are archived in
-`docs/tasks/done/`. The next candidate is the production queue (`PROD-001`/
-`PROD-002`, P2.07). Production queues, training, and reserved supply have not
-started.
+The repository physical reorganization is complete. Server transport, match
+bootstrap, session projections, quality tooling, fixtures, unit tests,
+simulation tests, and Laboratory E2E tests are grouped by domain. The physical
+layout architecture barrier is enforced by
+`tests/architecture/physical-layout.test.ts`. E2E runs support isolated ports
+through `E2E_WEB_PORT` and `E2E_SERVER_PORT`; the scenario-query reset regression
+is documented in `docs/postmortems/2026-09-25-e2e-scenario-query-reset.md`.
+
+The QUAL-019..024 quality baseline is complete repository-wide: clean code,
+SOLID, and typed domain strings are documented in
+`docs/engineering-standard.md` and enforced by Biome, the AST typed-domain
+guard, `lint-staged`, the pre-push hook, CI, review, and the pull-request
+template. The whole app (packages, apps, tools, tests) now meets the file ≤400 /
+function ≤50 bar with no suppressed violations; one refactor regression was
+caught by E2E and documented in
+`docs/postmortems/2026-09-24-devtools-menu-content-ids.md`.
+
+The latest gameplay packet is BUILD-005 Construction cancellation (P2.05). The
+next gameplay candidate is `PROD-001`/`PROD-002` (production queue and unit
+training); production queues, training, and reserved supply have not started.
 
 Quality Hardening remains deferred after the completed QUAL-016 output hygiene
 and QUAL-018 tracking work. The Concept Authority closure (AUTH-005A through
