@@ -8,13 +8,18 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
+    "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "declaration": true,
     "sourceMap": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true
   }
 }
