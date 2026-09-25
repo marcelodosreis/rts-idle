@@ -3,8 +3,8 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/unit/world-hit-tester.test.ts
-  - tests/e2e/economy-playable.spec.ts
+  - tests/unit/renderer/world-hit-tester.test.ts
+  - tests/e2e/economy/economy-playable.spec.ts
 ---
 
 # Pawn Selection Lost Over Mineral Nodes

@@ -3,7 +3,7 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/unit/render-layers.test.ts
+  - tests/unit/renderer/render-layers.test.ts
 ---
 
 # Render Layer Order
@@ -43,7 +43,7 @@ interaction container.
 
 ## Regression
 
-`tests/unit/render-layers.test.ts` verifies the declared container order and
+`tests/unit/renderer/render-layers.test.ts` verifies the declared container order and
 that world objects added after units remain below the unit layer.
 
 ## Prevention
@@ -54,6 +54,6 @@ guards against insertion-order regressions.
 
 ## Verification
 
-- `pnpm exec vitest run tests/unit/render-layers.test.ts tests/unit/world-object-layer.test.ts tests/unit/selection-box.test.ts`
+- `pnpm exec vitest run tests/unit/renderer/render-layers.test.ts tests/unit/renderer/world-object-layer.test.ts tests/unit/renderer/selection-box.test.ts`
 - `pnpm run typecheck`
 - `pnpm run verify`

@@ -3,7 +3,7 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/simulation/economy-v0.test.ts
+  - tests/simulation/economy/economy-v0.test.ts
   - tests/contracts/economy-command.test.ts
 ---
 
@@ -45,7 +45,7 @@ complete 10-mineral batch.
 
 ## Regression
 
-`tests/simulation/economy-v0.test.ts` verifies that both `STOP` and `MOVE` after
+`tests/simulation/economy/economy-v0.test.ts` verifies that both `STOP` and `MOVE` after
 partial progress leave Cargo empty and the node unchanged. The contract test
 verifies that incomplete node batches are rejected.
 
