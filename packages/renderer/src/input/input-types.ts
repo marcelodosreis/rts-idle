@@ -1,6 +1,10 @@
-export type InputProfile = 'mouse' | 'trackpad'
+export const INPUT_PROFILES = ['mouse', 'trackpad'] as const
 
-export type CancelReason = 'escape' | 'pointer-cancel' | 'focus-lost' | 'interaction-lock' | 'dispose'
+export type InputProfile = (typeof INPUT_PROFILES)[number]
+
+export const CANCEL_REASONS = ['escape', 'pointer-cancel', 'focus-lost', 'interaction-lock', 'dispose'] as const
+
+export type CancelReason = (typeof CANCEL_REASONS)[number]
 
 export interface WorldPoint {
   readonly x: number
