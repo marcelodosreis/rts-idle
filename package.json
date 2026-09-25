@@ -14,7 +14,6 @@
     "verify": "corepack pnpm run typecheck && corepack pnpm run lint && corepack pnpm run test:unit && corepack pnpm run test:integration && corepack pnpm run test:simulation && corepack pnpm run test:contracts && corepack pnpm run test:orders && corepack pnpm run test:determinism && corepack pnpm run test:architecture && corepack pnpm run test:invariants && corepack pnpm run build",
     "verify:fast": "corepack pnpm run typecheck && corepack pnpm run lint && corepack pnpm run test:unit",
     "verify:simulation": "corepack pnpm run test:simulation && corepack pnpm run test:contracts && corepack pnpm run test:orders && corepack pnpm run test:determinism && corepack pnpm run test:architecture && corepack pnpm run test:invariants",
-    "verify:browser": "corepack pnpm run build && corepack pnpm run test:e2e:all",
     "typecheck": "corepack pnpm -r typecheck",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
@@ -26,7 +25,7 @@
     "test:determinism": "vitest run tests/determinism",
     "test:invariants": "vitest run tests/invariants",
     "test:architecture": "vitest run tests/architecture",
-    "test:e2e": "tsx tools/test-e2e.ts",
+    "test:e2e": "tsx tools/e2e/run-e2e.ts",
     "test:e2e:all": "corepack pnpm run test:e2e -- --project=chromium --project=firefox --workers=1",
     "test:e2e:fast": "corepack pnpm run test:e2e -- --project=chromium --project=firefox --workers=1 --grep-invert @perf",
     "test:e2e:perf": "corepack pnpm run test:e2e -- --project=chromium --project=firefox --workers=1 --grep @perf",
@@ -69,6 +68,11 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
+    ]
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,jsonc}": [
+      "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true"
     ]
   },
   "dependencies": {
