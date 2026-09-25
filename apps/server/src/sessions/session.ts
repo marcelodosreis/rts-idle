@@ -1,28 +1,8 @@
-import type {
-  EconomyPhase,
-  OrderState,
-  SnapshotBuilding,
-  SnapshotEconomy,
-  SnapshotMineralNode,
-  SnapshotPlayer,
-  SnapshotUnit
-} from '@rts/protocol'
+import type { MatchPhase, SnapshotBuilding, SnapshotMineralNode, SnapshotPlayer, SnapshotUnit } from '@rts/protocol'
 import type { PlayerId, SimulationEvent } from '@rts/shared'
 import {
-  Building,
-  Cargo,
   type CommandRejectedError,
   createSimulation,
-  GATHER_TICKS_PER_MINERAL,
-  Health,
-  Kind,
-  MINERAL_CARGO_CAPACITY,
-  MineralNode,
-  Movement,
-  type Order,
-  Orders,
-  Owner,
-  Position,
   type RulesIdentity,
   type ScheduledCommand,
   type SimulationHost,
@@ -30,62 +10,12 @@ import {
   type SimulationSnapshot,
   simulationFromSnapshot
 } from '@rts/simulation'
+import { projectBuildings, projectMineralNodes, projectPlayers, projectUnits } from './projections/index.js'
 
 export interface SessionResult {
   readonly tick: number
   readonly rejected: readonly CommandRejectedError[]
   readonly events: readonly SimulationEvent[]
-}
-
-/**
- * Derives a unit's high-level behavior state from its front order and whether
- * it is currently moving (drives the renderer's idle/run/attack animation).
- * ATTACK and ATTACK_MOVE take precedence because a chasing unit is attacking
- * even while moving.
- */
-function deriveOrderState(front: Order | undefined, hasMovement: boolean): OrderState {
-  if (front?.type === 'ATTACK') {
-    return 'attacking'
-  }
-  if (front?.type === 'ATTACK_MOVE') {
-    return 'attack_move'
-  }
-  if (front?.type === 'HOLD') {
-    return 'hold'
-  }
-  if (front?.type === 'PATROL') {
-    return 'patrol'
-  }
-  if (front?.type === 'BUILD') {
-    return hasMovement ? 'moving' : 'building'
-  }
-  if (hasMovement) {
-    return 'moving'
-  }
-  return 'idle'
-}
-
-function deriveEconomy(
-  front: Order | undefined,
-  cargo: { readonly amount: number; readonly capacity: number } | undefined
-): SnapshotEconomy | undefined {
-  if (front?.type !== 'GATHER' || cargo === undefined) {
-    return undefined
-  }
-  const phaseByOrder: Readonly<Record<typeof front.phase, EconomyPhase>> = {
-    TO_NODE: 'to_node',
-    GATHERING: 'gathering',
-    TO_BASE: 'to_base',
-    WAITING_FOR_BASE: 'waiting_for_base'
-  }
-  return {
-    phase: phaseByOrder[front.phase],
-    cargoAmount: cargo.amount,
-    cargoCapacity: cargo.capacity,
-    progressTicks: front.progressTicks,
-    progressMax: GATHER_TICKS_PER_MINERAL * MINERAL_CARGO_CAPACITY,
-    nodeId: front.nodeId
-  }
 }
 
 /**
@@ -128,7 +58,7 @@ export class GameSession {
   }
 
   /** Current match phase ('RUNNING' or 'FINISHED'), projected for the client. */
-  phase(): 'RUNNING' | 'FINISHED' {
+  phase(): MatchPhase {
     return this.simulation.inspectState().phase
   }
 
@@ -137,97 +67,19 @@ export class GameSession {
   }
 
   projectUnits(): readonly SnapshotUnit[] {
-    const world = this.simulation.inspectState().world
-    const positions = world.store(Position)
-    const owners = world.store(Owner)
-    const healths = world.store(Health)
-    const kinds = world.store(Kind)
-    const orders = world.store(Orders)
-    const movements = world.store(Movement)
-    const cargos = world.store(Cargo)
-    return world
-      .aliveIds()
-      .filter((id) => kinds.has(id))
-      .map((id) => {
-        const pos = positions.get(id)
-        const owner = owners.get(id)
-        if (pos === undefined || owner === undefined) {
-          throw new Error(`GameSession: entity ${id} is missing position or owner`)
-        }
-        const health = healths.get(id)
-        const front = orders.get(id)?.queue[0]
-        const cargo = cargos.get(id)
-        const economy = deriveEconomy(front, cargo)
-        const unit: SnapshotUnit = {
-          id,
-          x: pos.x,
-          y: pos.y,
-          owner: owner.owner,
-          kind: kinds.get(id) ?? 'pawn',
-          orderState: deriveOrderState(front, movements.get(id) !== undefined),
-          ...(economy === undefined ? {} : { economy }),
-          ...(cargo === undefined || cargo.amount === 0 ? {} : { carrying: true }),
-          ...(health === undefined ? {} : { hp: health.current, maxHp: health.max })
-        }
-        return unit
-      })
+    return projectUnits(this.simulation.inspectState().world)
   }
 
   projectBuildings(): readonly SnapshotBuilding[] {
-    const world = this.simulation.inspectState().world
-    const buildings = world.store(Building)
-    const positions = world.store(Position)
-    const owners = world.store(Owner)
-    return world
-      .aliveIds()
-      .filter((id) => buildings.has(id))
-      .map((id) => {
-        const position = positions.get(id)
-        const owner = owners.get(id)
-        const building = buildings.get(id)
-        if (position === undefined || owner === undefined || building === undefined) {
-          throw new Error(`GameSession: building ${id} is missing projection data`)
-        }
-        return {
-          id,
-          buildingType: building.buildingType,
-          x: position.x,
-          y: position.y,
-          owner: owner.owner,
-          builderId: building.builderId,
-          footprint: { width: building.footprint.width, height: building.footprint.height },
-          status: building.status,
-          progressTicks: building.progressTicks,
-          totalTicks: building.totalTicks
-        }
-      })
+    return projectBuildings(this.simulation.inspectState().world)
   }
 
   projectMineralNodes(): readonly SnapshotMineralNode[] {
-    const world = this.simulation.inspectState().world
-    const nodes = world.store(MineralNode)
-    const positions = world.store(Position)
-    return world
-      .aliveIds()
-      .filter((id) => nodes.has(id))
-      .map((id) => {
-        const position = positions.get(id)
-        const node = nodes.get(id)
-        if (position === undefined || node === undefined) {
-          throw new Error(`GameSession: Mineral Node ${id} is missing position or state`)
-        }
-        return { id, x: position.x, y: position.y, remaining: node.remaining }
-      })
+    return projectMineralNodes(this.simulation.inspectState().world)
   }
 
   projectPlayers(): readonly SnapshotPlayer[] {
-    return this.simulation.inspectState().players.map((player) => ({
-      id: player.id,
-      defeated: player.defeated,
-      gold: player.gold,
-      usedSupply: player.usedSupply,
-      supplyCap: player.supplyCap
-    }))
+    return projectPlayers(this.simulation.inspectState().players)
   }
 
   identity(): RulesIdentity {
