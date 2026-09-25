@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 31 |
+| open | 32 |
 | closed | 14 |
-| **total** | **45** |
+| **total** | **46** |
 
 ## Details
 
@@ -57,6 +57,7 @@
 | 2026-09-24-partial-mining-carry-state | open | presentation | — | 2 test(s) |
 | 2026-09-24-pawn-selection-over-mineral | open | presentation | — | 2 test(s) |
 | 2026-09-24-render-layer-order | open | presentation | — | 1 test(s) |
+| 2026-09-25-e2e-laboratory-navigation-timeout | open | environment | — | 1 test(s) |
 | 2026-09-25-e2e-scenario-query-reset | open | environment | — | 1 test(s) |
 | 2026-09-25-physical-layout-empty-directory | open | environment | — | 1 test(s) |
 | 2026-09-25-simulation-test-fixture-relative-import | open | convention | — | 1 test(s) |

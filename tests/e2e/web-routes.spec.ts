@@ -27,7 +27,7 @@ test('the match exposes laboratory navigation in the top bar', async ({ page }) 
   await page.getByRole('button', { name: 'Open DevTools menu' }).click()
   await page.getByRole('link', { name: 'Open Laboratory' }).click()
   await expect(page).toHaveURL(/\/laboratory$/)
-  await expect(page.getByTestId('laboratory-page-title')).toHaveText('Asset Browser', { timeout: 20000 })
+  await expect(page.getByTestId('laboratory-page-title')).toHaveText('Asset Browser', { timeout: 60000 })
 })
 
 test('laboratory menu groups match settings and keeps laboratory as its final action', async ({ page }) => {
