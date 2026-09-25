@@ -1,6 +1,8 @@
 import type { ErrorMessage, MatchConfig, SnapshotMessage } from '@rts/protocol'
+import type { MatchResult } from '@rts/shared'
 import type { ConnectionHandlers } from '../../../shared/transport/connection'
 import { snapshotToFrame } from '../projections/snapshot-to-frame'
+import { projectSnapshotUnit } from '../projections/snapshot-unit'
 import type { SelectionUnitState } from '../selection/selection-projection'
 import type { HudMineral } from '../ui/types'
 import type { MatchSessionRuntime } from './match-session-runtime'
@@ -8,21 +10,12 @@ import type { MatchSessionRuntime } from './match-session-runtime'
 const HUMAN_PLAYER = 0
 
 function unitForHud(unit: SnapshotMessage['units'][number]): SelectionUnitState {
-  return {
-    kind: unit.kind ?? 'pawn',
-    owner: unit.owner,
-    ...(unit.orderState === undefined ? {} : { orderState: unit.orderState }),
-    ...(unit.hp === undefined ? {} : { hp: unit.hp, maxHp: unit.maxHp }),
-    ...(unit.economy === undefined ? {} : { economy: unit.economy }),
-    ...(unit.carrying === undefined ? {} : { carrying: unit.carrying })
-  }
+  return projectSnapshotUnit(unit)
 }
 
 function resourcesForHuman(message: SnapshotMessage) {
   const player = message.players.find((candidate) => candidate.id === HUMAN_PLAYER)
-  return player === undefined
-    ? null
-    : { mineral: player.gold, energy: 0, supply: player.usedSupply, supplyCap: player.supplyCap }
+  return player === undefined ? null : { mineral: player.gold, supply: player.usedSupply, supplyCap: player.supplyCap }
 }
 
 export interface MatchSessionHandlerOptions {
@@ -37,7 +30,7 @@ export interface MatchSessionHandlerOptions {
   readonly setUnitCount: (count: number) => void
   readonly setResources: (resources: ReturnType<typeof resourcesForHuman>) => void
   readonly setSelectedMineral: (mineral: HudMineral | null) => void
-  readonly setMatchResult: (result: 'victory' | 'defeat' | 'draw') => void
+  readonly setMatchResult: (result: MatchResult) => void
   readonly present: (frame: ReturnType<typeof snapshotToFrame>) => void
   readonly onMatchConfig: (config: MatchConfig) => void
   readonly setScenarios: (scenarios: readonly MatchConfig['scenarios'][number][]) => void
@@ -80,7 +73,7 @@ function completeMatch(message: SnapshotMessage, options: MatchSessionHandlerOpt
   options.cancelPlacement()
   options.clearCommandMode()
   const active = message.players.filter((player) => !player.defeated)
-  let result: 'victory' | 'defeat' | 'draw' = 'draw'
+  let result: MatchResult = 'draw'
   if (active.length === 1) {
     result = active[0]!.id === HUMAN_PLAYER ? 'victory' : 'defeat'
   }

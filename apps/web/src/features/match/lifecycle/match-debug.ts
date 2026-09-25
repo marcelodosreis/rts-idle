@@ -1,11 +1,14 @@
-import type { MatchConfig, SnapshotMessage } from '@rts/protocol'
+import type { ConstructionStatus, MatchConfig, SnapshotMessage } from '@rts/protocol'
 import type { GameRenderer } from '@rts/renderer'
 import type { SelectionUnitState } from '../selection/selection-projection'
 
 export interface RtsDebug {
   getPositions(): Record<string, { readonly x: number; readonly y: number }>
   getUnitOwners(): Record<string, number>
-  getConstructionStates(): Record<string, { readonly x: number; readonly y: number; readonly status: string }>
+  getConstructionStates(): Record<
+    string,
+    { readonly x: number; readonly y: number; readonly status: ConstructionStatus }
+  >
   getAnimationFrame(id: number): number | null
   getUnitHealth(id: number): { readonly current: number; readonly max: number } | null
   getSpriteState(id: number): ReturnType<GameRenderer['getUnitSpriteState']>

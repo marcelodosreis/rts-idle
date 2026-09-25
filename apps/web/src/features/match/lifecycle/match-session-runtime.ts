@@ -1,4 +1,4 @@
-import type { BuildCatalogEntry, SnapshotMessage } from '@rts/protocol'
+import type { BuildCatalogEntry, SnapshotBuilding, SnapshotMessage } from '@rts/protocol'
 import type { GameRenderer, RenderFrame } from '@rts/renderer'
 import type { MapDefinition } from '@rts/shared'
 import {
@@ -59,6 +59,56 @@ function project(runtime: MatchSessionRuntime): MatchSelection {
   }
 }
 
+function toHudConstruction(construction: SnapshotBuilding): HudConstruction {
+  return {
+    id: construction.id,
+    buildingType: construction.buildingType,
+    owner: construction.owner,
+    status: construction.status !== 'COMPLETED' && construction.builderId == null ? 'PAUSED' : construction.status,
+    progressTicks: construction.progressTicks,
+    totalTicks: construction.totalTicks,
+    builderId: construction.builderId ?? null
+  }
+}
+
+function selectUnits(runtime: MatchSessionRuntime, ids: readonly number[]): MatchSelection {
+  if (runtime.matchEnded) {
+    return project(runtime)
+  }
+  const normalizedIds = [...new Set(ids)]
+  runtime.selectedIds = normalizedIds
+  runtime.selectedConstructionId = null
+  runtime.selectedMineralId = null
+  runtime.renderer?.setSelection(normalizedIds)
+  return project(runtime)
+}
+
+function selectConstruction(runtime: MatchSessionRuntime, id: number): MatchSelection {
+  if (runtime.matchEnded) {
+    return project(runtime)
+  }
+  emptySelection(runtime)
+  const construction = runtime.buildings.find((candidate) => candidate.id === id)
+  if (construction === undefined || construction.owner !== 0) {
+    return project(runtime)
+  }
+  runtime.selectedConstructionId = id
+  return { ids: [], units: [], construction: toHudConstruction(construction), mineral: null }
+}
+
+function selectMineral(runtime: MatchSessionRuntime, id: number): MatchSelection {
+  if (runtime.matchEnded) {
+    return project(runtime)
+  }
+  const node = runtime.mineralNodes.find((candidate) => candidate.id === id)
+  if (node === undefined) {
+    return emptySelection(runtime)
+  }
+  emptySelection(runtime)
+  runtime.selectedMineralId = id
+  return { ids: [], units: [], construction: null, mineral: { id: node.id, remaining: node.remaining } }
+}
+
 export function createMatchSessionRuntime(): MatchSessionRuntime {
   const runtime: MatchSessionRuntime = {
     map: null,
@@ -78,53 +128,13 @@ export function createMatchSessionRuntime(): MatchSessionRuntime {
     selectedConstructionId: null,
     selectedMineralId: null,
     selectUnits(ids) {
-      if (runtime.matchEnded) {
-        return project(runtime)
-      }
-      const normalizedIds = [...new Set(ids)]
-      runtime.selectedIds = normalizedIds
-      runtime.selectedConstructionId = null
-      runtime.selectedMineralId = null
-      runtime.renderer?.setSelection(normalizedIds)
-      return project(runtime)
+      return selectUnits(runtime, ids)
     },
     selectConstruction(id) {
-      if (runtime.matchEnded) {
-        return project(runtime)
-      }
-      emptySelection(runtime)
-      const construction = runtime.buildings.find((candidate) => candidate.id === id)
-      if (construction === undefined || construction.owner !== 0) {
-        return project(runtime)
-      }
-      runtime.selectedConstructionId = id
-      return {
-        ids: [],
-        units: [],
-        construction: {
-          id: construction.id,
-          buildingType: construction.buildingType,
-          owner: construction.owner,
-          status:
-            construction.status !== 'COMPLETED' && construction.builderId == null ? 'PAUSED' : construction.status,
-          progressTicks: construction.progressTicks,
-          totalTicks: construction.totalTicks,
-          builderId: construction.builderId ?? null
-        },
-        mineral: null
-      }
+      return selectConstruction(runtime, id)
     },
     selectMineral(id) {
-      if (runtime.matchEnded) {
-        return project(runtime)
-      }
-      const node = runtime.mineralNodes.find((candidate) => candidate.id === id)
-      if (node === undefined) {
-        return emptySelection(runtime)
-      }
-      emptySelection(runtime)
-      runtime.selectedMineralId = id
-      return { ids: [], units: [], construction: null, mineral: { id: node.id, remaining: node.remaining } }
+      return selectMineral(runtime, id)
     }
   }
   return runtime
