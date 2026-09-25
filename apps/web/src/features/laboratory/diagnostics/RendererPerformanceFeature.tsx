@@ -1,22 +1,11 @@
-import { type GameRenderer, PixiRenderer } from '@rts/renderer'
-import { FIXED_SCALE, gridPosition } from '@rts/shared'
-import { useEffect, useRef, useState } from 'react'
+import type { GameRenderer } from '@rts/renderer'
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { type RendererPerfResult, runRendererPerf } from './renderer-perf.js'
 
-export interface RendererPerfResult {
-  readonly count: number
-  readonly frames: number
-  readonly avgMs: number
-  readonly p95Ms: number
-  readonly maxMs: number
-  readonly layout: {
-    readonly centerX: number
-    readonly centerY: number
-    readonly zoom: number
-  }
-}
+export type { RendererPerfResult }
 
 declare global {
   interface Window {
@@ -24,96 +13,90 @@ declare global {
   }
 }
 
-function percentile(sorted: readonly number[], p: number): number {
-  if (sorted.length === 0) {
-    return 0
-  }
-  const index = Math.min(sorted.length - 1, Math.max(0, Math.ceil(p * sorted.length) - 1))
-  return sorted[index] ?? 0
-}
+const PRESETS = [100, 1000, 5000] as const
 
-const PERF_COLUMNS = 64
-const TILE_PIXELS = 64
-
-async function runRendererPerf(
-  count: number,
-  targetFrames = 120,
-  mountHost?: HTMLElement,
-  onRendererReady?: (renderer: GameRenderer) => void
-): Promise<RendererPerfResult> {
-  const ownsHost = mountHost === undefined
-  const host = mountHost ?? document.createElement('div')
-  if (ownsHost) {
-    host.style.position = 'fixed'
-    host.style.left = '-10000px'
-    host.style.top = '0'
-    host.style.width = '1280px'
-    host.style.height = '720px'
-    host.style.pointerEvents = 'none'
-    document.body.appendChild(host)
-  } else {
-    host.replaceChildren()
-  }
-
-  const rows = Math.ceil(count / PERF_COLUMNS)
-  const contentWidth = Math.min(PERF_COLUMNS, count) * TILE_PIXELS
-  const contentHeight = rows * TILE_PIXELS
-  const centerX = contentWidth / 2
-  const centerY = contentHeight / 2
-  const zoom = Math.min(
-    1,
-    Math.max(0.05, Math.min(host.clientWidth / contentWidth, host.clientHeight / contentHeight) * 0.9)
+function Metric({ label, value }: { readonly label: string; readonly value: string }) {
+  return (
+    <div>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-1 font-mono text-lg tabular-nums">{value}</dd>
+    </div>
   )
-
-  const renderer: GameRenderer = new PixiRenderer({
-    worldWidth: 12288,
-    worldHeight: 12288,
-    initialZoom: zoom,
-    initialCenter: { x: centerX, y: centerY }
-  })
-  await renderer.mount(host, { onInteraction: () => undefined })
-
-  const units = Array.from({ length: count }, (_, i) => {
-    const position = gridPosition(i, PERF_COLUMNS, FIXED_SCALE)
-    return { id: i + 1, x: position.x, y: position.y, owner: i % 2 }
-  })
-  renderer.present({ tick: 1, units })
-
-  const frames: number[] = []
-  await new Promise<void>((resolve) => {
-    let last = performance.now()
-    let done = 0
-    const loop = (now: number): void => {
-      frames.push(now - last)
-      last = now
-      done += 1
-      if (done >= targetFrames) {
-        resolve()
-      } else {
-        requestAnimationFrame(loop)
-      }
-    }
-    requestAnimationFrame(loop)
-  })
-
-  const sorted = [...frames].sort((a, b) => a - b)
-  const avgMs = frames.reduce((acc, value) => acc + value, 0) / frames.length
-  const p95Ms = percentile(sorted, 0.95)
-  const maxMs = sorted.at(-1) ?? 0
-
-  if (onRendererReady === undefined) {
-    renderer.dispose()
-    if (ownsHost) {
-      host.remove()
-    }
-  } else {
-    onRendererReady(renderer)
-  }
-  return { count, frames: frames.length, avgMs, p95Ms, maxMs, layout: { centerX, centerY, zoom } }
 }
 
-export function RendererPerformanceFeature() {
-  const hostRef = useRef<HTMLDivElement | null>(null)
+function PerfForm({
+  count,
+  frames,
+  running,
+  onCount,
+  onFrames,
+  onRun
+}: {
+  readonly count: number
+  readonly frames: number
+  readonly running: boolean
+  readonly onCount: (value: number) => void
+  readonly onFrames: (value: number) => void
+  readonly onRun: () => void
+}) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
+      <div className="space-y-1.5">
+        <Label htmlFor="performance-unit-count">Units</Label>
+        <Input
+          id="performance-unit-count"
+          type="number"
+          min={1}
+          step={1}
+          value={count}
+          onChange={(event) => onCount(Number(event.target.value))}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="performance-frame-count">Frames</Label>
+        <Input
+          id="performance-frame-count"
+          type="number"
+          min={1}
+          step={1}
+          value={frames}
+          onChange={(event) => onFrames(Number(event.target.value))}
+        />
+      </div>
+      <Button type="button" onClick={onRun} disabled={running || count < 1 || frames < 1}>
+        {running ? 'Running...' : 'Run Performance Test'}
+      </Button>
+    </div>
+  )
+}
+
+function PerfResult({ result }: { readonly result: RendererPerfResult }) {
+  return (
+    <div data-testid="performance-result" role="status" className="rounded-md border border-border/60 bg-muted/20 p-4">
+      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Metric label="Units" value={result.count.toLocaleString()} />
+        <Metric label="Average" value={`${result.avgMs.toFixed(2)} ms`} />
+        <Metric label="P95" value={`${result.p95Ms.toFixed(2)} ms`} />
+        <Metric label="Maximum" value={`${result.maxMs.toFixed(2)} ms`} />
+      </dl>
+      <p className="mt-4 text-xs text-muted-foreground">
+        {result.frames} frames measured · estimated {result.avgMs > 0 ? (1000 / result.avgMs).toFixed(1) : '0.0'} FPS ·
+        target 16.67 ms / 60 FPS
+      </p>
+    </div>
+  )
+}
+
+function useRendererBenchmark(hostRef: RefObject<HTMLDivElement | null>): {
+  readonly count: number
+  readonly frames: number
+  readonly running: boolean
+  readonly error: string | null
+  readonly result: RendererPerfResult | null
+  readonly setCount: (value: number) => void
+  readonly setFrames: (value: number) => void
+  readonly run: () => void
+} {
   const rendererRef = useRef<GameRenderer | null>(null)
   const [count, setCount] = useState(1000)
   const [frames, setFrames] = useState(120)
@@ -130,38 +113,41 @@ export function RendererPerformanceFeature() {
     }
   }, [])
 
-  const runBenchmark = async (): Promise<void> => {
-    setRunning(true)
-    setError(null)
-    setResult(null)
-
-    try {
-      rendererRef.current?.dispose()
-      rendererRef.current = null
-      const host = hostRef.current
-      setResult(
-        await runRendererPerf(
-          count,
-          frames,
-          host ?? undefined,
-          host === null
-            ? undefined
-            : (renderer) => {
-                rendererRef.current = renderer
-              }
+  const run = useCallback((): void => {
+    void (async () => {
+      setRunning(true)
+      setError(null)
+      setResult(null)
+      try {
+        rendererRef.current?.dispose()
+        rendererRef.current = null
+        const host = hostRef.current
+        setResult(
+          await runRendererPerf(
+            count,
+            frames,
+            host ?? undefined,
+            host === null
+              ? undefined
+              : (r) => {
+                  rendererRef.current = r
+                }
+          )
         )
-      )
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'The renderer benchmark failed.')
-    } finally {
-      setRunning(false)
-    }
-  }
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'The renderer benchmark failed.')
+      } finally {
+        setRunning(false)
+      }
+    })()
+  }, [count, frames, hostRef])
 
-  const applyPreset = (preset: number): void => {
-    setCount(preset)
-  }
+  return { count, frames, running, error, result, setCount, setFrames, run }
+}
 
+export function RendererPerformanceFeature() {
+  const hostRef = useRef<HTMLDivElement | null>(null)
+  const benchmark = useRendererBenchmark(hostRef)
   return (
     <section className="space-y-5 rounded-lg border border-border/60 bg-card p-6">
       <div>
@@ -170,44 +156,22 @@ export function RendererPerformanceFeature() {
           Render a controlled number of units and measure frame time. Results are diagnostic, not a hard CI gate.
         </p>
       </div>
-
-      <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
-        <div className="space-y-1.5">
-          <Label htmlFor="performance-unit-count">Units</Label>
-          <Input
-            id="performance-unit-count"
-            type="number"
-            min={1}
-            step={1}
-            value={count}
-            onChange={(event) => setCount(Number(event.target.value))}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="performance-frame-count">Frames</Label>
-          <Input
-            id="performance-frame-count"
-            type="number"
-            min={1}
-            step={1}
-            value={frames}
-            onChange={(event) => setFrames(Number(event.target.value))}
-          />
-        </div>
-        <Button type="button" onClick={() => void runBenchmark()} disabled={running || count < 1 || frames < 1}>
-          {running ? 'Running...' : 'Run Performance Test'}
-        </Button>
-      </div>
-
+      <PerfForm
+        count={benchmark.count}
+        frames={benchmark.frames}
+        running={benchmark.running}
+        onCount={benchmark.setCount}
+        onFrames={benchmark.setFrames}
+        onRun={benchmark.run}
+      />
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-xs text-muted-foreground">Presets:</span>
-        {[100, 1000, 5000].map((preset) => (
-          <Button key={preset} type="button" variant="outline" size="sm" onClick={() => applyPreset(preset)}>
+        {PRESETS.map((preset) => (
+          <Button key={preset} type="button" variant="outline" size="sm" onClick={() => benchmark.setCount(preset)}>
             {preset.toLocaleString()}
           </Button>
         ))}
       </div>
-
       <div
         ref={hostRef}
         data-testid="performance-canvas-host"
@@ -215,43 +179,15 @@ export function RendererPerformanceFeature() {
         aria-label="Performance renderer preview"
         className="h-64 min-w-0 overflow-hidden rounded-md border border-border/60 bg-background sm:h-80"
       />
-
-      {error !== null && (
+      {benchmark.error !== null && (
         <p
           role="alert"
           className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
         >
-          {error}
+          {benchmark.error}
         </p>
       )}
-
-      {result !== null && (
-        <div
-          data-testid="performance-result"
-          role="status"
-          className="rounded-md border border-border/60 bg-muted/20 p-4"
-        >
-          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Metric label="Units" value={result.count.toLocaleString()} />
-            <Metric label="Average" value={`${result.avgMs.toFixed(2)} ms`} />
-            <Metric label="P95" value={`${result.p95Ms.toFixed(2)} ms`} />
-            <Metric label="Maximum" value={`${result.maxMs.toFixed(2)} ms`} />
-          </dl>
-          <p className="mt-4 text-xs text-muted-foreground">
-            {result.frames} frames measured · estimated {result.avgMs > 0 ? (1000 / result.avgMs).toFixed(1) : '0.0'}{' '}
-            FPS · target 16.67 ms / 60 FPS
-          </p>
-        </div>
-      )}
+      {benchmark.result !== null && <PerfResult result={benchmark.result} />}
     </section>
-  )
-}
-
-function Metric({ label, value }: { readonly label: string; readonly value: string }) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-1 font-mono text-lg tabular-nums">{value}</dd>
-    </div>
   )
 }
