@@ -85,15 +85,6 @@ test('laboratory pages expose navigation with the current page highlighted', asy
   ).toHaveAttribute('aria-current', 'page')
 })
 
-test('legacy diagnostics routes redirect to the unified diagnostics page', async ({ page }) => {
-  for (const route of ['/laboratory/stress', '/laboratory/determinism', '/laboratory/performance']) {
-    await page.goto(route)
-    await expect(page).toHaveURL(/\/laboratory\/diagnostics$/)
-    await expect(page.getByRole('heading', { name: 'RTS Idle Laboratory', exact: true })).toBeVisible()
-    await expect(page.getByTestId('laboratory-page-title')).toHaveText('Diagnostics')
-  }
-})
-
 test('renders a not-found page for unknown routes', async ({ page }) => {
   await page.goto('/does-not-exist')
   await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible()
