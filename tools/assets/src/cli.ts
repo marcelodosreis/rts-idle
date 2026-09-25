@@ -1,4 +1,4 @@
-import { prepareAssets } from './prepare-assets.js'
+import { prepareAssets } from './pipeline/prepare-assets.js'
 
 const SOURCE_ROOT = process.argv[2] ?? 'tmp/tiny_swords'
 const TARGET_ROOT = process.argv[3] ?? 'apps/web/public/assets'
