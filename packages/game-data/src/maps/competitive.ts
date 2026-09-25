@@ -9,8 +9,15 @@ function mirrored(x: number, y: number, size: number): MapPosition {
   return { x: size - 1 - x, y: size - 1 - y }
 }
 
-function inRect(x: number, y: number, x0: number, y0: number, x1: number, y1: number): boolean {
-  return x >= x0 && x <= x1 && y >= y0 && y <= y1
+interface Rect {
+  readonly left: number
+  readonly top: number
+  readonly right: number
+  readonly bottom: number
+}
+
+function inRect(x: number, y: number, rect: Rect): boolean {
+  return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
 }
 
 const STAIR_LEFT: StairEntry = { x: 13, y: 12, direction: 'left' }
@@ -35,9 +42,19 @@ export function createCompetitiveMap(): MapDefinition {
       const index = y * size + x
 
       const onBorder = x < border || x >= size - border || y < border || y >= size - border
-      const centralChannel = inRect(x, y, 14, 14, 17, 17)
-      const plateau = inRect(x, y, plateauA.x - 1, plateauA.y - 1, plateauA.x + 1, plateauA.y + 1)
-      const plateauBRegion = inRect(x, y, plateauB.x - 1, plateauB.y - 1, plateauB.x + 1, plateauB.y + 1)
+      const centralChannel = inRect(x, y, { left: 14, top: 14, right: 17, bottom: 17 })
+      const plateau = inRect(x, y, {
+        left: plateauA.x - 1,
+        top: plateauA.y - 1,
+        right: plateauA.x + 1,
+        bottom: plateauA.y + 1
+      })
+      const plateauBRegion = inRect(x, y, {
+        left: plateauB.x - 1,
+        top: plateauB.y - 1,
+        right: plateauB.x + 1,
+        bottom: plateauB.y + 1
+      })
 
       if (onBorder) {
         tiles[index] = WATER

@@ -1,6 +1,6 @@
 import type { AssetEntry } from '@rts/shared'
 import { AnimatedSprite, type Texture } from 'pixi.js'
-import { durationMsToPixiAnimationSpeed } from '../visual-timing.js'
+import { durationMsToPixiAnimationSpeed } from '../core/visual-timing.js'
 
 /**
  * Builds an `AnimatedSprite` from sliced frame textures using the manifest

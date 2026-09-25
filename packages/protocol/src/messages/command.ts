@@ -1,4 +1,4 @@
-import { BUILDING_TYPES, type CommandIntent } from '@rts/shared'
+import { BUILDING_TYPES, type CommandIntent, field, isInteger, isRecord } from '@rts/shared'
 
 /** Client → server command message carrying the shared authoritative intent. */
 export interface CommandMessage {
@@ -7,63 +7,48 @@ export interface CommandMessage {
 }
 
 function isIntegerArray(value: unknown): boolean {
-  return Array.isArray(value) && value.every((entry) => typeof entry === 'number' && Number.isInteger(entry))
+  return Array.isArray(value) && value.every(isInteger)
 }
 
-function isInteger(value: unknown): boolean {
-  return typeof value === 'number' && Number.isInteger(value)
+function payloadOf(intent: Record<string, unknown>): Record<string, unknown> | null {
+  const payload = field(intent, 'payload')
+  return isRecord(payload) ? payload : null
 }
 
 /** Validates the shared command intent shape on untrusted wire input. */
 function isCommandIntent(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return false
   }
-  const intent = value as Record<string, unknown>
-  const payload = intent.payload
-  if (typeof payload !== 'object' || payload === null) {
+  const payload = payloadOf(value)
+  if (payload === null) {
     return false
   }
-  switch (intent.type) {
-    case 'MOVE': {
-      const p = payload as Record<string, unknown>
-      return isIntegerArray(p.unitIds) && isInteger(p.x) && isInteger(p.y)
-    }
-    case 'STOP':
-    case 'HOLD': {
-      const p = payload as Record<string, unknown>
-      return isIntegerArray(p.unitIds)
-    }
+  switch (field(value, 'type')) {
+    case 'MOVE':
     case 'PATROL':
-    case 'ATTACK_MOVE': {
-      const p = payload as Record<string, unknown>
-      return isIntegerArray(p.unitIds) && isInteger(p.x) && isInteger(p.y)
-    }
-    case 'ATTACK': {
-      const p = payload as Record<string, unknown>
-      return isIntegerArray(p.unitIds) && isInteger(p.targetId)
-    }
-    case 'GATHER': {
-      const p = payload as Record<string, unknown>
-      return isIntegerArray(p.unitIds) && isInteger(p.nodeId)
-    }
-    case 'DEPOSIT': {
-      const p = payload as Record<string, unknown>
-      return isIntegerArray(p.unitIds) && isInteger(p.buildingId)
-    }
-    case 'BUILD': {
-      const p = payload as Record<string, unknown>
+    case 'ATTACK_MOVE':
       return (
-        isInteger(p.unitId) &&
-        BUILDING_TYPES.includes(p.buildingType as (typeof BUILDING_TYPES)[number]) &&
-        isInteger(p.x) &&
-        isInteger(p.y)
+        isIntegerArray(field(payload, 'unitIds')) && isInteger(field(payload, 'x')) && isInteger(field(payload, 'y'))
       )
-    }
-    case 'CANCEL_CONSTRUCTION': {
-      const p = payload as Record<string, unknown>
-      return isInteger(p.buildingId)
-    }
+    case 'STOP':
+    case 'HOLD':
+      return isIntegerArray(field(payload, 'unitIds'))
+    case 'ATTACK':
+      return isIntegerArray(field(payload, 'unitIds')) && isInteger(field(payload, 'targetId'))
+    case 'GATHER':
+      return isIntegerArray(field(payload, 'unitIds')) && isInteger(field(payload, 'nodeId'))
+    case 'DEPOSIT':
+      return isIntegerArray(field(payload, 'unitIds')) && isInteger(field(payload, 'buildingId'))
+    case 'BUILD':
+      return (
+        isInteger(field(payload, 'unitId')) &&
+        BUILDING_TYPES.includes(field(payload, 'buildingType') as (typeof BUILDING_TYPES)[number]) &&
+        isInteger(field(payload, 'x')) &&
+        isInteger(field(payload, 'y'))
+      )
+    case 'CANCEL_CONSTRUCTION':
+      return isInteger(field(payload, 'buildingId'))
     case 'SURRENDER':
       return Object.keys(payload).length === 0
     default:
@@ -73,9 +58,5 @@ function isCommandIntent(value: unknown): boolean {
 
 /** Type guard for untrusted wire input; the server ignores non-conforming messages. */
 export function isCommandMessage(value: unknown): value is CommandMessage {
-  if (typeof value !== 'object' || value === null) {
-    return false
-  }
-  const message = value as Record<string, unknown>
-  return message.type === 'command' && isCommandIntent(message.intent)
+  return isRecord(value) && field(value, 'type') === 'command' && isCommandIntent(field(value, 'intent'))
 }

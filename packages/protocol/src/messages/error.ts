@@ -1,3 +1,4 @@
+import { field, isRecord } from '@rts/shared'
 import { isScenarioSummary, type ScenarioSummary } from './match.js'
 
 /** Server → client failure notice (transport or command-level). */
@@ -10,14 +11,13 @@ export interface ErrorMessage {
 
 /** Type guard for untrusted wire input; the client ignores non-conforming messages. */
 export function isErrorMessage(value: unknown): value is ErrorMessage {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return false
   }
-  const message = value as Record<string, unknown>
+  const scenarios = field(value, 'scenarios')
   return (
-    message.type === 'error' &&
-    typeof message.message === 'string' &&
-    (message.scenarios === undefined ||
-      (Array.isArray(message.scenarios) && message.scenarios.every(isScenarioSummary)))
+    field(value, 'type') === 'error' &&
+    typeof field(value, 'message') === 'string' &&
+    (scenarios === undefined || (Array.isArray(scenarios) && scenarios.every(isScenarioSummary)))
   )
 }
