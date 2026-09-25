@@ -3,7 +3,7 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/unit/terrain-scene.test.ts
+  - tests/unit/renderer/terrain-scene.test.ts
 ---
 
 # PixiJS Terrain Render Race
@@ -36,7 +36,7 @@ obsolete asynchronous work stops before attaching display objects.
 
 ## Regression
 
-`tests/unit/terrain-scene.test.ts` resolves an obsolete decoration load after a
+`tests/unit/renderer/terrain-scene.test.ts` resolves an obsolete decoration load after a
 new render and asserts that no stale child is attached.
 
 ## Prevention

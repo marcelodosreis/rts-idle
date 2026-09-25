@@ -3,7 +3,7 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/e2e/renderer-perf.spec.ts
+  - tests/e2e/laboratory/renderer-perf.spec.ts
 ---
 
 # Performance Canvas Outside Harness
@@ -41,7 +41,7 @@ into the feature host and retain the renderer until the next run or unmount.
 
 ## Regression
 
-`tests/e2e/renderer-perf.spec.ts` verifies that a benchmark canvas is mounted
+`tests/e2e/laboratory/renderer-perf.spec.ts` verifies that a benchmark canvas is mounted
 inside `performance-canvas-host` and does not exceed its bounds.
 
 ## Prevention
@@ -52,7 +52,7 @@ checks containment and responsive sizing.
 
 ## Verification
 
-- `npx playwright test tests/e2e/renderer-perf.spec.ts --project=chromium`
+- `npx playwright test tests/e2e/laboratory/renderer-perf.spec.ts --project=chromium`
 - `npm run typecheck`
 - `npm run lint`
 - `git diff --check`

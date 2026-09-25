@@ -3,7 +3,7 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/e2e/renderer-perf.spec.ts
+  - tests/e2e/laboratory/renderer-perf.spec.ts
 ---
 
 # Performance Units Out Of View
@@ -39,7 +39,7 @@ that grid, and chooses a fitting zoom from the host dimensions in
 
 ## Regression
 
-`tests/e2e/renderer-perf.spec.ts` verifies that the benchmark returns a positive
+`tests/e2e/laboratory/renderer-perf.spec.ts` verifies that the benchmark returns a positive
 camera center and a bounded fit zoom, while the manual path verifies the canvas
 is mounted inside the performance host.
 
@@ -51,7 +51,7 @@ layout in its browser diagnostic result for regression coverage.
 
 ## Verification
 
-- `npx playwright test tests/e2e/renderer-perf.spec.ts --project=chromium`
+- `npx playwright test tests/e2e/laboratory/renderer-perf.spec.ts --project=chromium`
 - `npm run typecheck`
 - `npm run lint`
 - `git diff --check`

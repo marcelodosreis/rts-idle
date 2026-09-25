@@ -3,7 +3,7 @@ status: open
 classe: completion-gate
 barreira: null
 regressao:
-  - tests/e2e/economy-playable.spec.ts
+  - tests/e2e/economy/economy-playable.spec.ts
 ---
 
 # Economy Stop Observation Race
@@ -33,7 +33,7 @@ stopped position and checking that it remains stable.
 
 ## Regression
 
-`tests/e2e/economy-playable.spec.ts` covers the Stop transition and verifies
+`tests/e2e/economy/economy-playable.spec.ts` covers the Stop transition and verifies
 that both position and minerals remain unchanged after the command is applied.
 
 ## Prevention
@@ -43,5 +43,5 @@ not fixed delays, before taking observations used for exact assertions.
 
 ## Verification
 
-- `pnpm run test:e2e:focused tests/e2e/economy-playable.spec.ts`
+- `pnpm run test:e2e:focused tests/e2e/economy/economy-playable.spec.ts`
 - `pnpm run test:e2e:fast`
