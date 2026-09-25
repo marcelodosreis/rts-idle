@@ -3,7 +3,7 @@ status: closed
 classe: layout
 barreira: null
 regressao:
-  - tests/e2e/hud-responsive.spec.ts
+  - tests/e2e/responsive/hud-responsive.spec.ts
 ---
 
 # Postmortem: HUD top bar controls overlap on 13" laptop viewports
@@ -57,7 +57,7 @@ reserve space for wrapped content.
 
 ## Regression
 
-`tests/e2e/hud-responsive.spec.ts` runs at 1280x800 and 1440x900 and asserts:
+`tests/e2e/responsive/hud-responsive.spec.ts` runs at 1280x800 and 1440x900 and asserts:
 the document and footer have no horizontal overflow; the three top-bar zones do
 not intersect pairwise; all zones stay inside the viewport; and Stop/Surrender/
 scenario remain visible. It failed before the fix (`hud-topbar-brand overlaps
@@ -73,7 +73,7 @@ hud-topbar-stats`) and passes after.
 
 ## Verification
 
-- `pnpm run test:e2e:focused tests/e2e/hud-responsive.spec.ts --project=chromium`
-- `pnpm run test:e2e:focused tests/e2e/hud-commands.spec.ts --project=chromium`
-- `pnpm run test:e2e:focused tests/e2e/hud-unit-details.spec.ts --project=chromium`
+- `pnpm run test:e2e:focused tests/e2e/responsive/hud-responsive.spec.ts --project=chromium`
+- `pnpm run test:e2e:focused tests/e2e/match/hud-commands.spec.ts --project=chromium`
+- `pnpm run test:e2e:focused tests/e2e/match/hud-unit-details.spec.ts --project=chromium`
 - `pnpm run typecheck`

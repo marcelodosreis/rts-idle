@@ -3,7 +3,7 @@ status: closed
 classe: completion-gate
 barreira: null
 regressao:
-  - tests/e2e/economy-playable.spec.ts
+  - tests/e2e/economy/economy-playable.spec.ts
 ---
 
 ## Summary
@@ -24,7 +24,7 @@ The test did not parse and compare against the scenario's initial wallet, and fo
 
 ## Fix
 
-`tests/e2e/economy-playable.spec.ts` reads the initial Mineral HUD value and asserts that a deposit increases it; its Stop check also preserves the observed wallet value.
+`tests/e2e/economy/economy-playable.spec.ts` reads the initial Mineral HUD value and asserts that a deposit increases it; its Stop check also preserves the observed wallet value.
 
 ## Regression
 

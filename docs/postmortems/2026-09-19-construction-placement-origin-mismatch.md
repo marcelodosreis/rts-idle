@@ -3,9 +3,9 @@ status: closed
 classe: presentation
 barreira: null
 regressao:
-  - tests/unit/world-object-layer.test.ts
-  - tests/simulation/building-construction.test.ts
-  - tests/e2e/building-hud.spec.ts
+  - tests/unit/renderer/world-object-layer.test.ts
+  - tests/simulation/economy/building-construction.test.ts
+  - tests/e2e/economy/building-hud.spec.ts
 ---
 
 # Construction Placement Origin Mismatch

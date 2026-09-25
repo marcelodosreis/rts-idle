@@ -3,7 +3,7 @@ status: closed
 classe: input-cross-platform
 barreira: null
 regressao:
-  - tests/e2e/control-click-attack.spec.ts
+  - tests/e2e/match/control-click-attack.spec.ts
 ---
 
 # Postmortem: Control+Click Selects an Enemy Instead of Attacking
@@ -23,7 +23,7 @@ With friendly units selected, Control+clicking an enemy did not attack. The sele
 ## What we missed
 
 - No acceptance criterion that secondary input must never mutate the selection.
-- No end-to-end test that attacks by clicking directly on an enemy without first arming the Attack command. `tests/e2e/hud-commands.spec.ts` armed Attack before right-clicking, so it never exercised the default path.
+- No end-to-end test that attacks by clicking directly on an enemy without first arming the Attack command. `tests/e2e/match/hud-commands.spec.ts` armed Attack before right-clicking, so it never exercised the default path.
 - The previous trackpad regression test re-implemented `dispatchCommand` inline instead of driving the real renderer, so it could not catch this.
 
 ## Fix
@@ -33,7 +33,7 @@ With friendly units selected, Control+clicking an enemy did not attack. The sele
 
 ## Regression
 
-`tests/e2e/control-click-attack.spec.ts`:
+`tests/e2e/match/control-click-attack.spec.ts`:
 - `right-clicking an enemy attacks it and preserves the selection` asserts the enemy's health drops and the original selection is unchanged.
 - `Control+click on an enemy does not change the selection` fails before the fix and passes after it.
 
@@ -46,9 +46,9 @@ With friendly units selected, Control+clicking an enemy did not attack. The sele
 ## Verification
 
 ```bash
-pnpm run test:e2e tests/e2e/control-click-attack.spec.ts --project=chromium
+pnpm run test:e2e tests/e2e/match/control-click-attack.spec.ts --project=chromium
 pnpm run test:e2e tests/e2e/select-and-move.spec.ts --project=chromium
-pnpm run test:e2e tests/e2e/hud-commands.spec.ts --project=chromium
+pnpm run test:e2e tests/e2e/match/hud-commands.spec.ts --project=chromium
 pnpm run typecheck
 pnpm run lint
 ```

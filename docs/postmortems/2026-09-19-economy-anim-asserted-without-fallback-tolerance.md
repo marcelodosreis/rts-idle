@@ -3,8 +3,8 @@ status: closed
 classe: convention
 barreira: null
 regressao:
-  - tests/e2e/economy-playable.spec.ts
-  - tests/unit/unit-economy.test.ts
+  - tests/e2e/economy/economy-playable.spec.ts
+  - tests/unit/renderer/unit-economy.test.ts
 ---
 
 # Postmortem: economy-playable E2E asserted a sprite anim that can't exist in CI
@@ -13,7 +13,7 @@ Date: 2026-09-19
 
 ## Summary
 
-`tests/e2e/economy-playable.spec.ts` (added with PR #10) asserted the
+`tests/e2e/economy/economy-playable.spec.ts` (added with PR #10) asserted the
 worker's sprite animation was literally `'gather'`, then `'carry_run'`, then
 `'idle'`. CI's End-to-End Tests job failed on the first of these. The same
 failure reproduced on a bare local checkout — it was not CI flakiness.
@@ -52,7 +52,7 @@ that unit count exceeded the test's 180s budget.
 ## What we missed
 
 ADR-015 already documents the rule ("tests are fallback-tolerant so CI stays
-green without art"), and `tests/e2e/sprite-fallback.spec.ts` exists
+green without art"), and `tests/e2e/laboratory/sprite-fallback.spec.ts` exists
 specifically to assert `anim === 'fallback'` is a normal, expected state. The
 new test didn't follow that established convention, and nothing enforced it
 — there was no lint, CI check, or shared test helper that would have caught
@@ -66,16 +66,16 @@ there either.
 
 ## Fix
 
-- `tests/e2e/economy-playable.spec.ts`: the three anim assertions now accept
+- `tests/e2e/economy/economy-playable.spec.ts`: the three anim assertions now accept
   the real animation name **or** `'fallback'` (matching the convention in
   `sprite-fallback.spec.ts`), with a comment explaining why.
-- `tests/e2e/renderer-perf.spec.ts` + `apps/web/src/perf/main.ts`: sample
+- `tests/e2e/laboratory/renderer-perf.spec.ts` + `apps/web/src/perf/main.ts`: sample
   fewer frames at the 5000-unit count and raise the test timeout to
   `300_000`, so the measurement fits without cutting the smoke-test signal.
 
 ## Regression
 
-`tests/unit/unit-economy.test.ts` (new) calls `economyAnimation` and
+`tests/unit/renderer/unit-economy.test.ts` (new) calls `economyAnimation` and
 `economyFrameKey` directly with each `EconomyPhase` and every faction —
 no browser, no art pack required. It fails if the phase-to-animation mapping
 regresses, independent of whether art is loaded, closing the gap the E2E
@@ -101,8 +101,8 @@ root-level `tests/unit`.
 - `pnpm run typecheck`, `pnpm run lint`: pass.
 - `pnpm run test:unit`: 201 passed (26 files), including the new
   `unit-economy.test.ts`.
-- `pnpm exec playwright test tests/e2e/economy-playable.spec.ts
-  tests/e2e/renderer-perf.spec.ts tests/e2e/sprite-fallback.spec.ts
+- `pnpm exec playwright test tests/e2e/economy/economy-playable.spec.ts
+  tests/e2e/laboratory/renderer-perf.spec.ts tests/e2e/laboratory/sprite-fallback.spec.ts
   --project=chromium`: 5 passed.
 - Full `pnpm exec playwright test --project=chromium`: 26 passed, 17 skipped
   (other browser projects).

@@ -3,8 +3,8 @@ status: closed
 classe: formation
 barreira: null
 regressao:
-  - tests/e2e/regression-units-spread.spec.ts
-  - tests/unit/formation-offsets.test.ts
+  - tests/e2e/regression/regression-units-spread.spec.ts
+  - tests/unit/simulation/formation-offsets.test.ts
 ---
 
 # Postmortem: Multi-unit moves stacked every unit at the same point
@@ -49,12 +49,12 @@ will path to these distinct destinations).
 
 ## Regression
 
-- `tests/unit/formation-offsets.test.ts` — offsets distinct up to 256,
+- `tests/unit/simulation/formation-offsets.test.ts` — offsets distinct up to 256,
   deterministic, symmetric, scaled by spacing, first is `(0,0)`.
 - `tests/integration/formation-destinations.test.ts` — MOVE with 4 units →
   distinct positions around the target; first unit exactly on the click; single
   unit → exact target; deterministic hash.
-- `tests/e2e/regression-units-spread.spec.ts` — box-select the visible army and
+- `tests/e2e/regression/regression-units-spread.spec.ts` — box-select the visible army and
   move it to one point; asserts every selected unit ends at a distinct
   position.
 
