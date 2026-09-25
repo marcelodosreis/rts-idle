@@ -31,8 +31,52 @@ Dependency direction (enforced by `tests/architecture/package-dependencies.test.
 shared → game-data → simulation → { server, ai }
        → pathfinding ↗
        → protocol  → { server, web, renderer }
-                    → renderer → web
+                     → renderer → web
 ```
+
+## Physical organization
+
+The repository is organized by domain first and responsibility second. A folder
+is introduced only when it contains a real cohesive group; placeholder packages
+remain flat until implementation exists.
+
+Package conventions:
+
+- `shared`: `primitives/`, `domain/`, `maps/`, `assets/`, and `rng/`.
+- `simulation`: `contracts/`, `commands/`, `data/`, `domain/`, `engine/`, `ecs/`,
+  `state/`, `orders/`, `movement/`, `placement/`, `systems/`, `invariants/`,
+  `canonical/`, `snapshot/`, and `fixtures/`.
+- `renderer`: `core/`, `assets/`, `input/`, `terrain/`, `units/`, `world/`, and
+  `effects/`.
+- `protocol`: `messages/` is the stable wire-contract boundary.
+
+Server conventions:
+
+- `bootstrap/` composes matches and validates authored content.
+- `transport/` owns HTTP, WebSocket, decoding, and snapshot delivery.
+- `sessions/` owns authoritative session state and projections.
+- `content/demo/` owns demo scenarios and deterministic seeding.
+- `index.ts` is the server public surface; `main.ts` is the executable entry point.
+
+Quality tooling conventions:
+
+- `tools/quality/` separates front-matter parsing, status data, rendering, and
+  the `postmortem-status.ts` executable.
+
+Test conventions:
+
+- `tests/unit/` is grouped by owning package or application domain.
+- `tests/simulation/` is grouped into `combat/`, `economy/`, `lifecycle/`, and
+  `serialization/`; `hash-golden.test.ts` remains at the suite root.
+- `tests/fixtures/` keeps simulation fixtures in `simulation/`. The shared,
+  pinned seed catalog is intentionally the exact root file `seeds.ts`.
+- `tests/e2e/` is grouped by user flow: `match/`, `economy/`, `laboratory/`,
+  `responsive/`, `regression/`, and `support/`.
+- `tests/e2e/laboratory/` splits feature flows into `browser/`, `diagnostics/`,
+  and `editor/`; its cross-cutting laboratory specs remain at that suite root.
+
+`apps/web` keeps its existing feature-first layout and is intentionally outside
+the physical reorganization described above.
 
 ## Simulation core layout
 
@@ -55,8 +99,9 @@ simulation/src/
                  movement-step, economy-system, combat-system, death-system,
                  victory-system, events.ts
   invariants/    check-invariants.ts (runs last, never mutates)
-  formation.ts   Deterministic formation spiral
-  determinism-fixture.ts   Browser/benchmark determinism fixture (`./fixtures`)
+  domain/        Building predicates and deterministic formation rules
+  fixtures/      Simulation fixture helpers
+  determinism-fixture.ts  Browser/benchmark determinism fixture
 ```
 
 Invariants:
@@ -72,17 +117,12 @@ Invariants:
 
 ```text
 renderer/src/
-  render-layers.ts  Stable world-space container order for all renderer visuals
-  types.ts       Public contract: GameRenderer, RenderFrame, RenderUnit, options
-  renderer.ts    PixiRenderer orchestrator (Application + viewport + wiring)
+  core/          Public contracts, renderer orchestration, layers, interpolation
   input/         Typed pointer/context input, hit testing, and shared camera policy
-  unit-layer.ts  Unit lifecycle + positions + interpolation
-  unit-sprite.ts One unit's sprite: idle/run/attack frames, HP bar, facing
-  effects-layer.ts  Combat feedback: streaks, damage popups, explosions
-  progress-bar.ts  Shared progress-bar primitive (ratio, color, fill, draw)
-  selection.ts   Box selection + selection rings (visual projection)
-  ping.ts        Right-click command ping
-  terrain-*      Terrain tileset/autotile/dressing presentation
+  units/         Unit lifecycle, sprites, fallback, economy animation
+  world/         Buildings and world-object presentation
+  effects/       Combat feedback, selection, ping, progress bars
+  terrain/       Terrain tileset/autotile/dressing presentation
 ```
 
 The renderer never computes gameplay; it presents frames and reports typed world
@@ -107,12 +147,13 @@ web/src/
 
 | Concept | Where | Used by |
 |---|---|---|
-| Fixed point (`Fixed`, `FIXED_SCALE`, `tilesToFixed`, `gridPosition`) | `shared/fixed.ts` | simulation, demo, web, fixtures |
+| Fixed point (`Fixed`, `FIXED_SCALE`, `tilesToFixed`, `gridPosition`) | `shared/primitives/` | simulation, server content, web, fixtures |
 | RNG (xoshiro128** in 6 cohesive files) | `shared/rng/` | simulation |
-| IDs (`EntityId`, `PlayerId`, allocation) | `shared/ids.ts`, `shared/players.ts` | simulation, protocol |
+| IDs (`EntityId`, `PlayerId`, allocation) | `shared/domain/` | simulation, protocol |
 | Rules identity factory | `simulation/contracts/rules-identity.ts` | demo, benchmark, fixtures, tests |
 | Wire messages + guards | `protocol/src/messages/` | server, web |
-| Test fixtures (`worldWithOwners`, `buildMoveCommand`, seeds) | `tests/fixtures/` | integration/simulation tests |
+| Test fixtures (`worldWithOwners`, `buildMoveCommand`) | `tests/fixtures/simulation/` | integration/simulation tests |
+| Pinned test seeds | `tests/fixtures/seeds.ts` | integration/simulation tests |
 
 ## Boundaries (non-negotiable)
 

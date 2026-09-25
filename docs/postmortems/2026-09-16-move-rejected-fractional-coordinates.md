@@ -3,7 +3,7 @@ status: closed
 classe: input-geometry
 barreira: null
 regressao:
-  - tests/e2e/regression-move-fractional-coords.spec.ts
+  - tests/e2e/regression/regression-move-fractional-coords.spec.ts
 ---
 
 # Postmortem: MOVE silently rejected for fractional world coordinates
@@ -61,7 +61,7 @@ hashing determinism. Rejection surfacing to clients is a Phase 6 protocol item.
 
 ## Regression
 
-- `tests/e2e/regression-move-fractional-coords.spec.ts`: offsets the camera to a
+- `tests/e2e/regression/regression-move-fractional-coords.spec.ts`: offsets the camera to a
   **fractional** position (`2048.5`), then issues a real right-click at integer
   pixels so the world target is fractional — exactly what a real browser
   produces. Asserts the ping fires **and** the unit's position changes. Fails

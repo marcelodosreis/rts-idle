@@ -3,7 +3,7 @@ status: closed
 classe: presentation
 barreira: null
 regressao:
-  - tests/e2e/regression-units-visible.spec.ts
+  - tests/e2e/regression/regression-units-visible.spec.ts
 ---
 
 # Postmortem: Units invisible in the browser renderer
@@ -52,7 +52,7 @@ check, so the tests passed against an empty screen.
 
 ## Regression
 
-`tests/e2e/regression-units-visible.spec.ts` — fails without the fix:
+`tests/e2e/regression/regression-units-visible.spec.ts` — fails without the fix:
 
 - asserts initial `getZoom()` ≥ `0.9` (catches any `fitWorld()` reintroduction
   or collapsed scale);

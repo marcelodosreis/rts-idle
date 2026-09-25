@@ -202,3 +202,9 @@ RFC: `docs/rfc/RFC-003-cost-scale-and-architecture-comparison.md` (Proposed).
 | QUAL-016 | Output hygiene | done | — | quality, CI | unit, verify, e2e |
 | QUAL-017 | Postmortem tracking | done | — | quality, docs | unit |
 | QUAL-018 | Board and tracking guard | done | QUAL-017 | quality, docs | unit |
+| QUAL-019 | Clean code, SOLID, and strong-typing baseline | done | — | docs, shared, game-data, protocol, simulation, renderer, server | typecheck, lint, architecture, verify |
+| QUAL-020 | Web app function decomposition (React ≤50 lines) | done | QUAL-019 | web | lint, unit, e2e |
+| QUAL-021 | Typed-domain completion (registries + branded AssetKey) | done | QUAL-019 | shared, protocol, renderer, server, web | typecheck, lint, architecture |
+| QUAL-022 | Public API and docs sync | done | QUAL-019, QUAL-021 | docs, tests | architecture, lint |
+| QUAL-023 | Session projections and tools coverage | done | QUAL-019 | server, tools, tests | integration, lint, architecture |
+| QUAL-024 | Mandatory enforcement (git, CI, governance) | done | QUAL-019 | root, docs, rules, skills, tests | lint, architecture, verify |

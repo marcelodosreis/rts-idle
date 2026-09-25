@@ -36,6 +36,55 @@ before changing code; do not load the entire document for a small task.
 - Do not add speculative factories, generic utility dumping grounds, or new
   dependencies without justification.
 
+## Clean Code & SOLID
+
+This section is the canonical source for code quality expectations. It applies
+to every package and app; the always-loaded `.opencode/rules/common/coding-style.md`
+mirrors the essentials for agents.
+
+Clean code:
+
+- Small, single-purpose functions (target ≤50 lines); files ≤400 lines
+  (exempt: generated, vendored, and tests).
+- Pure functions by default; no mutation outside the simulation `step()`
+  exception. Prefer early returns over nesting.
+- Named constants for every gameplay threshold, limit, or delay; no magic
+  numbers. Decode functions fail closed on invalid input.
+- No `any`; no speculative abstraction (YAGNI); extract only on real
+  repetition (DRY).
+
+SOLID, adapted to this repository:
+
+- **SRP** — one responsibility per module, system, and command handler
+  (validate vs mutate; project vs transport).
+- **OCP** — extend by registering (a `ComponentType`, order tag, command
+  variant, or `game-data` entry) instead of growing `if`/`switch` chains.
+- **LSP** — every `ComponentType<T>` round-trips `encode`/`decode`; scenarios
+  and spawns are interchangeable behind their contracts.
+- **ISP** — narrow interfaces: handlers receive only the data they need;
+  wire DTOs stay minimal.
+- **DIP** — depend on pure helpers and ECS stores, not concrete globals.
+
+### Typed domain strings
+
+Domain string values are typed, never loose:
+
+- Every closed set (command/order/message/event types, building types,
+  statuses, unit kinds, order states, gather phases, tile/dressing/terrain
+  kinds, input profiles, cancel reasons, routes, scenarios) is an `as const`
+  registry with a derived union type, defined once.
+- Runtime boundaries use type guards (`isRecord`/`field` from `@rts/shared`)
+  that return typed values; no `as string`/`as unknown`, and no
+  `Record<string, X>` for known key sets.
+- Discriminated dispatch is exhaustive with `assertNever` from `@rts/shared`.
+
+Exemptions (not "loose"): `data-testid`, CSS class strings, DOM event names,
+user-facing labels, JSON field names inside guards, log/error messages, and
+`Record<string, unknown>` used strictly to validate unknown input.
+
+Enforcement: Biome runs the line/param/complexity rules; `tests/architecture/`
+guards file length and the typed-domain policy (see `typed-domain.test.ts`).
+
 ## Testing rules
 
 - Unit tests cover pure logic; integration tests cover package flows;

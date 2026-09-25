@@ -21,6 +21,13 @@ Describe exact inputs, outputs, state transitions, errors, invariants,
 determinism requirements, compatibility impact, and user-visible behavior.
 For browser work include route, natural interaction, and E2E target.
 
+## Design
+
+State how the change respects clean code and SOLID
+(`docs/engineering-standard.md`): responsibilities split, interfaces and
+dependency direction, and how domain strings are typed (registries, guards,
+`assertNever`). Note the smallest files/functions touched and why.
+
 ## Tests and validation
 
 List exact tests and commands:
