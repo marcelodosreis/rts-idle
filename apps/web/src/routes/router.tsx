@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import { RouteLoading } from '../app/loading'
 
 const MatchPage = lazy(() => import('../pages/match/MatchPage'))
@@ -18,9 +18,6 @@ export function AppRouter() {
         <Route path="/laboratory/editor" element={<MapEditorPage />} />
         <Route path="/laboratory/diagnostics" element={<DiagnosticsPage />} />
         <Route path="/laboratory/report" element={<AssetReportPage />} />
-        <Route path="/laboratory/stress" element={<Navigate to="/laboratory/diagnostics" replace={true} />} />
-        <Route path="/laboratory/determinism" element={<Navigate to="/laboratory/diagnostics" replace={true} />} />
-        <Route path="/laboratory/performance" element={<Navigate to="/laboratory/diagnostics" replace={true} />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>

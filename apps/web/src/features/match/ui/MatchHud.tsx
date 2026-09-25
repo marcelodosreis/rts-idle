@@ -1,5 +1,6 @@
 import type { BuildCatalogEntry } from '@rts/protocol'
 import type { InputProfile } from '@rts/renderer'
+import type { MatchResult } from '@rts/shared'
 import type { RefObject } from 'react'
 import type { CommandMode } from '../commands/useCommandModes'
 import type { MessageLogEntry } from '../lifecycle/useMessageLog'
@@ -23,7 +24,7 @@ export interface MatchHudProps {
   /** Renderer host mount point, owned by the match session. */
   readonly hostRef: RefObject<HTMLDivElement | null>
   readonly commandMode: CommandMode
-  readonly matchResult: 'victory' | 'defeat' | 'draw' | null
+  readonly matchResult: MatchResult | null
   readonly scenario: string
   readonly scenarios: readonly string[]
   readonly aggression: 'offensive' | 'passive'
