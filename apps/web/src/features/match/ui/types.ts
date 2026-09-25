@@ -1,16 +1,27 @@
-import type { BuildingType } from '@rts/shared'
+import type { ConstructionStatus, EconomyPhase, OrderState } from '@rts/protocol'
+import type { BuildingType, UnitKind } from '@rts/shared'
+
+/** HUD-only construction status: authoritative statuses plus a derived paused state. */
+export const HUD_CONSTRUCTION_STATUSES = [
+  'FOUNDATION',
+  'UNDER_CONSTRUCTION',
+  'COMPLETED',
+  'PAUSED'
+] as const satisfies readonly (ConstructionStatus | 'PAUSED')[]
+
+export type HudConstructionStatus = (typeof HUD_CONSTRUCTION_STATUSES)[number]
 
 /** A selected unit projected for the HUD (id, archetype, movement state). */
 export interface HudSelectionUnit {
   readonly id: number
-  readonly kind: 'pawn' | 'warrior' | 'archer'
+  readonly kind: UnitKind
   readonly owner: number
   readonly moving: boolean
-  readonly orderState?: 'idle' | 'moving' | 'building' | 'attacking' | 'hold' | 'patrol' | 'attack_move'
+  readonly orderState?: OrderState
   readonly hp?: number
   readonly maxHp?: number
   readonly economy?: {
-    readonly phase: 'to_node' | 'gathering' | 'to_base' | 'waiting_for_base'
+    readonly phase: EconomyPhase
     readonly cargoAmount: number
     readonly cargoCapacity: number
     readonly progressTicks: number
@@ -24,7 +35,7 @@ export interface HudConstruction {
   readonly id: number
   readonly buildingType: BuildingType
   readonly owner: number
-  readonly status: 'FOUNDATION' | 'UNDER_CONSTRUCTION' | 'COMPLETED' | 'PAUSED'
+  readonly status: HudConstructionStatus
   readonly progressTicks: number
   readonly totalTicks: number
   readonly builderId: number | null
@@ -37,7 +48,6 @@ export interface HudMineral {
 
 export interface HudResources {
   readonly mineral: number
-  readonly energy: number
   readonly supply: number
   readonly supplyCap: number
 }

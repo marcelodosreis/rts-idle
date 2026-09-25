@@ -4,7 +4,7 @@ classe: presentation
 barreira: null
 regressao:
   - tests/integration/session-commands.test.ts
-  - tests/unit/unit-economy.test.ts
+  - tests/unit/renderer/unit-economy.test.ts
 ---
 
 # Carrying State Not Projected Without a Gather Order
@@ -53,7 +53,7 @@ Base, which deposits the cargo and leaves the Worker idle.
 
 `tests/integration/session-commands.test.ts` asserts that a Worker with cargo
 and no order projects `carrying: true` while an empty Worker omits it.
-`tests/unit/unit-economy.test.ts` asserts the carry animation is selected when
+`tests/unit/renderer/unit-economy.test.ts` asserts the carry animation is selected when
 `carrying` is true and there is no economy phase.
 
 ## Prevention

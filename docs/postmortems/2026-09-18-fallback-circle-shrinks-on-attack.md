@@ -3,7 +3,7 @@ status: closed
 classe: presentation
 barreira: null
 regressao:
-  - tests/e2e/sprite-fallback.spec.ts
+  - tests/e2e/laboratory/sprite-fallback.spec.ts
 ---
 
 # Postmortem: Fallback unit circles shrink after first attack
@@ -46,7 +46,7 @@ tied to interaction/combat.
 
 ## What we missed
 
-The existing fallback E2E (`tests/e2e/sprite-fallback.spec.ts`) only asserted
+The existing fallback E2E (`tests/e2e/laboratory/sprite-fallback.spec.ts`) only asserted
 that a fallback unit reports `anim === 'fallback'` and that toggling sprites
 works. It never asserted the fallback body's **scale/size**, and it never
 exercised combat. The debug hook (`getSpriteState`) exposed visibility, frame,
@@ -79,7 +79,7 @@ Debug plumbing was extended so size is observable:
 
 ## Regression
 
-`tests/e2e/sprite-fallback.spec.ts` — new test
+`tests/e2e/laboratory/sprite-fallback.spec.ts` — new test
 `fallback circles keep their size after units engage in combat`. It loads
 `/?sprites=off`, waits until combat damages a unit (proving `attackFired`
 fired), then asserts every fallback body has `scale === 1`. Before the fix it
@@ -97,7 +97,7 @@ failed with `Expected: 1, Received: -0.5`; after the fix it passes.
 
 ## Verification
 
-- `pnpm run test:e2e:focused tests/e2e/sprite-fallback.spec.ts --project=chromium`
+- `pnpm run test:e2e:focused tests/e2e/laboratory/sprite-fallback.spec.ts --project=chromium`
   — regression fails before the fix (`Expected: 1, Received: -0.5`), both tests
   pass after.
 - `pnpm run test:unit` — 143 passed; `pnpm run test:architecture` — 64 passed.

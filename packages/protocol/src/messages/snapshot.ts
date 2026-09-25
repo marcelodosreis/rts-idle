@@ -1,18 +1,31 @@
 import {
+  BUILDING_STATUSES,
   BUILDING_TYPES,
+  type BuildingStatus,
   type EntityId,
   type Fixed,
+  field,
+  isInteger,
+  isNonNegativeInteger,
+  isOneOf,
+  isOptionalNonNegativeInteger,
   isPlayerId,
+  isRecord,
   type PlayerId,
+  SIMULATION_EVENT_TYPES,
   type SimulationEvent,
   UNIT_KINDS,
   type UnitKind
 } from '@rts/shared'
 
 /** High-level unit behavior for the renderer (drives idle/run/attack). */
-export type OrderState = 'idle' | 'moving' | 'building' | 'attacking' | 'hold' | 'patrol' | 'attack_move'
+export const ORDER_STATES = ['idle', 'moving', 'building', 'attacking', 'hold', 'patrol', 'attack_move'] as const
 
-export type EconomyPhase = 'to_node' | 'gathering' | 'to_base' | 'waiting_for_base'
+export type OrderState = (typeof ORDER_STATES)[number]
+
+export const ECONOMY_PHASES = ['to_node', 'gathering', 'to_base', 'waiting_for_base'] as const
+
+export type EconomyPhase = (typeof ECONOMY_PHASES)[number]
 
 export interface SnapshotEconomy {
   readonly phase: EconomyPhase
@@ -47,8 +60,12 @@ export interface SnapshotPlayer {
   readonly supplyCap: number
 }
 
-export const BUILDING_STATUSES = ['FOUNDATION', 'UNDER_CONSTRUCTION', 'COMPLETED'] as const
-export type ConstructionStatus = (typeof BUILDING_STATUSES)[number]
+export type ConstructionStatus = BuildingStatus
+export { BUILDING_STATUSES }
+
+/** Closed match lifecycle phases projected on the wire. */
+export const MATCH_PHASES = ['RUNNING', 'FINISHED'] as const
+export type MatchPhase = (typeof MATCH_PHASES)[number]
 
 /** A building or foundation projected for authoritative world rendering. */
 export interface SnapshotBuilding {
@@ -77,7 +94,7 @@ export interface SnapshotMineralNode {
 export interface SnapshotMessage {
   readonly type: 'snapshot'
   readonly tick: number
-  readonly phase: 'RUNNING' | 'FINISHED'
+  readonly phase: MatchPhase
   readonly units: readonly SnapshotUnit[]
   readonly buildings: readonly SnapshotBuilding[]
   readonly mineralNodes: readonly SnapshotMineralNode[]
@@ -85,215 +102,162 @@ export interface SnapshotMessage {
   readonly events: readonly SimulationEvent[]
 }
 
-function isPositionedEntity(value: unknown): value is Record<string, unknown> {
-  if (typeof value !== 'object' || value === null) {
-    return false
-  }
-  const entity = value as Record<string, unknown>
+function isPositionedEntity(value: unknown): boolean {
   return (
-    typeof entity.id === 'number' &&
-    Number.isInteger(entity.id) &&
-    typeof entity.x === 'number' &&
-    Number.isInteger(entity.x) &&
-    typeof entity.y === 'number' &&
-    Number.isInteger(entity.y)
+    isRecord(value) && isInteger(field(value, 'id')) && isInteger(field(value, 'x')) && isInteger(field(value, 'y'))
+  )
+}
+
+function isFootprint(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isInteger(field(value, 'width')) &&
+    isInteger(field(value, 'height')) &&
+    (field(value, 'width') as number) > 0 &&
+    (field(value, 'height') as number) > 0
   )
 }
 
 function isSnapshotBuilding(value: unknown): boolean {
-  if (!isPositionedEntity(value)) {
+  if (!isPositionedEntity(value) || !isRecord(value)) {
     return false
   }
-  const construction = value as Record<string, unknown>
-  const footprint = construction.footprint
-  const footprintRecord = footprint as Record<string, unknown> | null
-  const validFootprint =
-    typeof footprint === 'object' &&
-    footprint !== null &&
-    Number.isInteger(footprintRecord?.width) &&
-    Number.isInteger(footprintRecord?.height) &&
-    Number(footprintRecord?.width) > 0 &&
-    Number(footprintRecord?.height) > 0
+  const builderId = field(value, 'builderId')
+  const progressTicks = field(value, 'progressTicks')
+  const totalTicks = field(value, 'totalTicks')
   return (
-    BUILDING_TYPES.includes(construction.buildingType as (typeof BUILDING_TYPES)[number]) &&
-    isPlayerId(construction.owner) &&
-    (construction.builderId === undefined ||
-      construction.builderId === null ||
-      (typeof construction.builderId === 'number' &&
-        Number.isInteger(construction.builderId) &&
-        construction.builderId >= 0)) &&
-    validFootprint &&
-    BUILDING_STATUSES.includes(construction.status as ConstructionStatus) &&
-    isOptionalNonNegativeInteger(construction.progressTicks) &&
-    isOptionalNonNegativeInteger(construction.totalTicks) &&
-    typeof construction.progressTicks === 'number' &&
-    typeof construction.totalTicks === 'number' &&
-    construction.totalTicks > 0 &&
-    construction.progressTicks <= construction.totalTicks
+    isOneOf(BUILDING_TYPES, field(value, 'buildingType')) &&
+    isPlayerId(field(value, 'owner')) &&
+    (builderId === undefined || builderId === null || isNonNegativeInteger(builderId)) &&
+    isFootprint(field(value, 'footprint')) &&
+    isOneOf(BUILDING_STATUSES, field(value, 'status')) &&
+    isOptionalNonNegativeInteger(progressTicks) &&
+    isOptionalNonNegativeInteger(totalTicks) &&
+    isInteger(progressTicks) &&
+    isInteger(totalTicks) &&
+    totalTicks > 0 &&
+    progressTicks <= totalTicks
   )
 }
 
 function isSnapshotMineralNode(value: unknown): boolean {
-  if (!isPositionedEntity(value)) {
-    return false
-  }
-  const remaining = value.remaining
-  return typeof remaining === 'number' && Number.isInteger(remaining) && remaining >= 0
-}
-
-const ORDER_STATES: readonly string[] = ['idle', 'moving', 'building', 'attacking', 'hold', 'patrol', 'attack_move']
-const ECONOMY_PHASES: readonly string[] = ['to_node', 'gathering', 'to_base', 'waiting_for_base']
-
-function isOptionalNonNegativeInteger(value: unknown): boolean {
-  if (value === undefined) {
-    return true
-  }
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0
+  return isPositionedEntity(value) && isRecord(value) && isNonNegativeInteger(field(value, 'remaining'))
 }
 
 function isSnapshotEconomy(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return false
   }
-  const economy = value as Record<string, unknown>
-  if (
-    !ECONOMY_PHASES.includes(String(economy.phase)) ||
-    !isOptionalNonNegativeInteger(economy.cargoAmount) ||
-    !isOptionalNonNegativeInteger(economy.cargoCapacity) ||
-    !isOptionalNonNegativeInteger(economy.progressTicks) ||
-    !isOptionalNonNegativeInteger(economy.progressMax) ||
-    typeof economy.nodeId !== 'number' ||
-    !Number.isInteger(economy.nodeId)
-  ) {
-    return false
-  }
-  if (
-    typeof economy.cargoAmount !== 'number' ||
-    typeof economy.cargoCapacity !== 'number' ||
-    typeof economy.progressTicks !== 'number' ||
-    typeof economy.progressMax !== 'number'
-  ) {
-    return false
-  }
+  const cargoAmount = field(value, 'cargoAmount')
+  const cargoCapacity = field(value, 'cargoCapacity')
+  const progressTicks = field(value, 'progressTicks')
+  const progressMax = field(value, 'progressMax')
   return (
-    economy.cargoCapacity > 0 &&
-    economy.progressMax > 0 &&
-    economy.cargoAmount <= economy.cargoCapacity &&
-    economy.progressTicks <= economy.progressMax
+    isOneOf(ECONOMY_PHASES, field(value, 'phase')) &&
+    isOptionalNonNegativeInteger(cargoAmount) &&
+    isOptionalNonNegativeInteger(cargoCapacity) &&
+    isOptionalNonNegativeInteger(progressTicks) &&
+    isOptionalNonNegativeInteger(progressMax) &&
+    isInteger(field(value, 'nodeId')) &&
+    isInteger(cargoAmount) &&
+    isInteger(cargoCapacity) &&
+    isInteger(progressTicks) &&
+    isInteger(progressMax) &&
+    cargoCapacity > 0 &&
+    progressMax > 0 &&
+    cargoAmount <= cargoCapacity &&
+    progressTicks <= progressMax
   )
 }
 
 function isSnapshotUnit(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return false
   }
-  const unit = value as Record<string, unknown>
-  const id = unit.id
-  const x = unit.x
-  const y = unit.y
-  const owner = unit.owner
-  if (typeof id !== 'number' || !Number.isInteger(id)) {
-    return false
-  }
-  if (typeof x !== 'number' || !Number.isInteger(x)) {
-    return false
-  }
-  if (typeof y !== 'number' || !Number.isInteger(y)) {
-    return false
-  }
-  if (typeof owner !== 'number' || !Number.isInteger(owner)) {
-    return false
-  }
-  if (!isPlayerId(owner)) {
-    return false
-  }
-  if (unit.kind !== undefined && !UNIT_KINDS.includes(unit.kind as UnitKind)) {
-    return false
-  }
-  if (!isOptionalNonNegativeInteger(unit.hp) || !isOptionalNonNegativeInteger(unit.maxHp)) {
-    return false
-  }
-  if (unit.orderState !== undefined && !ORDER_STATES.includes(String(unit.orderState))) {
-    return false
-  }
-  if (unit.economy !== undefined && !isSnapshotEconomy(unit.economy)) {
-    return false
-  }
-  if (unit.carrying !== undefined && typeof unit.carrying !== 'boolean') {
-    return false
-  }
-  return true
+  const kind = field(value, 'kind')
+  const orderState = field(value, 'orderState')
+  const economy = field(value, 'economy')
+  const carrying = field(value, 'carrying')
+  return (
+    isInteger(field(value, 'id')) &&
+    isInteger(field(value, 'x')) &&
+    isInteger(field(value, 'y')) &&
+    isPlayerId(field(value, 'owner')) &&
+    (kind === undefined || isOneOf(UNIT_KINDS, kind)) &&
+    isOptionalNonNegativeInteger(field(value, 'hp')) &&
+    isOptionalNonNegativeInteger(field(value, 'maxHp')) &&
+    (orderState === undefined || isOneOf(ORDER_STATES, orderState)) &&
+    (economy === undefined || isSnapshotEconomy(economy)) &&
+    (carrying === undefined || typeof carrying === 'boolean')
+  )
 }
 
 function isSnapshotPlayer(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return false
   }
-  const player = value as Record<string, unknown>
   return (
-    typeof player.id === 'number' &&
-    Number.isInteger(player.id) &&
-    isPlayerId(player.id) &&
-    typeof player.defeated === 'boolean' &&
-    typeof player.gold === 'number' &&
-    Number.isInteger(player.gold) &&
-    typeof player.usedSupply === 'number' &&
-    Number.isInteger(player.usedSupply) &&
-    player.usedSupply >= 0 &&
-    typeof player.supplyCap === 'number' &&
-    Number.isInteger(player.supplyCap) &&
-    player.supplyCap >= 0 &&
-    player.supplyCap <= 200
+    isInteger(field(value, 'id')) &&
+    isPlayerId(field(value, 'id')) &&
+    typeof field(value, 'defeated') === 'boolean' &&
+    isInteger(field(value, 'gold')) &&
+    isNonNegativeInteger(field(value, 'usedSupply')) &&
+    isNonNegativeInteger(field(value, 'supplyCap')) &&
+    (field(value, 'supplyCap') as number) <= 200
   )
 }
 
 function isSimulationEvent(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return false
   }
-  const event = value as Record<string, unknown>
-  const type = event.type
-  if (type === 'attackFired') {
-    return Number.isInteger(event.attackerId) && Number.isInteger(event.targetId)
+  const type = field(value, 'type')
+  if (!isOneOf(SIMULATION_EVENT_TYPES, type)) {
+    return false
   }
-  if (type === 'damageDealt') {
-    return (
-      Number.isInteger(event.targetId) &&
-      typeof event.amount === 'number' &&
-      Number.isInteger(event.amount) &&
-      typeof event.targetHp === 'number' &&
-      Number.isInteger(event.targetHp)
-    )
+  switch (type) {
+    case 'attackFired':
+      return isInteger(field(value, 'attackerId')) && isInteger(field(value, 'targetId'))
+    case 'damageDealt':
+      return (
+        isInteger(field(value, 'targetId')) && isInteger(field(value, 'amount')) && isInteger(field(value, 'targetHp'))
+      )
+    case 'unitDied': {
+      const killerId = field(value, 'killerId')
+      return (
+        isInteger(field(value, 'entityId')) &&
+        isPlayerId(field(value, 'owner')) &&
+        (killerId === null || isInteger(killerId))
+      )
+    }
+    default:
+      return false
   }
-  if (type === 'unitDied') {
-    return (
-      Number.isInteger(event.entityId) &&
-      isPlayerId(event.owner) &&
-      (event.killerId === null || Number.isInteger(event.killerId))
-    )
-  }
-  return false
 }
 
 /** Type guard for untrusted wire input; the client ignores non-conforming messages. */
 export function isSnapshotMessage(value: unknown): value is SnapshotMessage {
-  if (typeof value !== 'object' || value === null) {
+  if (!isRecord(value)) {
     return false
   }
-  const message = value as Record<string, unknown>
+  const units = field(value, 'units')
+  const buildings = field(value, 'buildings')
+  const mineralNodes = field(value, 'mineralNodes')
+  const players = field(value, 'players')
+  const events = field(value, 'events')
   return (
-    message.type === 'snapshot' &&
-    Number.isInteger(message.tick) &&
-    (message.phase === 'RUNNING' || message.phase === 'FINISHED') &&
-    Array.isArray(message.units) &&
-    message.units.every(isSnapshotUnit) &&
-    Array.isArray(message.buildings) &&
-    message.buildings.every(isSnapshotBuilding) &&
-    Array.isArray(message.mineralNodes) &&
-    message.mineralNodes.every(isSnapshotMineralNode) &&
-    Array.isArray(message.players) &&
-    message.players.every(isSnapshotPlayer) &&
-    Array.isArray(message.events) &&
-    message.events.every(isSimulationEvent)
+    field(value, 'type') === 'snapshot' &&
+    isInteger(field(value, 'tick')) &&
+    isOneOf(MATCH_PHASES, field(value, 'phase')) &&
+    Array.isArray(units) &&
+    units.every(isSnapshotUnit) &&
+    Array.isArray(buildings) &&
+    buildings.every(isSnapshotBuilding) &&
+    Array.isArray(mineralNodes) &&
+    mineralNodes.every(isSnapshotMineralNode) &&
+    Array.isArray(players) &&
+    players.every(isSnapshotPlayer) &&
+    Array.isArray(events) &&
+    events.every(isSimulationEvent)
   )
 }

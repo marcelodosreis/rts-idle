@@ -59,8 +59,14 @@ export function drawAnchor(g: Graphics, x: number, y: number, color = 0xc62828):
 }
 
 /** Draws a tile-footprint outline (e.g. 1-tile unit, 2-tile building). */
-export function drawFootprint(g: Graphics, x: number, y: number, tilesW: number, tilesH: number, tile = TILE_PX): void {
-  g.rect(x - (tilesW * tile) / 2, y - tilesH * tile, tilesW * tile, tilesH * tile).stroke({
+export function drawFootprint(
+  g: Graphics,
+  footprint: { readonly x: number; readonly y: number; readonly tilesW: number; readonly tilesH: number },
+  tile = TILE_PX
+): void {
+  const width = footprint.tilesW * tile
+  const height = footprint.tilesH * tile
+  g.rect(footprint.x - width / 2, footprint.y - height, width, height).stroke({
     width: 2,
     color: 0x1565c0,
     alpha: 0.8
@@ -69,6 +75,6 @@ export function drawFootprint(g: Graphics, x: number, y: number, tilesW: number,
 
 /** Draws a box of `w×h` centered at `(cx, cy)` with an anchor marker. */
 export function drawCenteredCell(g: Graphics, cx: number, cy: number, w: number, h: number): void {
-  drawFootprint(g, cx, cy + h / 2, w / TILE_PX, h / TILE_PX)
+  drawFootprint(g, { x: cx, y: cy + h / 2, tilesW: w / TILE_PX, tilesH: h / TILE_PX })
   drawAnchor(g, cx, cy)
 }

@@ -110,6 +110,7 @@ Understand the contract being modified
 
 ```text
 Make the smallest change that satisfies acceptance criteria
+Apply clean code + SOLID + typed domain strings (docs/engineering-standard.md)
 Do NOT refactor unrelated code
 Do NOT add speculative abstractions
 Do NOT "prepare for the future"
@@ -142,6 +143,12 @@ Before declaring a feature complete or committing it as completed work, run:
 ```bash
 pnpm run verify
 ```
+
+`verify` includes `lint` and `test:architecture`, so the mandatory clean code,
+SOLID, and typed-domain bar (`docs/engineering-standard.md`,
+`tests/architecture/typed-domain.test.ts`) is enforced at the gate. The same
+bar runs at pre-commit (`lint-staged`) and pre-push (`typecheck` + `lint` +
+`test:architecture`); it applies to every package, app, tool, and test.
 
 For browser or protocol changes, run the appropriate E2E gate. Use
 `pnpm run test:e2e:fast` for functional iteration, `pnpm run test:e2e:perf` for

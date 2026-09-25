@@ -3,7 +3,7 @@ status: open
 classe: coverage
 barreira: null
 regressao:
-  - tests/e2e/building-hud.spec.ts
+  - tests/e2e/economy/building-hud.spec.ts
 ---
 
 # Building E2E selected the initial Base instead of the placed building
@@ -36,7 +36,7 @@ used to place it, and updated each lifecycle assertion to use that helper.
 
 ## Regression
 
-`tests/e2e/building-hud.spec.ts` now verifies foundation, active construction,
+`tests/e2e/economy/building-hud.spec.ts` now verifies foundation, active construction,
 and completion state for the building at the exact clicked location.
 
 ## Prevention

@@ -1,38 +1,32 @@
-import { BUILDING_DEFINITIONS } from '@rts/game-data'
+import { BUILDING_DEFINITIONS, type BuildingDefinition } from '@rts/game-data'
 import { tilesToFixed } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
-import { CommandRejectedError } from '../contracts/commands.js'
-import { Building } from '../ecs/building-component.js'
+import { Building, type BuildingData } from '../ecs/building-component.js'
 import { Kind, Orders, Owner, Position } from '../ecs/components.js'
 import { clearMovement, setMovementDestination } from '../movement/destination.js'
 import { clearOrders, setOrders } from '../orders/order-queue.js'
 import type { BuildingFootprint } from '../placement/building-placement.js'
 import { validateBuildingPlacement } from '../placement/building-placement.js'
 import { constructionWorkPoint } from '../placement/construction-work-point.js'
-import type { GameState } from '../state/state.js'
+import type { GameState, PlayerState } from '../state/state.js'
+import { reject } from './reject.js'
 
 function sameFootprint(first: BuildingFootprint, second: BuildingFootprint): boolean {
   return first.x === second.x && first.y === second.y && first.width === second.width && first.height === second.height
 }
 
-function reject(
-  command: ScheduledCommand,
-  code:
-    | 'INVALID_PAYLOAD'
-    | 'INVALID_PHASE'
-    | 'INVALID_PLACEMENT'
-    | 'INSUFFICIENT_RESOURCES'
-    | 'NOT_OWNER'
-    | 'ENTITY_UNAVAILABLE',
-  message: string
-): never {
-  throw new CommandRejectedError(code, command, message)
+interface BuildContext {
+  readonly player: PlayerState
+  readonly definition: BuildingDefinition
+  readonly unitId: number
+  readonly footprint: BuildingFootprint
+  readonly existingId: number | undefined
 }
 
 /** Validates the complete BUILD transaction before creating or reserving anything. */
-export function applyBuild(state: GameState, command: ScheduledCommand): void {
+function validateBuild(state: GameState, command: ScheduledCommand): BuildContext {
   if (command.intent.type !== 'BUILD') {
-    throw new Error('applyBuild: expected a BUILD command')
+    throw new Error('validateBuild: expected a BUILD command')
   }
   const { unitId, buildingType, x, y } = command.intent.payload
   if (state.phase !== 'RUNNING') {
@@ -68,42 +62,58 @@ export function applyBuild(state: GameState, command: ScheduledCommand): void {
     height: definition.footprint.height
   }
   const buildings = state.world.store(Building)
-  const occupied = state.world
-    .aliveIds()
-    .map((id) => buildings.get(id))
-    .filter((construction): construction is NonNullable<typeof construction> => construction !== undefined)
   const existingId = state.world.aliveIds().find((id) => {
     const construction = buildings.get(id)
     return construction !== undefined && sameFootprint(construction.footprint, footprint)
   })
   const existing = existingId === undefined ? undefined : buildings.get(existingId)
-  if (existing !== undefined && existing.status !== 'COMPLETED') {
-    assignBuilder(state, existingId!, unitId, footprint)
+
+  if (existing === undefined || existing.status === 'COMPLETED') {
+    const occupied = state.world
+      .aliveIds()
+      .map((id) => buildings.get(id))
+      .filter((construction): construction is BuildingData => construction !== undefined)
+    const placement = validateBuildingPlacement(
+      state.mapBounds,
+      occupied.map((construction) => construction.footprint),
+      footprint
+    )
+    if (!placement.ok) {
+      reject(command, 'INVALID_PLACEMENT', `BUILD: placement is ${placement.reason}`)
+    }
+    if (player.gold < definition.costMinerals) {
+      reject(command, 'INSUFFICIENT_RESOURCES', 'BUILD: insufficient minerals')
+    }
+  }
+
+  return { player, definition, unitId, footprint, existingId }
+}
+
+/** Applies a validated BUILD: takeover of a foundation, or a new reservation. */
+export function applyBuild(state: GameState, command: ScheduledCommand): void {
+  if (command.intent.type !== 'BUILD') {
+    throw new Error('applyBuild: expected a BUILD command')
+  }
+  const context = validateBuild(state, command)
+  const { unitId, definition, footprint, existingId } = context
+  const buildings = state.world.store(Building)
+  const existing = existingId === undefined ? undefined : buildings.get(existingId)
+  if (existingId !== undefined && existing !== undefined && existing.status !== 'COMPLETED') {
+    assignBuilder(state, existingId, unitId, footprint)
     return
-  }
-  const placement = validateBuildingPlacement(
-    state.mapBounds,
-    occupied.map((construction) => construction.footprint),
-    footprint
-  )
-  if (!placement.ok) {
-    reject(command, 'INVALID_PLACEMENT', `BUILD: placement is ${placement.reason}`)
-  }
-  if (player!.gold < definition.costMinerals) {
-    reject(command, 'INSUFFICIENT_RESOURCES', 'BUILD: insufficient minerals')
   }
 
   const buildingId = state.nextEntityId
   if (state.world.hasEntity(buildingId)) {
     reject(command, 'ENTITY_UNAVAILABLE', `BUILD: entity id ${buildingId} is unavailable`)
   }
-  player!.gold -= definition.costMinerals
+  context.player.gold -= definition.costMinerals
   state.nextEntityId += 1
   state.world.createEntity(buildingId)
-  state.world.store(Position).set(buildingId, { x: tilesToFixed(x), y: tilesToFixed(y) })
+  state.world.store(Position).set(buildingId, { x: tilesToFixed(footprint.x), y: tilesToFixed(footprint.y) })
   state.world.store(Owner).set(buildingId, { owner: command.playerId })
   buildings.set(buildingId, {
-    buildingType,
+    buildingType: command.intent.payload.buildingType,
     status: 'FOUNDATION',
     progressTicks: 0,
     totalTicks: definition.constructionTicks,

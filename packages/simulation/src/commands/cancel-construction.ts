@@ -1,19 +1,12 @@
 import { BUILDING_DEFINITIONS } from '@rts/game-data'
 import { constructionRefund } from '@rts/shared'
-import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
+import type { ScheduledCommand } from '../contracts/commands.js'
 import { Building } from '../ecs/building-component.js'
 import { Orders, Owner } from '../ecs/components.js'
 import { clearMovement } from '../movement/destination.js'
 import { clearOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
-
-function reject(
-  command: ScheduledCommand,
-  code: 'INVALID_PAYLOAD' | 'INVALID_PHASE' | 'INVALID_STATE' | 'NOT_OWNER' | 'ENTITY_UNAVAILABLE',
-  message: string
-): never {
-  throw new CommandRejectedError(code, command, message)
-}
+import { reject } from './reject.js'
 
 /**
  * Detaches the active builder from a construction: if the worker's front order

@@ -3,8 +3,8 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/e2e/control-click-attack.spec.ts
-  - tests/e2e/regression-move-fractional-coords.spec.ts
+  - tests/e2e/match/control-click-attack.spec.ts
+  - tests/e2e/regression/regression-move-fractional-coords.spec.ts
 ---
 
 # Canvas Secondary Input and Page Zoom
@@ -37,8 +37,8 @@ The tests covered individual right-click flows but did not assert one normalized
 
 ## Regression
 
-- `tests/e2e/control-click-attack.spec.ts` verifies Control-click does not replace the selection.
-- `tests/e2e/regression-move-fractional-coords.spec.ts` verifies secondary input after fractional camera movement.
+- `tests/e2e/match/control-click-attack.spec.ts` verifies Control-click does not replace the selection.
+- `tests/e2e/regression/regression-move-fractional-coords.spec.ts` verifies secondary input after fractional camera movement.
 - `tests/e2e/input-controls.spec.ts` verifies persisted input profile and canvas gesture containment.
 
 ## Prevention

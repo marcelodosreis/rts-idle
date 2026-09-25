@@ -15,6 +15,10 @@ Use for review requests or before handing off a non-trivial change.
 4. Check architecture boundaries, public APIs, determinism, and security.
 5. Check clarity, scope, performance, and error handling.
 6. Run or inspect the smallest relevant validation.
+7. Enforce the mandatory bar (`docs/engineering-standard.md`): clean code and
+   SOLID in every package/app/tool/test, and typed domain strings (registries,
+   no `as string`/`as unknown`, no domain `Record<string, X>`, exhaustive
+   `assertNever`). Confirm `pnpm run lint` and `pnpm run test:architecture` pass.
 
 ## Finding format
 
@@ -33,6 +37,8 @@ the user explicitly requests implementation.
 - No behavior regression or untested new behavior.
 - No forbidden imports or public API break.
 - No unsafe casts, secrets, swallowed errors, or nondeterminism.
+- Mandatory clean code / SOLID / typed-domain bar satisfied and enforced by
+  `pnpm run lint` + `pnpm run test:architecture` (no unjustified suppressions).
 - Tests assert outcomes and include the relevant regression.
 - Diff contains no unrelated formatting or generated churn.
 

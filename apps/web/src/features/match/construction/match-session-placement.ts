@@ -25,14 +25,17 @@ const PLACEMENT_REASONS = {
   INVALID_FOOTPRINT: 'This terrain cannot support construction.'
 } as const
 
-export function placementFor(
-  mode: CommandMode,
-  map: MapDefinition | null,
-  buildCatalog: readonly BuildCatalogEntry[],
-  buildings: SnapshotMessage['buildings'],
-  worldX: number,
-  worldY: number
-): MatchPlacement | null {
+export interface PlacementQuery {
+  readonly mode: CommandMode
+  readonly map: MapDefinition | null
+  readonly buildCatalog: readonly BuildCatalogEntry[]
+  readonly buildings: SnapshotMessage['buildings']
+  readonly worldX: number
+  readonly worldY: number
+}
+
+export function placementFor(query: PlacementQuery): MatchPlacement | null {
+  const { mode, map, buildCatalog, buildings, worldX, worldY } = query
   const buildingType = buildingTypeForMode(mode)
   if (buildingType === null || map === null) {
     return null

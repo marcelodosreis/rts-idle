@@ -12,8 +12,8 @@ import {
   Position
 } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
-import { DEMO_SCENARIOS } from '../../apps/server/src/demo/scenarios.js'
-import { bootstrapMatch, createAuthoritativeMatch } from '../../apps/server/src/match-bootstrap.js'
+import { bootstrapMatch, createAuthoritativeMatch } from '../../apps/server/src/bootstrap/match-bootstrap.js'
+import { DEMO_SCENARIOS } from '../../apps/server/src/content/demo/scenarios.js'
 import { SEEDS, worldWithCombatUnits } from '../fixtures/index.js'
 
 function combatSession(seed: number) {

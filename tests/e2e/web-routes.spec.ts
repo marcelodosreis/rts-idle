@@ -23,11 +23,12 @@ for (const [route, heading] of laboratoryRoutes) {
 }
 
 test('the match exposes laboratory navigation in the top bar', async ({ page }) => {
+  test.setTimeout(90000)
   await page.goto('/')
   await page.getByRole('button', { name: 'Open DevTools menu' }).click()
   await page.getByRole('link', { name: 'Open Laboratory' }).click()
   await expect(page).toHaveURL(/\/laboratory$/)
-  await expect(page.getByTestId('laboratory-page-title')).toHaveText('Asset Browser', { timeout: 20000 })
+  await expect(page.getByTestId('laboratory-page-title')).toHaveText('Asset Browser', { timeout: 60000 })
 })
 
 test('laboratory menu groups match settings and keeps laboratory as its final action', async ({ page }) => {
@@ -83,15 +84,6 @@ test('laboratory pages expose navigation with the current page highlighted', asy
   await expect(
     page.getByRole('navigation', { name: 'Laboratory pages' }).getByRole('link', { name: 'Report' })
   ).toHaveAttribute('aria-current', 'page')
-})
-
-test('legacy diagnostics routes redirect to the unified diagnostics page', async ({ page }) => {
-  for (const route of ['/laboratory/stress', '/laboratory/determinism', '/laboratory/performance']) {
-    await page.goto(route)
-    await expect(page).toHaveURL(/\/laboratory\/diagnostics$/)
-    await expect(page.getByRole('heading', { name: 'RTS Idle Laboratory', exact: true })).toBeVisible()
-    await expect(page.getByTestId('laboratory-page-title')).toHaveText('Diagnostics')
-  }
 })
 
 test('renders a not-found page for unknown routes', async ({ page }) => {

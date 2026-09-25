@@ -10,7 +10,7 @@ Create expectAnim helper and barrier against literal animation assertions.
 
 ## Scope
 
-- `tests/e2e/art.ts` — expectAnim helper
+- `tests/e2e/support/art.ts` — expectAnim helper
 - `tests/unit/e2e-conventions.test.ts` — barrier
 
 ## Acceptance Criteria

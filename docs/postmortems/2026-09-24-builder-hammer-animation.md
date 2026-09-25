@@ -3,9 +3,9 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/unit/unit-economy.test.ts
+  - tests/unit/renderer/unit-economy.test.ts
   - tests/integration/session-commands.test.ts
-  - tests/e2e/building-hud.spec.ts
+  - tests/e2e/economy/building-hud.spec.ts
 ---
 
 # Builder Used Idle Sprite During Construction

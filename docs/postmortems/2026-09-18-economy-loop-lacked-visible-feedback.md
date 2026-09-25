@@ -3,7 +3,7 @@ status: closed
 classe: presentation
 barreira: null
 regressao:
-  - tests/e2e/economy-playable.spec.ts
+  - tests/e2e/economy/economy-playable.spec.ts
 ---
 
 # Economy Loop Lacked Visible Feedback
@@ -30,7 +30,7 @@ The snapshot now projects optional economy presentation state. The renderer uses
 
 ## Regression
 
-`tests/e2e/economy-playable.spec.ts` performs the real selection and right-click interaction, then requires visible Mining and Returning states plus the corresponding gather and carry animations before accepting the deposit and STOP behavior.
+`tests/e2e/economy/economy-playable.spec.ts` performs the real selection and right-click interaction, then requires visible Mining and Returning states plus the corresponding gather and carry animations before accepting the deposit and STOP behavior.
 
 ## Prevention
 

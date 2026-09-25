@@ -1,189 +1,46 @@
-import { createCameraController } from '@rts/renderer'
-import { AnimatedSprite, Container, type Texture } from 'pixi.js'
-import type { Viewport } from 'pixi-viewport'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import { Label } from '@/shared/ui/label'
 import { Slider } from '@/shared/ui/slider'
-import { createSectionApp, disposeSectionApp, trackTexture } from '../shared/core/app.js'
 import { check, registerChecks } from '../shared/core/checks.js'
 import { useLabContext } from '../shared/lab-context'
+import { StressScene } from './stress-scene.js'
 
-const VIEW_H = 340
 const MAX = 10000
-const MIN_ZOOM = 0.05
-const MAX_ZOOM = 8
+
+export interface StressController {
+  readonly pause: () => void
+  readonly resume: () => void
+}
 
 export function StressView({
   onControllerReady
 }: {
-  readonly onControllerReady?: (controller: { readonly pause: () => void; readonly resume: () => void } | null) => void
+  readonly onControllerReady?: (controller: StressController | null) => void
 } = {}) {
   const ctx = useLabContext()
   const hostRef = useRef<HTMLDivElement | null>(null)
-  const apiRef = useRef<{ spawn: (n: number) => Promise<void>; resetCamera: () => void } | null>(null)
+  const sceneRef = useRef<StressScene | null>(null)
   const [count, setCount] = useState(100)
   const [readout, setReadout] = useState('…')
 
   useEffect(() => {
-    registerChecks('perfStress', () => {
-      return [check('60fps under load', true, 'see live FPS')]
-    })
+    registerChecks('perfStress', () => [check('60fps under load', true, 'see live FPS')])
   }, [])
 
-  // Mount the Pixi viewport once; keep a stable apiRef for spawn/reset.
-  useEffect(() => {
-    const host = hostRef.current
-    if (host === null) {
-      return
-    }
-
-    let viewport: Viewport | null = null
-    let camera: ReturnType<typeof createCameraController> | null = null
-    let world: Container | null = null
-    let sprites: AnimatedSprite[] = []
-    let stopTicker = (): void => undefined
-    let destroyApp = (): void => undefined
-    let clearReportTimer = (): void => undefined
-    const framesByKey = new Map<string, Texture[]>()
-
-    void (async () => {
-      let hostResize: ((width: number, height: number) => void) | null = null
-      const app = await createSectionApp(host, VIEW_H, (width, height) => hostResize?.(width, height))
-      onControllerReady?.({
-        pause: () => app.ticker.stop(),
-        resume: () => app.ticker.start()
-      })
-      world = new Container()
-      camera = createCameraController(app, {
-        initialCenter: { x: app.screen.width / 2, y: VIEW_H / 2 },
-        initialZoom: 1,
-        worldWidth: app.screen.width,
-        worldHeight: app.screen.height,
-        input: { profile: 'mouse', minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM }
-      })
-      viewport = camera.viewport
-      viewport.addChild(world)
-      hostResize = (width, height) => {
-        viewport?.resize(width, height)
-      }
-
-      const pool = ctx.assets
-        .keys()
-        .filter((key) => {
-          if (!key.startsWith('units.')) {
-            return false
-          }
-          const last = key.split('.').at(-1) ?? ''
-          return last === 'idle' || last === 'run' || last.endsWith('_idle') || last.endsWith('_run')
-        })
-        .sort()
-
-      const cellFor = (n: number): number => {
-        const fit = Math.floor(Math.sqrt((VIEW_H * app.screen.width) / n))
-        return Math.max(2, Math.min(48, fit))
-      }
-      const loadFrames = async (key: string): Promise<Texture[] | null> => {
-        const cached = framesByKey.get(key)
-        if (cached !== undefined) {
-          return cached
-        }
-        const frames = await ctx.assets.stripTextures(key)
-        if (frames !== null && frames.length > 0) {
-          for (const f of frames) {
-            trackTexture(f)
-          }
-          framesByKey.set(key, frames)
-        }
-        return frames
-      }
-
-      const spawn = async (n: number): Promise<void> => {
-        for (const s of sprites) {
-          s.destroy()
-        }
-        sprites = []
-        if (pool.length === 0 || world === null) {
-          return
-        }
-        const cell = cellFor(n)
-        const perRow = Math.max(1, Math.floor(app.screen.width / cell))
-        for (let i = 0; i < n; i += 1) {
-          const key = pool[Math.floor(Math.random() * pool.length)] ?? ''
-          const frames = await loadFrames(key)
-          if (frames === null || frames.length === 0) {
-            continue
-          }
-          const sprite = new AnimatedSprite([...frames], false)
-          const entry = ctx.assets.entry(key)
-          sprite.animationSpeed = 1000 / (entry?.duration ?? 100) / 60
-          sprite.scale.set(Math.min(0.4, cell / 96))
-          sprite.position.set((i % perRow) * cell + cell / 2, Math.floor(i / perRow) * cell + cell / 2)
-          sprite.play()
-          world.addChild(sprite)
-          sprites.push(sprite)
-        }
-      }
-
-      const tick = (): void => {
-        for (const s of sprites) {
-          s.update(app.ticker)
-        }
-      }
-      app.ticker.add(tick)
-      stopTicker = () => app.ticker.remove(tick)
-      destroyApp = () => {
-        camera?.dispose()
-        disposeSectionApp(app)
-        app.destroy()
-      }
-
-      const timer = setInterval(() => {
-        if (viewport !== null) {
-          setReadout(
-            `${sprites.length} animated sprites (random units) · ${Math.round(app.ticker.FPS)} fps (target 60) · ` +
-              `zoom ${viewport.scale.x.toFixed(2)} · middle-drag to pan, wheel to zoom`
-          )
-        }
-      }, 500)
-      clearReportTimer = () => clearInterval(timer)
-
-      apiRef.current = {
-        spawn,
-        resetCamera: () => {
-          viewport?.setZoom(1)
-          viewport?.moveCenter(app.screen.width / 2, VIEW_H / 2)
-        }
-      }
-
-      await spawn(100)
-    })().catch(() => undefined)
-
-    return () => {
-      stopTicker()
-      destroyApp()
-      clearReportTimer()
-      onControllerReady?.(null)
-      for (const s of sprites) {
-        s.destroy()
-      }
-    }
-  }, [ctx, onControllerReady])
-
-  // Spawn whenever the slider changes.
-  useEffect(() => {
-    void apiRef.current?.spawn(count)
-  }, [count])
+  useStressScene(hostRef, sceneRef, ctx, onControllerReady)
+  useSpawnOnCount(sceneRef, count)
+  useReadoutLoop(sceneRef, setReadout)
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-4">
         <Label>sprites</Label>
-        <div className="flex min-w-52 flex-1 items-center gap-2 max-w-64">
-          <Slider min={1} max={MAX} step={50} value={[count]} onValueChange={([v]) => setCount(v ?? count)} />
+        <div className="flex min-w-52 max-w-64 flex-1 items-center gap-2">
+          <Slider min={1} max={MAX} step={50} value={[count]} onValueChange={([value]) => setCount(value ?? count)} />
           <span className="w-16 font-mono text-xs">{count}</span>
         </div>
-        <Button variant="outline" size="sm" onClick={() => apiRef.current?.resetCamera()}>
+        <Button variant="outline" size="sm" onClick={() => sceneRef.current?.resetCamera()}>
           reset camera
         </Button>
       </div>
@@ -192,9 +49,57 @@ export function StressView({
         data-testid="stress-canvas-host"
         className="h-[340px] min-w-0 overflow-hidden rounded border bg-background"
       />
-      <pre role="status" className="rounded border bg-muted p-3 font-mono text-xs whitespace-pre-wrap">
+      <pre role="status" className="whitespace-pre-wrap rounded border bg-muted p-3 font-mono text-xs">
         {readout}
       </pre>
     </div>
   )
+}
+
+function useStressScene(
+  hostRef: React.RefObject<HTMLDivElement | null>,
+  sceneRef: React.RefObject<StressScene | null>,
+  ctx: ReturnType<typeof useLabContext>,
+  onControllerReady: ((controller: StressController | null) => void) | undefined
+): void {
+  useEffect(() => {
+    const host = hostRef.current
+    if (host === null) {
+      return
+    }
+    let disposed = false
+    void StressScene.create(host, ctx).then((scene) => {
+      if (disposed) {
+        scene.dispose()
+        return
+      }
+      sceneRef.current = scene
+      onControllerReady?.({ pause: () => scene.pause(), resume: () => scene.resume() })
+      void scene.spawn(100)
+    })
+    return () => {
+      disposed = true
+      sceneRef.current?.dispose()
+      sceneRef.current = null
+      onControllerReady?.(null)
+    }
+  }, [ctx, hostRef, sceneRef, onControllerReady])
+}
+
+function useSpawnOnCount(sceneRef: React.RefObject<StressScene | null>, count: number): void {
+  useEffect(() => {
+    void sceneRef.current?.spawn(count)
+  }, [count, sceneRef])
+}
+
+function useReadoutLoop(sceneRef: React.RefObject<StressScene | null>, setReadout: (value: string) => void): void {
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const scene = sceneRef.current
+      if (scene !== null) {
+        setReadout(scene.readout())
+      }
+    }, 500)
+    return () => clearInterval(timer)
+  }, [sceneRef, setReadout])
 }

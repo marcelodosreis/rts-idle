@@ -1,22 +1,56 @@
-<!-- TITLE: <type>(<scope>): <short description>
-     types: feat | fix | refactor | chore | docs | test | perf | ci | build | revert
-     e.g. feat(simulation): add deterministic tick loop -->
+<!--
+Write this PR for a reviewer who has no prior context. Explain the problem,
+the decision, and the resulting impact. CI reports automated validation; only
+include manual verification when a person needs to repeat it.
+-->
 
-## What
+## Purpose
 
-<!-- 1-2 lines, no fluff -->
+<!-- What problem, user need, or technical goal does this PR address? -->
 
-## Why
+## What Changed
 
-<!-- link issue/ticket or 1 line -->
+<!-- List the meaningful behavior, API, data, or structural changes. -->
 
-## Reviewer notes
+## Why This Approach
 
-<!-- where to focus, what's throwaway vs critical -->
+<!-- Explain important decisions, trade-offs, and alternatives rejected. -->
 
-## Opencode session
+## Scope
 
-<!-- REQUIRED on every PR. If the PR was authored in an opencode session, include:
-     1. session id (`ses_...`, get via `grep session.id= ~/.local/share/opencode/log/opencode.log | tail -1` or the opencode UI) so it can be resumed with `opencode --session <id>`
-     2. a short summary of what the agent did (analysis/decisions, implementation, verification, commit strategy)
-     If not agent-authored, write "Not applicable." -->
+<!-- Which packages, applications, tools, or user flows are intentionally included? -->
+
+## Non-goals
+
+<!-- What is deliberately not addressed here, and why? Write "None" when applicable. -->
+
+## Impact
+
+<!-- Describe effects on gameplay, users, APIs, protocol, architecture, operations, or maintainability. -->
+
+## Compatibility and Risk
+
+<!-- Note migrations, rollout needs, deterministic/serialization/API impact, or known risks. Write "None" when applicable. -->
+
+## Review Focus
+
+<!-- Point reviewers to the decisions, flows, or files that deserve the closest review. -->
+
+## Manual Verification
+
+<!-- Include only human steps that CI cannot establish, such as visual/UI checks. Write "Not applicable" otherwise. -->
+
+## Follow-ups
+
+<!-- Link concrete follow-up work or write "None". Do not add vague future ideas. -->
+
+## Related Work
+
+<!-- Link the issue, task packet, ADR, RFC, postmortem, or previous PR. Write "None" when applicable. -->
+
+## Author Checklist
+
+- [ ] The purpose, scope, and non-goals make sense without external context.
+- [ ] This PR contains one cohesive change and excludes unrelated cleanup.
+- [ ] Compatibility, risk, and documentation impact are addressed above.
+- [ ] The requested review focus identifies the decisions that need human judgment.

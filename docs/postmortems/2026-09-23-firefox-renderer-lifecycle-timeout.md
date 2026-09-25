@@ -3,7 +3,7 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/e2e/renderer-lifecycle.spec.ts
+  - tests/e2e/laboratory/renderer-lifecycle.spec.ts
 ---
 
 # Firefox Renderer Lifecycle Timeout

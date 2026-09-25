@@ -48,9 +48,9 @@ behavior. Vite hot-reloads the client, which masked the difference.
 ## Regression
 
 Not a code bug — behavior is guarded by the existing formation tests
-(`tests/unit/formation-offsets.test.ts`,
+(`tests/unit/simulation/formation-offsets.test.ts`,
 `tests/integration/formation-destinations.test.ts`,
-`tests/e2e/regression-units-spread.spec.ts`). The operational guard is the
+`tests/e2e/regression/regression-units-spread.spec.ts`). The operational guard is the
 `tsx watch` dev script.
 
 ## Prevention

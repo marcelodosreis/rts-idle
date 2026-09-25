@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { Button } from '@/shared/ui/button'
+import { CollapsibleSection } from '@/shared/ui/collapsible-section'
 import { Label } from '@/shared/ui/label'
 import { ScrollArea } from '@/shared/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
@@ -35,44 +36,6 @@ function Toggle({
       <span>{label}</span>
       <Switch checked={checked} onCheckedChange={onChange} />
     </label>
-  )
-}
-
-function CollapsibleSection({
-  title,
-  icon,
-  children,
-  defaultOpen = false
-}: {
-  readonly title: string
-  readonly icon: string
-  readonly children: React.ReactNode
-  readonly defaultOpen?: boolean
-}) {
-  const [isOpen, setIsOpen] = useState(defaultOpen)
-
-  return (
-    <div className="border-b border-border/30 last:border-b-0">
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted/20"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <span>{icon}</span>
-        <span className="flex-1">{title}</span>
-        <svg
-          className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden="true"
-        >
-          <path d="M4 6l4 4 4-4" />
-        </svg>
-      </button>
-      {isOpen && <div className="space-y-1 px-1 pb-2">{children}</div>}
-    </div>
   )
 }
 
@@ -156,7 +119,7 @@ export function InspectorPanel({
         )}
 
         {/* Overlays - collapsible */}
-        <CollapsibleSection title="Overlays" icon="👁️" defaultOpen={false}>
+        <CollapsibleSection label="Overlays" icon="👁️" defaultOpen={false}>
           <Toggle
             label="Transparency checker"
             checked={options.checker}
@@ -168,14 +131,14 @@ export function InspectorPanel({
 
         {/* Type-specific - collapsible */}
         {kind === 'unit' && (
-          <CollapsibleSection title="Unit options" icon="⚔️" defaultOpen={false}>
+          <CollapsibleSection label="Unit options" icon="⚔️" defaultOpen={false}>
             <Toggle label="Flip" checked={options.flip} onChange={(c) => onPatchOptions({ flip: c })} />
             <Toggle label="Shadow" checked={options.shadow} onChange={(c) => onPatchOptions({ shadow: c })} />
           </CollapsibleSection>
         )}
 
         {kind === 'fx' && (
-          <CollapsibleSection title="FX options" icon="✨" defaultOpen={false}>
+          <CollapsibleSection label="FX options" icon="✨" defaultOpen={false}>
             <div className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm">
               <Label>Blend mode</Label>
               <Select
@@ -195,7 +158,7 @@ export function InspectorPanel({
         )}
 
         {kind === 'tileset' && (
-          <CollapsibleSection title="Tileset options" icon="🗺️" defaultOpen={false}>
+          <CollapsibleSection label="Tileset options" icon="🗺️" defaultOpen={false}>
             <div className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm">
               <Label>Variant</Label>
               <Select value={String(options.variant)} onValueChange={(v) => onPatchOptions({ variant: Number(v) })}>

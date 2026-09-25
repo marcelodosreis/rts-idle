@@ -3,10 +3,10 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/e2e/hud-commands.spec.ts
-  - tests/e2e/hud-order-states.spec.ts
-  - tests/e2e/control-click-attack.spec.ts
-  - tests/e2e/economy-playable.spec.ts
+  - tests/e2e/match/hud-commands.spec.ts
+  - tests/e2e/match/hud-order-states.spec.ts
+  - tests/e2e/match/control-click-attack.spec.ts
+  - tests/e2e/economy/economy-playable.spec.ts
 ---
 
 # E2E Interaction Contention
@@ -57,7 +57,7 @@ runner rather than only local execution.
 
 ## Verification
 
-- `pnpm run test:e2e:focused tests/e2e/hud-commands.spec.ts tests/e2e/hud-order-states.spec.ts tests/e2e/control-click-attack.spec.ts tests/e2e/economy-playable.spec.ts --project=chromium --project=firefox --workers=1`
+- `pnpm run test:e2e:focused tests/e2e/match/hud-commands.spec.ts tests/e2e/match/hud-order-states.spec.ts tests/e2e/match/control-click-attack.spec.ts tests/e2e/economy/economy-playable.spec.ts --project=chromium --project=firefox --workers=1`
 - `E2E_WORKERS=1 pnpm run test:e2e:fast`
 - `E2E_WORKERS=1 pnpm run test:e2e:perf`
 - `E2E_WORKERS=1 pnpm run test:e2e:all`

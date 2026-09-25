@@ -9,15 +9,17 @@ import { describe, expect, it } from 'vitest'
 // and this list documents them.
 //
 // @rts/shared types: Fixed, GridPosition, EntityId, PlayerId, RngState, RngResult, RngIntResult,
-//   SimulationEvent, CommandIntent, MovePayload, GatherPayload, BuildPayload, BuildingType, UnitKind
+//   SimulationEvent, SimulationEventType, CommandIntent, CommandType, MovePayload, GatherPayload, BuildPayload,
+//   BuildingType, BuildingStatus, UnitKind, StairDirection, AssetKind, AssetKey, MatchResult
 // @rts/protocol types: MatchRequest, MatchConfig, CommandMessage, SnapshotMessage, SnapshotUnit,
-//   SnapshotMineralNode, SnapshotPlayer, OrderState, ErrorMessage
+//   SnapshotMineralNode, SnapshotPlayer, OrderState, EconomyPhase, ConstructionStatus, MatchPhase, ErrorMessage
 // @rts/simulation types: ScheduledCommand, CommandErrorCode, Order, RulesIdentity, TickResult,
 //   SimulationOptions, ComponentType, PositionData, OwnerData, MovementData, OrdersData, HealthData,
 //   CombatData, KindData, MineralNodeData, BuildingData, CargoData, GatherPhase, SimulationHost,
 //   SimulationSnapshot, FormationOffset, GameState, PlayerState, UnitCombatStats
 // @rts/renderer types: GameRenderer, RenderFrame, RenderUnit, RenderBuilding,
-//   RenderMineralNode, RendererOptions, RendererCallbacks, InputProfile, WorldInteraction
+//   RenderMineralNode, RendererOptions, RendererCallbacks, InputProfile, WorldInteraction,
+//   SpriteAnim, SpriteShape, FrameAnim, UnitSpriteState, BuildingVisualKind
 
 import * as protocol from '@rts/protocol'
 import type {
@@ -71,19 +73,49 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'rngNextInt',
       'rotateLeft',
       'splitmix32',
-      'UINT32_MAX'
+      'UINT32_MAX',
+      'assertNever',
+      'isRecord',
+      'field',
+      'isInteger',
+      'isNonNegativeInteger',
+      'isOptionalNonNegativeInteger',
+      'ASSET_KINDS',
+      'isAssetKind',
+      'isAssetKey',
+      'toAssetKey',
+      'MATCH_RESULTS',
+      'BUILDING_STATUSES',
+      'COMMAND_TYPES',
+      'STAIR_DIRECTIONS',
+      'SIMULATION_EVENT_TYPES',
+      'UNIT_KINDS',
+      'BUILDING_TYPES',
+      'MAP_TILE_KINDS',
+      'DRESSING_KINDS'
     ]
   ],
   [
     'protocol',
-    ['version', 'isCommandMessage', 'isMatchRequest', 'isMatchConfig', 'isSnapshotMessage', 'isErrorMessage']
+    [
+      'version',
+      'isCommandMessage',
+      'isMatchRequest',
+      'isMatchConfig',
+      'isSnapshotMessage',
+      'isErrorMessage',
+      'MATCH_PHASES',
+      'BUILDING_STATUSES',
+      'ORDER_STATES',
+      'ECONOMY_PHASES',
+      'MATCH_AGGRESSIONS'
+    ]
   ],
   [
     'simulation',
     [
       'version',
       'MAX_UNITS_PER_COMMAND',
-      'MAX_ORDER_QUEUE_DEPTH',
       'createRulesIdentity',
       'CommandRejectedError',
       'Position',
@@ -131,7 +163,11 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'dressTerrain',
       'DEFAULT_DRESSING_VARIANTS',
       'DEFAULT_DRESSING_COUNTS',
-      'DRESSING_ASSET_KEYS'
+      'DRESSING_ASSET_KEYS',
+      'SPRITE_ANIMS',
+      'SPRITE_SHAPES',
+      'FRAME_ANIMS',
+      'BUILDING_VISUAL_KINDS'
     ]
   ]
 ]

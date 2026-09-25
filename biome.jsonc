@@ -41,20 +41,20 @@
       "a11y": "warn",
       "complexity": {
         "noExcessiveCognitiveComplexity": {
-          "level": "warn",
+          "level": "error",
           "options": { "maxAllowedComplexity": 25 }
         },
         "noExcessiveLinesPerFunction": {
-          "level": "warn",
-          "options": { "maxLines": 250, "skipBlankLines": true, "skipIifes": true }
+          "level": "error",
+          "options": { "maxLines": 50, "skipBlankLines": true, "skipIifes": true }
         },
         "noForEach": "warn",
         "noImplicitCoercions": "error",
         "noUselessFragments": "warn",
         "noUselessTernary": "warn",
         "useMaxParams": {
-          "level": "warn",
-          "options": { "max": 6 }
+          "level": "error",
+          "options": { "max": 5 }
         },
         "useOptionalChain": "warn"
       },
@@ -86,7 +86,7 @@
         "noNonNullAssertion": "off",
         "noExcessiveClassesPerFile": "off",
         "noExcessiveLinesPerFile": {
-          "level": "warn",
+          "level": "error",
           "options": { "maxLines": 400 }
         },
         "noImplicitBoolean": "warn",
@@ -118,5 +118,25 @@
       "react": "recommended",
       "test": "recommended"
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["tests/**", "**/*.test.ts", "**/*.spec.ts"],
+      "linter": {
+        "rules": {
+          "complexity": { "noExcessiveLinesPerFunction": "off" },
+          "style": { "noExcessiveLinesPerFile": "off" }
+        }
+      }
+    },
+    {
+      "includes": ["apps/web/src/shared/ui/**", "tools/assets/src/catalog/curated.ts"],
+      "linter": {
+        "rules": {
+          "complexity": { "noExcessiveLinesPerFunction": "off" },
+          "style": { "noExcessiveLinesPerFile": "off" }
+        }
+      }
+    }
+  ]
 }

@@ -1,5 +1,5 @@
 import type { ScheduledCommand } from '../contracts/commands.js'
-import { formationOffset } from '../formation.js'
+import { formationOffset } from '../domain/formation.js'
 import { setMovementDestination } from '../movement/destination.js'
 import { clearOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'

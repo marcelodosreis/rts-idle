@@ -1,14 +1,5 @@
 import { durationMsToFps, fpsToPixiAnimationSpeed } from '@rts/renderer'
-import { AnimatedSprite, type BLEND_MODES, type Container, type Texture, type Ticker } from 'pixi.js'
-
-/** Common player contract the sections drive via the global fps/pause controls. */
-export interface LabPlayer {
-  readonly sprite: Container
-  update(ticker: Ticker): void
-  setFps(fps: number): void
-  setPaused(paused: boolean): void
-  destroy(): void
-}
+import { AnimatedSprite, type BLEND_MODES, type Texture, type Ticker } from 'pixi.js'
 
 /** Pixi v8 uses `'add'` for additive blending. */
 export type BlendChoice = 'normal' | 'add'

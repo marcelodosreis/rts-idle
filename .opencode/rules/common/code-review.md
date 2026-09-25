@@ -27,14 +27,18 @@ Before requesting review, ensure:
 Before marking code complete:
 
 - [ ] Code is readable and well-named
-- [ ] Functions are focused (<50 lines)
-- [ ] Source files are cohesive (under the 800-line soft maintainability ceiling, or include a reason for a deliberate exception)
+- [ ] Functions are focused (<50 lines) and params ≤5
+- [ ] Source files ≤400 lines (or a documented, justified exception)
 - [ ] No deep nesting (>4 levels)
 - [ ] Errors are handled explicitly
 - [ ] No hardcoded secrets or credentials
 - [ ] No console.log or debug statements
 - [ ] Tests exist for new functionality
-- [ ] Test coverage meets 80% minimum
+- [ ] Clean code, SOLID, and typed domain strings per `docs/engineering-standard.md`:
+      no `any`, exhaustive `assertNever` dispatch, no `as string`/`as unknown`,
+      no domain `Record<string, X>`, closed string sets are `as const` registries
+- [ ] `pnpm run lint` and `pnpm run test:architecture` pass (never silenced with
+      `biome-ignore` or a new allowlist entry without written justification)
 
 ## Security Review Triggers
 

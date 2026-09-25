@@ -228,6 +228,12 @@ candidate is the production queue (`PROD-001`/`PROD-002`, P2.07).
 
 ### Fundação
 - [ ] QUAL-000 Spec + ADR
+- [x] QUAL-019 Clean code, SOLID, and strong-typing baseline
+- [x] QUAL-020 Web app function decomposition (React ≤50 lines)
+- [x] QUAL-021 Typed-domain completion (registries + branded AssetKey)
+- [x] QUAL-022 Public API and docs sync
+- [x] QUAL-023 Session projections and tools coverage
+- [x] QUAL-024 Mandatory enforcement (git, CI, governance)
 - [x] QUAL-017 Front-matter + guard + resumo (postmortem tracking)
 - [x] QUAL-018 Board + tracking guard + protocolo
 - [x] QUAL-016 Higiene de saída (test output)

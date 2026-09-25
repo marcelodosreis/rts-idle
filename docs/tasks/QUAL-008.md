@@ -10,7 +10,7 @@ Test HUD with dynamic content using relative layout.
 
 ## Scope
 
-- `tests/e2e/hud-responsive.spec.ts` — responsive test
+- `tests/e2e/responsive/hud-responsive.spec.ts` — responsive test
 
 ## Acceptance Criteria
 

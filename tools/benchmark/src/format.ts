@@ -1,4 +1,4 @@
-import type { BenchmarkRow } from './benchmark-row.js'
+import type { BenchmarkRow } from './row.js'
 
 const COLUMNS = [
   'entities',

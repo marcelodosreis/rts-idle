@@ -43,19 +43,22 @@ function nearestEnemyInRange(
   return best
 }
 
+interface TargetQuery {
+  readonly state: GameState
+  readonly id: EntityId
+  readonly front: Order
+  readonly position: { readonly x: number; readonly y: number }
+  readonly ownerId: number
+  readonly rangeFixed: number
+}
+
 /**
  * Resolves a combat unit's target from its front order. ATTACK commits to the
  * commanded target (clearing the order when the target is gone); HOLD and
  * ATTACK_MOVE auto-acquire the nearest enemy in range.
  */
-function resolveTarget(
-  state: GameState,
-  id: EntityId,
-  front: Order,
-  position: { readonly x: number; readonly y: number },
-  ownerId: number,
-  rangeFixed: number
-): EntityId | null {
+function resolveTarget(query: TargetQuery): EntityId | null {
+  const { state, id, front, position, ownerId, rangeFixed } = query
   if (front.type === 'ATTACK') {
     if (!state.world.hasEntity(front.targetId)) {
       clearOrders(state, id)
@@ -117,7 +120,7 @@ export function combatSystem(state: GameState): void {
     }
 
     const rangeFixed = combat.rangeTiles * FIXED_SCALE
-    const targetId = resolveTarget(state, id, front, position, owner.owner, rangeFixed)
+    const targetId = resolveTarget({ state, id, front, position, ownerId: owner.owner, rangeFixed })
     if (targetId === null) {
       continue
     }

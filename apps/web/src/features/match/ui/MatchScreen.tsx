@@ -1,71 +1,44 @@
-import { useRef } from 'react'
-import { useMatchSession } from '../lifecycle/useMatchSession'
-import { MatchHud } from './MatchHud'
+import { type RefObject, useRef } from 'react'
+import { type MatchSessionState, useMatchSession } from '../lifecycle/useMatchSession'
+import { MatchHud, type MatchHudProps } from './MatchHud'
+
+function buildHudProps(session: MatchSessionState, hostRef: RefObject<HTMLDivElement | null>): MatchHudProps {
+  const { selectionUnits, aggression } = session
+  return {
+    status: session.status,
+    messageLog: session.messageLog,
+    unitCount: session.unitCount,
+    tick: session.tick,
+    selection: session.selectionUnits,
+    construction: session.selectedConstruction,
+    mineral: session.selectedMineral,
+    resources: session.resources,
+    hostRef,
+    commandMode: session.commandMode,
+    matchResult: session.matchResult,
+    scenario: session.scenario,
+    scenarios: session.scenarios,
+    aggression,
+    spritesEnabled: session.spritesEnabled,
+    inputProfile: session.inputProfile,
+    onStop: () => session.issueOrder('STOP'),
+    onHold: () => session.issueOrder('HOLD'),
+    onSurrender: session.surrender,
+    onArm: session.arm,
+    onCancelConstruction: session.cancelConstruction,
+    workerSelected: selectionUnits.length === 1 && selectionUnits[0]?.kind === 'pawn' && selectionUnits[0]?.owner === 0,
+    buildings: session.buildings,
+    buildHint: session.buildHint,
+    onNewMatch: session.newMatch,
+    onChangeScenario: session.changeScenario,
+    onToggleAggression: () => session.setAggression(aggression === 'offensive' ? 'passive' : 'offensive'),
+    onToggleSprites: () => session.setSpritesEnabled(!session.spritesEnabled),
+    onInputProfileChange: session.setInputProfile
+  }
+}
 
 export function MatchScreen() {
   const hostRef = useRef<HTMLDivElement | null>(null)
-  const {
-    status,
-    messageLog,
-    unitCount,
-    tick,
-    selectionUnits,
-    selectedConstruction,
-    selectedMineral,
-    resources,
-    commandMode,
-    matchResult,
-    scenario,
-    scenarios,
-    aggression,
-    spritesEnabled,
-    inputProfile,
-    buildings,
-    buildHint,
-    arm,
-    issueOrder,
-    cancelConstruction,
-    surrender,
-    newMatch,
-    changeScenario,
-    setAggression,
-    setSpritesEnabled,
-    setInputProfile
-  } = useMatchSession(hostRef)
-
-  return (
-    <MatchHud
-      status={status}
-      messageLog={messageLog}
-      unitCount={unitCount}
-      tick={tick}
-      selection={selectionUnits}
-      construction={selectedConstruction}
-      mineral={selectedMineral}
-      resources={resources}
-      hostRef={hostRef}
-      commandMode={commandMode}
-      matchResult={matchResult}
-      scenario={scenario}
-      scenarios={scenarios}
-      aggression={aggression}
-      spritesEnabled={spritesEnabled}
-      inputProfile={inputProfile}
-      onStop={() => issueOrder('STOP')}
-      onHold={() => issueOrder('HOLD')}
-      onSurrender={surrender}
-      onArm={arm}
-      onCancelConstruction={cancelConstruction}
-      workerSelected={
-        selectionUnits.length === 1 && selectionUnits[0]?.kind === 'pawn' && selectionUnits[0]?.owner === 0
-      }
-      buildings={buildings}
-      buildHint={buildHint}
-      onNewMatch={newMatch}
-      onChangeScenario={changeScenario}
-      onToggleAggression={() => setAggression(aggression === 'offensive' ? 'passive' : 'offensive')}
-      onToggleSprites={() => setSpritesEnabled(!spritesEnabled)}
-      onInputProfileChange={setInputProfile}
-    />
-  )
+  const session = useMatchSession(hostRef)
+  return <MatchHud {...buildHudProps(session, hostRef)} />
 }

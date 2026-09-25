@@ -3,7 +3,7 @@ status: open
 classe: completion-gate
 barreira: null
 regressao:
-  - tests/e2e/building-hud.spec.ts
+  - tests/e2e/economy/building-hud.spec.ts
 ---
 
 # Construction E2E Asserted the Wrong Work-Point Edge
@@ -19,7 +19,7 @@ pull request.
 
 ## Symptom
 
-CI run `35537655750` reported, at `tests/e2e/building-hud.spec.ts:102`:
+CI run `35537655750` reported, at `tests/e2e/economy/building-hud.spec.ts:102`:
 
 ```
 Expected: { x: 2816, y: 2816 }   // tile (11,11)
@@ -51,14 +51,14 @@ and was reported as green without evidence.
 
 ## Fix
 
-`tests/e2e/building-hud.spec.ts:102` now asserts
+`tests/e2e/economy/building-hud.spec.ts:102` now asserts
 `{ x: tilesToFixed(10), y: tilesToFixed(10) }`, matching the nearest-edge
-work-point authority already covered by `tests/unit/placement.test.ts` and
-`tests/simulation/building-construction.test.ts`. No product code changed.
+work-point authority already covered by `tests/unit/simulation/placement.test.ts` and
+`tests/simulation/economy/building-construction.test.ts`. No product code changed.
 
 ## Regression
 
-The corrected assertion in `tests/e2e/building-hud.spec.ts` fails against the
+The corrected assertion in `tests/e2e/economy/building-hud.spec.ts` fails against the
 BOTTOM expectation and passes against the real nearest-edge behavior, so it
 pins the worker destination for this exact worker/footprint geometry.
 
@@ -71,5 +71,5 @@ claim without a recorded command and result is a process violation.
 
 ## Verification
 
-Under Node `v24.21.0`: `pnpm run test:e2e:focused tests/e2e/building-hud.spec.ts`
+Under Node `v24.21.0`: `pnpm run test:e2e:focused tests/e2e/economy/building-hud.spec.ts`
 passed 4/4, `pnpm run verify` passed, and `pnpm run verify:browser` passed.

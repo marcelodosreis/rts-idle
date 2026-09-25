@@ -9,12 +9,12 @@ The deterministic core. This document is the operational reference for
 - The core imports no platform APIs: it runs identically in Node, the browser,
   tests, replay, and fuzzing (`tests/architecture/simulation-isolation.test.ts`).
 - All randomness is seeded (`createRng`); all arithmetic is integer
-  (`shared/fixed.ts`, `movement-step.ts`).
+  (`packages/shared/src/primitives/fixed.ts`, `packages/simulation/src/movement/destination.ts`).
 - The canonical byte format and the state hash are pinned by
   `tests/simulation/hash-golden.test.ts` and the determinism suites. Changing
   the format is a deliberate act (regen the golden).
-- `SIMULATION_VERSION` is `0.4.0` (Economy v0 components and GATHER orders
-  joined the canonical state).
+- `SIMULATION_VERSION` is `0.9.0` (player supply and Supply Depot state joined
+  the canonical snapshot stream).
 
 ## Single writer
 
@@ -34,11 +34,12 @@ The pipeline order is part of the deterministic contract:
 | 3 | `economy` | Gather minerals, return cargo, and deposit using post-movement positions |
 | 4 | `combat` | Resolve attack intent; accumulate damage in the per-tick buffer |
 | 5 | `death` | Apply the damage buffer simultaneously; remove the dead, clear refs |
-| 6 | `victory` | Decide win/draw/tick-limit; mark losers defeated |
-| 7 | `invariants` | Validate the state (never mutates, throws on violation) |
+| 6 | `supply` | Recompute used/capacity supply from the live world |
+| 7 | `victory` | Decide win/draw/tick-limit; mark losers defeated |
+| 8 | `invariants` | Validate the state (never mutates, throws on violation) |
 
 Appending a step is a deliberate change; reordering is forbidden
-(`tests/simulation/pipeline-order.test.ts`).
+(`tests/simulation/lifecycle/pipeline-order.test.ts`).
 
 ## Components
 
@@ -53,7 +54,7 @@ Registered in `createWorld()` in this order (part of the canonical schema):
 - `Kind` — unit archetype (`pawn` / `warrior` / `archer`), driven by
   `data/unit-stats.ts` per-role combat stats.
 - `MineralNode` — remaining mineral amount.
-- `Base` — marker for an owned deposit point.
+- `Building` — placed building: type, lifecycle status, progress, builder, footprint.
 - `Cargo` — a Worker's carried mineral amount and capacity.
 
 ## Commands

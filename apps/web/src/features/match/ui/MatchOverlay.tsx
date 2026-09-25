@@ -1,16 +1,14 @@
+import type { MatchResult } from '@rts/shared'
 import { Button } from '@/shared/ui/button'
 
-const RESULT_COPY: Record<
-  'victory' | 'defeat' | 'draw',
-  { readonly emoji: string; readonly title: string; readonly note: string }
-> = {
+const RESULT_COPY: Record<MatchResult, { readonly emoji: string; readonly title: string; readonly note: string }> = {
   victory: { emoji: '🏆', title: 'Victory', note: 'You eliminated every opponent.' },
   defeat: { emoji: '💀', title: 'Defeat', note: 'Your forces were destroyed.' },
   draw: { emoji: '🤝', title: 'Draw', note: 'No side survived the battle.' }
 }
 
 interface MatchOverlayProps {
-  readonly result: 'victory' | 'defeat' | 'draw'
+  readonly result: MatchResult
   readonly onNewMatch: () => void
 }
 

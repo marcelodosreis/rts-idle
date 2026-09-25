@@ -42,19 +42,21 @@ encodes side. This serves colorblind users and remains readable at varying zoom 
 
 ## Files
 
-- `packages/renderer/src/unit-fallback.ts` — pure mapping (`FALLBACK_GLYPH`).
-- `packages/renderer/src/unit-sprite.ts` — rendering in fallback branch + cleanup.
-- Debug chain: `unit-layer.ts`, `renderer.ts`, `types.ts`, `useMatchSession.ts`.
+- `packages/renderer/src/units/fallback.ts` — pure mapping (`FALLBACK_GLYPH`).
+- `packages/renderer/src/units/sprite.ts` — rendering in fallback branch + cleanup.
+- Debug chain: `packages/renderer/src/units/layer.ts`,
+  `packages/renderer/src/core/renderer.ts`, `packages/renderer/src/core/types.ts`,
+  `apps/web/src/features/match/lifecycle/useMatchSession.ts`.
 
 ## Tests
 
-- `tests/unit/unit-fallback.test.ts` — asserts letter and shape per kind.
-- `tests/e2e/sprite-fallback.spec.ts` — asserts `glyph` and `shape` fields
+- `tests/unit/renderer/unit-fallback.test.ts` — asserts letter and shape per kind.
+- `tests/e2e/laboratory/sprite-fallback.spec.ts` — asserts `glyph` and `shape` fields
   match kinds and that all three kinds are present in the 6v6 demo.
 
 ```bash
 pnpm run test:unit
-pnpm run test:e2e:focused tests/e2e/sprite-fallback.spec.ts --project=chromium
+pnpm run test:e2e:focused tests/e2e/laboratory/sprite-fallback.spec.ts --project=chromium
 ```
 
 ## Acceptance

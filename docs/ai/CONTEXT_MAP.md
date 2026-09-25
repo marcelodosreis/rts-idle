@@ -7,7 +7,7 @@ normal implementation task.
 | Task area | Read first | Add only when needed |
 |---|---|---|
 | Simulation | simulation engine/state, relevant system, `tests/simulation/` | `docs/simulation.md`, relevant ADR |
-| Commands | `packages/shared/src/commands.ts`, command handler, contract tests | `docs/commands.md`, validation module |
+| Commands | `packages/shared/src/domain/commands.ts`, command handler, contract tests | `docs/commands.md`, validation module |
 | ECS | components, component store/world, lifecycle tests | ECS ADR |
 | Determinism | snapshot/hash modules, RNG, determinism tests | determinism docs/ADR |
 | Renderer | renderer orchestrator, relevant layer, unit tests | asset modules, focused E2E |
@@ -16,6 +16,7 @@ normal implementation task.
 | Web/HUD | match screen, relevant HUD, session hook | renderer integration, focused E2E |
 | Game data | relevant map/types/stats modules | game-data spec, master plan section |
 | Architecture | architecture tests | architecture docs, engineering standard §2 |
+| Clean code / SOLID | `docs/engineering-standard.md` → "Clean Code & SOLID" and "Typed domain strings"; `.opencode/rules/common/coding-style.md` | `tests/architecture/typed-domain.test.ts`, `packages/shared/src/primitives/parse.ts` |
 | Quality | `docs/tasks/QUAL-*.md`, `docs/tasks/done/QUAL-*.md`, `docs/quality/postmortem-status.md` | `docs/postmortems/`, engineering standard |
 | Documentation | engineering standard, architecture, relevant spec/ADR | master plan only for milestone work |
 

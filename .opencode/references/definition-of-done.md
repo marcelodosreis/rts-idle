@@ -31,6 +31,13 @@ Apply this to every change before declaring it done.
 - [ ] No dead code, debug output, or commented-out blocks left behind
 - [ ] Changes are scoped to the task; no unrelated refactors snuck in
 - [ ] Linting and formatting pass
+- [ ] **Clean code, SOLID, and typed domain strings are satisfied everywhere
+      (`docs/engineering-standard.md`)**: files ≤400 lines, functions ≤50,
+      params ≤5, no `any`, exhaustive `assertNever` dispatch, no `as string` /
+      `as unknown`, no domain `Record<string, X>`, and every closed string set
+      typed as an `as const` registry. Enforced by `pnpm run lint` and
+      `pnpm run test:architecture`; never silenced with `biome-ignore` or a new
+      allowlist entry without written justification.
 
 The depth behind these items lives in `code-review-and-quality` (the five-axis review) and `code-simplification` (reducing complexity without changing behavior).
 

@@ -22,6 +22,28 @@ and must stay green.
 
 For context navigation, see `docs/ai/CONTEXT_MAP.md`.
 
+## Mandatory Code Quality (every change, every package)
+
+Clean code, SOLID, and strong typing are mandatory in **everything**:
+`packages/*`, `apps/*`, `tools/*`, `tests/*`, config, and docs. The canonical
+rules live in `docs/engineering-standard.md` ("Clean Code & SOLID" and "Typed
+domain strings"). No exception beyond generated code
+(`apps/web/src/shared/ui/**`, `tools/assets/src/curated.ts`, `*/dist`).
+
+Enforcement is layered; all must pass:
+
+- **Biome** (`pnpm run lint`): file ≤400 lines, function ≤50, params ≤5, no `any`.
+- **Architecture guard** (`pnpm run test:architecture`): no `as string` /
+  `as unknown` and no domain `Record<string, X>` outside the documented
+  boundaries (`tests/architecture/typed-domain.test.ts`).
+- **pre-commit** (`lint-staged`) and **pre-push** (`typecheck` + `lint` +
+  `test:architecture`).
+- **CI**: `lint`, `typecheck`, `test:architecture`, `verify`, and E2E jobs.
+- **Review**: `code-review-and-quality` checks this bar before approval.
+
+Never silence a violation by adding a `biome-ignore` or an allowlist entry
+without a written justification; fix the code instead.
+
 ## Core Rules
 
 - If a task matches a skill, invoke it with the `skill` tool before acting.

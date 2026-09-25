@@ -1,6 +1,16 @@
-import { BUILDING_TYPES, type BuildingType, type MapDefinition, normalizeMapDefinition } from '@rts/shared'
+import {
+  BUILDING_TYPES,
+  type BuildingType,
+  field,
+  isOneOf,
+  isRecord,
+  type MapDefinition,
+  normalizeMapDefinition
+} from '@rts/shared'
 
-export type MatchAggression = 'offensive' | 'passive'
+export const MATCH_AGGRESSIONS = ['offensive', 'passive'] as const
+
+export type MatchAggression = (typeof MATCH_AGGRESSIONS)[number]
 
 export interface ScenarioSummary {
   readonly id: string
@@ -31,59 +41,69 @@ export interface MatchConfig {
   readonly buildings: readonly BuildCatalogEntry[]
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 function isPositiveInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value > 0
 }
 
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
 export function isMatchRequest(value: unknown): value is MatchRequest {
+  if (!isRecord(value)) {
+    return false
+  }
+  const map = field(value, 'map')
   if (
-    !isRecord(value) ||
-    value.type !== 'match_request' ||
-    typeof value.scenarioId !== 'string' ||
-    value.scenarioId.length === 0 ||
-    (value.aggression !== 'offensive' && value.aggression !== 'passive') ||
-    !isRecord(value.map)
+    field(value, 'type') !== 'match_request' ||
+    !isNonEmptyString(field(value, 'scenarioId')) ||
+    !isOneOf(MATCH_AGGRESSIONS, field(value, 'aggression')) ||
+    !isRecord(map)
   ) {
     return false
   }
-  if (value.map.source === 'catalog') {
-    return Object.keys(value.map).length === 1
+  const source = field(map, 'source')
+  if (source === 'catalog') {
+    return Object.keys(map).length === 1
   }
-  return value.map.source === 'local' && normalizeMapDefinition(value.map.definition).ok
+  return source === 'local' && normalizeMapDefinition(field(map, 'definition')).ok
 }
 
 export function isScenarioSummary(value: unknown): value is ScenarioSummary {
-  return isRecord(value) && typeof value.id === 'string' && value.id.length > 0 && typeof value.label === 'string'
+  return isRecord(value) && isNonEmptyString(field(value, 'id')) && typeof field(value, 'label') === 'string'
 }
 
 function isBuildCatalogEntry(value: unknown): value is BuildCatalogEntry {
+  if (!isRecord(value)) {
+    return false
+  }
+  const footprint = field(value, 'footprint')
   if (
-    !isRecord(value) ||
-    !BUILDING_TYPES.includes(value.type as BuildingType) ||
-    typeof value.label !== 'string' ||
-    !isPositiveInteger(value.costMinerals) ||
-    !isPositiveInteger(value.constructionTicks) ||
-    !isRecord(value.footprint)
+    !isOneOf(BUILDING_TYPES, field(value, 'type')) ||
+    typeof field(value, 'label') !== 'string' ||
+    !isPositiveInteger(field(value, 'costMinerals')) ||
+    !isPositiveInteger(field(value, 'constructionTicks')) ||
+    !isRecord(footprint)
   ) {
     return false
   }
-  return isPositiveInteger(value.footprint.width) && isPositiveInteger(value.footprint.height)
+  return isPositiveInteger(field(footprint, 'width')) && isPositiveInteger(field(footprint, 'height'))
 }
 
 /** Type guard for server-provided match configuration at the browser boundary. */
 export function isMatchConfig(value: unknown): value is MatchConfig {
+  if (!isRecord(value)) {
+    return false
+  }
+  const scenarios = field(value, 'scenarios')
+  const buildings = field(value, 'buildings')
   return (
-    isRecord(value) &&
-    value.type === 'match_config' &&
-    isScenarioSummary(value.scenario) &&
-    Array.isArray(value.scenarios) &&
-    value.scenarios.every(isScenarioSummary) &&
-    normalizeMapDefinition(value.map).ok &&
-    Array.isArray(value.buildings) &&
-    value.buildings.every(isBuildCatalogEntry)
+    field(value, 'type') === 'match_config' &&
+    isScenarioSummary(field(value, 'scenario')) &&
+    Array.isArray(scenarios) &&
+    scenarios.every(isScenarioSummary) &&
+    normalizeMapDefinition(field(value, 'map')).ok &&
+    Array.isArray(buildings) &&
+    buildings.every(isBuildCatalogEntry)
   )
 }

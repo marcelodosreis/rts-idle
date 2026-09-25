@@ -3,8 +3,8 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/e2e/sprites-lab.spec.ts
-  - tests/e2e/art.ts
+  - tests/e2e/laboratory/browser/asset-browser.spec.ts
+  - tests/e2e/support/art.ts
 ---
 
 # E2E Laboratory Readiness Race
@@ -27,8 +27,8 @@ The E2E readiness contract covered route and debug-bridge availability but not f
 
 ## Fix
 
-- `tests/e2e/sprites-lab.spec.ts` now waits for the Assets list and its first option after confirming art availability.
-- `tests/e2e/art.ts` now requires a non-empty manifest and checks the active renderer sprite state, returning false when usable art is unavailable.
+- `tests/e2e/laboratory/browser/asset-browser.spec.ts` now waits for the Assets list and its first option after confirming art availability.
+- `tests/e2e/support/art.ts` now requires a non-empty manifest and checks the active renderer sprite state, returning false when usable art is unavailable.
 - `package.json` increases the full E2E run from one to two Playwright workers.
 
 ## Regression
@@ -41,6 +41,6 @@ Browser helpers must wait for the state they exercise, not only route mounting o
 
 ## Verification
 
-- `pnpm run test:e2e:focused tests/e2e/sprites-lab.spec.ts --grep "asset list|unique assets|multi-frame|nested sub-headers"`
-- `pnpm run test:e2e:focused tests/e2e/economy-playable.spec.ts`
+- `pnpm run test:e2e:focused tests/e2e/laboratory/browser/asset-browser.spec.ts --grep "asset list|unique assets|multi-frame|nested sub-headers"`
+- `pnpm run test:e2e:focused tests/e2e/economy/economy-playable.spec.ts`
 - `pnpm run test:e2e:all`

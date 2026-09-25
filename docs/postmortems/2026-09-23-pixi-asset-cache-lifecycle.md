@@ -3,7 +3,7 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/unit/asset-pipeline.test.ts
+  - tests/unit/renderer/asset-pipeline.test.ts
 ---
 
 # PixiJS Asset Cache Lifecycle
@@ -37,7 +37,7 @@ shared textures and uses explicit PixiJS v8 application destroy options.
 
 ## Regression
 
-`tests/unit/asset-pipeline.test.ts` asserts that disposing an asset library does
+`tests/unit/renderer/asset-pipeline.test.ts` asserts that disposing an asset library does
 not destroy a texture returned by the global cache.
 
 ## Prevention

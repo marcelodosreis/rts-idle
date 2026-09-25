@@ -1,6 +1,6 @@
 import { parseArgs } from './args.js'
-import { runSimulationBenchmark } from './benchmark-simulation.js'
 import { formatRow, renderHeader } from './format.js'
+import { runSimulationBenchmark } from './simulation.js'
 
 export async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2))

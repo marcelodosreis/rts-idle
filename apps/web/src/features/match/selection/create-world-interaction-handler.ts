@@ -1,4 +1,5 @@
 import type { WorldInteraction } from '@rts/renderer'
+import { assertNever } from '@rts/shared'
 import type { MatchInteractionController } from './match-interaction-controller'
 
 export interface WorldInteractionHandlerOptions {
@@ -11,44 +12,77 @@ export interface WorldInteractionHandlerOptions {
   readonly updatePreview: (x: number, y: number) => void
 }
 
+function handlePrimary(
+  options: WorldInteractionHandlerOptions,
+  interaction: Extract<WorldInteraction, { type: 'primary-activate' }>
+): void {
+  const target = interaction.target
+  switch (target.kind) {
+    case 'unit':
+      options.updateSelection([target.id])
+      return
+    case 'building':
+      options.selectBuilding(target.id)
+      return
+    case 'mineral':
+      options.selectMineral(target.id)
+      return
+    case 'ground':
+      if (!options.controller.handleBuildPlacementClick(target.position.x, target.position.y)) {
+        options.selectAtWorldPoint(target.position.x, target.position.y)
+      }
+      return
+    default:
+      assertNever(target, 'handlePrimary')
+  }
+}
+
+function handleSecondary(
+  options: WorldInteractionHandlerOptions,
+  interaction: Extract<WorldInteraction, { type: 'secondary-activate' }>
+): void {
+  const target = interaction.target
+  switch (target.kind) {
+    case 'ground':
+      options.controller.groundCommand(target.position.x, target.position.y)
+      return
+    case 'unit':
+      options.controller.unitCommand(target.id)
+      return
+    case 'building':
+      options.controller.buildingCommand(target.id)
+      return
+    case 'mineral':
+      options.controller.mineralCommand(target.id)
+      return
+    default:
+      assertNever(target, 'handleSecondary')
+  }
+}
+
 export function createWorldInteractionHandler(
   options: WorldInteractionHandlerOptions
 ): (interaction: WorldInteraction) => void {
-  const handlePrimary = (interaction: Extract<WorldInteraction, { type: 'primary-activate' }>): void => {
-    const target = interaction.target
-    if (target.kind === 'unit') {
-      options.updateSelection([target.id])
-    } else if (target.kind === 'building') {
-      options.selectBuilding(target.id)
-    } else if (target.kind === 'mineral') {
-      options.selectMineral(target.id)
-    } else if (!options.controller.handleBuildPlacementClick(target.position.x, target.position.y)) {
-      options.selectAtWorldPoint(target.position.x, target.position.y)
-    }
-  }
-
-  const handleSecondary = (interaction: Extract<WorldInteraction, { type: 'secondary-activate' }>): void => {
-    const target = interaction.target
-    if (target.kind === 'ground') {
-      options.controller.groundCommand(target.position.x, target.position.y)
-    } else if (target.kind === 'unit') {
-      options.controller.unitCommand(target.id)
-    } else if (target.kind === 'building') {
-      options.controller.buildingCommand(target.id)
-    } else {
-      options.controller.mineralCommand(target.id)
-    }
-  }
-
   return (interaction) => {
-    if (interaction.type === 'selection-end') {
-      options.selectBox(interaction)
-    } else if (interaction.type === 'pointer-move') {
-      options.updatePreview(interaction.position.x, interaction.position.y)
-    } else if (interaction.type === 'primary-activate') {
-      handlePrimary(interaction)
-    } else if (interaction.type === 'secondary-activate') {
-      handleSecondary(interaction)
+    switch (interaction.type) {
+      case 'selection-end':
+        options.selectBox(interaction)
+        return
+      case 'pointer-move':
+        options.updatePreview(interaction.position.x, interaction.position.y)
+        return
+      case 'primary-activate':
+        handlePrimary(options, interaction)
+        return
+      case 'secondary-activate':
+        handleSecondary(options, interaction)
+        return
+      case 'selection-start':
+      case 'selection-update':
+      case 'cancel':
+        return
+      default:
+        assertNever(interaction, 'createWorldInteractionHandler')
     }
   }
 }

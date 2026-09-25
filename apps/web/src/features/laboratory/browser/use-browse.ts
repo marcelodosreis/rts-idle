@@ -11,6 +11,36 @@ export interface BrowseSelection {
   readonly key: string
 }
 
+const EMPTY_SELECTION: BrowseSelection = { category: null, subcategory: null, query: '', key: '' }
+
+function catalogFromAssets(assets: { keys(): Iterable<string>; entry(key: string): AssetEntry | null }): Catalog {
+  const entries = new Map<string, AssetEntry>()
+  for (const key of assets.keys()) {
+    const entry = assets.entry(key)
+    if (entry !== null) {
+      entries.set(key, entry)
+    }
+  }
+  return buildCatalog(entries)
+}
+
+/** Keys in the current category/subcategory, then filtered by the query. */
+function keysForSelection(catalog: Catalog, selection: BrowseSelection): readonly string[] {
+  if (selection.category === null) {
+    return searchKeys(catalog.orderedKeys, selection.query)
+  }
+  const category = catalog.categories.find((candidate) => candidate.name === selection.category)
+  const keys =
+    category?.subcategories
+      .filter((sub) => selection.subcategory === null || sub.name === selection.subcategory)
+      .flatMap((sub) => sub.keys) ?? []
+  return searchKeys(keys, selection.query)
+}
+
+function typeKey(selection: BrowseSelection): string {
+  return `${selection.category ?? ''}\u0000${selection.subcategory ?? ''}`
+}
+
 /**
  * React state + derivations for the unified browser: the catalog, the current
  * selection, the render options, and the filtered key list (single source of
@@ -18,25 +48,8 @@ export interface BrowseSelection {
  */
 export function useBrowse() {
   const ctx = useLabContext()
-
-  const catalog: Catalog = useMemo(() => {
-    const assets = new Map<string, AssetEntry>()
-    for (const key of ctx.assets.keys()) {
-      const entry = ctx.assets.entry(key)
-      if (entry !== null) {
-        assets.set(key, entry)
-      }
-    }
-    return buildCatalog(assets)
-  }, [ctx])
-
-  const [selection, setSelection] = useState<BrowseSelection>({
-    category: null,
-    subcategory: null,
-    query: '',
-    key: ''
-  })
-
+  const catalog = useMemo(() => catalogFromAssets(ctx.assets), [ctx])
+  const [selection, setSelection] = useState<BrowseSelection>(EMPTY_SELECTION)
   const [options, setOptions] = useState<RenderOptions>({ ...DEFAULT_OPTIONS })
   const [summary, setSummary] = useState('select an asset')
 
@@ -48,39 +61,8 @@ export function useBrowse() {
     setOptions((prev) => ({ ...prev, ...patch }))
   }, [])
 
-  /** Keys in the current category/subcategory, then filtered by the query. */
-  const filteredKeys: readonly string[] = useMemo(() => {
-    let keys: readonly string[] = catalog.orderedKeys
-    if (selection.category !== null) {
-      const category = catalog.categories.find((c) => c.name === selection.category)
-      keys =
-        category?.subcategories
-          .filter((s) => selection.subcategory === null || s.name === selection.subcategory)
-          .flatMap((s) => s.keys) ?? []
-    }
-    return searchKeys(keys, selection.query)
-  }, [catalog, selection.category, selection.subcategory, selection.query])
-
-  // Auto-select the first asset of the list whenever the selected type
-  // (category/subcategory) changes, including the initial mount, so the canvas
-  // is never left empty. The type guard keeps query edits from hijacking the
-  // current selection.
-  const typeRef = useRef('')
-  useEffect(() => {
-    const type = `${selection.category ?? ''}\u0000${selection.subcategory ?? ''}`
-    if (typeRef.current === type) {
-      return
-    }
-    typeRef.current = type
-    const first = filteredKeys[0]
-    if (first === undefined) {
-      return
-    }
-    if (selection.key !== '' && filteredKeys.includes(selection.key)) {
-      return
-    }
-    setSelection((prev) => (prev.key === first ? prev : { ...prev, key: first }))
-  }, [filteredKeys, selection.category, selection.subcategory, selection.key])
+  const filteredKeys = useMemo(() => keysForSelection(catalog, selection), [catalog, selection])
+  useAutoSelectFirstAsset(filteredKeys, selection, setSelection)
 
   return {
     ctx,
@@ -95,4 +77,34 @@ export function useBrowse() {
     setSummary,
     filteredKeys
   }
+}
+
+export type BrowseState = ReturnType<typeof useBrowse>
+
+/**
+ * Auto-selects the first asset whenever the selected type changes (including
+ * mount) so the canvas is never empty. The type guard keeps query edits from
+ * hijacking the current selection.
+ */
+function useAutoSelectFirstAsset(
+  filteredKeys: readonly string[],
+  selection: BrowseSelection,
+  setSelection: (updater: (prev: BrowseSelection) => BrowseSelection) => void
+): void {
+  const typeRef = useRef('')
+  useEffect(() => {
+    const type = typeKey(selection)
+    if (typeRef.current === type) {
+      return
+    }
+    typeRef.current = type
+    const first = filteredKeys[0]
+    if (first === undefined) {
+      return
+    }
+    if (selection.key !== '' && filteredKeys.includes(selection.key)) {
+      return
+    }
+    setSelection((prev) => (prev.key === first ? prev : { ...prev, key: first }))
+  }, [filteredKeys, selection, setSelection])
 }

@@ -3,7 +3,7 @@ status: closed
 classe: presentation
 barreira: null
 regressao:
-  - tests/unit/unit-economy.test.ts
+  - tests/unit/renderer/unit-economy.test.ts
 ---
 
 ## Summary
@@ -28,7 +28,7 @@ The helper unit tests did not call the renderer entrypoint that consumes them, a
 
 ## Regression
 
-`tests/unit/unit-economy.test.ts` calls `drawEconomyBar` with a gathering payload and asserts visibility, drawing calls, and the progress-derived fill width.
+`tests/unit/renderer/unit-economy.test.ts` calls `drawEconomyBar` with a gathering payload and asserts visibility, drawing calls, and the progress-derived fill width.
 
 ## Prevention
 
@@ -36,4 +36,4 @@ Renderer regressions now exercise the public drawing entrypoint directly, while 
 
 ## Verification
 
-`pnpm exec vitest run tests/unit/unit-economy.test.ts tests/unit/progress-bar.test.ts` and the focused Chromium economy E2E passed; `pnpm run verify` and `pnpm run verify:browser` also passed.
+`pnpm exec vitest run tests/unit/renderer/unit-economy.test.ts tests/unit/renderer/progress-bar.test.ts` and the focused Chromium economy E2E passed; `pnpm run verify` and `pnpm run verify:browser` also passed.

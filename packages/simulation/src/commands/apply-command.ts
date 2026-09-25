@@ -1,3 +1,4 @@
+import { assertNever } from '@rts/shared'
 import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
 import type { GameState } from '../state/state.js'
 import { applyAttack } from './attack.js'
@@ -68,5 +69,7 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
     case 'SURRENDER':
       applySurrender(state, command)
       return
+    default:
+      assertNever(command.intent, 'applyCommand')
   }
 }

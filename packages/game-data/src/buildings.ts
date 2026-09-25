@@ -19,8 +19,6 @@ export const BASE_BUILDING: BuildingDefinition = Object.freeze({
   supplyProvided: 10
 })
 
-export const BASE_DEFINITION = BASE_BUILDING
-
 export const BARRACKS_BUILDING: BuildingDefinition = Object.freeze({
   type: 'BARRACKS',
   label: 'Barracks',
