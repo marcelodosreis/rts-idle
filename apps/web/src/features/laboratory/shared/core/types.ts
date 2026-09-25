@@ -6,8 +6,3 @@ export interface SectionContext {
   /** Whether the asset manifest loaded; `false` switches sections to placeholders. */
   readonly art: boolean
 }
-
-/** Key/value readouts a section reports to the page debug hook (e2e asserts). */
-export interface SectionStats {
-  readonly [key: string]: string | number | boolean
-}

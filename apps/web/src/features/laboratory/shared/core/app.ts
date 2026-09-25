@@ -1,8 +1,7 @@
 import { Application, type TextureSource } from 'pixi.js'
 
-/** Every section app created by the lab, so the shell can pause hidden tabs. */
+/** Every section app created by the lab. */
 const apps = new Set<Application>()
-let appsPaused = false
 
 /** Host observers, keyed by app, so `disposeSectionApp` can disconnect them. */
 const resizeObservers = new WeakMap<Application, ResizeObserver>()
@@ -13,31 +12,6 @@ function measureHost(host: HTMLElement, fallbackHeight: number): { width: number
   return {
     width: Math.max(320, Math.round(rect.width) || 800),
     height: Math.max(160, Math.round(rect.height) || fallbackHeight)
-  }
-}
-
-/** Pauses or resumes every live section app (used when switching tabs). */
-export function setAppsPaused(paused: boolean): void {
-  appsPaused = paused
-  for (const app of apps) {
-    if (paused) {
-      app.ticker.stop()
-    } else {
-      app.ticker.start()
-    }
-  }
-}
-
-/** Pauses or resumes the apps living inside a given DOM host (one tab). */
-export function setHostPaused(host: HTMLElement, paused: boolean): void {
-  for (const app of apps) {
-    if (host.contains(app.canvas)) {
-      if (paused) {
-        app.ticker.stop()
-      } else {
-        app.ticker.start()
-      }
-    }
   }
 }
 
@@ -92,9 +66,6 @@ export async function createSectionApp(
     preference: 'webgl'
   })
   apps.add(app)
-  if (appsPaused) {
-    app.ticker.stop()
-  }
   // Keep the app ticker active so AnimatedSprites update at 60 fps (matches the game).
   // biome-ignore lint/suspicious/noEmptyBlockStatements: intentional no-op to keep ticker alive
   app.ticker.add(() => {})
