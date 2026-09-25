@@ -3,7 +3,7 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/e2e/renderer-lifecycle.spec.ts
+  - tests/e2e/laboratory/renderer-lifecycle.spec.ts
 ---
 
 # Renderer snapshot before mount
@@ -30,7 +30,7 @@ The renderer lifecycle E2E test exercised normal mount timing only. It did not d
 
 ## Regression
 
-`tests/e2e/renderer-lifecycle.spec.ts` delays the optional manifest response, verifies the renderer eventually exposes units, and asserts that no `PixiRenderer: not mounted` page error occurred.
+`tests/e2e/laboratory/renderer-lifecycle.spec.ts` delays the optional manifest response, verifies the renderer eventually exposes units, and asserts that no `PixiRenderer: not mounted` page error occurred.
 
 ## Prevention
 

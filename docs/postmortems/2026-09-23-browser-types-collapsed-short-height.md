@@ -3,7 +3,7 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/e2e/sprites-lab-responsive.spec.ts
+  - tests/e2e/laboratory/sprites-lab-responsive.spec.ts
 ---
 
 # Browser Types Collapsed On Short Screens
@@ -38,7 +38,7 @@ The `Assets` area uses a `220px` minimum and consumes remaining space with
 
 ## Regression
 
-`tests/e2e/sprites-lab-responsive.spec.ts` opens the Browser at 1440x656 and
+`tests/e2e/laboratory/sprites-lab-responsive.spec.ts` opens the Browser at 1440x656 and
 asserts that both `Types` and `Assets` retain their minimum usable heights.
 
 ## Prevention
@@ -48,7 +48,7 @@ alongside the existing width and overflow checks.
 
 ## Verification
 
-- `npx playwright test tests/e2e/sprites-lab-responsive.spec.ts --project=chromium` — focused responsive tests passed.
+- `npx playwright test tests/e2e/laboratory/sprites-lab-responsive.spec.ts --project=chromium` — focused responsive tests passed.
 - `npm run typecheck`
 - `npm run lint`
 - `git diff --check`

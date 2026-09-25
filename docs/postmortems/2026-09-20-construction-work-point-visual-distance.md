@@ -3,8 +3,8 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/unit/placement.test.ts
-  - tests/simulation/building-construction.test.ts
+  - tests/unit/simulation/placement.test.ts
+  - tests/simulation/economy/building-construction.test.ts
 ---
 
 # Construction Work Points Used Competing Side Policies
@@ -41,9 +41,9 @@ order retains TOP → RIGHT → BOTTOM → LEFT as the deterministic tie-break.
 
 ## Regression
 
-`tests/unit/placement.test.ts` covers the four cardinal sides with the same
+`tests/unit/simulation/placement.test.ts` covers the four cardinal sides with the same
 geometry, both diagonal disagreements, a genuine tie, and all map borders.
-The simulation regression in `tests/simulation/building-construction.test.ts`
+The simulation regression in `tests/simulation/economy/building-construction.test.ts`
 continues to assert the persisted work point used by a BUILD order.
 
 ## Prevention
@@ -57,6 +57,6 @@ that single authority without changing the BUILD order or snapshot format.
 Under Node `v24.21.0`, focused placement and construction tests passed and
 `pnpm run verify` passed. The original claim that the enumerated focused
 `building-hud.spec.ts` run passed 4/4 was inaccurate: CI run `35537655750`
-failed `tests/e2e/building-hud.spec.ts:102` on a stale work-point assertion.
+failed `tests/e2e/economy/building-hud.spec.ts:102` on a stale work-point assertion.
 See `2026-09-20-construction-e2e-stale-work-point-assertion.md` for the
 correction and `pnpm run verify:browser`.

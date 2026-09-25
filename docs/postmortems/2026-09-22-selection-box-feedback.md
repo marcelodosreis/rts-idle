@@ -3,8 +3,8 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/unit/selection-box.test.ts
-  - tests/e2e/selection-feedback.spec.ts
+  - tests/unit/renderer/selection-box.test.ts
+  - tests/e2e/match/selection-feedback.spec.ts
 ---
 
 # Selection Box Feedback Regression
@@ -31,7 +31,7 @@ The acceptance criteria and E2E coverage checked selected IDs after release, not
 
 ## Regression
 
-`tests/unit/selection-box.test.ts` verifies visibility, normalized dimensions, finish, and cancellation. `tests/e2e/selection-feedback.spec.ts` verifies the actual browser rectangle remains visible during drag and disappears after release.
+`tests/unit/renderer/selection-box.test.ts` verifies visibility, normalized dimensions, finish, and cancellation. `tests/e2e/match/selection-feedback.spec.ts` verifies the actual browser rectangle remains visible during drag and disappears after release.
 
 ## Prevention
 
@@ -40,4 +40,4 @@ The unified input architecture now requires one `onInteraction` callback. `tests
 ## Verification
 
 - `corepack pnpm run typecheck`
-- `corepack pnpm exec vitest run tests/unit/select-units-in-box.test.ts tests/unit/selection-box.test.ts tests/architecture/world-input-contract.test.ts`
+- `corepack pnpm exec vitest run tests/unit/select-units-in-box.test.ts tests/unit/renderer/selection-box.test.ts tests/architecture/world-input-contract.test.ts`

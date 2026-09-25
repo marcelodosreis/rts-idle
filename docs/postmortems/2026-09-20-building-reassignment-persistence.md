@@ -3,7 +3,7 @@ status: open
 classe: coverage
 barreira: null
 regressao:
-  - tests/simulation/building-construction.test.ts
+  - tests/simulation/economy/building-construction.test.ts
 ---
 
 # Building reassignment did not persist the new builder
@@ -38,7 +38,7 @@ Restored the single authoritative `Building` write in
 
 ## Regression
 
-`tests/simulation/building-construction.test.ts` pauses a Base, assigns a
+`tests/simulation/economy/building-construction.test.ts` pauses a Base, assigns a
 second worker, and asserts completion and full progress.
 
 ## Prevention
@@ -48,5 +48,5 @@ pause, reassignment, progress, completion, and snapshot behavior on `Building`.
 
 ## Verification
 
-`npx vitest run tests/simulation/building-construction.test.ts tests/simulation/economy-v0.test.ts`
+`npx vitest run tests/simulation/economy/building-construction.test.ts tests/simulation/economy/economy-v0.test.ts`
 passes after the fix.

@@ -3,8 +3,8 @@ status: open
 classe: presentation
 barreira: null
 regressao:
-  - tests/unit/placement.test.ts
-  - tests/simulation/building-construction.test.ts
+  - tests/unit/simulation/placement.test.ts
+  - tests/simulation/economy/building-construction.test.ts
   - tests/contracts/build-command.test.ts
 ---
 
@@ -59,7 +59,7 @@ from the building footprint origin and cover reassignment and map boundaries.
 
 Under Node `v24.21.0`, focused simulation/contract tests passed and `verify`
 passed. The original claim that the focused building E2E passed 4/4 was
-inaccurate: CI run `35537655750` failed `tests/e2e/building-hud.spec.ts:102`
+inaccurate: CI run `35537655750` failed `tests/e2e/economy/building-hud.spec.ts:102`
 because its work-point assertion was stale. See
 `2026-09-20-construction-e2e-stale-work-point-assertion.md` for the correction.
 The generated simulation `dist` contains the same work-point flow as `src`.
