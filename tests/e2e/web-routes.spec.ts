@@ -23,6 +23,7 @@ for (const [route, heading] of laboratoryRoutes) {
 }
 
 test('the match exposes laboratory navigation in the top bar', async ({ page }) => {
+  test.setTimeout(90000)
   await page.goto('/')
   await page.getByRole('button', { name: 'Open DevTools menu' }).click()
   await page.getByRole('link', { name: 'Open Laboratory' }).click()

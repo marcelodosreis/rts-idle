@@ -18,7 +18,7 @@ The functional E2E workflow repeatedly timed out while navigating from the match
 
 ## Root cause
 
-The assertion timeout was too short for Vite's on-demand lazy-route compilation and browser loading under the CI runner's accumulated E2E workload. The route itself was valid and passed direct navigation tests.
+The assertion and test timeouts were too short for Vite's on-demand lazy-route compilation and browser loading under the CI runner's accumulated E2E workload. The route itself was valid and passed direct navigation tests.
 
 ## What we missed
 
@@ -26,7 +26,7 @@ The transition test used the same timeout as ordinary route assertions despite e
 
 ## Fix
 
-Raised only the timeout for the match-to-Laboratory lazy navigation assertion in `tests/e2e/web-routes.spec.ts` from 20 to 60 seconds.
+Raised only the timeout for the match-to-Laboratory lazy navigation assertion in `tests/e2e/web-routes.spec.ts` from 20 to 60 seconds and the enclosing test timeout from 30 to 90 seconds.
 
 ## Regression
 
