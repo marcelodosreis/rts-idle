@@ -71,7 +71,6 @@ describe('physical layout', () => {
       'game-data',
       'protocol',
       'renderer',
-      'server',
       'shared',
       'simulation',
       'terrain-parity.test.ts',
