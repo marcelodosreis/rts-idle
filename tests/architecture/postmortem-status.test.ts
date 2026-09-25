@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { parsePostmortemFrontMatter } from '../../tools/quality/front-matter.js'
 
 const WORKSPACE_ROOT = process.cwd()
 const POSTMORTEMS_DIR = join(WORKSPACE_ROOT, 'docs/postmortems')
@@ -20,76 +21,6 @@ const VALID_CLASSES = [
   'environment',
   'serialization'
 ] as const
-
-interface FrontMatter {
-  status: 'open' | 'closed'
-  classe: string
-  barreira: string | null
-  regressao: string[]
-}
-
-function parseFrontMatter(content: string): FrontMatter | null {
-  const match = content.match(/^---\n([\s\S]*?)\n---/)
-  if (!match) {
-    return null
-  }
-
-  const yaml = match[1]
-  const lines = yaml.split('\n')
-  const result: Record<string, unknown> = {}
-  let currentKey = ''
-  let inArray = false
-
-  for (const line of lines) {
-    if (line.startsWith('  - ')) {
-      if (inArray && currentKey) {
-        const arr = result[currentKey] as string[]
-        arr.push(line.slice(4).trim())
-      }
-      continue
-    }
-
-    const colonIdx = line.indexOf(':')
-    if (colonIdx === -1) {
-      continue
-    }
-
-    const key = line.slice(0, colonIdx).trim()
-    const value = line.slice(colonIdx + 1).trim()
-
-    if (value === '' || value === '[]') {
-      currentKey = key
-      inArray = true
-      result[key] = []
-      continue
-    }
-
-    if (value === 'null') {
-      result[key] = null
-      currentKey = key
-      inArray = false
-      continue
-    }
-
-    if (value === 'open' || value === 'closed') {
-      result[key] = value
-      currentKey = key
-      inArray = false
-      continue
-    }
-
-    result[key] = value.replace(/^["']|["']$/g, '')
-    currentKey = key
-    inArray = false
-  }
-
-  return {
-    status: result.status as 'open' | 'closed',
-    classe: result.classe as string,
-    barreira: result.barreira as string | null,
-    regressao: (result.regressao as string[]) ?? []
-  }
-}
 
 function getPostmortemFiles(): string[] {
   return readdirSync(POSTMORTEMS_DIR)
@@ -123,7 +54,7 @@ describe('postmortem status (QUAL-017)', () => {
 
     describe(name, () => {
       const content = readFileSync(file, 'utf-8')
-      const fm = parseFrontMatter(content)
+      const fm = parsePostmortemFrontMatter(content)
 
       it('has valid front-matter', () => {
         expect(fm).not.toBeNull()
@@ -192,7 +123,7 @@ describe('postmortem status summary', () => {
 
     for (const file of files) {
       const content = readFileSync(file, 'utf-8')
-      const fm = parseFrontMatter(content)
+      const fm = parsePostmortemFrontMatter(content)
       if (fm?.status === 'open') {
         open++
       }

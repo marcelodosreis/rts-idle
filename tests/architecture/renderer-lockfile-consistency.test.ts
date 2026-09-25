@@ -6,11 +6,11 @@ const WORKSPACE_ROOT = process.cwd()
 const RENDERER_PACKAGE_PATH = join(WORKSPACE_ROOT, 'packages/renderer/package.json')
 const LOCKFILE_PATH = join(WORKSPACE_ROOT, 'pnpm-lock.yaml')
 
-function rendererLockfileSpecifiers(lockfile: string): Record<string, string> {
+function rendererLockfileSpecifiers(lockfile: string): Map<string, string> {
   const importer = lockfile.match(/^ {2}packages\/renderer:\n {4}dependencies:\n((?: {6}.+\n| {8}.+\n)*)/m)
   expect(importer).not.toBeNull()
 
-  return Object.fromEntries(
+  return new Map(
     [...importer![1].matchAll(/^ {6}('[^']+'|[^:]+):\n {8}specifier: (.+)$/gm)].map((match) => [
       match[1].replaceAll("'", ''),
       match[2]
@@ -25,6 +25,6 @@ describe('renderer lockfile consistency', () => {
     }
     const lockfile = readFileSync(LOCKFILE_PATH, 'utf8')
 
-    expect(rendererLockfileSpecifiers(lockfile)).toEqual(manifest.dependencies)
+    expect(rendererLockfileSpecifiers(lockfile)).toEqual(new Map(Object.entries(manifest.dependencies)))
   })
 })

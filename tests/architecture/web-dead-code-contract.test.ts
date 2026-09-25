@@ -13,10 +13,10 @@ const controller = readFileSync(
   new URL('../../apps/web/src/features/match/selection/match-interaction-controller.ts', import.meta.url),
   'utf8'
 )
-const unitLayer = readFileSync(new URL('../../packages/renderer/src/unit-layer.ts', import.meta.url), 'utf8')
+const unitLayer = readFileSync(new URL('../../packages/renderer/src/units/layer.ts', import.meta.url), 'utf8')
 const inputTypes = readFileSync(new URL('../../packages/renderer/src/input/input-types.ts', import.meta.url), 'utf8')
 const camera = readFileSync(new URL('../../packages/renderer/src/input/camera-controller.ts', import.meta.url), 'utf8')
-const worldObjects = readFileSync(new URL('../../packages/renderer/src/world-object-layer.ts', import.meta.url), 'utf8')
+const worldObjects = readFileSync(new URL('../../packages/renderer/src/world/object-layer.ts', import.meta.url), 'utf8')
 
 describe('web and renderer dead-code contract', () => {
   it('does not reintroduce removed renderer symbols', () => {
