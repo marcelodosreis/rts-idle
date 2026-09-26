@@ -1,3 +1,4 @@
+export * from './building-footprints.js'
 export * from './buildings.js'
 export * from './maps/competitive.js'
 export * from './maps/types.js'
