@@ -2,18 +2,13 @@ import { allocateEntityId, type MapDefinition, PLAYER_IDS, placementBoundsFromMa
 import {
   BUILDING_DEFINITIONS,
   Building,
-  Cargo,
-  Combat,
+  createUnitEntity,
   createWorld,
-  Health,
-  Kind,
-  MINERAL_CARGO_CAPACITY,
   MineralNode,
   Orders,
   Owner,
   Position,
   type RulesIdentity,
-  unitStatsFor,
   type World
 } from '@rts/simulation'
 import { GameSession } from '../../sessions/session.js'
@@ -36,26 +31,19 @@ interface SeedContext {
 function allocate(context: SeedContext): number {
   const allocated = allocateEntityId(context.next)
   context.next = allocated.nextEntityId
-  context.world.createEntity(allocated.id)
   return allocated.id
 }
 
 function seedUnit(context: SeedContext, spawn: DemoSpawn): void {
-  const stats = unitStatsFor(spawn.kind)
   const id = allocate(context)
-  context.world.store(Position).set(id, { x: spawn.x, y: spawn.y })
-  context.world.store(Owner).set(id, { owner: spawn.owner })
-  context.world.store(Kind).set(id, spawn.kind)
-  context.world.store(Health).set(id, { current: stats.maxHp, max: stats.maxHp })
-  context.world.store(Combat).set(id, {
-    damage: stats.damage,
-    rangeTiles: stats.rangeTiles,
-    cooldownTicks: stats.cooldownTicks,
-    cooldownRemaining: 0
+  createUnitEntity(context.world, {
+    id,
+    x: spawn.x,
+    y: spawn.y,
+    owner: spawn.owner,
+    kind: spawn.kind,
+    worker: spawn.worker === true
   })
-  if (spawn.worker === true) {
-    context.world.store(Cargo).set(id, { amount: 0, capacity: MINERAL_CARGO_CAPACITY })
-  }
   context.ids.push(id)
 }
 
@@ -68,6 +56,7 @@ function seedUnits(context: SeedContext, spawns: readonly DemoSpawn[]): void {
 function seedBuildings(context: SeedContext, buildings: readonly DemoBaseSpawn[]): void {
   for (const base of buildings) {
     const id = allocate(context)
+    context.world.createEntity(id)
     context.world.store(Position).set(id, { x: base.x, y: base.y })
     context.world.store(Owner).set(id, { owner: base.owner })
     context.world.store(Building).set(id, {
@@ -76,7 +65,11 @@ function seedBuildings(context: SeedContext, buildings: readonly DemoBaseSpawn[]
       progressTicks: BUILDING_DEFINITIONS.BASE.constructionTicks,
       totalTicks: BUILDING_DEFINITIONS.BASE.constructionTicks,
       builderId: null,
-      footprint: { x: base.x / 256, y: base.y / 256, ...BUILDING_DEFINITIONS.BASE.footprint }
+      footprint: {
+        x: base.x / 256,
+        y: base.y / 256,
+        ...BUILDING_DEFINITIONS.BASE.footprint
+      }
     })
   }
 }
@@ -84,6 +77,7 @@ function seedBuildings(context: SeedContext, buildings: readonly DemoBaseSpawn[]
 function seedMineralNodes(context: SeedContext, nodes: readonly DemoMineralNodeSpawn[]): void {
   for (const node of nodes) {
     const id = allocate(context)
+    context.world.createEntity(id)
     context.world.store(Position).set(id, { x: node.x, y: node.y })
     context.world.store(MineralNode).set(id, { remaining: node.remaining })
   }

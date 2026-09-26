@@ -67,7 +67,8 @@ function toHudConstruction(construction: SnapshotBuilding): HudConstruction {
     status: construction.status !== 'COMPLETED' && construction.builderId == null ? 'PAUSED' : construction.status,
     progressTicks: construction.progressTicks,
     totalTicks: construction.totalTicks,
-    builderId: construction.builderId ?? null
+    builderId: construction.builderId ?? null,
+    ...(construction.production === undefined ? {} : { production: construction.production })
   }
 }
 

@@ -7,6 +7,7 @@ export function projectPlayers(players: readonly PlayerState[]): readonly Snapsh
     defeated: player.defeated,
     gold: player.gold,
     usedSupply: player.usedSupply,
+    reservedSupply: player.reservedSupply,
     supplyCap: player.supplyCap
   }))
 }

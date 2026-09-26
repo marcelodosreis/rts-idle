@@ -50,6 +50,20 @@ without a written justification; fix the code instead.
 - Skills are located in `.opencode/skills/<skill-name>/SKILL.md`.
 - Follow the skill workflow strictly; do not partially apply it.
 - Never skip required steps such as spec, plan, or test when a skill demands them.
+- Do not unilaterally narrow, reinterpret, or change the user's requested scope.
+- Do not turn an existing requirement into a non-goal without explicit user approval.
+- Gameplay tasks must be delivered as vertical slices: authoritative behavior,
+  protocol/server path, player-facing screen, natural interaction, visible
+  feedback, and browser E2E. Backend-only gameplay work remains in-progress.
+- New task IDs must include their phase or cross-cutting track and stage, using
+  `P<phase>.<stage>[.<substage>]` or `<TRACK>.<stage>[.<substage>]`; do not create
+  new opaque IDs such as `NAV-001` or `QUAL-001`.
+- If behavior, product scope, or a source-of-truth document is ambiguous, stop and ask
+  before editing or implementing.
+- Do not declare partial backend or simulation work complete when the requested
+  user-visible flow is still unavailable.
+- Before reporting PASS, compare the implementation against the original user request,
+  not only against the agent-authored plan.
 - Project files live directly at the repo root — do not nest the project in subfolders.
 - For task breakdown, see `docs/ai/TASK_INDEX.md`.
 - For task template, see `docs/ai/TASK_PACKET_TEMPLATE.md`.
@@ -84,6 +98,24 @@ For every request:
 2. Load the skill with `skill({ name: "<skill-name>" })`.
 3. Follow the skill workflow exactly.
 4. Only proceed to implementation once required steps are complete.
+
+## Decision Authority
+
+The user owns product scope and behavioral decisions. The agent may choose
+implementation details only when they are directly specified by repository
+contracts or the approved task packet. Before implementation, every task packet
+must make explicit:
+
+- the objective and complete user-visible flow;
+- all supported variants, producers, inputs, and outputs;
+- source-of-truth documents and conflicts between them;
+- decisions still open and requiring user approval;
+- acceptance tests for every supported variant;
+- explicit non-goals, with a reason and approved follow-up when applicable.
+
+If the original request, task packet, task index, master plan, and current
+implementation disagree, report the conflict and ask. Never resolve it by
+silently dropping a variant or declaring an incomplete vertical slice complete.
 
 ## Architecture: Authorized Mutability Exception (approved)
 

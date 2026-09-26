@@ -127,11 +127,24 @@ export function createMatchSessionHandlers(options: MatchSessionHandlerOptions):
       if (!runtime.sessionActive) {
         return
       }
-      options.setStatus('error')
       options.appendLog('error', error.message)
       if (error.scenarios !== undefined) {
         options.setScenarios(error.scenarios)
       }
+    },
+    onTransportError: (error: ErrorMessage) => {
+      if (!runtime.sessionActive) {
+        return
+      }
+      options.setStatus('error')
+      options.appendLog('error', error.message)
+    },
+    onClose: () => {
+      if (!runtime.sessionActive) {
+        return
+      }
+      options.setStatus('error')
+      options.appendLog('error', 'Connection closed')
     }
   }
 }
