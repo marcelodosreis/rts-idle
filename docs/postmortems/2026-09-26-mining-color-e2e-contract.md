@@ -1,7 +1,7 @@
 ---
 status: open
-classe: teste
-barreira: e2e
+classe: presentation
+barreira: QH.25
 regressao:
   - tests/e2e/economy/economy-playable.spec.ts
 ---
