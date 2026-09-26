@@ -2,6 +2,7 @@ import { assertNever } from '@rts/shared'
 import { Application, Graphics, type Ticker } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
 import { AssetLibrary } from '../assets/asset-library.js'
+import { RALLY_COLOR } from '../effects/colors.js'
 import { EffectsLayer } from '../effects/layer.js'
 import { CommandPing } from '../effects/ping.js'
 import { SelectionController } from '../effects/selection.js'
@@ -50,6 +51,7 @@ export class PixiRenderer implements GameRenderer {
   private units: UnitLayer | null = null
   private selection: SelectionController | null = null
   private ping: CommandPing | null = null
+  private selectedRallyProducerId: number | null = null
   private effects: EffectsLayer | null = null
   private terrain: TerrainLayer | null = null
   private worldObjects: WorldObjectLayer | null = null
@@ -109,7 +111,8 @@ export class PixiRenderer implements GameRenderer {
     const selection = new SelectionController({ selectionLayer: layers.selection, units, selectionRect })
     const ping = new CommandPing(layers.interaction)
     const effects = new EffectsLayer(layers.effects)
-    const worldObjects = new WorldObjectLayer(layers.worldObjects, layers.interaction)
+    const worldObjects = new WorldObjectLayer(layers.worldObjects, layers.interaction, this.assets)
+    await worldObjects.loadAssets()
     const terrain = new TerrainLayer(layers.terrain, this.assets)
     if (this.options.map !== undefined) {
       await terrain.build(this.options.map)
@@ -226,7 +229,9 @@ export class PixiRenderer implements GameRenderer {
         break
       case 'secondary-activate':
         if (interaction.target.kind === 'ground') {
-          this.ping?.show(interaction.target.position.x, interaction.target.position.y)
+          if (this.selectedRallyProducerId === null) {
+            this.ping?.show(interaction.target.position.x, interaction.target.position.y)
+          }
         }
         break
       case 'primary-activate':
@@ -253,6 +258,19 @@ export class PixiRenderer implements GameRenderer {
 
   setSelection(ids: readonly number[]): void {
     this.selection?.set(ids)
+  }
+
+  setSelectedRallyProducer(id: number | null): void {
+    this.selectedRallyProducerId = id
+    this.ping?.hide()
+  }
+
+  setSelectedRallyPoint(point: { readonly x: number; readonly y: number } | null): void {
+    if (point === null) {
+      this.ping?.hide()
+      return
+    }
+    this.ping?.showPersistent(point.x, point.y, RALLY_COLOR)
   }
 
   getSelection(): readonly number[] {
@@ -302,6 +320,7 @@ export class PixiRenderer implements GameRenderer {
     this.units = null
     this.selection = null
     this.ping = null
+    this.selectedRallyProducerId = null
     this.effects = null
     this.terrain = null
     this.worldObjects = null

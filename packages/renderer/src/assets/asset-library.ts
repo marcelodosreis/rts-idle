@@ -1,6 +1,7 @@
 import type { AssetEntry, AssetManifest } from '@rts/shared'
 import { type AnimatedSprite, Assets, Rectangle, Sprite, Texture } from 'pixi.js'
 import { createAnimation } from './create-animation.js'
+import { cropTextureToOpaqueBounds } from './crop-texture.js'
 import { loadManifest } from './load-manifest.js'
 import { sliceStrip } from './slice-strip.js'
 
@@ -13,6 +14,7 @@ import { sliceStrip } from './slice-strip.js'
 export class AssetLibrary {
   private manifest: AssetManifest | null = null
   private readonly textures = new Map<string, Texture>()
+  private readonly cropped = new Map<string, Texture>()
   private readonly strips = new Map<string, Texture[]>()
 
   constructor(private readonly baseUrl: string) {}
@@ -54,6 +56,28 @@ export class AssetLibrary {
     } catch {
       return null
     }
+  }
+
+  /** Loads a static asset with transparent margins removed, or `null` on failure. */
+  async croppedTexture(key: string): Promise<Texture | null> {
+    const cached = this.cropped.get(key)
+    if (cached !== undefined) {
+      return cached
+    }
+    const entry = this.entry(key)
+    if (entry === null || entry.kind === 'strip') {
+      return null
+    }
+    const texture = await this.texture(key)
+    if (texture === null) {
+      return null
+    }
+    const cropped = cropTextureToOpaqueBounds(texture, entry.cellW, entry.cellH)
+    if (cropped === null) {
+      return null
+    }
+    this.cropped.set(key, cropped)
+    return cropped
   }
 
   /** Sliced frame textures for a strip entry (cached). */
@@ -130,6 +154,7 @@ export class AssetLibrary {
   /** Releases this library's references without destroying Pixi's global cache. */
   destroy(): void {
     this.textures.clear()
+    this.cropped.clear()
     this.strips.clear()
     this.manifest = null
   }
