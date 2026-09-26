@@ -52,7 +52,19 @@ describe('snapshot to frame mapping', () => {
           footprint: { width: 2, height: 2 },
           status: 'FOUNDATION',
           progressTicks: 0,
-          totalTicks: 100
+          totalTicks: 100,
+          production: {
+            queue: [
+              {
+                unitKind: 'WARRIOR',
+                costMinerals: 50,
+                reservedSupply: 1,
+                progressTicks: 12,
+                totalTicks: 60,
+                status: 'ACTIVE'
+              }
+            ]
+          }
         }
       ],
       mineralNodes: [{ id: 4, x: 700, y: 800, remaining: 25 }],
@@ -93,7 +105,19 @@ describe('snapshot to frame mapping', () => {
         footprint: { width: 2, height: 2 },
         status: 'FOUNDATION',
         progressTicks: 0,
-        totalTicks: 100
+        totalTicks: 100,
+        production: {
+          queue: [
+            {
+              unitKind: 'WARRIOR',
+              costMinerals: 50,
+              reservedSupply: 1,
+              progressTicks: 12,
+              totalTicks: 60,
+              status: 'ACTIVE'
+            }
+          ]
+        }
       }
     ])
     expect(frame.mineralNodes).toEqual([{ id: 4, x: 700, y: 800, remaining: 25 }])

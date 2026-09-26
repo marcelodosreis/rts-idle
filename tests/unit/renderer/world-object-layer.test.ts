@@ -88,6 +88,41 @@ describe('WorldObjectLayer construction anchors', () => {
     expect(barracks.getLocalBounds().width).toBe(BARRACKS_BUILDING.footprint.width * 64 + 4)
     expect(barracks.getLocalBounds().height).toBe(BARRACKS_BUILDING.footprint.height * 64 + 4)
   })
+
+  it('draws the training progress bar above a completed producer', () => {
+    const layers = layerContainers()
+    const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
+    layer.present(
+      [
+        {
+          id: 8,
+          buildingType: 'BARRACKS',
+          x: 0,
+          y: 0,
+          owner: 0,
+          footprint: BARRACKS_BUILDING.footprint,
+          status: 'COMPLETED',
+          progressTicks: 100,
+          totalTicks: 100,
+          production: {
+            queue: [
+              {
+                unitKind: 'WARRIOR',
+                costMinerals: 50,
+                reservedSupply: 1,
+                progressTicks: 30,
+                totalTicks: 60,
+                status: 'ACTIVE'
+              }
+            ]
+          }
+        }
+      ],
+      []
+    )
+
+    expect(layers.worldObjects.children[0]!.getLocalBounds().y).toBeLessThan(0)
+  })
 })
 
 describe('building presentation styles', () => {
@@ -119,7 +154,7 @@ describe('building presentation styles', () => {
       kind: 'foundation',
       fillColor: 0x2e7d32,
       fillAlpha: 0.3,
-      strokeColor: 0xfacc15
+      strokeColor: 0xc084fc
     })
   })
 })

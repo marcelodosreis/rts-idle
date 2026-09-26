@@ -1,5 +1,6 @@
 import type { AnimatedSprite } from 'pixi.js'
 import { describe, expect, it } from 'vitest'
+import { progressFillColor } from '../../../packages/renderer/src/effects/progress-palette.js'
 import { drawEconomyBar } from '../../../packages/renderer/src/units/economy.js'
 import {
   type EconomyFrames,
@@ -145,7 +146,7 @@ describe('economyBarRatio', () => {
 })
 
 describe('economyBarColor', () => {
-  it('returns amber when gathering', () => {
+  it('returns purple when gathering', () => {
     expect(
       economyBarColor({
         phase: 'gathering',
@@ -155,7 +156,7 @@ describe('economyBarColor', () => {
         cargoCapacity: 10,
         nodeId: 1
       })
-    ).toBe(0xfbbf24)
+    ).toBe(progressFillColor('mining'))
   })
 
   it('returns green when to_base', () => {
@@ -168,10 +169,10 @@ describe('economyBarColor', () => {
         cargoCapacity: 10,
         nodeId: 1
       })
-    ).toBe(0x22c55e)
+    ).toBe(progressFillColor('delivery'))
   })
 
-  it('returns green when to_node', () => {
+  it('returns purple when going to a mineral node', () => {
     expect(
       economyBarColor({
         phase: 'to_node',
@@ -181,7 +182,7 @@ describe('economyBarColor', () => {
         cargoCapacity: 10,
         nodeId: 1
       })
-    ).toBe(0x22c55e)
+    ).toBe(progressFillColor('mining'))
   })
 
   it('returns green when waiting_for_base', () => {
@@ -194,7 +195,7 @@ describe('economyBarColor', () => {
         cargoCapacity: 10,
         nodeId: 1
       })
-    ).toBe(0x22c55e)
+    ).toBe(progressFillColor('delivery'))
   })
 })
 

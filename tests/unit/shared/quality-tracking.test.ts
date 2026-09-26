@@ -10,10 +10,10 @@ interface TaskPacket {
   readonly path: string
 }
 
-function getQUALPackets(): readonly TaskPacket[] {
+function getQualityPackets(): readonly TaskPacket[] {
   return [TASKS_DIR, join(TASKS_DIR, 'done')].flatMap((directory) =>
     readdirSync(directory)
-      .filter((file) => file.startsWith('QUAL-') && file.endsWith('.md'))
+      .filter((file) => file.startsWith('QH.') && file.endsWith('.md'))
       .map((file) => ({
         id: file.replace('.md', ''),
         path: join(directory, file)
@@ -23,7 +23,7 @@ function getQUALPackets(): readonly TaskPacket[] {
 
 function getBoardTasks(): string[] {
   const content = readFileSync(join(TASKS_DIR, 'todo.md'), 'utf-8')
-  const matches = content.matchAll(/- \[[ x]\] (QUAL-\d+)/g)
+  const matches = content.matchAll(/- \[[ x]\] (QH\.\d+)/g)
   const ids: string[] = []
   for (const m of matches) {
     ids.push(m[1])
@@ -33,7 +33,7 @@ function getBoardTasks(): string[] {
 
 function getTaskIndexTasks(): string[] {
   const content = readFileSync(join(WORKSPACE_ROOT, 'docs', 'ai', 'TASK_INDEX.md'), 'utf-8')
-  const matches = content.matchAll(/^\| (QUAL-\d+) \|/gm)
+  const matches = content.matchAll(/^\| (QH\.\d+) \|/gm)
   const ids: string[] = []
   for (const m of matches) {
     ids.push(m[1])
@@ -41,14 +41,14 @@ function getTaskIndexTasks(): string[] {
   return ids
 }
 
-describe('quality tracking (QUAL-018)', () => {
-  it('has QUAL task packets', () => {
-    const packets = getQUALPackets()
+describe('quality tracking (QH.18)', () => {
+  it('has quality task packets', () => {
+    const packets = getQualityPackets()
     expect(packets.length).toBeGreaterThanOrEqual(1)
   })
 
-  it('board references all QUAL packets', () => {
-    const packets = getQUALPackets().map((packet) => packet.id)
+  it('board references all quality packets', () => {
+    const packets = getQualityPackets().map((packet) => packet.id)
     const board = getBoardTasks()
 
     for (const packet of packets) {
@@ -56,8 +56,8 @@ describe('quality tracking (QUAL-018)', () => {
     }
   })
 
-  it('packets reference all board QUAL tasks', () => {
-    const packets = getQUALPackets().map((packet) => packet.id)
+  it('packets reference all board quality tasks', () => {
+    const packets = getQualityPackets().map((packet) => packet.id)
     const board = getBoardTasks()
 
     for (const task of board) {
@@ -65,7 +65,7 @@ describe('quality tracking (QUAL-018)', () => {
     }
   })
 
-  it('TASK_INDEX references all board QUAL tasks', () => {
+  it('TASK_INDEX references all board quality tasks', () => {
     const board = getBoardTasks()
     const taskIndex = getTaskIndexTasks()
 
@@ -74,20 +74,20 @@ describe('quality tracking (QUAL-018)', () => {
     }
   })
 
-  it('TASK_INDEX has no duplicate QUAL ids', () => {
+  it('TASK_INDEX has no duplicate quality ids', () => {
     const taskIndex = getTaskIndexTasks()
     const unique = new Set(taskIndex)
     expect(unique.size).toBe(taskIndex.length)
   })
 
-  it('no duplicate QUAL ids in board', () => {
+  it('no duplicate quality ids in board', () => {
     const board = getBoardTasks()
     const unique = new Set(board)
     expect(unique.size).toBe(board.length)
   })
 
   it('packets have required fields', () => {
-    const packets = getQUALPackets()
+    const packets = getQualityPackets()
 
     for (const packet of packets) {
       const content = readFileSync(packet.path, 'utf-8')

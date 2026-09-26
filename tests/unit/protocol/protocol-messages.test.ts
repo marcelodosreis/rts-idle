@@ -20,7 +20,8 @@ describe('match bootstrap messages', () => {
         map,
         buildings: [
           { type: 'BASE', label: 'Base', footprint: { width: 2, height: 2 }, costMinerals: 100, constructionTicks: 100 }
-        ]
+        ],
+        production: [{ unitKind: 'pawn', producer: 'BASE', costMinerals: 50, trainingTicks: 100, supply: 1 }]
       })
     ).toBe(true)
   })
@@ -49,6 +50,7 @@ describe('protocol command message', () => {
       { type: 'command', intent: { type: 'ATTACK', payload: { unitIds: [1], targetId: 5 } } },
       { type: 'command', intent: { type: 'ATTACK_MOVE', payload: { unitIds: [1], x: 100, y: 200 } } },
       { type: 'command', intent: { type: 'CANCEL_CONSTRUCTION', payload: { buildingId: 5 } } },
+      { type: 'command', intent: { type: 'TRAIN', payload: { producerId: 5, unitKind: 'warrior' } } },
       { type: 'command', intent: { type: 'SURRENDER', payload: {} } }
     ]
     for (const message of commands) {
@@ -102,7 +104,7 @@ describe('protocol snapshot message', () => {
     ],
     mineralNodes: [{ id: 4, x: 768, y: 256, remaining: 3000 }],
     players: [
-      { id: 0, defeated: false, gold: 0, usedSupply: 2, supplyCap: 10 },
+      { id: 0, defeated: false, gold: 0, usedSupply: 2, reservedSupply: 1, supplyCap: 10 },
       { id: 1, defeated: true, gold: 5, usedSupply: 0, supplyCap: 0 }
     ],
     events: [{ type: 'damageDealt', targetId: 1, amount: 10, targetHp: 90 }]
@@ -110,6 +112,49 @@ describe('protocol snapshot message', () => {
 
   it('accepts a valid snapshot message', () => {
     expect(isSnapshotMessage(valid)).toBe(true)
+  })
+
+  it('accepts a producer queue for Pawn and military units', () => {
+    expect(
+      isSnapshotMessage({
+        ...valid,
+        buildings: [
+          {
+            ...valid.buildings[0],
+            status: 'COMPLETED',
+            builderId: null,
+            production: {
+              queue: [
+                {
+                  unitKind: 'pawn',
+                  costMinerals: 50,
+                  reservedSupply: 1,
+                  progressTicks: 4,
+                  totalTicks: 100,
+                  status: 'ACTIVE'
+                },
+                {
+                  unitKind: 'warrior',
+                  costMinerals: 100,
+                  reservedSupply: 1,
+                  progressTicks: 0,
+                  totalTicks: 200,
+                  status: 'QUEUED'
+                },
+                {
+                  unitKind: 'archer',
+                  costMinerals: 125,
+                  reservedSupply: 1,
+                  progressTicks: 300,
+                  totalTicks: 300,
+                  status: 'COMPLETED_WAITING'
+                }
+              ]
+            }
+          }
+        ]
+      })
+    ).toBe(true)
   })
 
   it('accepts a finished snapshot', () => {
