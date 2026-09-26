@@ -14,6 +14,7 @@ export interface MatchPlacement {
   readonly y: number
   readonly width: number
   readonly height: number
+  readonly buildingType: BuildCatalogEntry['type']
   readonly valid: boolean
   readonly reason: string | null
 }
@@ -57,6 +58,7 @@ export function placementFor(query: PlacementQuery): MatchPlacement | null {
     y: tilesToFixed(y),
     width,
     height,
+    buildingType,
     valid: result.ok,
     reason: result.ok ? null : PLACEMENT_REASONS[result.reason]
   }

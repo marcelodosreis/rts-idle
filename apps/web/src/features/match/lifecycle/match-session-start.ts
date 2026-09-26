@@ -72,6 +72,22 @@ function createSelectionUpdaters(runtime: MatchSessionRuntime, setters: MatchSes
     setters.setSelectionUnits(selection.units)
     setters.setSelectedConstruction(selection.construction)
     setters.setSelectedMineral(selection.mineral)
+    const construction = selection.construction
+    const producerId =
+      construction !== null &&
+      construction.status === 'COMPLETED' &&
+      (construction.buildingType === 'BASE' || construction.buildingType === 'BARRACKS')
+        ? construction.id
+        : null
+    runtime.renderer?.setSelectedRallyProducer(producerId)
+    runtime.renderer?.setSelectedRallyPoint(
+      producerId === null || construction?.rallyPoint === null || construction?.rallyPoint === undefined
+        ? null
+        : {
+            x: fixedToRenderPixels(construction.rallyPoint.x),
+            y: fixedToRenderPixels(construction.rallyPoint.y)
+          }
+    )
   }
   return {
     updateSelection: (ids) => apply(runtime.selectUnits(ids)),
@@ -129,6 +145,7 @@ function createInteraction(
   const controller = new MatchInteractionController({
     isMatchEnded: () => runtime.matchEnded,
     selectedUnitIds: () => runtime.selectedIds,
+    selectedConstructionId: () => runtime.selectedConstructionId,
     mode: () => commandModes.modeRef.current,
     unitStates: runtime.unitStates,
     buildings: () => runtime.buildings,

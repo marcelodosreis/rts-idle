@@ -9,6 +9,7 @@ export type CommandMode =
   | 'attack'
   | 'attack_move'
   | { readonly kind: 'build'; readonly buildingType: BuildingType }
+  | { readonly kind: 'rally'; readonly producerId: number }
 
 export function isBuildMode(mode: CommandMode): mode is Extract<CommandMode, { readonly kind: 'build' }> {
   return typeof mode === 'object' && mode.kind === 'build'
@@ -16,6 +17,10 @@ export function isBuildMode(mode: CommandMode): mode is Extract<CommandMode, { r
 
 export function buildingTypeForMode(mode: CommandMode): BuildingType | null {
   return isBuildMode(mode) ? mode.buildingType : null
+}
+
+export function isRallyMode(mode: CommandMode): mode is Extract<CommandMode, { readonly kind: 'rally' }> {
+  return typeof mode === 'object' && mode.kind === 'rally'
 }
 
 export interface CommandModes {

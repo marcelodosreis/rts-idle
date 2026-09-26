@@ -1,7 +1,7 @@
 import type { SnapshotBuilding } from '@rts/protocol'
 import type { CommandIntent } from '@rts/shared'
 import type { CommandMode } from '../commands/useCommandModes'
-import { buildingTypeForMode, isBuildMode } from '../commands/useCommandModes'
+import { buildingTypeForMode, isBuildMode, isRallyMode } from '../commands/useCommandModes'
 
 export interface PlacementResult {
   readonly x: number
@@ -19,6 +19,7 @@ export interface SelectedUnitState {
 export interface MatchInteractionContext {
   readonly isMatchEnded: () => boolean
   readonly selectedUnitIds: () => readonly number[]
+  readonly selectedConstructionId: () => number | null
   readonly mode: () => CommandMode
   readonly unitStates: ReadonlyMap<number, SelectedUnitState>
   readonly buildings: () => readonly SnapshotBuilding[]
@@ -48,8 +49,24 @@ export class MatchInteractionController {
     if (this.context.isMatchEnded()) {
       return
     }
-    if (isBuildMode(this.context.mode())) {
+    const commandMode = this.context.mode()
+    if (isBuildMode(commandMode)) {
       this.context.cancelPlacement()
+      return
+    }
+    if (isRallyMode(commandMode)) {
+      const point = this.context.toCommandPoint(worldX, worldY)
+      this.context.sendCommand({
+        type: 'RALLY',
+        payload: { producerId: commandMode.producerId, x: point.x, y: point.y }
+      })
+      this.context.clearMode()
+      return
+    }
+    const producer = this.selectedRallyProducer()
+    if (producer !== undefined) {
+      const point = this.context.toCommandPoint(worldX, worldY)
+      this.context.sendCommand({ type: 'RALLY', payload: { producerId: producer.id, x: point.x, y: point.y } })
       return
     }
     const unitIds = this.context.selectedUnitIds()
@@ -169,5 +186,22 @@ export class MatchInteractionController {
       .selectedUnitIds()
       .filter((id) => this.context.unitStates.get(id)?.kind === 'pawn')
       .filter((id) => this.context.unitStates.get(id)?.owner === this.context.humanPlayer)
+  }
+
+  private selectedRallyProducer(): SnapshotBuilding | undefined {
+    const id = this.context.selectedConstructionId()
+    if (id === null) {
+      return undefined
+    }
+    const building = this.context.buildings().find((candidate) => candidate.id === id)
+    if (
+      building === undefined ||
+      building.owner !== this.context.humanPlayer ||
+      building.status !== 'COMPLETED' ||
+      (building.buildingType !== 'BASE' && building.buildingType !== 'BARRACKS')
+    ) {
+      return undefined
+    }
+    return building
   }
 }

@@ -36,6 +36,7 @@ export interface MatchHudProps {
   readonly onArm: (mode: Exclude<CommandMode, 'idle'>) => void
   readonly onCancelConstruction: (buildingId: number) => void
   readonly onTrain: (unitKind: ProductionCatalogEntry['unitKind']) => void
+  readonly onSetRally: (producerId: number) => void
   readonly workerSelected: boolean
   readonly buildings: readonly BuildCatalogEntry[]
   readonly production: readonly ProductionCatalogEntry[]
@@ -76,6 +77,7 @@ export function MatchHud({
   onArm,
   onCancelConstruction,
   onTrain,
+  onSetRally,
   workerSelected,
   buildings,
   production,
@@ -120,6 +122,7 @@ export function MatchHud({
           humanPlayer={0}
           onCancelConstruction={onCancelConstruction}
           onTrain={onTrain}
+          onSetRally={onSetRally}
           production={production}
           resources={resources}
         />
