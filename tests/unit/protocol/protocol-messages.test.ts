@@ -51,6 +51,7 @@ describe('protocol command message', () => {
       { type: 'command', intent: { type: 'ATTACK_MOVE', payload: { unitIds: [1], x: 100, y: 200 } } },
       { type: 'command', intent: { type: 'CANCEL_CONSTRUCTION', payload: { buildingId: 5 } } },
       { type: 'command', intent: { type: 'TRAIN', payload: { producerId: 5, unitKind: 'warrior' } } },
+      { type: 'command', intent: { type: 'RALLY', payload: { producerId: 5, x: 100, y: 200 } } },
       { type: 'command', intent: { type: 'SURRENDER', payload: {} } }
     ]
     for (const message of commands) {
@@ -76,6 +77,9 @@ describe('protocol command message', () => {
       isCommandMessage({ type: 'command', intent: { type: 'CANCEL_CONSTRUCTION', payload: { buildingId: 1.5 } } })
     ).toBe(false)
     expect(isCommandMessage({ type: 'command', intent: { type: 'FLY', payload: {} } })).toBe(false)
+    expect(
+      isCommandMessage({ type: 'command', intent: { type: 'RALLY', payload: { producerId: 1, x: 0.5, y: 0 } } })
+    ).toBe(false)
   })
 })
 
@@ -112,6 +116,12 @@ describe('protocol snapshot message', () => {
 
   it('accepts a valid snapshot message', () => {
     expect(isSnapshotMessage(valid)).toBe(true)
+  })
+
+  it('accepts a projected rally point', () => {
+    expect(
+      isSnapshotMessage({ ...valid, buildings: [{ ...valid.buildings[0], rallyPoint: { x: 256, y: 512 } }] })
+    ).toBe(true)
   })
 
   it('accepts a producer queue for Pawn and military units', () => {

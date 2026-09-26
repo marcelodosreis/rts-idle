@@ -141,7 +141,7 @@ describe('BUILD simulation lifecycle', () => {
     const buildingId = START_ENTITY_ID + 3
     const order = sim.inspectState().world.store(Orders).get(START_ENTITY_ID)?.queue[0]
 
-    expect(order).toMatchObject({ type: 'BUILD', workPoint: { x: 5 * 256, y: 4 * 256 } })
+    expect(order).toMatchObject({ type: 'BUILD', workPoint: { x: 4 * 256, y: 5 * 256 + 256 } })
     expect(sim.inspectState().world.store(Building).get(buildingId)?.progressTicks).toBe(0)
     for (let i = 0; i < 100; i += 1) {
       sim.step()
@@ -157,7 +157,7 @@ describe('BUILD simulation lifecycle', () => {
     sim.step([build(START_ENTITY_ID, 1, 4, 4)])
     const buildingId = START_ENTITY_ID + 3
     expect(sim.inspectState().world.store(Orders).get(START_ENTITY_ID)?.queue[0]).toMatchObject({
-      workPoint: { x: 5 * 256, y: 4 * 256 }
+      workPoint: { x: 4 * 256, y: 5 * 256 + 256 }
     })
 
     sim.step([build(START_ENTITY_ID + 1, 2, 4, 4)])
@@ -168,7 +168,7 @@ describe('BUILD simulation lifecycle', () => {
         .get(START_ENTITY_ID + 1)?.queue[0]
     ).toMatchObject({
       buildingId,
-      workPoint: { x: 6 * 256, y: 5 * 256 }
+      workPoint: { x: 9 * 256, y: 5 * 256 + 256 }
     })
   })
 

@@ -40,14 +40,14 @@ function buildGoldenSimulation() {
 describe('canonical state hash golden', () => {
   it('produces the pinned hash for the characterization fixture', () => {
     const sim = buildGoldenSimulation()
-    expect(sim.hashState()).toBe('48030310220357ed2e532525bd4a9ec65617472229b59181c6c952b6429c68eb')
+    expect(sim.hashState()).toBe('e07c3a501ca75aad94b1a5c1573d1258b3bcec1b916a106ee30971d595562b80')
   })
 
   it('produces the pinned serialized bytes for the characterization fixture', () => {
     const sim = buildGoldenSimulation()
     const snapshot = sim.exportSnapshot()
     expect(snapshot.tick).toBe(1)
-    expect(snapshot.hash).toBe('48030310220357ed2e532525bd4a9ec65617472229b59181c6c952b6429c68eb')
+    expect(snapshot.hash).toBe('e07c3a501ca75aad94b1a5c1573d1258b3bcec1b916a106ee30971d595562b80')
     expect(snapshot.bytes.byteLength).toBe(295)
   })
 })
