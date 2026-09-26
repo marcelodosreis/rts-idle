@@ -12,6 +12,7 @@ import { applyMove } from './move.js'
 import { applyPatrol } from './patrol.js'
 import { applyStop } from './stop.js'
 import { applySurrender } from './surrender.js'
+import { applyTrain } from './train.js'
 
 /** Shared admission boundary: handlers only validate command-specific data. */
 function assertCommandAdmissible(state: GameState, command: ScheduledCommand): void {
@@ -65,6 +66,9 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
       return
     case 'CANCEL_CONSTRUCTION':
       applyCancelConstruction(state, command)
+      return
+    case 'TRAIN':
+      applyTrain(state, command)
       return
     case 'SURRENDER':
       applySurrender(state, command)

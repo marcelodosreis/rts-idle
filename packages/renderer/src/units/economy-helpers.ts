@@ -1,5 +1,7 @@
+import { economyProgressTone } from '@rts/shared'
 import type { RenderUnit } from '../core/types.js'
 import { clampRatio } from '../effects/progress-bar.js'
+import { progressFillColor } from '../effects/progress-palette.js'
 
 export function economyBarRatio(economy: RenderUnit['economy']): number {
   if (economy === undefined) {
@@ -12,5 +14,5 @@ export function economyBarRatio(economy: RenderUnit['economy']): number {
 }
 
 export function economyBarColor(economy: RenderUnit['economy']): number {
-  return economy?.phase === 'gathering' ? 0xfbbf24 : 0x22c55e
+  return progressFillColor(economyProgressTone(economy?.phase ?? 'to_base'))
 }
