@@ -41,6 +41,8 @@
 | P2.06.01 | Supply depot construction | done | P2.04.01 | simulation, game-data, protocol, web | unit, simulation, contracts, e2e |
 | P2.05.01 | Construction cancellation | done | P2.04.01 | shared, protocol, simulation, web | unit, simulation, contracts, invariants, e2e |
 | P2.07 | Production queue and unit training: Pawn, Warrior, Archer | done | P2.04.02, P2.06.01 | shared, game-data, protocol, simulation, web | unit, simulation, contracts, determinism, invariants, e2e |
+| P2.08 | Blocked spawn and rally | done | P2.07 | shared, protocol, simulation, renderer, server, web | unit, simulation, contracts, determinism, invariants, e2e |
+| P2.09 | Rally shortcut and producer feedback | done | P2.08 | renderer, web | unit, e2e |
 | P2.06.02 | Supply cap system | done | P2.06.01 | simulation | unit, simulation |
 | P2.01.04 | Resource display in HUD | done | P2.01.02 | web | e2e |
 | P2.01.05 | Worker gather/carry feedback | done | P2.01.03, P2.02.01 | protocol, server, renderer, web | unit, integration, e2e |

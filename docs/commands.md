@@ -84,5 +84,8 @@ centralized in `UNIT_PRODUCTION_DEFINITIONS`.
 One item advances per producer. Production pauses while
 `usedSupply + reservedSupply > supplyCap`. A completed item spawns at the
 deterministic producer exit when space is available; otherwise it remains in
-`COMPLETED_WAITING`. Spawn rally behavior and production cancellation are later
-Phase 2 tasks.
+`COMPLETED_WAITING`, retaining its reservations until the exit is free.
+
+`RALLY` sets an owned completed Base or Barracks producer's fixed-coordinate
+rally point. The point is projected on buildings, and a newly spawned unit
+receives the existing movement destination when the point is configured.

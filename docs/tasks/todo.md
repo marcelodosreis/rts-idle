@@ -104,8 +104,7 @@ active and pending packets remain here. See [`docs/tasks/README.md`](README.md).
 ## Phase 2 — Economy and production
 
 Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
-`docs/tasks/done/PROD-001-002.md` (canonical ID `P2.07`, production queue and
-unit training). It remains in progress until the player-facing flow is complete.
+`docs/tasks/P2.08.md` (blocked spawn and rally).
 
 ### VS-01 — Economy v0 (P2.01–P2.02)
 
@@ -178,7 +177,8 @@ unit training). It remains in progress until the player-facing flow is complete.
 ### Remaining Phase 2
 
 - [x] P2.07 — Production queue and unit training for Pawn, Warrior, and Archer (`PROD-001-002`); Base trains Pawn and Barracks trains Warrior/Archer
-- [ ] P2.08 — Blocked spawn and rally
+- [x] P2.08 — Blocked spawn and rally (`docs/tasks/P2.08.md`)
+- [x] P2.09 — Rally shortcut and producer feedback (`docs/tasks/P2.09.md`)
 - [ ] P2.09 — Producer cancellation and destruction
 - [x] ECONOMY-UI-002 — Build menu
 - [x] ECONOMY-UI-003 — Production panel for Pawn, Warrior, and Archer

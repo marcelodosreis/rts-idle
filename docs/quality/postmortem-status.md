@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 35 |
+| open | 37 |
 | closed | 14 |
-| **total** | **49** |
+| **total** | **51** |
 
 ## Details
 
@@ -61,9 +61,11 @@
 | 2026-09-25-e2e-scenario-query-reset | open | environment | — | 1 test(s) |
 | 2026-09-25-physical-layout-empty-directory | open | environment | — | 1 test(s) |
 | 2026-09-25-simulation-test-fixture-relative-import | open | convention | — | 1 test(s) |
+| 2026-09-26-building-geometry-divergence | open | presentation | QH.20 | 3 test(s) |
 | 2026-09-26-command-error-status | open | convention | — | 1 test(s) |
-| 2026-09-26-mining-color-e2e-contract | open | teste | e2e | 1 test(s) |
+| 2026-09-26-mining-color-e2e-contract | open | presentation | QH.25 | 1 test(s) |
 | 2026-09-26-produced-pawn-cannot-gather | open | convention | — | 1 test(s) |
+| 2026-09-26-rally-ping-expiry | open | presentation | QH.17 | 1 test(s) |
 
 ## Legend
 

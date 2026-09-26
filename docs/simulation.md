@@ -13,7 +13,7 @@ The deterministic core. This document is the operational reference for
 - The canonical byte format and the state hash are pinned by
   `tests/simulation/hash-golden.test.ts` and the determinism suites. Changing
   the format is a deliberate act (regen the golden).
-- `SIMULATION_VERSION` is `0.10.0` (production queues and reserved supply joined
+- `SIMULATION_VERSION` is `0.11.0` (producer rally points joined
   the canonical snapshot stream).
 
 ## Single writer
@@ -103,9 +103,10 @@ Warrior items cost 100 minerals and take 200 ticks; Archer items cost 125
 minerals and take 300 ticks.
 The first item is active and later items are queued. Production pauses when
 `usedSupply + reservedSupply > supplyCap`. Completed items spawn at the
-deterministic Barracks exit, or remain `COMPLETED_WAITING` when that position is
-occupied. The queue and `reservedSupply` are canonical and participate in
-snapshots, hashes, and replay.
+deterministic producer exit, or remain `COMPLETED_WAITING` when that position is
+unavailable. The queue, `reservedSupply`, and producer rally point are canonical
+and participate in snapshots, hashes, and replay. A configured rally point
+becomes the spawned unit's normal movement destination.
 
 ## Serialization
 
