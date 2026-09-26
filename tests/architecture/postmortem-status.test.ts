@@ -28,18 +28,19 @@ function getPostmortemFiles(): string[] {
     .map((f) => join(POSTMORTEMS_DIR, f))
 }
 
-function getQUALIds(): Set<string> {
+function getQualityIds(): Set<string> {
   const content = readFileSync(TASK_INDEX_PATH, 'utf-8')
   const ids = new Set<string>()
-  const matches = content.matchAll(/^###? \|?(QUAL-\d+)/gm)
-  for (const m of matches) {
-    ids.add(m[1])
-  }
-  const matches2 = content.matchAll(/QUAL-\d+/g)
-  for (const m of matches2) {
-    ids.add(m[0])
+  const matches = content.matchAll(/\bQH\.\d+\b/g)
+  for (const match of matches) {
+    ids.add(match[0])
   }
   return ids
+}
+
+function canonicalQualityId(id: string): string {
+  const match = /^QUAL-(\d+)$/.exec(id)
+  return match === null ? id : `QH.${Number(match[1])}`
 }
 
 describe('postmortem status (QUAL-017)', () => {
@@ -87,13 +88,13 @@ describe('postmortem status (QUAL-017)', () => {
       }
 
       if (fm.barreira !== null) {
-        it('the barrier matches the QUAL-xxx pattern', () => {
-          expect(fm.barreira).toMatch(/^QUAL-\d+$/)
+        it('the barrier matches a quality task ID', () => {
+          expect(fm.barreira).toMatch(/^(QUAL-\d+|QH\.\d+)$/)
         })
 
-        it('the barrier QUAL id exists in TASK_INDEX', () => {
-          const qualIds = getQUALIds()
-          expect(qualIds.has(fm.barreira!)).toBe(true)
+        it('the barrier quality ID exists in TASK_INDEX', () => {
+          const qualityIds = getQualityIds()
+          expect(qualityIds.has(canonicalQualityId(fm.barreira!))).toBe(true)
         })
       }
 
