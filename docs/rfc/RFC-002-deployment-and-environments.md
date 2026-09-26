@@ -455,15 +455,15 @@ The first thing to outgrow is **5 GB egress**, not CPU.
 
 | ID | Title | Depends on | Packages | Validation |
 |---|---|---|---|---|
-| DEPLOY-001 | Same-origin WebSocket URL in client | — | web | unit, e2e |
-| DEPLOY-002 | Server static serving + MPA routes + cache headers | — | server | integration, e2e |
-| DEPLOY-003 | Server hardening: SIGTERM, WS_ORIGIN, connection cap, backpressure | — | server | unit, integration |
-| DEPLOY-004 | Multi-stage Dockerfile + `.dockerignore` + local smoke | DEPLOY-002 | root | `docker build`, `docker run` |
-| DEPLOY-005 | `render.yaml` Blueprint + `staging` branch | DEPLOY-004 | infra | blueprint validate, manual deploy |
-| DEPLOY-006 | Client reconnect/backoff + cold-start UX | DEPLOY-001 | web | e2e |
-| DEPLOY-007 | CI deploy gating (`checksPass` or deploy hook) + secrets | DEPLOY-005 | infra | end-to-end deploy |
-| DEPLOY-008 | Deployment docs (`docs/deployment.md`) + env docs | DEPLOY-005 | docs | review |
-| DEPLOY-009 (deferred) | Snapshot bandwidth optimization (rate/delta) | — | protocol, simulation, server | determinism, e2e |
+| DEP.01 | Same-origin WebSocket URL in client | — | web | unit, e2e |
+| DEP.02 | Server static serving + MPA routes + cache headers | — | server | integration, e2e |
+| DEP.03 | Server hardening: SIGTERM, WS_ORIGIN, connection cap, backpressure | — | server | unit, integration |
+| DEP.04 | Multi-stage Dockerfile + `.dockerignore` + local smoke | DEP.02 | root | `docker build`, `docker run` |
+| DEP.05 | `render.yaml` Blueprint + `staging` branch | DEP.04 | infra | blueprint validate, manual deploy |
+| DEP.06 | Client reconnect/backoff + cold-start UX | DEP.01 | web | e2e |
+| DEP.07 | CI deploy gating (`checksPass` or deploy hook) + secrets | DEP.05 | infra | end-to-end deploy |
+| DEP.08 | Deployment docs (`docs/deployment.md`) + env docs | DEP.05 | docs | review |
+| DEP.09 (deferred) | Snapshot bandwidth optimization (rate/delta) | — | protocol, simulation, server | determinism, e2e |
 
 ## 16. Risks
 

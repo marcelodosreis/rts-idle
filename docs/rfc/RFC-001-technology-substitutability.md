@@ -546,12 +546,12 @@ barrier); PR 1–3 are independent.
 
 | PR | Title | Status | Depends on |
 |----|-------|--------|------------|
-| RFC-001-PR1 | Renderer contract + debug separation | todo | — |
-| RFC-001-PR2 | Transport port + WebSocket adapter | todo | — |
-| RFC-001-PR3 | PlatformServices + BrowserPlatform | todo | — |
-| RFC-001-PR4 | `PlayerObservation` | todo | — |
-| RFC-001-PR5 | Authority × projection | todo | RFC-001-PR4 |
-| RFC-001-PR6 | Content/scenarios to `game-data` | todo | RFC-001-PR5 |
+| ARCH.02.01 | Renderer contract + debug separation | todo | — |
+| ARCH.02.02 | Transport port + WebSocket adapter | todo | — |
+| ARCH.02.03 | PlatformServices + BrowserPlatform | todo | — |
+| ARCH.02.04 | `PlayerObservation` | todo | — |
+| ARCH.02.05 | Authority × projection | todo | ARCH.02.04 |
+| ARCH.02.06 | Content/scenarios to `game-data` | todo | ARCH.02.05 |
 
 Maintenance rules:
 
