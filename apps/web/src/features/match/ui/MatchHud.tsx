@@ -1,4 +1,4 @@
-import type { BuildCatalogEntry } from '@rts/protocol'
+import type { BuildCatalogEntry, ProductionCatalogEntry } from '@rts/protocol'
 import type { InputProfile } from '@rts/renderer'
 import type { MatchResult } from '@rts/shared'
 import type { RefObject } from 'react'
@@ -35,8 +35,10 @@ export interface MatchHudProps {
   readonly onSurrender: () => void
   readonly onArm: (mode: Exclude<CommandMode, 'idle'>) => void
   readonly onCancelConstruction: (buildingId: number) => void
+  readonly onTrain: (unitKind: ProductionCatalogEntry['unitKind']) => void
   readonly workerSelected: boolean
   readonly buildings: readonly BuildCatalogEntry[]
+  readonly production: readonly ProductionCatalogEntry[]
   readonly buildHint: string | null
   readonly onNewMatch: () => void
   readonly onChangeScenario: (id: string) => void
@@ -73,8 +75,10 @@ export function MatchHud({
   onSurrender,
   onArm,
   onCancelConstruction,
+  onTrain,
   workerSelected,
   buildings,
+  production,
   buildHint,
   onNewMatch,
   onChangeScenario,
@@ -115,6 +119,9 @@ export function MatchHud({
           buildings={buildings}
           humanPlayer={0}
           onCancelConstruction={onCancelConstruction}
+          onTrain={onTrain}
+          production={production}
+          resources={resources}
         />
         <CommandBar
           disabled={selection.length === 0}

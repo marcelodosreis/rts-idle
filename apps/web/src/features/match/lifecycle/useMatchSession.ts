@@ -1,6 +1,6 @@
 import type { BuildCatalogEntry, MatchConfig, ScenarioSummary } from '@rts/protocol'
 import type { GameRenderer, InputProfile } from '@rts/renderer'
-import type { MatchResult } from '@rts/shared'
+import type { MatchResult, TrainableUnitKind } from '@rts/shared'
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import { readPlaytestMap } from '../../../shared/config/playtest-map'
 import { type CommandMode, useCommandModes } from '../commands/useCommandModes'
@@ -40,9 +40,11 @@ export interface MatchSessionState {
   readonly inputProfile: InputProfile
   readonly buildHint: string | null
   readonly buildings: readonly BuildCatalogEntry[]
+  readonly production: MatchConfig['production']
   arm(mode: Exclude<CommandMode, 'idle'>): void
   issueOrder(type: 'STOP' | 'HOLD'): void
   cancelConstruction(buildingId: number): void
+  train(unitKind: TrainableUnitKind): void
   surrender(): void
   newMatch(): void
   changeScenario(id: string): void
@@ -166,6 +168,7 @@ function useSessionActions(
   | 'issueOrder'
   | 'surrender'
   | 'cancelConstruction'
+  | 'train'
   | 'newMatch'
   | 'changeScenario'
   | 'setAggression'
@@ -187,6 +190,13 @@ function useSessionActions(
     },
     cancelConstruction: (buildingId) => {
       owner().send({ type: 'CANCEL_CONSTRUCTION', payload: { buildingId } }, ended())
+    },
+    train: (unitKind) => {
+      const producerId = refs.runtimeRef.current?.selectedConstructionId
+      if (producerId === null || producerId === undefined) {
+        return
+      }
+      owner().send({ type: 'TRAIN', payload: { producerId, unitKind } }, ended())
     },
     newMatch: () => window.location.reload(),
     changeScenario: (id) => {
@@ -218,6 +228,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     scenario: INITIAL_QUERY.scenario,
     scenarios: state.values.scenarios.map((scenario) => scenario.id),
     buildings: state.values.matchConfig?.buildings ?? [],
+    production: state.values.matchConfig?.production ?? [],
     aggression: INITIAL_QUERY.aggression,
     spritesEnabled: INITIAL_QUERY.spritesEnabled,
     arm: commandModes.arm,
