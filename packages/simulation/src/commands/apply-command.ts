@@ -10,6 +10,7 @@ import { applyGather } from './gather.js'
 import { applyHold } from './hold.js'
 import { applyMove } from './move.js'
 import { applyPatrol } from './patrol.js'
+import { applyRally } from './rally.js'
 import { applyStop } from './stop.js'
 import { applySurrender } from './surrender.js'
 import { applyTrain } from './train.js'
@@ -69,6 +70,9 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
       return
     case 'TRAIN':
       applyTrain(state, command)
+      return
+    case 'RALLY':
+      applyRally(state, command)
       return
     case 'SURRENDER':
       applySurrender(state, command)

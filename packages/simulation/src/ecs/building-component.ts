@@ -1,4 +1,4 @@
-import type { BuildingStatus, BuildingType } from '@rts/shared'
+import type { BuildingStatus, BuildingType, Fixed } from '@rts/shared'
 import type { CanonicalReader } from '../canonical/reader.js'
 import type { CanonicalWriter } from '../canonical/writer.js'
 import { buildingTypeFromTag, buildingTypeTag } from './codecs.js'
@@ -13,6 +13,7 @@ export interface BuildingData {
   readonly totalTicks: number
   readonly builderId: number | null
   readonly footprint: { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
+  readonly rallyPoint?: { readonly x: Fixed; readonly y: Fixed } | null
 }
 
 const STATUS_TAGS: Readonly<Record<BuildingStatus, number>> = {
@@ -42,6 +43,12 @@ export const Building: ComponentType<BuildingData> = {
     writer.writeI32(value.footprint.y)
     writer.writeI32(value.footprint.width)
     writer.writeI32(value.footprint.height)
+    const rallyPoint = value.rallyPoint ?? null
+    writer.writeU8(rallyPoint === null ? 0 : 1)
+    if (rallyPoint !== null) {
+      writer.writeI32(rallyPoint.x)
+      writer.writeI32(rallyPoint.y)
+    }
   },
   decode(reader: CanonicalReader) {
     const buildingType = buildingTypeFromTag(reader.readU8())
@@ -57,13 +64,19 @@ export const Building: ComponentType<BuildingData> = {
       throw new Error(`Building: invalid builder presence ${builderPresent}`)
     }
     const builderId = builderPresent === 1 ? reader.readU32() : null
+    const footprint = { x: reader.readI32(), y: reader.readI32(), width: reader.readI32(), height: reader.readI32() }
+    const rallyPresent = reader.readU8()
+    if (rallyPresent !== 0 && rallyPresent !== 1) {
+      throw new Error(`Building: invalid rally presence ${rallyPresent}`)
+    }
     return {
       buildingType,
       status,
       progressTicks,
       totalTicks,
       builderId,
-      footprint: { x: reader.readI32(), y: reader.readI32(), width: reader.readI32(), height: reader.readI32() }
+      footprint,
+      rallyPoint: rallyPresent === 1 ? { x: reader.readI32(), y: reader.readI32() } : null
     }
   }
 }
