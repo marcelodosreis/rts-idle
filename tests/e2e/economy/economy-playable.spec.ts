@@ -131,7 +131,7 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
 
   await expect.poll(async () => (await workerPosition(page, id)).x).toBe(tilesToFixed(ECONOMY_NODE_TILE.x))
   await expect(page.getByTestId('economy-status')).toContainText('Mining')
-  await expect(page.getByTestId('economy-status')).toHaveCSS('color', 'rgb(192, 132, 252)')
+  await expect(page.getByTestId('economy-status')).toHaveCSS('color', 'rgb(250, 204, 21)')
   // Economy anims (gather/carry_run) only render when the tiny_swords art pack
   // is present (`pnpm run assets:prepare`); CI and a bare checkout run without
   // it, so skip the anim check then (see art.ts / regression-units-visible.spec.ts).

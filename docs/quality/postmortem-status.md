@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 34 |
+| open | 35 |
 | closed | 14 |
-| **total** | **48** |
+| **total** | **49** |
 
 ## Details
 
@@ -62,6 +62,7 @@
 | 2026-09-25-physical-layout-empty-directory | open | environment | — | 1 test(s) |
 | 2026-09-25-simulation-test-fixture-relative-import | open | convention | — | 1 test(s) |
 | 2026-09-26-command-error-status | open | convention | — | 1 test(s) |
+| 2026-09-26-mining-color-e2e-contract | open | teste | e2e | 1 test(s) |
 | 2026-09-26-produced-pawn-cannot-gather | open | convention | — | 1 test(s) |
 
 ## Legend
