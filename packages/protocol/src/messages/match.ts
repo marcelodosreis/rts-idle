@@ -5,7 +5,9 @@ import {
   isOneOf,
   isRecord,
   type MapDefinition,
-  normalizeMapDefinition
+  normalizeMapDefinition,
+  TRAINABLE_UNIT_KINDS,
+  type TrainableUnitKind
 } from '@rts/shared'
 
 export const MATCH_AGGRESSIONS = ['offensive', 'passive'] as const
@@ -26,6 +28,14 @@ export interface BuildCatalogEntry {
   readonly supplyProvided?: number
 }
 
+export interface ProductionCatalogEntry {
+  readonly unitKind: TrainableUnitKind
+  readonly producer: Extract<BuildingType, 'BASE' | 'BARRACKS'>
+  readonly costMinerals: number
+  readonly trainingTicks: number
+  readonly supply: number
+}
+
 export interface MatchRequest {
   readonly type: 'match_request'
   readonly scenarioId: string
@@ -39,6 +49,7 @@ export interface MatchConfig {
   readonly scenarios: readonly ScenarioSummary[]
   readonly map: MapDefinition
   readonly buildings: readonly BuildCatalogEntry[]
+  readonly production: readonly ProductionCatalogEntry[]
 }
 
 function isPositiveInteger(value: unknown): value is number {
@@ -90,6 +101,17 @@ function isBuildCatalogEntry(value: unknown): value is BuildCatalogEntry {
   return isPositiveInteger(field(footprint, 'width')) && isPositiveInteger(field(footprint, 'height'))
 }
 
+function isProductionCatalogEntry(value: unknown): value is ProductionCatalogEntry {
+  return (
+    isRecord(value) &&
+    isOneOf(TRAINABLE_UNIT_KINDS, field(value, 'unitKind')) &&
+    (field(value, 'producer') === 'BASE' || field(value, 'producer') === 'BARRACKS') &&
+    isPositiveInteger(field(value, 'costMinerals')) &&
+    isPositiveInteger(field(value, 'trainingTicks')) &&
+    isPositiveInteger(field(value, 'supply'))
+  )
+}
+
 /** Type guard for server-provided match configuration at the browser boundary. */
 export function isMatchConfig(value: unknown): value is MatchConfig {
   if (!isRecord(value)) {
@@ -97,6 +119,7 @@ export function isMatchConfig(value: unknown): value is MatchConfig {
   }
   const scenarios = field(value, 'scenarios')
   const buildings = field(value, 'buildings')
+  const production = field(value, 'production')
   return (
     field(value, 'type') === 'match_config' &&
     isScenarioSummary(field(value, 'scenario')) &&
@@ -104,6 +127,8 @@ export function isMatchConfig(value: unknown): value is MatchConfig {
     scenarios.every(isScenarioSummary) &&
     normalizeMapDefinition(field(value, 'map')).ok &&
     Array.isArray(buildings) &&
-    buildings.every(isBuildCatalogEntry)
+    buildings.every(isBuildCatalogEntry) &&
+    Array.isArray(production) &&
+    production.every(isProductionCatalogEntry)
   )
 }

@@ -2,6 +2,8 @@ import {
   BUILDING_STATUSES,
   BUILDING_TYPES,
   type BuildingStatus,
+  ECONOMY_PHASES,
+  type EconomyPhase,
   type EntityId,
   type Fixed,
   field,
@@ -12,8 +14,11 @@ import {
   isPlayerId,
   isRecord,
   type PlayerId,
+  PRODUCTION_ITEM_STATUSES,
+  type ProductionItemStatus,
   SIMULATION_EVENT_TYPES,
   type SimulationEvent,
+  TRAINABLE_UNIT_KINDS,
   UNIT_KINDS,
   type UnitKind
 } from '@rts/shared'
@@ -23,9 +28,8 @@ export const ORDER_STATES = ['idle', 'moving', 'building', 'attacking', 'hold', 
 
 export type OrderState = (typeof ORDER_STATES)[number]
 
-export const ECONOMY_PHASES = ['to_node', 'gathering', 'to_base', 'waiting_for_base'] as const
-
-export type EconomyPhase = (typeof ECONOMY_PHASES)[number]
+export type { EconomyPhase }
+export { ECONOMY_PHASES }
 
 export interface SnapshotEconomy {
   readonly phase: EconomyPhase
@@ -57,6 +61,7 @@ export interface SnapshotPlayer {
   readonly defeated: boolean
   readonly gold: number
   readonly usedSupply: number
+  readonly reservedSupply?: number
   readonly supplyCap: number
 }
 
@@ -80,6 +85,20 @@ export interface SnapshotBuilding {
   readonly status: ConstructionStatus
   readonly progressTicks: number
   readonly totalTicks: number
+  readonly production?: SnapshotProduction
+}
+
+export interface SnapshotProductionItem {
+  readonly unitKind: (typeof TRAINABLE_UNIT_KINDS)[number]
+  readonly costMinerals: number
+  readonly reservedSupply: number
+  readonly progressTicks: number
+  readonly totalTicks: number
+  readonly status: ProductionItemStatus
+}
+
+export interface SnapshotProduction {
+  readonly queue: readonly SnapshotProductionItem[]
 }
 
 /** A neutral Mineral Node projected for rendering and contextual targeting. */
@@ -125,6 +144,7 @@ function isSnapshotBuilding(value: unknown): boolean {
   const builderId = field(value, 'builderId')
   const progressTicks = field(value, 'progressTicks')
   const totalTicks = field(value, 'totalTicks')
+  const production = field(value, 'production')
   return (
     isOneOf(BUILDING_TYPES, field(value, 'buildingType')) &&
     isPlayerId(field(value, 'owner')) &&
@@ -136,8 +156,36 @@ function isSnapshotBuilding(value: unknown): boolean {
     isInteger(progressTicks) &&
     isInteger(totalTicks) &&
     totalTicks > 0 &&
-    progressTicks <= totalTicks
+    progressTicks <= totalTicks &&
+    (production === undefined || isSnapshotProduction(production))
   )
+}
+
+function isSnapshotProduction(value: unknown): value is SnapshotProduction {
+  if (!isRecord(value)) {
+    return false
+  }
+  const queue = field(value, 'queue')
+  if (!Array.isArray(queue)) {
+    return false
+  }
+  return queue.every((item) => {
+    if (!isRecord(item)) {
+      return false
+    }
+    const progressTicks = field(item, 'progressTicks')
+    const totalTicks = field(item, 'totalTicks')
+    return (
+      isOneOf(TRAINABLE_UNIT_KINDS, field(item, 'unitKind')) &&
+      isNonNegativeInteger(field(item, 'costMinerals')) &&
+      isNonNegativeInteger(field(item, 'reservedSupply')) &&
+      isOneOf(PRODUCTION_ITEM_STATUSES, field(item, 'status')) &&
+      isNonNegativeInteger(progressTicks) &&
+      isInteger(totalTicks) &&
+      totalTicks > 0 &&
+      progressTicks <= totalTicks
+    )
+  })
 }
 
 function isSnapshotMineralNode(value: unknown): boolean {
@@ -202,6 +250,7 @@ function isSnapshotPlayer(value: unknown): boolean {
     typeof field(value, 'defeated') === 'boolean' &&
     isInteger(field(value, 'gold')) &&
     isNonNegativeInteger(field(value, 'usedSupply')) &&
+    isOptionalNonNegativeInteger(field(value, 'reservedSupply')) &&
     isNonNegativeInteger(field(value, 'supplyCap')) &&
     (field(value, 'supplyCap') as number) <= 200
   )

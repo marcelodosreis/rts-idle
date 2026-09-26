@@ -1,4 +1,4 @@
-import { BUILDING_TYPES, type CommandIntent, field, isInteger, isRecord } from '@rts/shared'
+import { BUILDING_TYPES, type CommandIntent, field, isInteger, isRecord, TRAINABLE_UNIT_KINDS } from '@rts/shared'
 
 /** Client → server command message carrying the shared authoritative intent. */
 export interface CommandMessage {
@@ -49,6 +49,11 @@ function isCommandIntent(value: unknown): boolean {
       )
     case 'CANCEL_CONSTRUCTION':
       return isInteger(field(payload, 'buildingId'))
+    case 'TRAIN':
+      return (
+        isInteger(field(payload, 'producerId')) &&
+        TRAINABLE_UNIT_KINDS.includes(field(payload, 'unitKind') as (typeof TRAINABLE_UNIT_KINDS)[number])
+      )
     case 'SURRENDER':
       return Object.keys(payload).length === 0
     default:
