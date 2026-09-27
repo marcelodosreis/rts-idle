@@ -53,7 +53,7 @@ apps/web/src/screens/useMatchSession.ts
 
 ## Playable Surface
 
-- Route: `http://localhost:5173/?scenario=economy`
+- Route: `http://localhost:5173/?scenario=default`
 - Interaction: left-click Worker, right-click Mineral Node, observe return/deposit/repeat, then click **Stop**.
 - Expected: the Worker visibly mines with a pickaxe, returns carrying gold, and Minerals changes from `0` to `10` without console or protocol injection.
 
@@ -75,7 +75,7 @@ pnpm run verify
 
 ## Acceptance Criteria
 
-- [x] `?scenario=economy` exposes a selectable Worker, owned Base, and Mineral Node.
+- [x] `?scenario=default` exposes a selectable Worker, owned Base, and Mineral Node.
 - [x] Contextual right-click reaches authoritative `GATHER` through the existing command path.
 - [x] Worker visibly travels, gathers, returns, deposits, and repeats.
 - [x] The visible Mineral balance reaches `10` after deposit.

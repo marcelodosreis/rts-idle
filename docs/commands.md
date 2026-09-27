@@ -21,6 +21,7 @@ be integer fixed units.
 | `ATTACK_MOVE` | `unitIds, x, y` | Move to a destination, attacking enemies encountered en route; defend on arrival. |
 | `GATHER` | `unitIds, nodeId` | Workers repeatedly gather minerals, return to the nearest owned Base, and deposit. |
 | `TRAIN` | `producerId, unitKind` | Queue Pawn at an owned completed Base, or Warrior/Archer at an owned completed Barracks, reserving minerals and supply. |
+| `CANCEL_PRODUCTION` | `producerId, queueIndex` | Cancel any item in an owned producer queue, refunding according to its state and releasing its reserved supply. |
 | `CANCEL_CONSTRUCTION` | `buildingId` | Cancel an owned not-yet-completed construction: refund part of the cost and free its footprint (see below). |
 | `SURRENDER` | — | The issuing player concedes: marked defeated, their units disband. |
 
@@ -89,3 +90,16 @@ deterministic producer exit when space is available; otherwise it remains in
 `RALLY` sets an owned completed Base or Barracks producer's fixed-coordinate
 rally point. The point is projected on buildings, and a newly spawned unit
 receives the existing movement destination when the point is configured.
+
+## Production cancellation (P2.09)
+
+`CANCEL_PRODUCTION { producerId, queueIndex }` is valid only for an owned,
+completed Base or Barracks and a `QUEUED` item. Active and
+`COMPLETED_WAITING` items reject cancellation. The index is resolved against
+the canonical queue at command application time; removing a queued item
+preserves the relative order of the remaining items.
+
+Queued items refund their full reserved mineral cost and release their reserved
+supply. Removing a producer discards its complete queue
+and releases all reservations without refund; building combat and building
+health are outside this contract.

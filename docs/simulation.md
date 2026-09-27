@@ -108,6 +108,12 @@ unavailable. The queue, `reservedSupply`, and producer rally point are canonical
 and participate in snapshots, hashes, and replay. A configured rally point
 becomes the spawned unit's normal movement destination.
 
+`CANCEL_PRODUCTION` removes one `QUEUED` item by canonical index. Active and
+`COMPLETED_WAITING` items reject cancellation. A queued item refunds its full
+mineral cost and releases its reserved supply without reordering the rest of
+the queue. The authoritative producer-removal lifecycle releases all queue
+reservations and never refunds production costs.
+
 ## Serialization
 
 `serializeState`/`deserializeState` write the canonical stream: header,

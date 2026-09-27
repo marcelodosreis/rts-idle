@@ -27,8 +27,9 @@ See `docs/tasks/todo.md` for full phase list.
 - Centralized renderer input adapter with Mouse/Trackpad camera profiles, shared
   camera setup, target precedence, pointer capture, and focus-loss cleanup
 - Unit selection (click + box), command bar, match overlay
-- Playable economy scenario with four controllable workers, 250 starting minerals,
-  contextual GATHER, pickaxe/carry animations, progress feedback, and live Mineral HUD
+- Playable regression scenario with four controllable workers and no enemies,
+  250 starting minerals, contextual GATHER, pickaxe/carry animations, progress
+  feedback, and live Mineral HUD
 - Manual DEPOSIT: a worker that keeps cargo after a manual move shows the carry
   pose and deposits when the player right-clicks an owned completed Base
 - Unified Building construction with HUD placement feedback, shared selection,
@@ -37,7 +38,8 @@ See `docs/tasks/todo.md` for full phase list.
   Depot capacity, over-cap handling, canonical snapshots, and Supply HUD
 - Producer production: Base trains Pawn; Barracks trains Warrior/Archer with
   TRAIN queues, mineral/supply reservations, deterministic production state,
-  blocked-exit waiting, production snapshots, and player-facing HUD flow
+  blocked-exit waiting, production snapshots, player-facing HUD flow, and
+  per-item cancellation with authoritative refunds and reservation cleanup
 - WebSocket server (isolated per-connection sessions)
 - React SPA with BrowserRouter, lazy match/Laboratory routes, and not-found handling
 - Feature-first web layout with independent Laboratory browser, editor, stress,
@@ -52,7 +54,7 @@ See `docs/tasks/todo.md` for full phase list.
 ## Current Gameplay
 
 Player connects → gets isolated match → selects units → issues commands → fights
-pre-scripted enemies, or opens `?scenario=economy` to gather and deposit
+pre-scripted enemies, or opens the default scenario to gather and deposit
 minerals through the authoritative command path. In the economy scenario, the player
 can also place Base/Barracks/Supply Depot construction, pause it by stopping the
 worker, and resume it by assigning another worker through the construction HUD.
@@ -61,12 +63,10 @@ Completed Base/Barracks producers accept rally points; trained units wait at a
 blocked exit without overlap and follow the latest authoritative rally point
 after spawning.
 
-No production cancellation UI, real AI,
-pathfinding, fog of war, or multiplayer.
+No real AI, pathfinding, fog of war, or multiplayer.
 
 ## Current Limitations
 
-- No production cancellation UI
 - No AI (enemies are pre-scripted)
 - No pathfinding (straight-line movement)
 - No collision/avoidance
@@ -99,6 +99,12 @@ Base trains Pawn and Barracks trains Warrior/Archer. P2.08 Blocked Spawn and
 Rally is complete: producer rally points are authoritative, blocked exits retain
 completed items and reservations, and the browser flow covers setting rally,
 training, waiting, and recovery.
+
+P2.09.01 Production Cancellation and Producer Cleanup is complete: any queue
+item can be canceled through the authoritative command path, refunds follow
+queued/active/completed-waiting state, and producer removal releases all
+reservations without refund. The match HUD shows each queue row, refund
+feedback, and two-step cancellation confirmation.
 
 Quality Hardening remains deferred after the completed QUAL-016 output hygiene
 and QUAL-018 tracking work. The Concept Authority closure (AUTH-005A through
