@@ -51,6 +51,19 @@ test('right-clicking with a selection issues a command and shows a ping', async 
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getPing() ?? null)).not.toBeNull()
 })
 
+test('right-clicking without a selection shows a neutral pointer', async ({ page }) => {
+  await settleUnits(page)
+  const { screen: unitScreen } = await firstUnitScreen(page)
+  const rect = await canvasRect(page)
+  const targetScreen = {
+    x: Math.min(unitScreen.x + 250, rect.left + rect.width - 20),
+    y: Math.max(unitScreen.y - 40, rect.top + 20)
+  }
+  await page.mouse.click(targetScreen.x, targetScreen.y, { button: 'right' })
+
+  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getPing() ?? null)).not.toBeNull()
+})
+
 test('dragging shows the selection rectangle until release', async ({ page }) => {
   await settleUnits(page)
   const { screen } = await firstUnitScreen(page)

@@ -35,6 +35,7 @@ export interface MatchHudProps {
   readonly onSurrender: () => void
   readonly onArm: (mode: Exclude<CommandMode, 'idle'>) => void
   readonly onCancelConstruction: (buildingId: number) => void
+  readonly onCancelProduction: (producerId: number, queueIndex: number) => void
   readonly onTrain: (unitKind: ProductionCatalogEntry['unitKind']) => void
   readonly onSetRally: (producerId: number) => void
   readonly workerSelected: boolean
@@ -76,6 +77,7 @@ export function MatchHud({
   onSurrender,
   onArm,
   onCancelConstruction,
+  onCancelProduction,
   onTrain,
   onSetRally,
   workerSelected,
@@ -113,14 +115,16 @@ export function MatchHud({
           className="aspect-square h-full max-h-full max-w-full min-h-0 min-w-0 overflow-hidden rounded-xl border border-border/50 shadow-2xl"
         />
       </main>
-      <footer className="flex min-h-40 shrink-0 flex-wrap items-stretch justify-center gap-3 border-t bg-card/70 p-3 backdrop-blur">
+      <footer className="flex h-40 max-h-40 min-h-40 shrink-0 flex-nowrap items-stretch justify-center gap-2 overflow-hidden border-t bg-card/70 p-3 backdrop-blur sm:gap-3 sm:p-4">
         <SelectionPanel
           selection={selection}
+          compact={commandMode !== 'idle'}
           construction={construction}
           mineral={mineral}
           buildings={buildings}
           humanPlayer={0}
           onCancelConstruction={onCancelConstruction}
+          onCancelProduction={onCancelProduction}
           onTrain={onTrain}
           onSetRally={onSetRally}
           production={production}
