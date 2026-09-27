@@ -65,6 +65,7 @@ export const COMMAND_TYPES = [
   'BUILD',
   'CANCEL_CONSTRUCTION',
   'TRAIN',
+  'CANCEL_PRODUCTION',
   'RALLY',
   'SURRENDER'
 ] as const
@@ -85,6 +86,11 @@ export interface CancelConstructionPayload {
 export interface TrainPayload {
   readonly producerId: EntityId
   readonly unitKind: TrainableUnitKind
+}
+
+export interface CancelProductionPayload {
+  readonly producerId: EntityId
+  readonly queueIndex: number
 }
 
 export interface RallyPayload {
@@ -115,5 +121,6 @@ export type CommandIntent =
   | { readonly type: 'BUILD'; readonly payload: BuildPayload }
   | { readonly type: 'CANCEL_CONSTRUCTION'; readonly payload: CancelConstructionPayload }
   | { readonly type: 'TRAIN'; readonly payload: TrainPayload }
+  | { readonly type: 'CANCEL_PRODUCTION'; readonly payload: CancelProductionPayload }
   | { readonly type: 'RALLY'; readonly payload: RallyPayload }
   | { readonly type: 'SURRENDER'; readonly payload: SurrenderPayload }

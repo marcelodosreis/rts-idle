@@ -1,5 +1,6 @@
 import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
 import { Owner } from '../ecs/components.js'
+import { removeEntity } from '../ecs/remove-entity.js'
 import type { GameState } from '../state/state.js'
 
 /**
@@ -21,7 +22,7 @@ export function applySurrender(state: GameState, command: ScheduledCommand): voi
   for (const id of state.world.aliveIds()) {
     const owner = owners.get(id)
     if (owner !== undefined && owner.owner === playerId) {
-      state.world.removeEntity(id)
+      removeEntity(state, id)
     }
   }
 }

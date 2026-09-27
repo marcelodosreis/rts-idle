@@ -1,4 +1,5 @@
 import { Health, Orders, Owner } from '../ecs/components.js'
+import { removeEntity } from '../ecs/remove-entity.js'
 import { setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
 
@@ -45,7 +46,7 @@ export function deathSystem(state: GameState): void {
     state.events.push({ type: 'damageDealt', targetId, amount: damage.amount, targetHp: current })
     if (current <= 0) {
       const owner = owners.get(targetId)?.owner ?? 0
-      state.world.removeEntity(targetId)
+      removeEntity(state, targetId)
       clearOrdersTargeting(state, targetId)
       state.events.push({ type: 'unitDied', entityId: targetId, owner, killerId: damage.attackerId })
     }

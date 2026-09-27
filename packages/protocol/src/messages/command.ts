@@ -49,6 +49,8 @@ function isCommandIntent(value: unknown): boolean {
       )
     case 'CANCEL_CONSTRUCTION':
       return isInteger(field(payload, 'buildingId'))
+    case 'CANCEL_PRODUCTION':
+      return isInteger(field(payload, 'producerId')) && isInteger(field(payload, 'queueIndex'))
     case 'TRAIN':
       return (
         isInteger(field(payload, 'producerId')) &&
