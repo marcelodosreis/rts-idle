@@ -44,6 +44,7 @@ export interface MatchSessionState {
   arm(mode: Exclude<CommandMode, 'idle'>): void
   issueOrder(type: 'STOP' | 'HOLD'): void
   cancelConstruction(buildingId: number): void
+  cancelProduction(producerId: number, queueIndex: number): void
   train(unitKind: TrainableUnitKind): void
   surrender(): void
   newMatch(): void
@@ -168,6 +169,7 @@ function useSessionActions(
   | 'issueOrder'
   | 'surrender'
   | 'cancelConstruction'
+  | 'cancelProduction'
   | 'train'
   | 'newMatch'
   | 'changeScenario'
@@ -190,6 +192,9 @@ function useSessionActions(
     },
     cancelConstruction: (buildingId) => {
       owner().send({ type: 'CANCEL_CONSTRUCTION', payload: { buildingId } }, ended())
+    },
+    cancelProduction: (producerId, queueIndex) => {
+      owner().send({ type: 'CANCEL_PRODUCTION', payload: { producerId, queueIndex } }, ended())
     },
     train: (unitKind) => {
       const producerId = refs.runtimeRef.current?.selectedConstructionId

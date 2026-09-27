@@ -1,4 +1,5 @@
-import { constructionRefund } from '@rts/shared'
+import type { SnapshotProductionItem } from '@rts/protocol'
+import { constructionRefund, productionRefund } from '@rts/shared'
 import type { HudConstruction, HudMineral } from '../ui/types'
 
 export function constructionStatusLine(construction: HudConstruction): string {
@@ -17,6 +18,11 @@ export function canCancelConstruction(construction: HudConstruction, humanPlayer
 /** Display-only estimate; the authoritative refund is credited by the simulation. */
 export function cancelRefundEstimate(construction: HudConstruction, costMinerals: number): number {
   return constructionRefund(costMinerals, construction.progressTicks, construction.totalTicks)
+}
+
+/** Display-only production refund; the simulation remains authoritative. */
+export function productionRefundEstimate(item: SnapshotProductionItem): number {
+  return productionRefund(item.status, item.costMinerals, item.progressTicks, item.totalTicks)
 }
 
 export function mineralRemainingLine(mineral: HudMineral): string {

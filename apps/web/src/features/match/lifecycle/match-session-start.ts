@@ -172,6 +172,7 @@ function createInteraction(
       ),
     selectBuilding: updateConstructionSelection,
     selectMineral: updateMineralSelection,
+    clearMode: commandModes.clear,
     selectBox: (value) =>
       updateSelection(
         selectUnitsInBox(

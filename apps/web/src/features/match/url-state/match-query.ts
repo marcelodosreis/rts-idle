@@ -6,11 +6,11 @@ export interface MatchQueryState {
   readonly spritesEnabled: boolean
 }
 
-const DEFAULT_SCENARIO = '6v6'
-const DEFAULT_AGGRESSION: MatchAggression = 'offensive'
+const DEFAULT_SCENARIO = 'default'
+const DEFAULT_AGGRESSION: MatchAggression = 'passive'
 
 function parseAggression(value: string | null): MatchAggression {
-  return value === 'passive' ? 'passive' : DEFAULT_AGGRESSION
+  return value === 'offensive' || value === 'passive' ? value : DEFAULT_AGGRESSION
 }
 
 export function parseMatchQuery(search: string): MatchQueryState {
