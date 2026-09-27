@@ -3,7 +3,7 @@ import { tilesToFixed } from '@rts/shared'
 import { hasArt } from '../support/art.js'
 
 /** Economy scenario Mineral Node tile (see apps/server/src/content/demo/scenarios.ts). */
-const ECONOMY_NODE_TILE = { x: 14, y: 7 }
+const ECONOMY_NODE_TILE = { x: 24, y: 8 }
 
 async function canvasPointForFixed(page: Page, x: number, y: number) {
   return page.evaluate(
@@ -63,7 +63,7 @@ async function mineralValue(page: Page): Promise<number> {
 }
 
 test('economy HUD shows authoritative starting supply', async ({ page }) => {
-  await page.goto('/?scenario=economy&aggression=passive')
+  await page.goto('/?scenario=regression')
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
     .toBeGreaterThan(0)
@@ -71,7 +71,7 @@ test('economy HUD shows authoritative starting supply', async ({ page }) => {
 })
 
 test('a pawn remains selectable while standing on a mineral node', async ({ page }) => {
-  await page.goto('/?scenario=economy&aggression=passive')
+  await page.goto('/?scenario=regression')
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
     .toBeGreaterThan(0)
@@ -110,7 +110,7 @@ async function boxSelect(page: Page, positions: readonly { readonly x: number; r
 
 test('a player gathers, deposits, repeats, and stops through browser controls', async ({ page }) => {
   test.setTimeout(35_000)
-  await page.goto('/?scenario=economy')
+  await page.goto('/?scenario=regression')
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
     .toBeGreaterThan(0)
@@ -163,7 +163,7 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
 
 test('an interrupted carrying worker shows cargo and deposits by right-clicking the Base', async ({ page }) => {
   test.setTimeout(35_000)
-  await page.goto('/?scenario=economy')
+  await page.goto('/?scenario=regression')
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
     .toBeGreaterThan(0)
@@ -201,7 +201,7 @@ test('an interrupted carrying worker shows cargo and deposits by right-clicking 
 })
 
 test('a primary click selects a mineral node without selecting a worker', async ({ page }) => {
-  await page.goto('/?scenario=economy&aggression=passive')
+  await page.goto('/?scenario=regression')
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
     .toBeGreaterThan(0)
@@ -218,7 +218,7 @@ test('a primary click selects a mineral node without selecting a worker', async 
 
 test('a group mines the same node concurrently through the browser command path', async ({ page }) => {
   test.setTimeout(35_000)
-  await page.goto('/?scenario=economy')
+  await page.goto('/?scenario=regression')
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
     .toBeGreaterThan(0)

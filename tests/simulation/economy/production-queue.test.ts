@@ -120,6 +120,13 @@ const rally = (producerId: number, sequence: number, x = tilesToFixed(8), y = ti
   intent: { type: 'RALLY' as const, payload: { producerId, x, y } }
 })
 
+const cancelProduction = (producerId: number, queueIndex: number, sequence: number, tick = 2) => ({
+  tick,
+  playerId: 0,
+  sequence,
+  intent: { type: 'CANCEL_PRODUCTION' as const, payload: { producerId, queueIndex } }
+})
+
 describe('production queue', () => {
   it('trains a Pawn at a completed Base', () => {
     const sim = scenario()
@@ -189,7 +196,7 @@ describe('production queue', () => {
   })
 
   it('queues five items and rejects the sixth atomically', () => {
-    const sim = scenario(1_000)
+    const sim = scenario(1_000, { withEnemy: true })
     const commands = [1, 2, 3, 4, 5].map((sequence) => train('archer', sequence))
     expect(sim.step(commands).rejected).toEqual([])
     const before = sim.hashState()
@@ -203,6 +210,71 @@ describe('production queue', () => {
     expect(production?.queue).toHaveLength(5)
     expect(sim.inspectState().players[0]?.gold).toBe(375)
     expect(sim.hashState()).not.toBe(before)
+  })
+
+  it('cancels a queued item with a full refund and preserves the remaining order', () => {
+    const sim = scenario(1_000, { withEnemy: true })
+    sim.step([train('warrior', 1), train('archer', 2), train('archer', 3)])
+
+    const result = sim.step([cancelProduction(START_ENTITY_ID + 1, 1, 4)])
+    const queue = sim
+      .inspectState()
+      .world.store(Production)
+      .get(START_ENTITY_ID + 1)?.queue
+
+    expect(result.rejected).toEqual([])
+    expect(queue?.map((item) => item.unitKind)).toEqual(['warrior', 'archer'])
+    expect(sim.inspectState().players[0]).toMatchObject({ gold: 775, reservedSupply: 2 })
+  })
+
+  it('rejects canceling the active item without changing the queue', () => {
+    const sim = scenario(500, { withEnemy: true })
+    sim.step([train('warrior', 1), train('archer', 2)])
+
+    const result = sim.step([cancelProduction(START_ENTITY_ID + 1, 0, 3)])
+    const queue = sim
+      .inspectState()
+      .world.store(Production)
+      .get(START_ENTITY_ID + 1)?.queue
+
+    expect(result.rejected[0]?.code).toBe('INVALID_STATE')
+    expect(queue?.map((item) => item.unitKind)).toEqual(['warrior', 'archer'])
+    expect(sim.inspectState().players[0]).toMatchObject({ gold: 275, reservedSupply: 2 })
+  })
+
+  it('releases all production reservations when a producer is removed without refund', () => {
+    const sim = scenario(1_000, { withEnemy: true })
+    const producerId = START_ENTITY_ID + 1
+    sim.step([train('warrior', 1, producerId), train('archer', 2, producerId)])
+
+    sim.step([
+      {
+        tick: 2,
+        playerId: 0,
+        sequence: 3,
+        intent: { type: 'SURRENDER' as const, payload: {} }
+      }
+    ])
+
+    expect(sim.inspectState().players[0]).toMatchObject({ gold: 775, reservedSupply: 0 })
+    expect(sim.inspectState().world.hasEntity(producerId)).toBe(false)
+  })
+
+  it('rejects canceling a completed item waiting for an exit', () => {
+    const sim = scenario(250, { blockSpawn: true, withEnemy: true })
+    const producerId = START_ENTITY_ID + 1
+    sim.step([train('warrior', 1, producerId)])
+    for (let tick = 0; tick < 199; tick += 1) {
+      sim.step()
+    }
+    sim.step()
+    expect(sim.inspectState().world.store(Production).get(producerId)?.queue[0]?.status).toBe('COMPLETED_WAITING')
+
+    const result = sim.step([cancelProduction(producerId, 0, 2, sim.inspectState().tick + 1)])
+
+    expect(result.rejected[0]?.code).toBe('INVALID_STATE')
+    expect(sim.inspectState().players[0]).toMatchObject({ gold: 150, reservedSupply: 1 })
+    expect(sim.inspectState().world.store(Production).get(producerId)?.queue[0]?.status).toBe('COMPLETED_WAITING')
   })
 
   it('restores an active queue and continues deterministically', () => {

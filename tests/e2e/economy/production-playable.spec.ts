@@ -29,6 +29,7 @@ async function selectWorker(page: Page, id: number): Promise<void> {
   const position = await page.evaluate((workerId) => window.__rtsDebug!.getPositions()[String(workerId)]!, id)
   const point = await canvasPoint(page, position.x, position.y)
   await page.mouse.click(point.x, point.y)
+  await expect.poll(() => page.evaluate(() => window.__rtsDebug!.getSelection()), { timeout: 5_000 }).toContain(id)
 }
 
 async function constructionAt(page: Page, target: { readonly x: number; readonly y: number }) {
@@ -52,23 +53,19 @@ async function selectEconomyBase(page: Page): Promise<void> {
 
 test('production buttons stay inside the completed construction panel', async ({ page }) => {
   test.setTimeout(30_000)
-  await page.goto('/?scenario=economy&aggression=passive')
+  await page.goto('/?scenario=regression')
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
     .toBeGreaterThan(0)
 
   await selectEconomyBase(page)
-  await expect(page.getByTestId('construction-panel')).toContainText('Construction complete.')
   await expect(page.getByTestId('train-pawn')).toBeVisible()
   await expect(page.getByTestId('train-warrior')).toHaveCount(0)
   await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 0/5')
-  const queueBelowButtons = await page
-    .getByTestId('production-queue-count')
-    .evaluate((queue) => queue.previousElementSibling?.querySelector('button') !== null)
-  expect(queueBelowButtons).toBe(true)
+  await expect(page.getByTestId('production-panel').locator('button')).toHaveCount(2)
   await page.getByTestId('train-pawn').click()
   await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 1/5')
-  await expect(page.getByTestId('training-status')).toHaveText(/Pawn · \d+\/100 · Training/)
+  await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE')
 
   const worker = (await workerIds(page))[0]!
   await selectWorker(page, worker)
@@ -79,17 +76,47 @@ test('production buttons stay inside the completed construction panel', async ({
   await expect.poll(() => constructionAt(page, target), { timeout: 20_000 }).toMatchObject({ status: 'COMPLETED' })
 
   await page.mouse.click(targetPoint.x, targetPoint.y)
-  const panel = page.getByTestId('construction-panel')
-  await expect(panel).toContainText('Construction complete.')
   await expect(page.getByTestId('production-panel')).toHaveCSS('border-top-width', '0px')
   await expect(page.getByTestId('train-warrior')).toBeVisible()
   await expect(page.getByTestId('train-archer')).toBeVisible()
   await expect(page.getByTestId('train-pawn')).toHaveCount(0)
 })
 
+test('cancels any queued production row with confirmation and refund feedback', async ({ page }) => {
+  test.setTimeout(30_000)
+  await page.goto('/?scenario=regression')
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
+    .toBeGreaterThan(0)
+
+  await selectEconomyBase(page)
+  await page.getByTestId('train-pawn').click()
+  await page.getByTestId('train-pawn').click()
+  await page.getByTestId('train-pawn').click()
+  await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 3/5')
+  const queueFitsSelection = await page
+    .getByRole('list', { name: 'Production queue' })
+    .evaluate((queue) => queue.scrollWidth <= queue.clientWidth)
+  expect(queueFitsSelection).toBe(true)
+  await expect(page.getByTestId('production-item-0').getByRole('button')).toHaveCount(0)
+  await expect(page.getByTestId('production-status-0')).toHaveText('Producing')
+  await expect(page.getByTestId('production-item-1')).toHaveAttribute('data-production-status', 'QUEUED')
+
+  await page.getByTestId('cancel-production-1').click()
+  await expect(page.getByTestId('cancel-production-1')).toHaveText('Confirm')
+  await page.getByTestId('cancel-production-1').click()
+  await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 2/5')
+  await expect(page.getByTestId('hud-resource-mineral')).toContainText('150')
+
+  await page.getByTestId('cancel-production-1').click()
+  await page.getByTestId('cancel-production-1').click()
+  await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 1/5')
+  await expect(page.getByTestId('hud-resource-mineral')).toContainText('200')
+})
+
 test('sets a rally point and sends a trained unit toward it', async ({ page }) => {
   test.setTimeout(30_000)
-  await page.goto('/?scenario=economy&aggression=passive')
+  await page.goto('/?scenario=regression')
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
     .toBeGreaterThan(0)
@@ -105,7 +132,7 @@ test('sets a rally point and sends a trained unit toward it', async ({ page }) =
 
   const before = await workerIds(page)
   await page.getByTestId('train-pawn').click()
-  await expect(page.getByTestId('training-status')).toHaveText(/Pawn · \d+\/100 · Training/)
+  await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE')
   await expect.poll(() => workerIds(page), { timeout: 15_000 }).toHaveLength(before.length + 1)
 
   const spawnedId = (await workerIds(page)).find((id) => !before.includes(id))!
@@ -116,29 +143,25 @@ test('sets a rally point and sends a trained unit toward it', async ({ page }) =
 
 test('shows blocked production until the exit is released', async ({ page }) => {
   test.setTimeout(35_000)
-  await page.goto('/?scenario=economy&aggression=passive')
+  await page.goto('/?scenario=regression')
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
     .toBeGreaterThan(0)
 
-  const worker = (await workerIds(page))[0]!
-  await selectWorker(page, worker)
-  const exitTarget = { x: tilesToFixed(11.5), y: tilesToFixed(8) }
-  const exit = await canvasPoint(page, exitTarget.x, exitTarget.y)
-  await page.mouse.click(exit.x, exit.y, { button: 'right' })
-  await expect
-    .poll(() => page.evaluate((id) => window.__rtsDebug!.getPositions()[String(id)]!, worker), { timeout: 5_000 })
-    .toMatchObject({ x: exitTarget.x, y: exitTarget.y })
-
   await selectEconomyBase(page)
+  const before = await workerIds(page)
   await page.getByTestId('train-pawn').click()
-  await expect(page.getByTestId('training-status')).toHaveText(/Pawn · 100\/100 · Waiting for exit/, {
+  await expect.poll(() => workerIds(page), { timeout: 15_000 }).toHaveLength(before.length + 1)
+  const blocker = (await workerIds(page)).find((id) => !before.includes(id))!
+
+  await page.getByTestId('train-pawn').click()
+  await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'COMPLETED_WAITING', {
     timeout: 15_000
   })
+  await expect(page.getByTestId('production-status-0')).toHaveText('Waiting for exit')
 
-  await selectWorker(page, worker)
-  await page.evaluate((id) => window.__rtsDebug!.setSelection([id]), worker)
-  const release = await canvasPoint(page, tilesToFixed(12), tilesToFixed(10))
+  await selectWorker(page, blocker)
+  const release = await canvasPoint(page, tilesToFixed(9), tilesToFixed(10))
   await page.mouse.click(release.x, release.y, { button: 'right' })
-  await expect.poll(() => workerIds(page), { timeout: 20_000 }).toHaveLength(5)
+  await expect.poll(() => workerIds(page), { timeout: 20_000 }).toHaveLength(before.length + 2)
 })

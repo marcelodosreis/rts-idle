@@ -18,8 +18,8 @@ async function canvasRect(page: Page) {
 }
 
 test('a MOVE with fractional world coordinates still moves the unit', async ({ page }) => {
-  // The small 2v2 scenario keeps the battlefield stable for the click flow.
-  await page.goto('/?scenario=2v2')
+  // Passive FFA keeps the battlefield stable for the click flow.
+  await page.goto('/?scenario=ffa&aggression=passive')
   await settleUnits(page)
   // Select an owned unit by id: a mouse click can land on an overlapping enemy,
   // whose MOVE the server would reject (NOT_OWNER).

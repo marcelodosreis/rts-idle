@@ -87,3 +87,26 @@ describe('CANCEL_CONSTRUCTION command contract', () => {
     expect(sim.step([cancel(buildingId)]).rejected[0]?.code).toBe('INVALID_STATE')
   })
 })
+
+describe('CANCEL_PRODUCTION command contract', () => {
+  it('accepts integer producer and queue index values only', () => {
+    expect(
+      isCommandMessage({
+        type: 'command',
+        intent: { type: 'CANCEL_PRODUCTION', payload: { producerId: 1, queueIndex: 0 } }
+      })
+    ).toBe(true)
+    expect(
+      isCommandMessage({
+        type: 'command',
+        intent: { type: 'CANCEL_PRODUCTION', payload: { producerId: 1.5, queueIndex: 0 } }
+      })
+    ).toBe(false)
+    expect(
+      isCommandMessage({
+        type: 'command',
+        intent: { type: 'CANCEL_PRODUCTION', payload: { producerId: 1, queueIndex: -1.5 } }
+      })
+    ).toBe(false)
+  })
+})
