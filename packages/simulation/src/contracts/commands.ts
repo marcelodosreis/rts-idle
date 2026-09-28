@@ -11,6 +11,7 @@ export type {
   HoldPayload,
   MovePayload,
   PatrolPayload,
+  RepairPayload,
   StopPayload,
   SurrenderPayload
 } from '@rts/shared'

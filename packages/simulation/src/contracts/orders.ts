@@ -31,3 +31,4 @@ export type Order =
       readonly buildingType: BuildingType
       readonly workPoint: { readonly x: Fixed; readonly y: Fixed }
     }
+  | { readonly type: 'REPAIR'; readonly targetId: EntityId; readonly progressTicks: number }

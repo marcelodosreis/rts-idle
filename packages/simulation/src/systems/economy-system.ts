@@ -1,15 +1,24 @@
+import { BUILDING_DEFINITIONS } from '@rts/game-data'
 import { distSquaredFixed, type EntityId, type Fixed, type PlayerId } from '@rts/shared'
 import type { Order } from '../contracts/orders.js'
-import { GATHER_TICKS_PER_BATCH, MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
+import {
+  GATHER_TICKS_PER_BATCH,
+  MINERAL_CARGO_CAPACITY,
+  REPAIR_HP_PER_STEP,
+  REPAIR_MINERAL_COST,
+  REPAIR_TICKS_PER_STEP
+} from '../data/economy-rules.js'
+import { unitStatsFor } from '../data/unit-stats.js'
 import { isActiveConstruction, isCloserCandidate, isCompletedBase } from '../domain/building-predicates.js'
 import { Building } from '../ecs/building-component.js'
-import { Cargo, Kind, MineralNode, Movement, Orders, Owner, Position } from '../ecs/components.js'
+import { Cargo, Health, Kind, MineralNode, Movement, Orders, Owner, Position } from '../ecs/components.js'
 import { clearMovement, setMovementDestination } from '../movement/destination.js'
 import { removeFrontOrder, replaceFrontOrder } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
 
 type GatherOrder = Extract<Order, { readonly type: 'GATHER' }>
 type DepositOrder = Extract<Order, { readonly type: 'DEPOSIT' }>
+type RepairOrder = Extract<Order, { readonly type: 'REPAIR' }>
 
 function nearestOwnedBase(state: GameState, owner: PlayerId, x: Fixed, y: Fixed): EntityId | null {
   const buildings = state.world.store(Building)
@@ -162,6 +171,102 @@ function updateGathering(state: GameState, workerId: EntityId, order: GatherOrde
   }
 }
 
+function isRepairTarget(state: GameState, targetId: EntityId, owner: PlayerId): boolean {
+  const health = state.world.store(Health).get(targetId)
+  const targetOwner = state.world.store(Owner).get(targetId)
+  if (health === undefined || health.current <= 0 || targetOwner?.owner !== owner) {
+    return false
+  }
+  const building = state.world.store(Building).get(targetId)
+  if (building !== undefined) {
+    return building.status === 'COMPLETED' && BUILDING_DEFINITIONS[building.buildingType].mechanical
+  }
+  const kind = state.world.store(Kind).get(targetId)
+  return kind !== undefined && unitStatsFor(kind).mechanical
+}
+
+function updateRepair(state: GameState, workerId: EntityId, order: RepairOrder, owner: PlayerId): void {
+  const targetId = order.targetId
+  const targetPosition = state.world.store(Position).get(targetId)
+  const workerPosition = state.world.store(Position).get(workerId)
+  const health = state.world.store(Health).get(targetId)
+  const player = state.players.find((candidate) => candidate.id === owner)
+  if (
+    targetPosition === undefined ||
+    workerPosition === undefined ||
+    health === undefined ||
+    player === undefined ||
+    !isRepairTarget(state, targetId, owner)
+  ) {
+    clearMovement(state, workerId)
+    removeFrontOrder(state, workerId)
+    return
+  }
+  if (health.current >= health.max) {
+    clearMovement(state, workerId)
+    removeFrontOrder(state, workerId)
+    return
+  }
+  if (workerPosition.x !== targetPosition.x || workerPosition.y !== targetPosition.y) {
+    setMovementDestination(state, workerId, targetPosition.x, targetPosition.y)
+    return
+  }
+  const progressTicks = order.progressTicks + 1
+  if (progressTicks < REPAIR_TICKS_PER_STEP) {
+    replaceFrontOrder(state, workerId, { ...order, progressTicks })
+    return
+  }
+  if (player.gold < REPAIR_MINERAL_COST) {
+    state.events.push({ type: 'repairStopped', workerId, targetId, reason: 'NO_MINERALS' })
+    clearMovement(state, workerId)
+    removeFrontOrder(state, workerId)
+    return
+  }
+  player.gold -= REPAIR_MINERAL_COST
+  const current = Math.min(health.max, health.current + REPAIR_HP_PER_STEP)
+  state.world.store(Health).set(targetId, { ...health, current })
+  if (current >= health.max) {
+    clearMovement(state, workerId)
+    removeFrontOrder(state, workerId)
+    return
+  }
+  replaceFrontOrder(state, workerId, { ...order, progressTicks: 0 })
+}
+
+function updateWorkerOrder(state: GameState, workerId: EntityId, order: Order | undefined, owner: PlayerId): void {
+  const kinds = state.world.store(Kind)
+  if (order?.type === 'REPAIR') {
+    if (kinds.get(workerId) === 'pawn') {
+      updateRepair(state, workerId, order, owner)
+    }
+    return
+  }
+  if (order?.type === 'DEPOSIT') {
+    if (kinds.get(workerId) === 'pawn' && state.world.store(Cargo).get(workerId) !== undefined) {
+      updateDeposit(state, workerId, order, owner)
+    }
+    return
+  }
+  if (order?.type !== 'GATHER' || kinds.get(workerId) !== 'pawn') {
+    return
+  }
+  if (state.world.store(Cargo).get(workerId) === undefined) {
+    return
+  }
+  if (order.phase === 'WAITING_FOR_BASE') {
+    beginReturn(state, workerId, order, owner)
+    return
+  }
+  if (order.phase === 'TO_BASE') {
+    updateReturn(state, workerId, order, owner)
+    return
+  }
+  if (order.phase === 'TO_NODE' && state.world.store(Movement).has(workerId)) {
+    return
+  }
+  updateGathering(state, workerId, order, owner)
+}
+
 function updateConstruction(state: GameState): void {
   const buildings = state.world.store(Building)
   const orders = state.world.store(Orders)
@@ -201,6 +306,8 @@ function updateConstruction(state: GameState): void {
     const progressTicks = Math.min(construction.totalTicks, construction.progressTicks + 1)
     if (progressTicks >= construction.totalTicks) {
       buildings.set(buildingId, { ...construction, status: 'COMPLETED', progressTicks, builderId: null })
+      const maxHp = BUILDING_DEFINITIONS[construction.buildingType].maxHp
+      state.world.store(Health).set(buildingId, { current: maxHp, max: maxHp })
       removeFrontOrder(state, builderId)
     } else {
       buildings.set(buildingId, {
@@ -214,41 +321,13 @@ function updateConstruction(state: GameState): void {
 
 /** Advances deterministic mineral gathering, return, and deposit work. */
 export function economySystem(state: GameState): void {
-  const orders = state.world.store(Orders)
-  const movements = state.world.store(Movement)
   const owners = state.world.store(Owner)
-  const cargo = state.world.store(Cargo)
-  const kinds = state.world.store(Kind)
   for (const workerId of state.world.aliveIds()) {
-    const order = orders.get(workerId)?.queue[0]
     const owner = owners.get(workerId)?.owner
     if (owner === undefined) {
       continue
     }
-    if (order?.type === 'DEPOSIT') {
-      if (kinds.get(workerId) === 'pawn' && cargo.get(workerId) !== undefined) {
-        updateDeposit(state, workerId, order, owner)
-      }
-      continue
-    }
-    if (order?.type !== 'GATHER') {
-      continue
-    }
-    if (kinds.get(workerId) !== 'pawn' || cargo.get(workerId) === undefined) {
-      continue
-    }
-    if (order.phase === 'WAITING_FOR_BASE') {
-      beginReturn(state, workerId, order, owner)
-      continue
-    }
-    if (order.phase === 'TO_BASE') {
-      updateReturn(state, workerId, order, owner)
-      continue
-    }
-    if (order.phase === 'TO_NODE' && movements.has(workerId)) {
-      continue
-    }
-    updateGathering(state, workerId, order, owner)
+    updateWorkerOrder(state, workerId, state.world.store(Orders).get(workerId)?.queue[0], owner)
   }
   updateConstruction(state)
 }

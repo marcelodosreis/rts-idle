@@ -91,6 +91,7 @@ const ORDER_TAG_ATTACK_MOVE = 4
 const ORDER_TAG_GATHER = 5
 const ORDER_TAG_BUILD = 6
 const ORDER_TAG_DEPOSIT = 7
+const ORDER_TAG_REPAIR = 8
 
 const GATHER_PHASE_TAGS = {
   TO_NODE: 0,
@@ -162,6 +163,11 @@ function writeOrder(writer: CanonicalWriter, order: Order): void {
       writer.writeU8(ORDER_TAG_DEPOSIT)
       writer.writeU32(order.buildingId)
       return
+    case 'REPAIR':
+      writer.writeU8(ORDER_TAG_REPAIR)
+      writer.writeU32(order.targetId)
+      writer.writeI32(order.progressTicks)
+      return
   }
 }
 
@@ -205,6 +211,8 @@ function readOrder(reader: CanonicalReader): Order {
     }
     case ORDER_TAG_DEPOSIT:
       return { type: 'DEPOSIT', buildingId: reader.readU32() }
+    case ORDER_TAG_REPAIR:
+      return { type: 'REPAIR', targetId: reader.readU32(), progressTicks: reader.readI32() }
     default:
       // A bad tag is corruption, not a valid order.
       throw new Error(`Orders: invalid order tag ${tag}`)
