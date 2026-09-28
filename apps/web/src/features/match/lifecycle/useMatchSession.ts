@@ -1,6 +1,6 @@
 import type { BuildCatalogEntry, MatchConfig, ScenarioSummary } from '@rts/protocol'
 import type { GameRenderer, InputProfile } from '@rts/renderer'
-import type { MatchResult, TrainableUnitKind } from '@rts/shared'
+import type { MatchResult, ResearchType, TrainableUnitKind } from '@rts/shared'
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import { readPlaytestMap } from '../../../shared/config/playtest-map'
 import { type CommandMode, useCommandModes } from '../commands/useCommandModes'
@@ -41,10 +41,14 @@ export interface MatchSessionState {
   readonly buildHint: string | null
   readonly buildings: readonly BuildCatalogEntry[]
   readonly production: MatchConfig['production']
+  readonly researchCatalog: MatchConfig['research']
   arm(mode: Exclude<CommandMode, 'idle'>): void
   issueOrder(type: 'STOP' | 'HOLD'): void
   cancelConstruction(buildingId: number): void
   cancelProduction(producerId: number, queueIndex: number): void
+  upgradeCastle(castleId: number): void
+  research(monasteryId: number, researchType: ResearchType): void
+  cancelResearch(monasteryId: number, queueIndex: number): void
   train(unitKind: TrainableUnitKind): void
   surrender(): void
   newMatch(): void
@@ -170,6 +174,9 @@ function useSessionActions(
   | 'surrender'
   | 'cancelConstruction'
   | 'cancelProduction'
+  | 'upgradeCastle'
+  | 'research'
+  | 'cancelResearch'
   | 'train'
   | 'newMatch'
   | 'changeScenario'
@@ -195,6 +202,15 @@ function useSessionActions(
     },
     cancelProduction: (producerId, queueIndex) => {
       owner().send({ type: 'CANCEL_PRODUCTION', payload: { producerId, queueIndex } }, ended())
+    },
+    upgradeCastle: (castleId) => {
+      owner().send({ type: 'UPGRADE_CASTLE', payload: { castleId } }, ended())
+    },
+    research: (monasteryId, researchType) => {
+      owner().send({ type: 'RESEARCH', payload: { monasteryId, researchType } }, ended())
+    },
+    cancelResearch: (monasteryId, queueIndex) => {
+      owner().send({ type: 'CANCEL_RESEARCH', payload: { monasteryId, queueIndex } }, ended())
     },
     train: (unitKind) => {
       const producerId = refs.runtimeRef.current?.selectedConstructionId
@@ -234,6 +250,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
     scenarios: state.values.scenarios.map((scenario) => scenario.id),
     buildings: state.values.matchConfig?.buildings ?? [],
     production: state.values.matchConfig?.production ?? [],
+    researchCatalog: state.values.matchConfig?.research ?? [],
     aggression: INITIAL_QUERY.aggression,
     spritesEnabled: INITIAL_QUERY.spritesEnabled,
     arm: commandModes.arm,

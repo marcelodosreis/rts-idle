@@ -75,6 +75,10 @@ export class MatchInteractionController {
     if (unitIds.length === 0) {
       return
     }
+    if (this.context.mode() === 'heal') {
+      this.context.clearMode()
+      return
+    }
     const point = this.context.toCommandPoint(worldX, worldY)
     const target = { unitIds, x: point.x, y: point.y }
     const mode = this.context.mode()
@@ -131,12 +135,23 @@ export class MatchInteractionController {
       return
     }
     const isEnemy = (this.context.unitStates.get(id)?.owner ?? this.context.humanPlayer) !== this.context.humanPlayer
+    const target = this.context.unitStates.get(id)
+    if (this.autoHealTarget(id)) {
+      return
+    }
+    if (this.context.mode() === 'heal') {
+      const monks = this.selectedMonks()
+      if (target !== undefined && !isEnemy && this.isDamaged(target.hp, target.maxHp) && monks.length === 1) {
+        this.context.sendCommand({ type: 'HEAL', payload: { unitIds: monks, targetId: id } })
+      }
+      this.context.clearMode()
+      return
+    }
     if (this.context.mode() === 'attack' || isEnemy) {
       this.context.sendCommand({ type: 'ATTACK', payload: { unitIds, targetId: id } })
       this.context.clearMode()
       return
     }
-    const target = this.context.unitStates.get(id)
     if (target !== undefined && this.isDamaged(target.hp, target.maxHp)) {
       const workers = this.selectedWorkers()
       if (workers.length > 0) {
@@ -145,8 +160,28 @@ export class MatchInteractionController {
     }
   }
 
+  autoHealTarget(id: number): boolean {
+    if (this.context.isMatchEnded() || this.context.mode() !== 'idle') {
+      return false
+    }
+    const monks = this.selectedMonks()
+    const target = this.context.unitStates.get(id)
+    if (monks.length !== 1 || target === undefined || target.owner !== this.context.humanPlayer) {
+      return false
+    }
+    if (!this.isDamaged(target.hp, target.maxHp)) {
+      return false
+    }
+    this.context.sendCommand({ type: 'HEAL', payload: { unitIds: monks, targetId: id } })
+    return true
+  }
+
   buildingCommand(id: number): void {
     if (this.context.isMatchEnded()) {
+      return
+    }
+    if (this.context.mode() === 'heal') {
+      this.context.clearMode()
       return
     }
     const building = this.context.buildings().find((candidate) => candidate.id === id)
@@ -205,6 +240,13 @@ export class MatchInteractionController {
       .filter((id) => this.context.unitStates.get(id)?.owner === this.context.humanPlayer)
   }
 
+  private selectedMonks(): number[] {
+    return this.context
+      .selectedUnitIds()
+      .filter((id) => this.context.unitStates.get(id)?.kind === 'monk')
+      .filter((id) => this.context.unitStates.get(id)?.owner === this.context.humanPlayer)
+  }
+
   private isDamaged(current: number | undefined, max: number | undefined): boolean {
     return current !== undefined && max !== undefined && current > 0 && current < max
   }
@@ -219,7 +261,10 @@ export class MatchInteractionController {
       building === undefined ||
       building.owner !== this.context.humanPlayer ||
       building.status !== 'COMPLETED' ||
-      (building.buildingType !== 'BASE' && building.buildingType !== 'BARRACKS')
+      (building.buildingType !== 'CASTLE' &&
+        building.buildingType !== 'BARRACKS' &&
+        building.buildingType !== 'ARCHERY' &&
+        building.buildingType !== 'MONASTERY')
     ) {
       return undefined
     }

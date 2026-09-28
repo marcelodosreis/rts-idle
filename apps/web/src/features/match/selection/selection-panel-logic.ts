@@ -3,10 +3,13 @@ import { constructionRefund, productionRefund } from '@rts/shared'
 import type { HudConstruction, HudMineral } from '../ui/types'
 
 export function constructionStatusLine(construction: HudConstruction): string {
+  if (construction.tierUpgrade !== undefined && construction.tierUpgrade !== null) {
+    return `${construction.tierUpgrade.progressTicks}/${construction.tierUpgrade.totalTicks}`
+  }
+  const status = construction.builderId === null ? 'No worker assigned' : `Worker #${construction.builderId}`
   if (construction.status === 'COMPLETED') {
     return 'Ready'
   }
-  const status = construction.builderId === null ? 'No worker assigned' : `Worker #${construction.builderId}`
   return `${construction.progressTicks}/${construction.totalTicks} · ${status}`
 }
 

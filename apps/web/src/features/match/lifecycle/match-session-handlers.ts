@@ -9,13 +9,33 @@ import type { MatchSessionRuntime } from './match-session-runtime'
 
 const HUMAN_PLAYER = 0
 
+function currentCastleTier(message: SnapshotMessage, ownerId: number): number {
+  let tier = 1
+  for (const building of message.buildings) {
+    if (building.buildingType !== 'CASTLE' || building.owner !== ownerId || building.status !== 'COMPLETED') {
+      continue
+    }
+    tier = Math.max(tier, building.tier ?? 1)
+  }
+  return tier
+}
+
 function unitForHud(unit: SnapshotMessage['units'][number]): SelectionUnitState {
   return projectSnapshotUnit(unit)
 }
 
 function resourcesForHuman(message: SnapshotMessage) {
   const player = message.players.find((candidate) => candidate.id === HUMAN_PLAYER)
-  return player === undefined ? null : { mineral: player.gold, supply: player.usedSupply, supplyCap: player.supplyCap }
+  return player === undefined
+    ? null
+    : {
+        mineral: player.gold,
+        supply: player.usedSupply,
+        supplyCap: player.supplyCap,
+        castleTier: currentCastleTier(message, HUMAN_PLAYER),
+        completedResearch: [...(player.completedResearch ?? [])],
+        queuedResearch: [...(player.queuedResearch ?? [])]
+      }
 }
 
 export interface MatchSessionHandlerOptions {

@@ -65,11 +65,13 @@ function toHudConstruction(construction: SnapshotBuilding): HudConstruction {
   return {
     id: construction.id,
     buildingType: construction.buildingType,
+    ...(construction.tier === undefined ? {} : { tier: construction.tier }),
     owner: construction.owner,
     status: construction.status !== 'COMPLETED' && construction.builderId == null ? 'PAUSED' : construction.status,
     progressTicks: construction.progressTicks,
     totalTicks: construction.totalTicks,
     builderId: construction.builderId ?? null,
+    tierUpgrade: construction.tierUpgrade ?? null,
     rallyPoint: construction.rallyPoint ?? null,
     ...(construction.hp === undefined ? {} : { hp: construction.hp, maxHp: construction.maxHp }),
     ...(construction.production === undefined ? {} : { production: construction.production })

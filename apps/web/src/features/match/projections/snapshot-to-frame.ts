@@ -13,6 +13,8 @@ export function snapshotToFrame(message: SnapshotMessage): RenderFrame {
       x: construction.x,
       y: construction.y,
       owner: construction.owner,
+      ...(construction.tier === undefined ? {} : { tier: construction.tier }),
+      ...(construction.tierUpgrade === undefined ? {} : { tierUpgrade: construction.tierUpgrade }),
       ...(construction.builderId === undefined ? {} : { builderId: construction.builderId }),
       footprint: construction.footprint,
       status: construction.status,

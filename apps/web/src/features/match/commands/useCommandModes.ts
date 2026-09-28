@@ -8,6 +8,7 @@ export type CommandMode =
   | 'patrol'
   | 'attack'
   | 'attack_move'
+  | 'heal'
   | { readonly kind: 'build'; readonly buildingType: BuildingType }
   | { readonly kind: 'rally'; readonly producerId: number }
 
