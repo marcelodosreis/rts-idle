@@ -49,6 +49,7 @@ describe('protocol command message', () => {
       { type: 'command', intent: { type: 'PATROL', payload: { unitIds: [1], x: 100, y: 200 } } },
       { type: 'command', intent: { type: 'ATTACK', payload: { unitIds: [1], targetId: 5 } } },
       { type: 'command', intent: { type: 'ATTACK_MOVE', payload: { unitIds: [1], x: 100, y: 200 } } },
+      { type: 'command', intent: { type: 'REPAIR', payload: { unitIds: [1, 2], targetId: 5 } } },
       { type: 'command', intent: { type: 'CANCEL_CONSTRUCTION', payload: { buildingId: 5 } } },
       { type: 'command', intent: { type: 'TRAIN', payload: { producerId: 5, unitKind: 'warrior' } } },
       { type: 'command', intent: { type: 'RALLY', payload: { producerId: 5, x: 100, y: 200 } } },
@@ -71,6 +72,9 @@ describe('protocol command message', () => {
     )
     expect(
       isCommandMessage({ type: 'command', intent: { type: 'ATTACK', payload: { unitIds: [1], targetId: 2.5 } } })
+    ).toBe(false)
+    expect(
+      isCommandMessage({ type: 'command', intent: { type: 'REPAIR', payload: { unitIds: [1], targetId: 2.5 } } })
     ).toBe(false)
     expect(isCommandMessage({ type: 'command', intent: { type: 'SURRENDER', payload: { unitIds: [1] } } })).toBe(false)
     expect(
@@ -103,7 +107,9 @@ describe('protocol snapshot message', () => {
         footprint: { width: 3, height: 3 },
         status: 'UNDER_CONSTRUCTION',
         progressTicks: 12,
-        totalTicks: 100
+        totalTicks: 100,
+        hp: 500,
+        maxHp: 500
       }
     ],
     mineralNodes: [{ id: 4, x: 768, y: 256, remaining: 3000 }],

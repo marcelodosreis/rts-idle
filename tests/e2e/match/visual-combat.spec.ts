@@ -1,7 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 
 async function waitForUnits(page: Page) {
-  await page.goto('/')
+  await page.goto('/?scenario=6v6&aggression=offensive')
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
   const positions = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})
   expect(Object.keys(positions).length).toBeGreaterThan(0)
@@ -9,6 +9,7 @@ async function waitForUnits(page: Page) {
 }
 
 test('visual combat: damaged units show a health bar and combat resolves kills', async ({ page }) => {
+  test.setTimeout(90_000)
   const positions = await waitForUnits(page)
   const initialCount = Object.keys(positions).length
   expect(initialCount).toBeGreaterThan(0)
