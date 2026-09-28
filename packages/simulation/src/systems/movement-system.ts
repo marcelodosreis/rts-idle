@@ -1,3 +1,4 @@
+import { effectiveMovementSpeed } from '../domain/research-effects.js'
 import { Movement, Position } from '../ecs/components.js'
 import type { GameState } from '../state/state.js'
 import { movementStep } from './movement-step.js'
@@ -24,7 +25,7 @@ export function movementSystem(state: GameState): void {
       y: position.y,
       destX: movement.destX,
       destY: movement.destY,
-      speedTilesPerSecond: movement.speedTilesPerSecond,
+      speedTilesPerSecondFixed: effectiveMovementSpeed(state, id, movement.speedTilesPerSecondFixed),
       remainderX: movement.remainderX,
       remainderY: movement.remainderY
     })

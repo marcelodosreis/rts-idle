@@ -1,7 +1,9 @@
 import { distSquaredFixed, type EntityId, FIXED_SCALE } from '@rts/shared'
 import type { Order } from '../contracts/orders.js'
+import { unitCanAttack } from '../data/unit-stats.js'
 import { isCloserCandidate } from '../domain/building-predicates.js'
-import { Combat, Orders, Owner, Position } from '../ecs/components.js'
+import { effectiveArmor, effectiveDamage } from '../domain/research-effects.js'
+import { Combat, Kind, Orders, Owner, Position } from '../ecs/components.js'
 import { clearMovement, setMovementDestination } from '../movement/destination.js'
 import { clearOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
@@ -98,11 +100,15 @@ export function combatSystem(state: GameState): void {
   const positions = state.world.store(Position)
   const owners = state.world.store(Owner)
   const combats = state.world.store(Combat)
+  const kinds = state.world.store(Kind)
   const orders = state.world.store(Orders)
 
   for (const id of state.world.aliveIds()) {
     const combat = combats.get(id)
     if (combat === undefined) {
+      continue
+    }
+    if (!unitCanAttack(kinds.get(id))) {
       continue
     }
     const position = positions.get(id)
@@ -136,7 +142,9 @@ export function combatSystem(state: GameState): void {
       // Stand and fire; do not walk into melee range.
       clearMovement(state, id)
       if (cooldownRemaining === 0) {
-        accumulateDamage(state, targetId, id, combat.damage)
+        const damage = effectiveDamage(state, id)
+        const armor = effectiveArmor(state, targetId)
+        accumulateDamage(state, targetId, id, Math.max(1, damage - armor))
         combats.set(id, { ...combat, cooldownRemaining: combat.cooldownTicks })
       }
     } else if (front.type === 'ATTACK') {

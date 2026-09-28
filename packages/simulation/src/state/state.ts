@@ -1,4 +1,4 @@
-import type { EntityId, PlayerId, RngState } from '@rts/shared'
+import type { CastleTier, EntityId, PlayerId, ResearchType, RngState } from '@rts/shared'
 import type { RulesIdentity } from '../contracts/simulation.js'
 import type { World } from '../ecs/world.js'
 import type { PlacementMapBounds } from '../placement/building-placement.js'
@@ -18,6 +18,8 @@ export interface PlayerState {
   usedSupply: number
   reservedSupply: number
   supplyCap: number
+  completedResearch: readonly ResearchType[]
+  highestCastleTierReached: CastleTier
 }
 
 /**

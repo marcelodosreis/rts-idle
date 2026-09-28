@@ -1,4 +1,4 @@
-import type { PlayerId, RngState } from '@rts/shared'
+import { type PlayerId, RESEARCH_TYPES, type ResearchType, type RngState } from '@rts/shared'
 import { CanonicalReader } from '../canonical/reader.js'
 import { CanonicalWriter } from '../canonical/writer.js'
 import { SIMULATION_VERSION } from '../contracts/simulation-version.js'
@@ -73,7 +73,20 @@ function writePlayers(writer: CanonicalWriter, players: readonly PlayerState[]):
     writer.writeI32(player.usedSupply)
     writer.writeI32(player.reservedSupply)
     writer.writeI32(player.supplyCap)
+    writer.writeU8(player.highestCastleTierReached)
+    writer.writeLength(player.completedResearch.length)
+    for (const researchType of player.completedResearch) {
+      writer.writeU8(RESEARCH_TYPES.indexOf(researchType))
+    }
   }
+}
+
+function researchTypeFromTag(tag: number): ResearchType {
+  const researchType = RESEARCH_TYPES[tag]
+  if (researchType === undefined) {
+    throw new Error(`readPlayers: invalid research tag ${tag}`)
+  }
+  return researchType
 }
 
 function writeMapBounds(writer: CanonicalWriter, bounds: GameState['mapBounds']): void {
@@ -116,7 +129,25 @@ function readPlayers(reader: CanonicalReader): PlayerState[] {
     if (usedSupply < 0 || reservedSupply < 0 || supplyCap < 0 || supplyCap > MAX_SUPPLY_CAPACITY) {
       throw new Error(`readPlayers: invalid supply ${usedSupply}+${reservedSupply}/${supplyCap}`)
     }
-    players.push({ id, defeated, gold, usedSupply, reservedSupply, supplyCap })
+    const highestCastleTierReached = reader.readU8()
+    if (highestCastleTierReached < 1 || highestCastleTierReached > 3) {
+      throw new Error(`readPlayers: invalid Castle tier ${highestCastleTierReached}`)
+    }
+    const researchCount = reader.readLength()
+    const completedResearch: ResearchType[] = []
+    for (let researchIndex = 0; researchIndex < researchCount; researchIndex += 1) {
+      completedResearch.push(researchTypeFromTag(reader.readU8()))
+    }
+    players.push({
+      id,
+      defeated,
+      gold,
+      usedSupply,
+      reservedSupply,
+      supplyCap,
+      highestCastleTierReached: highestCastleTierReached as 1 | 2 | 3,
+      completedResearch
+    })
   }
   return players
 }

@@ -3,10 +3,12 @@ import type { GameState } from '../state/state.js'
 import { combatSystem } from './combat-system.js'
 import { deathSystem } from './death-system.js'
 import { economySystem } from './economy-system.js'
+import { healSystem } from './heal-system.js'
 import { movementSystem } from './movement-system.js'
 import { ordersSystem } from './orders-system.js'
-import { productionSystem } from './production-system.js'
+import { monasteryQueueSystem, productionSystem } from './production-system.js'
 import { updateSupply } from './supply-system.js'
+import { tierSystem } from './tier-system.js'
 import { victorySystem } from './victory-system.js'
 
 /**
@@ -20,6 +22,9 @@ export const SYSTEM_PIPELINE: readonly { readonly name: string; readonly system:
     { name: 'orders', system: ordersSystem },
     { name: 'movement', system: movementSystem },
     { name: 'economy', system: economySystem },
+    { name: 'heal', system: healSystem },
+    { name: 'tier', system: tierSystem },
+    { name: 'research', system: monasteryQueueSystem },
     { name: 'combat', system: combatSystem },
     { name: 'death', system: deathSystem },
     { name: 'supply', system: updateSupply },

@@ -1,6 +1,15 @@
-import { fixedToTiles, tilesToFixed } from '@rts/shared'
+import { fixedToTiles, type ResearchType, tilesToFixed } from '@rts/shared'
+import { effectiveCargoCapacity, refreshEconomyResearch } from '../domain/research-effects.js'
 import { Building } from '../ecs/building-component.js'
-import { Owner, Position, Production, type ProductionItem } from '../ecs/components.js'
+import {
+  Cargo,
+  isResearchProductionItem,
+  Owner,
+  Position,
+  Production,
+  type ProductionItem,
+  type UnitProductionItem
+} from '../ecs/components.js'
 import { createUnitEntity } from '../ecs/create-unit.js'
 import { setMovementDestination } from '../movement/destination.js'
 import type { GameState } from '../state/state.js'
@@ -52,7 +61,7 @@ function spawnPosition(state: GameState, producerId: number): { readonly x: numb
   return { x, y }
 }
 
-function createUnit(state: GameState, producerId: number, item: ProductionItem): boolean {
+function createUnit(state: GameState, producerId: number, item: UnitProductionItem): boolean {
   const position = spawnPosition(state, producerId)
   if (position === null) {
     return false
@@ -71,6 +80,12 @@ function createUnit(state: GameState, producerId: number, item: ProductionItem):
     kind: item.unitKind,
     worker: item.unitKind === 'pawn'
   })
+  if (item.unitKind === 'pawn') {
+    const cargo = state.world.store(Cargo).get(id)
+    if (cargo !== undefined) {
+      state.world.store(Cargo).set(id, { ...cargo, capacity: effectiveCargoCapacity(state, id, cargo.capacity) })
+    }
+  }
   const rallyPoint = state.world.store(Building).get(producerId)?.rallyPoint ?? null
   if (rallyPoint !== null) {
     setMovementDestination(state, id, rallyPoint.x, rallyPoint.y)
@@ -79,6 +94,9 @@ function createUnit(state: GameState, producerId: number, item: ProductionItem):
 }
 
 function releaseSupply(state: GameState, ownerId: number, item: ProductionItem): void {
+  if (isResearchProductionItem(item)) {
+    return
+  }
   const player = state.players.find((candidate) => candidate.id === ownerId)
   if (player === undefined) {
     throw new Error(`production: owner ${ownerId} disappeared`)
@@ -87,9 +105,48 @@ function releaseSupply(state: GameState, ownerId: number, item: ProductionItem):
   player.usedSupply += item.reservedSupply
 }
 
+function completeResearch(state: GameState, ownerId: number, researchType: ResearchType): void {
+  const player = state.players.find((candidate) => candidate.id === ownerId)
+  if (player === undefined) {
+    throw new Error(`production: owner ${ownerId} disappeared`)
+  }
+  if (!player.completedResearch.includes(researchType)) {
+    player.completedResearch = [...player.completedResearch, researchType]
+  }
+}
+
+function advanceResearchQueue(
+  state: GameState,
+  producerId: number,
+  ownerId: number,
+  queue: readonly ProductionItem[]
+): void {
+  const first = queue[0]
+  if (first === undefined || !isResearchProductionItem(first)) {
+    return
+  }
+  const progressTicks = first.progressTicks + 1
+  if (progressTicks < first.totalTicks) {
+    state.world.store(Production).set(producerId, {
+      queue: [{ ...first, progressTicks, status: 'ACTIVE' }, ...queue.slice(1)]
+    })
+    return
+  }
+  completeResearch(state, ownerId, first.researchType)
+  refreshEconomyResearch(state, ownerId)
+  const next = queue.slice(1)
+  state.world.store(Production).set(producerId, {
+    queue: next.length === 0 ? [] : [{ ...next[0]!, status: 'ACTIVE' }, ...next.slice(1)]
+  })
+}
+
 function advanceQueue(state: GameState, producerId: number, ownerId: number, queue: readonly ProductionItem[]): void {
   const first = queue[0]
   if (first === undefined) {
+    return
+  }
+  if (isResearchProductionItem(first)) {
+    advanceResearchQueue(state, producerId, ownerId, queue)
     return
   }
   if (first.status === 'COMPLETED_WAITING') {
@@ -119,8 +176,7 @@ function advanceQueue(state: GameState, producerId: number, ownerId: number, que
   })
 }
 
-/** Advances one deterministic production item per completed producer. */
-export function productionSystem(state: GameState): void {
+function advanceProducerQueues(state: GameState, monasteryOnly: boolean): void {
   const buildings = state.world.store(Building)
   const owners = state.world.store(Owner)
   const productions = state.world.store(Production)
@@ -128,9 +184,15 @@ export function productionSystem(state: GameState): void {
     const building = buildings.get(producerId)
     const owner = owners.get(producerId)?.owner
     const production = productions.get(producerId)
+    const isMonastery = building?.buildingType === 'MONASTERY'
     if (
-      (building?.buildingType !== 'BASE' && building?.buildingType !== 'BARRACKS') ||
+      (building?.buildingType !== 'CASTLE' &&
+        building?.buildingType !== 'BARRACKS' &&
+        building?.buildingType !== 'ARCHERY' &&
+        building?.buildingType !== 'MONASTERY') ||
       building.status !== 'COMPLETED' ||
+      (building.tierUpgrade !== undefined && building.tierUpgrade !== null) ||
+      isMonastery !== monasteryOnly ||
       owner === undefined ||
       production === undefined
     ) {
@@ -138,4 +200,14 @@ export function productionSystem(state: GameState): void {
     }
     advanceQueue(state, producerId, owner, production.queue)
   }
+}
+
+/** Advances the shared Monastery queue before combat. */
+export function monasteryQueueSystem(state: GameState): void {
+  advanceProducerQueues(state, true)
+}
+
+/** Advances one deterministic item for non-Monastery producers after supply. */
+export function productionSystem(state: GameState): void {
+  advanceProducerQueues(state, false)
 }
