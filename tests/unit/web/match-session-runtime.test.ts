@@ -12,7 +12,7 @@ function runtimeWithState() {
   runtime.buildings = [
     {
       id: 9,
-      buildingType: 'BASE',
+      buildingType: 'CASTLE',
       x: 0,
       y: 0,
       owner: 0,

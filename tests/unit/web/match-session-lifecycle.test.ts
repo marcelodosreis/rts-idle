@@ -37,6 +37,8 @@ const config: MatchConfig = {
   type: 'match_config',
   map: { width: 2, height: 2, tiles: ['land', 'land', 'land', 'land'] },
   buildings: [],
+  production: [],
+  research: [],
   scenarios: [],
   scenario: { id: 'test', label: 'Test' }
 }

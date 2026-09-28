@@ -45,9 +45,85 @@ describe('match session handlers', () => {
     expect(runtime.unitStates.get(1)).toMatchObject({ kind: 'pawn', orderState: 'moving' })
     expect(runtime.unitPositions.get(1)).toEqual({ x: 10, y: 20 })
     expect(callbacks.setTick).toHaveBeenCalledWith(4)
-    expect(callbacks.setResources).toHaveBeenCalledWith({ mineral: 12, supply: 1, supplyCap: 5 })
+    expect(callbacks.setResources).toHaveBeenCalledWith({
+      mineral: 12,
+      supply: 1,
+      supplyCap: 5,
+      castleTier: 1,
+      completedResearch: [],
+      queuedResearch: []
+    })
     expect(callbacks.appendLog).toHaveBeenCalledWith('event', 'damageDealt: 1 -3 HP (7 left)')
     expect(callbacks.present).toHaveBeenCalledOnce()
+  })
+
+  it('projects Castle tier and research progress for the human player', () => {
+    const { callbacks, handlers } = harness()
+    handlers.onSnapshot(
+      snapshot({
+        buildings: [
+          {
+            id: 9,
+            buildingType: 'CASTLE',
+            x: 0,
+            y: 0,
+            owner: 0,
+            footprint: { width: 2, height: 2 },
+            status: 'COMPLETED',
+            tier: 2,
+            progressTicks: 100,
+            totalTicks: 100,
+            builderId: null
+          }
+        ],
+        players: [
+          {
+            id: 0,
+            defeated: false,
+            gold: 40,
+            usedSupply: 2,
+            supplyCap: 8,
+            highestCastleTierReached: 2,
+            completedResearch: ['ATTACK'],
+            queuedResearch: ['MOVEMENT']
+          }
+        ]
+      })
+    )
+    expect(callbacks.setResources).toHaveBeenCalledWith({
+      mineral: 40,
+      supply: 2,
+      supplyCap: 8,
+      castleTier: 2,
+      completedResearch: ['ATTACK'],
+      queuedResearch: ['MOVEMENT']
+    })
+  })
+
+  it('relatches Tier II access when the last completed Castle II is gone', () => {
+    const { callbacks, handlers } = harness()
+    handlers.onSnapshot(
+      snapshot({
+        players: [
+          {
+            id: 0,
+            defeated: false,
+            gold: 40,
+            usedSupply: 2,
+            supplyCap: 8,
+            highestCastleTierReached: 2
+          }
+        ]
+      })
+    )
+    expect(callbacks.setResources).toHaveBeenCalledWith({
+      mineral: 40,
+      supply: 2,
+      supplyCap: 8,
+      castleTier: 1,
+      completedResearch: [],
+      queuedResearch: []
+    })
   })
 
   it('removes missing units and refreshes a selected mineral', () => {
@@ -130,6 +206,8 @@ describe('match session handlers', () => {
       type: 'match_config',
       map: { width: 1, height: 1, tiles: ['land'] },
       buildings: [],
+      production: [],
+      research: [],
       scenarios: [],
       scenario: { id: 'x', label: 'X' }
     }
