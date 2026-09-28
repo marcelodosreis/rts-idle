@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 45 |
+| open | 46 |
 | closed | 14 |
-| **total** | **59** |
+| **total** | **60** |
 
 ## Details
 
@@ -73,6 +73,7 @@
 | 2026-09-27-firefox-host-libraries | open | environment | QH.19 | 1 test(s) |
 | 2026-09-27-production-queue-index-key | open | convention | QH.19 | 1 test(s) |
 | 2026-09-27-repair-facing-while-moving | open | presentation | — | 1 test(s) |
+| 2026-09-28-editor-playtest-invalid-spawn | open | coverage | QH.20 | 1 test(s) |
 | 2026-09-28-repair-deposit-precedence | open | coverage | QH.20 | 2 test(s) |
 
 ## Legend

@@ -20,7 +20,7 @@ test('the game remains playable with sprites disabled', async ({ page }) => {
 })
 
 test('fallback circles keep their size after units engage in combat', async ({ page }) => {
-  await page.goto('/?sprites=off')
+  await page.goto('/?scenario=6v6&aggression=offensive&sprites=off')
   await page.getByRole('button', { name: 'Open DevTools menu' }).click()
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
 
@@ -57,7 +57,7 @@ test('fallback circles keep their size after units engage in combat', async ({ p
 })
 
 test('fallback units show kind-specific glyphs (P/W/A) and shapes', async ({ page }) => {
-  await page.goto('/?sprites=off')
+  await page.goto('/?scenario=6v6&aggression=offensive&sprites=off')
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
 
   const glyphs = await page.evaluate(() => {

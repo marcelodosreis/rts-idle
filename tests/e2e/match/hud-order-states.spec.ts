@@ -16,6 +16,11 @@ async function canvasPointForFixed(page: Page, x: number, y: number) {
   )
 }
 
+async function focusFixed(page: Page, x: number, y: number) {
+  await page.evaluate(([fixedX, fixedY]) => window.__rtsDebug?.moveCamera(fixedX, fixedY), [x, y] as const)
+  return canvasPointForFixed(page, x, y)
+}
+
 async function selectWorker(page: Page, id: number): Promise<void> {
   const position = await page.evaluate((workerId) => window.__rtsDebug!.getPositions()[String(workerId)]!, id)
   const point = await canvasPointForFixed(page, position.x, position.y)
@@ -57,7 +62,7 @@ test('HUD exposes Hold, Patrol, and Attack-move order states', async ({ page }) 
 
   await page.getByRole('button', { name: 'Patrol', exact: true }).click()
   const current = await workerPosition(page, workerId)
-  const patrolPoint = await canvasPointForFixed(page, current.x + tilesToFixed(2), current.y - tilesToFixed(2))
+  const patrolPoint = await focusFixed(page, current.x + tilesToFixed(5), current.y - tilesToFixed(5))
   await page.mouse.click(patrolPoint.x, patrolPoint.y, { button: 'right' })
   await expect(page.getByRole('button', { name: new RegExp(`Worker #${workerId}, owner 0, Patrolling`) })).toBeVisible()
 
@@ -65,10 +70,10 @@ test('HUD exposes Hold, Patrol, and Attack-move order states', async ({ page }) 
   await selectWorker(page, attackWorkerId)
   await page.getByRole('button', { name: 'Attack-move', exact: true }).click()
   const attackMovePosition = await workerPosition(page, attackWorkerId)
-  const attackMovePoint = await canvasPointForFixed(
+  const attackMovePoint = await focusFixed(
     page,
-    attackMovePosition.x + tilesToFixed(2),
-    attackMovePosition.y - tilesToFixed(2)
+    attackMovePosition.x + tilesToFixed(5),
+    attackMovePosition.y - tilesToFixed(5)
   )
   await page.mouse.click(attackMovePoint.x, attackMovePoint.y, { button: 'right' })
   await expect(

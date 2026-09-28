@@ -3,7 +3,7 @@ import { tilesToFixed } from '@rts/shared'
 import { hasArt } from '../support/art.js'
 
 /** Economy scenario Mineral Node tile (see apps/server/src/content/demo/scenarios.ts). */
-const ECONOMY_NODE_TILE = { x: 24, y: 8 }
+const ECONOMY_NODE_TILE = { x: 24, y: 8.5 }
 
 async function canvasPointForFixed(page: Page, x: number, y: number) {
   return page.evaluate(

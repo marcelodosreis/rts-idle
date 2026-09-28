@@ -39,6 +39,7 @@ async function unitsByOwner(page: Page): Promise<UnitInfo[]> {
 }
 
 test('right-clicking an enemy attacks it and preserves the selection', async ({ page }) => {
+  await page.goto('/?scenario=6v6&aggression=offensive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
   const blueIds = units.filter((unit) => unit.owner === 0).map((unit) => unit.id)
@@ -70,6 +71,7 @@ test('right-clicking an enemy attacks it and preserves the selection', async ({ 
 })
 
 test('Control+click on an enemy does not change the selection', async ({ page }) => {
+  await page.goto('/?scenario=6v6&aggression=offensive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
   const blueIds = units.filter((unit) => unit.owner === 0).map((unit) => unit.id)
