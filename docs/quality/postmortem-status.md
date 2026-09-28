@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 46 |
+| open | 47 |
 | closed | 14 |
-| **total** | **60** |
+| **total** | **61** |
 
 ## Details
 
@@ -75,6 +75,7 @@
 | 2026-09-27-repair-facing-while-moving | open | presentation | — | 1 test(s) |
 | 2026-09-28-editor-playtest-invalid-spawn | open | coverage | QH.20 | 1 test(s) |
 | 2026-09-28-repair-deposit-precedence | open | coverage | QH.20 | 2 test(s) |
+| 2026-09-28-stale-match-renderer-resources | open | presentation | QH.20 | 1 test(s) |
 
 ## Legend
 

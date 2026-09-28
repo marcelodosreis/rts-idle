@@ -111,6 +111,7 @@ test('cancels any queued production row with confirmation and refund feedback', 
   await expect(page.getByTestId('hud-resource-mineral')).toContainText('150')
 
   await page.getByTestId('cancel-production-1').click()
+  await expect(page.getByTestId('cancel-production-1')).toHaveText('Confirm')
   await page.getByTestId('cancel-production-1').click()
   await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 1/5')
   await expect(page.getByTestId('hud-resource-mineral')).toContainText('200')
