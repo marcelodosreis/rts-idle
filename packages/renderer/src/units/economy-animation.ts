@@ -14,14 +14,30 @@ export function unitAssetKey(owner: number, kind: 'pawn' | 'warrior' | 'archer',
 
 export interface EconomyFrames {
   readonly build: AnimatedSprite | null
+  readonly repairRun: AnimatedSprite | null
+  readonly repairInteract: AnimatedSprite | null
   readonly gather: AnimatedSprite | null
   readonly carryIdle: AnimatedSprite | null
   readonly carryRun: AnimatedSprite | null
 }
 
+export interface EconomyAnimationState {
+  readonly phase: EconomyPhase | undefined
+  readonly moving: boolean
+  readonly carrying?: boolean
+  readonly building?: boolean
+  readonly repairing?: boolean
+}
+
 export function economyFrameKey(owner: number, anim: keyof EconomyFrames): string {
   let subtype = 'run_gold'
   if (anim === 'build') {
+    subtype = 'interact_hammer'
+  }
+  if (anim === 'repairRun') {
+    subtype = 'run_hammer'
+  }
+  if (anim === 'repairInteract') {
     subtype = 'interact_hammer'
   }
   if (anim === 'gather') {
@@ -33,15 +49,13 @@ export function economyFrameKey(owner: number, anim: keyof EconomyFrames): strin
   return unitAssetKey(owner, 'pawn', subtype)
 }
 
-export function economyAnimation(
-  frames: EconomyFrames,
-  phase: EconomyPhase | undefined,
-  moving: boolean,
-  carrying = false,
-  building = false
-): AnimatedSprite | null {
+export function economyAnimation(frames: EconomyFrames, state: EconomyAnimationState): AnimatedSprite | null {
+  const { phase, moving, carrying = false, building = false, repairing = false } = state
   if (building) {
     return frames.build
+  }
+  if (repairing) {
+    return moving ? frames.repairRun : frames.repairInteract
   }
   if (phase === 'gathering') {
     return frames.gather

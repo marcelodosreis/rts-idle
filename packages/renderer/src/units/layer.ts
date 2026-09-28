@@ -52,10 +52,12 @@ export class UnitLayer {
       this.library.animated(frameKey(owner, kind, 'run')),
       this.library.animated(frameKey(owner, kind, 'attack')),
       kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'build')) : Promise.resolve(null),
+      kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'repairRun')) : Promise.resolve(null),
+      kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'repairInteract')) : Promise.resolve(null),
       kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'gather')) : Promise.resolve(null),
       kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'carryIdle')) : Promise.resolve(null),
       kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'carryRun')) : Promise.resolve(null)
-    ]).then(([idle, run, attack, build, gather, carryIdle, carryRun]) => {
+    ]).then(([idle, run, attack, build, repairRun, repairInteract, gather, carryIdle, carryRun]) => {
       if (idle === null || run === null) {
         this.loadState.set(cacheKey, 'failed')
         return
@@ -63,7 +65,7 @@ export class UnitLayer {
       idle.play()
       run.play()
       attack?.play()
-      const frames: UnitFrames = { idle, run, attack, build, gather, carryIdle, carryRun }
+      const frames: UnitFrames = { idle, run, attack, build, repairRun, repairInteract, gather, carryIdle, carryRun }
       this.framesByKind.set(cacheKey, frames)
       this.loadState.set(cacheKey, 'loaded')
       for (const sprite of this.units.values()) {
@@ -100,15 +102,18 @@ export class UnitLayer {
     const moving =
       unit.orderState === 'moving' ||
       ((unit.orderState === 'attacking' || unit.orderState === 'attack_move' || unit.orderState === 'patrol') &&
-        deltaMoved)
+        deltaMoved) ||
+      (unit.orderState === 'repairing' && deltaMoved)
     sprite.setHealth(unit.hp, unit.maxHp)
     sprite.setState({
       moving,
       facingLeft: unit.x < (last?.x ?? unit.x),
+      ...(unit.lookAtX === undefined ? {} : { lookAtX: fixedToRenderPixels(unit.lookAtX) }),
       now,
       economy: unit.economy,
       carrying: unit.carrying ?? false,
-      building: unit.orderState === 'building'
+      building: unit.orderState === 'building',
+      repairing: unit.orderState === 'repairing'
     })
     sprite.setEconomyBar(unit.economy)
   }

@@ -14,7 +14,8 @@ import {
   BAR_HEIGHT,
   BAR_RADIUS,
   clampRatio,
-  drawProgressBar
+  drawProgressBar,
+  hpColor
 } from '../effects/progress-bar.js'
 import { progressFillColor } from '../effects/progress-palette.js'
 import { buildingVisualStyle } from './building-visual-style.js'
@@ -197,6 +198,20 @@ export class WorldObjectLayer {
       .clear()
       .rect(0, 0, width, height)
       .stroke({ color: progressFillColor('construction'), width: 4 })
+    if (building.hp !== undefined && building.maxHp !== undefined) {
+      const healthRatio = clampRatio(building.hp, building.maxHp)
+      drawProgressBar(graphic, {
+        x: 0,
+        y: -20,
+        width,
+        height: BAR_HEIGHT,
+        ratio: healthRatio,
+        fillColor: hpColor(healthRatio),
+        background: BAR_BACKGROUND,
+        border: BAR_BORDER,
+        radius: BAR_RADIUS
+      })
+    }
     if (isFoundation) {
       drawProgressBar(graphic, {
         x: 0,
