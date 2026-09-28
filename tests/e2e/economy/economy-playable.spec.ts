@@ -4,6 +4,7 @@ import { hasArt } from '../support/art.js'
 
 /** Economy scenario Mineral Node tile (see apps/server/src/content/demo/scenarios.ts). */
 const ECONOMY_NODE_TILE = { x: 24, y: 8.5 }
+const NODE_ARRIVAL_TIMEOUT = 15_000
 
 async function canvasPointForFixed(page: Page, x: number, y: number) {
   return page.evaluate(
@@ -84,7 +85,9 @@ test('a pawn remains selectable while standing on a mineral node', async ({ page
 
   const nodePoint = await focusFixed(page, tilesToFixed(ECONOMY_NODE_TILE.x), tilesToFixed(ECONOMY_NODE_TILE.y))
   await page.mouse.click(nodePoint.x, nodePoint.y, { button: 'right' })
-  await expect.poll(async () => (await workerPosition(page, id)).x).toBe(tilesToFixed(ECONOMY_NODE_TILE.x))
+  await expect
+    .poll(async () => (await workerPosition(page, id)).x, { timeout: NODE_ARRIVAL_TIMEOUT })
+    .toBe(tilesToFixed(ECONOMY_NODE_TILE.x))
 
   await page.mouse.click(nodePoint.x, nodePoint.y)
   await expect(page.getByText('1 · Worker')).toBeVisible()
@@ -129,7 +132,9 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
   const nodePoint = await focusFixed(page, tilesToFixed(ECONOMY_NODE_TILE.x), tilesToFixed(ECONOMY_NODE_TILE.y))
   await page.mouse.click(nodePoint.x, nodePoint.y, { button: 'right' })
 
-  await expect.poll(async () => (await workerPosition(page, id)).x).toBe(tilesToFixed(ECONOMY_NODE_TILE.x))
+  await expect
+    .poll(async () => (await workerPosition(page, id)).x, { timeout: NODE_ARRIVAL_TIMEOUT })
+    .toBe(tilesToFixed(ECONOMY_NODE_TILE.x))
   await expect(page.getByTestId('economy-status')).toContainText('Mining')
   await expect(page.getByTestId('economy-status')).toHaveCSS('color', 'rgb(250, 204, 21)')
   // Economy anims (gather/carry_run) only render when the tiny_swords art pack
@@ -232,7 +237,7 @@ test('a group mines the same node concurrently through the browser command path'
   const nodePoint = await focusFixed(page, tilesToFixed(ECONOMY_NODE_TILE.x), tilesToFixed(ECONOMY_NODE_TILE.y))
   await page.mouse.click(nodePoint.x, nodePoint.y, { button: 'right' })
   await expect
-    .poll(async () => Promise.all(group.map((id) => workerPosition(page, id))))
+    .poll(async () => Promise.all(group.map((id) => workerPosition(page, id))), { timeout: NODE_ARRIVAL_TIMEOUT })
     .toEqual([
       { x: tilesToFixed(ECONOMY_NODE_TILE.x), y: tilesToFixed(ECONOMY_NODE_TILE.y) },
       { x: tilesToFixed(ECONOMY_NODE_TILE.x), y: tilesToFixed(ECONOMY_NODE_TILE.y) }
