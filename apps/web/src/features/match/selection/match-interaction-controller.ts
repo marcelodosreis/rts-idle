@@ -155,15 +155,16 @@ export class MatchInteractionController {
     }
     const ownedPawns = this.selectedWorkers()
     if (building.status === 'COMPLETED') {
+      const carrying = ownedPawns.filter((unitId) => this.context.unitStates.get(unitId)?.carrying === true)
+      if (building.owner === this.context.humanPlayer && carrying.length > 0) {
+        this.context.sendCommand({ type: 'DEPOSIT', payload: { unitIds: carrying, buildingId: id } })
+        return
+      }
       if (building.owner === this.context.humanPlayer && this.isDamaged(building.hp, building.maxHp)) {
         if (ownedPawns.length > 0) {
           this.context.sendCommand({ type: 'REPAIR', payload: { unitIds: ownedPawns, targetId: id } })
         }
         return
-      }
-      const carrying = ownedPawns.filter((unitId) => this.context.unitStates.get(unitId)?.carrying === true)
-      if (building.owner === this.context.humanPlayer && carrying.length > 0) {
-        this.context.sendCommand({ type: 'DEPOSIT', payload: { unitIds: carrying, buildingId: id } })
       }
       return
     }

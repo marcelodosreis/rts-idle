@@ -159,8 +159,12 @@ describe('MatchInteractionController', () => {
     ])
   })
 
-  it('repairs a damaged owned completed building instead of depositing', () => {
+  it('repairs a damaged owned completed building with a non-carrying worker', () => {
     const match = context({
+      unitStates: new Map([
+        [1, { kind: 'pawn', owner: 0 }],
+        [2, { kind: 'warrior', owner: 0 }]
+      ]),
       buildings: () => [
         {
           id: 7,
@@ -182,6 +186,32 @@ describe('MatchInteractionController', () => {
 
     expect((match as MatchInteractionContext & { sent: CommandIntent[] }).sent).toEqual([
       { type: 'REPAIR', payload: { unitIds: [1], targetId: 7 } }
+    ])
+  })
+
+  it('deposits cargo at a damaged owned completed building before considering repair', () => {
+    const match = context({
+      buildings: () => [
+        {
+          id: 7,
+          buildingType: 'BASE',
+          x: 100,
+          y: 200,
+          owner: 0,
+          footprint: { width: 2, height: 2 },
+          status: 'COMPLETED',
+          progressTicks: 100,
+          totalTicks: 100,
+          hp: 250,
+          maxHp: 500
+        }
+      ]
+    })
+
+    new MatchInteractionController(match).buildingCommand(7)
+
+    expect((match as MatchInteractionContext & { sent: CommandIntent[] }).sent).toEqual([
+      { type: 'DEPOSIT', payload: { unitIds: [1], buildingId: 7 } }
     ])
   })
 
