@@ -1,5 +1,6 @@
 import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
-import { Owner } from '../ecs/components.js'
+import { unitCanAttack } from '../data/unit-stats.js'
+import { Kind, Owner } from '../ecs/components.js'
 import type { GameState } from '../state/state.js'
 import { MAX_UNITS_PER_COMMAND } from './limits.js'
 
@@ -40,6 +41,21 @@ export function validateOwnedUnits(state: GameState, command: ScheduledCommand, 
         command,
         `${command.intent.type}: player ${command.playerId} does not own entity ${unitId}`
       )
+    }
+  }
+}
+
+/** Rejects offensive orders that include a support-only Monk. */
+export function validateAttackCapableUnits(
+  state: GameState,
+  command: ScheduledCommand,
+  unitIds: readonly number[]
+): void {
+  validateOwnedUnits(state, command, unitIds)
+  const kinds = state.world.store(Kind)
+  for (const unitId of unitIds) {
+    if (!unitCanAttack(kinds.get(unitId))) {
+      throw new CommandRejectedError('INVALID_STATE', command, `${command.intent.type}: Monk cannot attack`)
     }
   }
 }

@@ -19,7 +19,12 @@ export function applyRally(state: GameState, command: ScheduledCommand): void {
   if (building.status !== 'COMPLETED') {
     reject(command, 'INVALID_STATE', `RALLY: producer ${producerId} is not complete`)
   }
-  if (building.buildingType !== 'BASE' && building.buildingType !== 'BARRACKS') {
+  if (
+    building.buildingType !== 'CASTLE' &&
+    building.buildingType !== 'BARRACKS' &&
+    building.buildingType !== 'ARCHERY' &&
+    building.buildingType !== 'MONASTERY'
+  ) {
     reject(command, 'INVALID_STATE', `RALLY: building ${producerId} cannot produce units`)
   }
   if (state.world.store(Owner).get(producerId)?.owner !== command.playerId) {

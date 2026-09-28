@@ -1,9 +1,9 @@
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { CommandRejectedError } from '../contracts/commands.js'
 import { MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
-import { Cargo, Kind, MineralNode, Movement, Orders, Position } from '../ecs/components.js'
+import { Cargo, Kind, MineralNode, Orders, Position } from '../ecs/components.js'
+import { setMovementDestination } from '../movement/destination.js'
 import type { GameState } from '../state/state.js'
-import { UNIT_SPEED_TILES_PER_SECOND } from './move.js'
 import { validateOwnedUnits } from './validate-units.js'
 
 /** Validates and applies a GATHER command without partially mutating a selection. */
@@ -37,23 +37,11 @@ export function applyGather(state: GameState, command: ScheduledCommand): void {
   }
 
   const orders = state.world.store(Orders)
-  const movements = state.world.store(Movement)
   const sortedWorkerIds = [...unitIds].sort((a, b) => a - b)
   for (const unitId of sortedWorkerIds) {
     orders.set(unitId, {
       queue: [{ type: 'GATHER', nodeId, baseId: null, phase: 'TO_NODE', progressTicks: 0 }]
     })
-    const workerPosition = positions.get(unitId)!
-    if (workerPosition.x === nodePosition.x && workerPosition.y === nodePosition.y) {
-      movements.delete(unitId)
-    } else {
-      movements.set(unitId, {
-        speedTilesPerSecond: UNIT_SPEED_TILES_PER_SECOND,
-        destX: nodePosition.x,
-        destY: nodePosition.y,
-        remainderX: 0,
-        remainderY: 0
-      })
-    }
+    setMovementDestination(state, unitId, nodePosition.x, nodePosition.y)
   }
 }

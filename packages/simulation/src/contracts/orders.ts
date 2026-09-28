@@ -32,3 +32,4 @@ export type Order =
       readonly workPoint: { readonly x: Fixed; readonly y: Fixed }
     }
   | { readonly type: 'REPAIR'; readonly targetId: EntityId; readonly progressTicks: number }
+  | { readonly type: 'HEAL'; readonly targetId: EntityId }
