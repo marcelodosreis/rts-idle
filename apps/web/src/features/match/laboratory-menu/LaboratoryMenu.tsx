@@ -3,6 +3,7 @@ import { FlaskConical, Settings2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { Separator } from '@/shared/ui/separator'
+import { preloadLaboratoryPage } from '../../../routes/laboratory-route-loader.js'
 import type { MessageLogEntry } from '../lifecycle/useMessageLog'
 import { OptionsSection, ServerLogSection, SessionSection, statusDot } from './laboratory-menu-sections.js'
 
@@ -57,6 +58,9 @@ function LaboratoryLink() {
       <Link
         className="flex items-center justify-center rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         to="/laboratory"
+        onClick={preloadLaboratoryPage}
+        onFocus={preloadLaboratoryPage}
+        onPointerEnter={preloadLaboratoryPage}
       >
         Open Laboratory
       </Link>
