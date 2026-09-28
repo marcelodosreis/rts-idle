@@ -1,9 +1,10 @@
 import { BUILDING_DEFINITIONS } from '@rts/game-data'
-import { tilesToFixed } from '@rts/shared'
+import { tilesToFixed, type UnitKind } from '@rts/shared'
 import {
   Building,
   createSimulation,
   Health,
+  Kind,
   Movement,
   Orders,
   Owner,
@@ -13,11 +14,18 @@ import {
 import { describe, expect, it } from 'vitest'
 import { SEEDS, TEST_IDENTITY, worldWithCombatUnits } from '../../fixtures/index.js'
 
-function combatSim(ownerPositions: { readonly owner: 0 | 1 | 2 | 3; readonly x: number; readonly y: number }[]) {
+function combatSim(
+  ownerPositions: { readonly owner: 0 | 1 | 2 | 3; readonly x: number; readonly y: number }[],
+  kinds: readonly UnitKind[] = []
+) {
   const world = worldWithCombatUnits(ownerPositions.map((entry) => entry.owner))
   const ids = world.aliveIds()
   for (let i = 0; i < ids.length; i += 1) {
     world.store(Position).set(ids[i]!, { x: ownerPositions[i]!.x, y: ownerPositions[i]!.y })
+    const kind = kinds[i]
+    if (kind !== undefined) {
+      world.store(Kind).set(ids[i]!, kind)
+    }
   }
   const sim = createSimulation({ seed: SEEDS.simulation.fixedTick, identity: TEST_IDENTITY, initialWorld: world })
   return { sim, ids }
@@ -32,6 +40,52 @@ function collectEvents(sim: ReturnType<typeof createSimulation>, steps: number):
 }
 
 describe('basic combat (P1.05)', () => {
+  it('Monk HOLD does not auto-attack enemies in range', () => {
+    const { sim, ids } = combatSim(
+      [
+        { owner: 0, x: 0, y: 0 },
+        { owner: 1, x: tilesToFixed(1), y: 0 }
+      ],
+      ['monk']
+    )
+    const [monk, target] = ids
+
+    const result = sim.step([
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'HOLD', payload: { unitIds: [monk!] } }
+      }
+    ])
+
+    expect(sim.inspectState().world.store(Health).get(target!)?.current).toBe(100)
+    expect(result.events.some((event) => event.type === 'attackFired' && event.attackerId === monk)).toBe(false)
+  })
+
+  it('rejects direct ATTACK orders for Monk', () => {
+    const { sim, ids } = combatSim(
+      [
+        { owner: 0, x: 0, y: 0 },
+        { owner: 1, x: tilesToFixed(1), y: 0 }
+      ],
+      ['monk']
+    )
+    const [monk, target] = ids
+
+    const result = sim.step([
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'ATTACK', payload: { unitIds: [monk!], targetId: target! } }
+      }
+    ])
+
+    expect(result.rejected[0]?.code).toBe('INVALID_STATE')
+    expect(result.rejected[0]?.message).toContain('Monk cannot attack')
+  })
+
   it('ATTACK fires at an in-range target and deals damage', () => {
     const { sim, ids } = combatSim([
       { owner: 0, x: 0, y: 0 },
@@ -163,14 +217,14 @@ describe('basic combat (P1.05)', () => {
     world.store(Position).set(buildingId, { x: tilesToFixed(1), y: 0 })
     world.store(Owner).set(buildingId, { owner: 1 })
     world.store(Building).set(buildingId, {
-      buildingType: 'BASE',
+      buildingType: 'CASTLE',
       status: 'COMPLETED',
       progressTicks: 100,
       totalTicks: 100,
       builderId: null,
-      footprint: { x: 1, y: 0, ...BUILDING_DEFINITIONS.BASE.footprint }
+      footprint: { x: 1, y: 0, ...BUILDING_DEFINITIONS.CASTLE.footprint }
     })
-    world.store(Health).set(buildingId, { current: 10, max: BUILDING_DEFINITIONS.BASE.maxHp })
+    world.store(Health).set(buildingId, { current: 10, max: BUILDING_DEFINITIONS.CASTLE.maxHp })
     const sim = createSimulation({ seed: SEEDS.simulation.fixedTick, identity: TEST_IDENTITY, initialWorld: world })
     const attacker = world.aliveIds()[0]!
 

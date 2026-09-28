@@ -1,7 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 
 async function waitForUnits(page: Page) {
-  await page.goto('/?scenario=6v6&aggression=offensive')
+  await page.goto('/?scenario=8v8&aggression=offensive')
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
   const positions = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})
   expect(Object.keys(positions).length).toBeGreaterThan(0)
