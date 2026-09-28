@@ -74,7 +74,7 @@ test('production buttons stay inside the completed construction panel', async ({
   await expect(page.getByTestId('train-pawn')).toBeVisible()
   await expect(page.getByTestId('train-warrior')).toHaveCount(0)
   await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 0/5')
-  await expect(page.getByTestId('production-panel').locator('button')).toHaveCount(2)
+  await expect(page.getByTestId('production-panel').locator('button')).toHaveCount(3)
   await page.getByTestId('train-pawn').click()
   await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 1/5')
   await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE')
@@ -108,7 +108,7 @@ test('cancels any queued production row with confirmation and refund feedback', 
   }
   await expect(page.getByTestId('hud-resource-mineral')).toContainText('0')
   const queueFitsSelection = await page
-    .getByRole('list', { name: 'Production queue' })
+    .getByRole('list', { name: 'Production and research queue' })
     .evaluate((queue) => queue.scrollWidth <= queue.clientWidth)
   expect(queueFitsSelection).toBe(true)
   await expect(page.getByTestId('production-item-0').getByRole('button')).toHaveCount(0)

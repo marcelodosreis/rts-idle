@@ -39,7 +39,7 @@ async function unitsByOwner(page: Page): Promise<UnitInfo[]> {
 }
 
 test('STOP cancels auto-orders and an armed ATTACK re-engages the target', async ({ page }) => {
-  await page.goto('/?scenario=6v6&aggression=offensive')
+  await page.goto('/?scenario=8v8&aggression=offensive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
   const blueIds = units.filter((unit) => unit.owner === 0).map((unit) => unit.id)
@@ -89,7 +89,7 @@ test('STOP cancels auto-orders and an armed ATTACK re-engages the target', async
 })
 
 test('left-clicking empty ground cancels an armed attack-move mode', async ({ page }) => {
-  await page.goto('/?scenario=6v6&aggression=offensive')
+  await page.goto('/?scenario=8v8&aggression=offensive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
   const worker = units.find((unit) => unit.owner === 0)
@@ -108,7 +108,7 @@ test('left-clicking empty ground cancels an armed attack-move mode', async ({ pa
 })
 
 test('SURRENDER ends the match with a defeat overlay', async ({ page }) => {
-  await page.goto('/?scenario=6v6&aggression=offensive')
+  await page.goto('/?scenario=8v8&aggression=offensive')
   await settleUnits(page)
   await page.getByRole('button', { name: 'Surrender' }).click()
 

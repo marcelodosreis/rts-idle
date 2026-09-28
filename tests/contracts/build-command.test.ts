@@ -8,7 +8,7 @@ const command = (unitId: number, x = 0, y = 0) => ({
   tick: 1,
   playerId: 0,
   sequence: 1,
-  intent: { type: 'BUILD' as const, payload: { unitId, buildingType: 'BASE' as const, x, y } }
+  intent: { type: 'BUILD' as const, payload: { unitId, buildingType: 'CASTLE' as const, x, y } }
 })
 
 function simulation(kind: 'pawn' | 'warrior' = 'pawn', owner = 0, gold = 100) {
@@ -30,7 +30,7 @@ describe('BUILD command contract', () => {
     expect(
       isCommandMessage({
         type: 'command',
-        intent: { type: 'BUILD', payload: { unitId: 1, buildingType: 'BASE', x: 2, y: 3 } }
+        intent: { type: 'BUILD', payload: { unitId: 1, buildingType: 'CASTLE', x: 2, y: 3 } }
       })
     ).toBe(true)
     expect(
@@ -42,13 +42,13 @@ describe('BUILD command contract', () => {
     expect(
       isCommandMessage({
         type: 'command',
-        intent: { type: 'BUILD', payload: { unitId: 1, buildingType: 'BASE', x: 2.5, y: 3 } }
+        intent: { type: 'BUILD', payload: { unitId: 1, buildingType: 'CASTLE', x: 2.5, y: 3 } }
       })
     ).toBe(false)
     expect(
       isCommandMessage({
         type: 'command',
-        intent: { type: 'BUILD', payload: { unitId: 1, buildingType: 'TOWER', x: 2, y: 3 } }
+        intent: { type: 'BUILD', payload: { unitId: 1, buildingType: 'UNKNOWN', x: 2, y: 3 } }
       })
     ).toBe(false)
   })
