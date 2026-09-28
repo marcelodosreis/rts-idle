@@ -4,6 +4,7 @@ import {
   Building,
   createUnitEntity,
   createWorld,
+  Health,
   MineralNode,
   Orders,
   Owner,
@@ -72,6 +73,8 @@ function seedBuildings(context: SeedContext, buildings: readonly DemoBaseSpawn[]
       },
       rallyPoint: null
     })
+    const maxHp = BUILDING_DEFINITIONS.BASE.maxHp
+    context.world.store(Health).set(id, { current: base.initialHp ?? maxHp, max: maxHp })
   }
 }
 

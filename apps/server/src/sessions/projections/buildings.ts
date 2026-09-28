@@ -1,11 +1,12 @@
 import type { SnapshotBuilding } from '@rts/protocol'
-import { Building, Owner, Position, Production, type World } from '@rts/simulation'
+import { Building, Health, Owner, Position, Production, type World } from '@rts/simulation'
 
 export function projectBuildings(world: World): readonly SnapshotBuilding[] {
   const buildings = world.store(Building)
   const positions = world.store(Position)
   const owners = world.store(Owner)
   const productions = world.store(Production)
+  const healths = world.store(Health)
   return world
     .aliveIds()
     .filter((id) => buildings.has(id))
@@ -17,6 +18,7 @@ export function projectBuildings(world: World): readonly SnapshotBuilding[] {
         throw new Error(`GameSession: building ${id} is missing projection data`)
       }
       const production = productions.get(id)
+      const health = healths.get(id)
       return {
         id,
         buildingType: building.buildingType,
@@ -29,6 +31,7 @@ export function projectBuildings(world: World): readonly SnapshotBuilding[] {
         progressTicks: building.progressTicks,
         totalTicks: building.totalTicks,
         rallyPoint: building.rallyPoint ?? null,
+        ...(health === undefined ? {} : { hp: health.current, maxHp: health.max }),
         ...(production === undefined ? {} : { production: { queue: production.queue.map((item) => ({ ...item })) } })
       }
     })

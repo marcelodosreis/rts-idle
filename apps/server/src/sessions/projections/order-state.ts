@@ -18,5 +18,8 @@ export function deriveOrderState(front: Order | undefined, hasMovement: boolean)
   if (front?.type === 'BUILD') {
     return hasMovement ? 'moving' : 'building'
   }
+  if (front?.type === 'REPAIR') {
+    return 'repairing'
+  }
   return hasMovement ? 'moving' : 'idle'
 }

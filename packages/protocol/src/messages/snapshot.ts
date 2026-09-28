@@ -16,6 +16,7 @@ import {
   type PlayerId,
   PRODUCTION_ITEM_STATUSES,
   type ProductionItemStatus,
+  REPAIR_STOP_REASONS,
   SIMULATION_EVENT_TYPES,
   type SimulationEvent,
   TRAINABLE_UNIT_KINDS,
@@ -24,7 +25,16 @@ import {
 } from '@rts/shared'
 
 /** High-level unit behavior for the renderer (drives idle/run/attack). */
-export const ORDER_STATES = ['idle', 'moving', 'building', 'attacking', 'hold', 'patrol', 'attack_move'] as const
+export const ORDER_STATES = [
+  'idle',
+  'moving',
+  'building',
+  'attacking',
+  'repairing',
+  'hold',
+  'patrol',
+  'attack_move'
+] as const
 
 export type OrderState = (typeof ORDER_STATES)[number]
 
@@ -49,7 +59,11 @@ export interface SnapshotUnit {
   readonly kind?: UnitKind
   readonly hp?: number
   readonly maxHp?: number
+  /** Horizontal fixed-unit target used to orient work animations. */
+  readonly lookAtX?: Fixed
   readonly orderState?: OrderState
+  readonly repairProgressTicks?: number
+  readonly repairProgressMax?: number
   readonly economy?: SnapshotEconomy
   /** True while the worker holds cargo, independent of its current order. */
   readonly carrying?: boolean
@@ -85,6 +99,8 @@ export interface SnapshotBuilding {
   readonly status: ConstructionStatus
   readonly progressTicks: number
   readonly totalTicks: number
+  readonly hp?: number
+  readonly maxHp?: number
   readonly rallyPoint?: { readonly x: Fixed; readonly y: Fixed } | null
   readonly production?: SnapshotProduction
 }
@@ -158,6 +174,8 @@ function isSnapshotBuilding(value: unknown): boolean {
     isInteger(progressTicks) &&
     isInteger(totalTicks) &&
     totalTicks > 0 &&
+    isOptionalNonNegativeInteger(field(value, 'hp')) &&
+    isOptionalNonNegativeInteger(field(value, 'maxHp')) &&
     (rallyPoint === undefined ||
       rallyPoint === null ||
       (isRecord(rallyPoint) && isInteger(field(rallyPoint, 'x')) && isInteger(field(rallyPoint, 'y')))) &&
@@ -239,6 +257,9 @@ function isSnapshotUnit(value: unknown): boolean {
     (kind === undefined || isOneOf(UNIT_KINDS, kind)) &&
     isOptionalNonNegativeInteger(field(value, 'hp')) &&
     isOptionalNonNegativeInteger(field(value, 'maxHp')) &&
+    isOptionalNonNegativeInteger(field(value, 'repairProgressTicks')) &&
+    isOptionalNonNegativeInteger(field(value, 'repairProgressMax')) &&
+    (field(value, 'lookAtX') === undefined || isInteger(field(value, 'lookAtX'))) &&
     (orderState === undefined || isOneOf(ORDER_STATES, orderState)) &&
     (economy === undefined || isSnapshotEconomy(economy)) &&
     (carrying === undefined || typeof carrying === 'boolean')
@@ -275,6 +296,12 @@ function isSimulationEvent(value: unknown): boolean {
     case 'damageDealt':
       return (
         isInteger(field(value, 'targetId')) && isInteger(field(value, 'amount')) && isInteger(field(value, 'targetHp'))
+      )
+    case 'repairStopped':
+      return (
+        isInteger(field(value, 'workerId')) &&
+        isInteger(field(value, 'targetId')) &&
+        isOneOf(REPAIR_STOP_REASONS, field(value, 'reason'))
       )
     case 'unitDied': {
       const killerId = field(value, 'killerId')
