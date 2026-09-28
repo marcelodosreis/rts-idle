@@ -1,10 +1,12 @@
 import { fixedToRenderPixels } from '@rts/shared'
-import type { Container, Ticker } from 'pixi.js'
+import type { AnimatedSprite, Container, Ticker } from 'pixi.js'
 import type { AssetLibrary } from '../assets/asset-library.js'
 import { interpolationAlpha, lerpPoint } from '../core/interpolation.js'
 import type { RenderUnit, UnitKind, UnitSpriteState } from '../core/types.js'
+import { frameCountToPixiAnimationSpeed, STANDARD_ATTACK_CYCLE_MS } from '../core/visual-timing.js'
 import { economyFrameKey, FACTIONS } from './economy-animation.js'
-import { frameKey, TARGET_RADIUS, type UnitFrames, UnitSprite } from './sprite.js'
+import { LANCER_ATTACK_DIRECTIONS, lancerAttackFrameKey } from './lancer-animation.js'
+import { frameKey, healEffectKey, TARGET_RADIUS, type UnitFrames, UnitSprite } from './sprite.js'
 
 interface WorldRenderPoint {
   readonly x: number
@@ -14,6 +16,10 @@ interface WorldRenderPoint {
 interface FixedPoint {
   readonly x: number
   readonly y: number
+}
+
+function normalizeAttackSpeed(sprite: AnimatedSprite): void {
+  sprite.animationSpeed = frameCountToPixiAnimationSpeed(sprite.totalFrames, STANDARD_ATTACK_CYCLE_MS)
 }
 
 /**
@@ -40,6 +46,27 @@ export class UnitLayer {
     this.library = library
   }
 
+  private async loadAttackFrames(
+    owner: number,
+    kind: UnitKind
+  ): Promise<{
+    readonly attack: AnimatedSprite | null
+    readonly attackVariants: Readonly<Record<(typeof LANCER_ATTACK_DIRECTIONS)[number], AnimatedSprite | null>> | null
+  }> {
+    if (kind !== 'lancer') {
+      return { attack: await this.library.animated(frameKey(owner, kind, 'attack')), attackVariants: null }
+    }
+    const variants = await Promise.all(
+      LANCER_ATTACK_DIRECTIONS.map((direction) => this.library.animated(lancerAttackFrameKey(owner, direction)))
+    )
+    return {
+      attack: null,
+      attackVariants: Object.fromEntries(
+        LANCER_ATTACK_DIRECTIONS.map((direction, index) => [direction, variants[index] ?? null])
+      ) as Record<(typeof LANCER_ATTACK_DIRECTIONS)[number], AnimatedSprite | null>
+    }
+  }
+
   /** Preloads idle/run/attack frames for a unit kind (fire-and-forget, cached). */
   preloadKind(owner: number, kind: UnitKind): void {
     const cacheKey = `${owner % FACTIONS.length}.${kind}`
@@ -50,22 +77,44 @@ export class UnitLayer {
     void Promise.all([
       this.library.animated(frameKey(owner, kind, 'idle')),
       this.library.animated(frameKey(owner, kind, 'run')),
-      this.library.animated(frameKey(owner, kind, 'attack')),
+      this.library.animated(healEffectKey(owner)),
+      this.loadAttackFrames(owner, kind),
       kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'build')) : Promise.resolve(null),
       kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'repairRun')) : Promise.resolve(null),
       kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'repairInteract')) : Promise.resolve(null),
       kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'gather')) : Promise.resolve(null),
       kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'carryIdle')) : Promise.resolve(null),
       kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'carryRun')) : Promise.resolve(null)
-    ]).then(([idle, run, attack, build, repairRun, repairInteract, gather, carryIdle, carryRun]) => {
+    ]).then(([idle, run, healEffect, attackFrames, build, repairRun, repairInteract, gather, carryIdle, carryRun]) => {
       if (idle === null || run === null) {
         this.loadState.set(cacheKey, 'failed')
         return
       }
       idle.play()
       run.play()
-      attack?.play()
-      const frames: UnitFrames = { idle, run, attack, build, repairRun, repairInteract, gather, carryIdle, carryRun }
+      if (attackFrames.attack !== null) {
+        normalizeAttackSpeed(attackFrames.attack)
+        attackFrames.attack.play()
+      }
+      for (const attack of Object.values(attackFrames.attackVariants ?? {})) {
+        if (attack !== null) {
+          normalizeAttackSpeed(attack)
+          attack.play()
+        }
+      }
+      const frames: UnitFrames = {
+        idle,
+        run,
+        attack: attackFrames.attack,
+        attackVariants: attackFrames.attackVariants,
+        healEffect,
+        build,
+        repairRun,
+        repairInteract,
+        gather,
+        carryIdle,
+        carryRun
+      }
       this.framesByKind.set(cacheKey, frames)
       this.loadState.set(cacheKey, 'loaded')
       for (const sprite of this.units.values()) {
@@ -113,7 +162,8 @@ export class UnitLayer {
       economy: unit.economy,
       carrying: unit.carrying ?? false,
       building: unit.orderState === 'building',
-      repairing: unit.orderState === 'repairing'
+      repairing: unit.orderState === 'repairing',
+      healing: unit.orderState === 'healing'
     })
     sprite.setEconomyBar(unit.economy)
   }
@@ -213,6 +263,10 @@ export class UnitLayer {
     }
   }
 
+  beginHealEffect(id: number): void {
+    this.units.get(id)?.beginHealEffect()
+  }
+
   /** Current interpolated sprite position in world space (render pixels). */
   position(id: number): { readonly x: number; readonly y: number } | undefined {
     const sprite = this.units.get(id)
@@ -243,10 +297,10 @@ export class UnitLayer {
   }
 
   /** Flips a unit to face the fixed x of its attack target (never fights back to front). */
-  faceToward(id: number, targetFixedX: number): void {
+  faceToward(id: number, targetFixedX: number, targetFixedY: number): void {
     const sprite = this.units.get(id)
     if (sprite !== undefined) {
-      sprite.faceToward(fixedToRenderPixels(targetFixedX))
+      sprite.faceToward(fixedToRenderPixels(targetFixedX), fixedToRenderPixels(targetFixedY))
     }
   }
 

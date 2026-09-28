@@ -1,5 +1,6 @@
 import type { Fixed } from '../primitives/fixed.js'
 import type { EntityId } from '../primitives/ids.js'
+import type { ResearchType } from './research.js'
 import type { TrainableUnitKind } from './unit-kind.js'
 
 export interface MovePayload {
@@ -48,7 +49,26 @@ export interface RepairPayload {
   readonly targetId: EntityId
 }
 
-export const BUILDING_TYPES = ['BASE', 'BARRACKS', 'SUPPLY_DEPOT'] as const
+export interface HealPayload {
+  readonly unitIds: readonly EntityId[]
+  readonly targetId: EntityId
+}
+
+export interface ResearchPayload {
+  readonly monasteryId: EntityId
+  readonly researchType: ResearchType
+}
+
+export interface CancelResearchPayload {
+  readonly monasteryId: EntityId
+  readonly queueIndex: number
+}
+
+export interface UpgradeCastlePayload {
+  readonly castleId: EntityId
+}
+
+export const BUILDING_TYPES = ['CASTLE', 'BARRACKS', 'ARCHERY', 'MONASTERY', 'HOUSE', 'TOWER'] as const
 
 export type BuildingType = (typeof BUILDING_TYPES)[number]
 
@@ -68,10 +88,14 @@ export const COMMAND_TYPES = [
   'GATHER',
   'DEPOSIT',
   'REPAIR',
+  'HEAL',
   'BUILD',
+  'UPGRADE_CASTLE',
   'CANCEL_CONSTRUCTION',
   'TRAIN',
   'CANCEL_PRODUCTION',
+  'RESEARCH',
+  'CANCEL_RESEARCH',
   'RALLY',
   'SURRENDER'
 ] as const
@@ -125,9 +149,13 @@ export type CommandIntent =
   | { readonly type: 'GATHER'; readonly payload: GatherPayload }
   | { readonly type: 'DEPOSIT'; readonly payload: DepositPayload }
   | { readonly type: 'REPAIR'; readonly payload: RepairPayload }
+  | { readonly type: 'HEAL'; readonly payload: HealPayload }
   | { readonly type: 'BUILD'; readonly payload: BuildPayload }
+  | { readonly type: 'UPGRADE_CASTLE'; readonly payload: UpgradeCastlePayload }
   | { readonly type: 'CANCEL_CONSTRUCTION'; readonly payload: CancelConstructionPayload }
   | { readonly type: 'TRAIN'; readonly payload: TrainPayload }
   | { readonly type: 'CANCEL_PRODUCTION'; readonly payload: CancelProductionPayload }
+  | { readonly type: 'RESEARCH'; readonly payload: ResearchPayload }
+  | { readonly type: 'CANCEL_RESEARCH'; readonly payload: CancelResearchPayload }
   | { readonly type: 'RALLY'; readonly payload: RallyPayload }
   | { readonly type: 'SURRENDER'; readonly payload: SurrenderPayload }
