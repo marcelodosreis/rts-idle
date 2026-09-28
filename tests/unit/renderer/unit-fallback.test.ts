@@ -4,7 +4,7 @@ import { FALLBACK_GLYPH } from '../../../packages/renderer/src/units/fallback.js
 describe('FALLBACK_GLYPH', () => {
   it('maps each UnitKind to a distinct letter', () => {
     const letters = Object.values(FALLBACK_GLYPH).map((g) => g.letter)
-    expect(new Set(letters).size).toBe(3)
+    expect(new Set(letters).size).toBe(5)
   })
 
   it('uses the first letter of each kind name', () => {

@@ -7,7 +7,7 @@ describe('match bootstrap messages', () => {
     expect(
       isMatchRequest({
         type: 'match_request',
-        scenarioId: '6v6',
+        scenarioId: '8v8',
         aggression: 'offensive',
         map: { source: 'local', definition: map }
       })
@@ -15,13 +15,20 @@ describe('match bootstrap messages', () => {
     expect(
       isMatchConfig({
         type: 'match_config',
-        scenario: { id: '6v6', label: '6v6' },
-        scenarios: [{ id: '6v6', label: '6v6' }],
+        scenario: { id: '8v8', label: '8v8' },
+        scenarios: [{ id: '8v8', label: '8v8' }],
         map,
         buildings: [
-          { type: 'BASE', label: 'Base', footprint: { width: 2, height: 2 }, costMinerals: 100, constructionTicks: 100 }
+          {
+            type: 'CASTLE',
+            label: 'Castle',
+            footprint: { width: 5, height: 4 },
+            costMinerals: 100,
+            constructionTicks: 100
+          }
         ],
-        production: [{ unitKind: 'pawn', producer: 'BASE', costMinerals: 50, trainingTicks: 100, supply: 1 }]
+        production: [{ unitKind: 'pawn', producer: 'CASTLE', costMinerals: 50, trainingTicks: 100, supply: 1 }],
+        research: [{ researchType: 'ATTACK', costMinerals: 150, researchTicks: 600 }]
       })
     ).toBe(true)
   })
@@ -32,7 +39,7 @@ describe('match bootstrap messages', () => {
     expect(
       isMatchRequest({
         type: 'match_request',
-        scenarioId: '6v6',
+        scenarioId: '8v8',
         aggression: 'offensive',
         map: { source: 'local', definition: { width: 999, height: 1, tiles: [] } }
       })
@@ -50,6 +57,7 @@ describe('protocol command message', () => {
       { type: 'command', intent: { type: 'ATTACK', payload: { unitIds: [1], targetId: 5 } } },
       { type: 'command', intent: { type: 'ATTACK_MOVE', payload: { unitIds: [1], x: 100, y: 200 } } },
       { type: 'command', intent: { type: 'REPAIR', payload: { unitIds: [1, 2], targetId: 5 } } },
+      { type: 'command', intent: { type: 'HEAL', payload: { unitIds: [1], targetId: 5 } } },
       { type: 'command', intent: { type: 'CANCEL_CONSTRUCTION', payload: { buildingId: 5 } } },
       { type: 'command', intent: { type: 'TRAIN', payload: { producerId: 5, unitKind: 'warrior' } } },
       { type: 'command', intent: { type: 'RALLY', payload: { producerId: 5, x: 100, y: 200 } } },
@@ -75,6 +83,9 @@ describe('protocol command message', () => {
     ).toBe(false)
     expect(
       isCommandMessage({ type: 'command', intent: { type: 'REPAIR', payload: { unitIds: [1], targetId: 2.5 } } })
+    ).toBe(false)
+    expect(
+      isCommandMessage({ type: 'command', intent: { type: 'HEAL', payload: { unitIds: [1], targetId: 2.5 } } })
     ).toBe(false)
     expect(isCommandMessage({ type: 'command', intent: { type: 'SURRENDER', payload: { unitIds: [1] } } })).toBe(false)
     expect(
@@ -124,6 +135,16 @@ describe('protocol snapshot message', () => {
     expect(isSnapshotMessage(valid)).toBe(true)
   })
 
+  it('accepts Monk heal state and events', () => {
+    expect(
+      isSnapshotMessage({
+        ...valid,
+        units: [{ ...valid.units[0], kind: 'monk', orderState: 'healing', healCooldownRemaining: 159 }, valid.units[1]],
+        events: [{ type: 'healCast', healerId: 1, targetId: 2, amount: 25, targetHp: 115 }]
+      })
+    ).toBe(true)
+  })
+
   it('accepts a projected rally point', () => {
     expect(
       isSnapshotMessage({ ...valid, buildings: [{ ...valid.buildings[0], rallyPoint: { x: 256, y: 512 } }] })
@@ -164,6 +185,35 @@ describe('protocol snapshot message', () => {
                   progressTicks: 300,
                   totalTicks: 300,
                   status: 'COMPLETED_WAITING'
+                }
+              ]
+            }
+          }
+        ]
+      })
+    ).toBe(true)
+  })
+
+  it('accepts Research and Monk entries in one producer queue', () => {
+    expect(
+      isSnapshotMessage({
+        ...valid,
+        buildings: [
+          {
+            ...valid.buildings[0],
+            status: 'COMPLETED',
+            builderId: null,
+            buildingType: 'MONASTERY',
+            production: {
+              queue: [
+                { researchType: 'ATTACK', costMinerals: 150, progressTicks: 4, totalTicks: 600, status: 'ACTIVE' },
+                {
+                  unitKind: 'monk',
+                  costMinerals: 125,
+                  reservedSupply: 1,
+                  progressTicks: 0,
+                  totalTicks: 300,
+                  status: 'QUEUED'
                 }
               ]
             }
@@ -298,7 +348,9 @@ describe('protocol snapshot message', () => {
         buildings: [{ ...valid.buildings[0]!, footprint: { width: 0, height: 3 } }]
       })
     ).toBe(false)
-    expect(isSnapshotMessage({ ...valid, buildings: [{ ...valid.buildings[0]!, buildingType: 'TOWER' }] })).toBe(false)
+    expect(isSnapshotMessage({ ...valid, buildings: [{ ...valid.buildings[0]!, buildingType: 'UNKNOWN' }] })).toBe(
+      false
+    )
     expect(isSnapshotMessage({ ...valid, buildings: [{ ...valid.buildings[0]!, builderId: -1 }] })).toBe(false)
   })
 
@@ -366,7 +418,7 @@ describe('protocol error message', () => {
       isErrorMessage({
         type: 'error',
         message: 'scenario spawn is outside or on invalid terrain',
-        scenarios: [{ id: '6v6', label: '6v6' }]
+        scenarios: [{ id: '8v8', label: '8v8' }]
       })
     ).toBe(true)
   })
@@ -375,8 +427,8 @@ describe('protocol error message', () => {
     expect(isErrorMessage(null)).toBe(false)
     expect(isErrorMessage({ type: 'error' })).toBe(false)
     expect(isErrorMessage({ type: 'error', message: 42 })).toBe(false)
-    expect(isErrorMessage({ type: 'error', message: 'boom', scenarios: [{ id: '', label: '6v6' }] })).toBe(false)
-    expect(isErrorMessage({ type: 'error', message: 'boom', scenarios: '6v6' })).toBe(false)
+    expect(isErrorMessage({ type: 'error', message: 'boom', scenarios: [{ id: '', label: '8v8' }] })).toBe(false)
+    expect(isErrorMessage({ type: 'error', message: 'boom', scenarios: '8v8' })).toBe(false)
     expect(isErrorMessage({ type: 'snapshot', message: 'x' })).toBe(false)
   })
 })
