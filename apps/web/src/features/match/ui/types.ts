@@ -20,6 +20,8 @@ export interface HudSelectionUnit {
   readonly orderState?: OrderState
   readonly hp?: number
   readonly maxHp?: number
+  readonly repairProgressTicks?: number
+  readonly repairProgressMax?: number
   readonly economy?: {
     readonly phase: EconomyPhase
     readonly cargoAmount: number
@@ -39,6 +41,8 @@ export interface HudConstruction {
   readonly progressTicks: number
   readonly totalTicks: number
   readonly builderId: number | null
+  readonly hp?: number
+  readonly maxHp?: number
   readonly rallyPoint?: { readonly x: number; readonly y: number } | null
   readonly production?: SnapshotProduction
 }
