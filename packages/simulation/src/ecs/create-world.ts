@@ -1,5 +1,6 @@
 import { Building } from './building-component.js'
 import {
+  AbilityCooldown,
   Cargo,
   Combat,
   Health,
@@ -25,6 +26,7 @@ export function createWorld(): World {
   world.registerComponent(Orders)
   world.registerComponent(Health)
   world.registerComponent(Combat)
+  world.registerComponent(AbilityCooldown)
   world.registerComponent(Kind)
   world.registerComponent(MineralNode)
   world.registerComponent(Building)

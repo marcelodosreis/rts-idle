@@ -12,5 +12,9 @@
  * 0.9.0: player supply and Supply Depot state joined canonical snapshots.
  * 0.10.0: production queues and reserved supply joined canonical snapshots.
  * 0.11.0: producer rally points joined canonical snapshots.
+ * 0.12.0: Castle II, Research, modifiers, and fixed-point movement joined
+ * canonical snapshots.
+ * 0.13.0: Monk and Research entries joined one canonical Monastery queue.
+ * 0.14.0: Monk Heal orders, cooldowns, and ability events joined canonical state.
  */
-export const SIMULATION_VERSION = '0.11.0'
+export const SIMULATION_VERSION = '0.14.0'

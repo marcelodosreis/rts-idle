@@ -2,7 +2,7 @@ import type { EntityId } from '@rts/shared'
 import type { BuildingData } from '../ecs/building-component.js'
 
 export function isCompletedBase(building: BuildingData | undefined): building is BuildingData {
-  return building !== undefined && building.buildingType === 'BASE' && building.status === 'COMPLETED'
+  return building !== undefined && building.buildingType === 'CASTLE' && building.status === 'COMPLETED'
 }
 
 export function isActiveConstruction(building: BuildingData | undefined): building is BuildingData {

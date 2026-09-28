@@ -8,15 +8,21 @@ import type { BuildingType, UnitKind } from '@rts/shared'
  */
 
 const BUILDING_TYPE_TAGS: Readonly<Record<BuildingType, number>> = {
-  BASE: 0,
+  CASTLE: 0,
   BARRACKS: 1,
-  SUPPLY_DEPOT: 2
+  ARCHERY: 2,
+  MONASTERY: 3,
+  HOUSE: 4,
+  TOWER: 5
 }
 
 const BUILDING_TYPE_BY_TAG: Readonly<Record<number, BuildingType>> = {
-  0: 'BASE',
+  0: 'CASTLE',
   1: 'BARRACKS',
-  2: 'SUPPLY_DEPOT'
+  2: 'ARCHERY',
+  3: 'MONASTERY',
+  4: 'HOUSE',
+  5: 'TOWER'
 }
 
 export function buildingTypeTag(buildingType: BuildingType): number {
@@ -34,13 +40,17 @@ export function buildingTypeFromTag(tag: number): BuildingType {
 const KIND_TAGS: Readonly<Record<UnitKind, number>> = {
   pawn: 0,
   warrior: 1,
-  archer: 2
+  archer: 2,
+  lancer: 3,
+  monk: 4
 }
 
 const KIND_BY_TAG: Readonly<Record<number, UnitKind>> = {
   0: 'pawn',
   1: 'warrior',
-  2: 'archer'
+  2: 'archer',
+  3: 'lancer',
+  4: 'monk'
 }
 
 export function kindTag(kind: UnitKind): number {
