@@ -1,6 +1,6 @@
-import type { BuildCatalogEntry, ProductionCatalogEntry } from '@rts/protocol'
+import type { BuildCatalogEntry, ProductionCatalogEntry, ResearchCatalogEntry } from '@rts/protocol'
 import type { InputProfile } from '@rts/renderer'
-import type { MatchResult } from '@rts/shared'
+import type { MatchResult, ResearchType } from '@rts/shared'
 import type { RefObject } from 'react'
 import type { CommandMode } from '../commands/useCommandModes'
 import type { MessageLogEntry } from '../lifecycle/useMessageLog'
@@ -11,6 +11,14 @@ import { TopBar } from './TopBar'
 import type { HudConstruction, HudMineral, HudResources, HudSelectionUnit } from './types'
 
 export type { HudResources, HudSelectionUnit }
+
+function selectionCanAttack(selection: readonly HudSelectionUnit[]): boolean {
+  return selection.length > 0 && selection.every((unit) => unit.kind !== 'monk')
+}
+
+function selectionCanHeal(selection: readonly HudSelectionUnit[]): boolean {
+  return selection.length === 1 && selection[0]?.kind === 'monk' && (selection[0].healCooldownRemaining ?? 0) === 0
+}
 
 export interface MatchHudProps {
   readonly status: string
@@ -36,11 +44,15 @@ export interface MatchHudProps {
   readonly onArm: (mode: Exclude<CommandMode, 'idle'>) => void
   readonly onCancelConstruction: (buildingId: number) => void
   readonly onCancelProduction: (producerId: number, queueIndex: number) => void
+  readonly onUpgradeCastle: (castleId: number) => void
+  readonly onResearch: (monasteryId: number, researchType: ResearchType) => void
+  readonly onCancelResearch: (monasteryId: number, queueIndex: number) => void
   readonly onTrain: (unitKind: ProductionCatalogEntry['unitKind']) => void
   readonly onSetRally: (producerId: number) => void
   readonly workerSelected: boolean
   readonly buildings: readonly BuildCatalogEntry[]
   readonly production: readonly ProductionCatalogEntry[]
+  readonly research: readonly ResearchCatalogEntry[]
   readonly buildHint: string | null
   readonly onNewMatch: () => void
   readonly onChangeScenario: (id: string) => void
@@ -49,12 +61,93 @@ export interface MatchHudProps {
   readonly onInputProfileChange: (profile: InputProfile) => void
 }
 
-/**
- * Match screen chrome: a glass top bar with resources/status, the battlefield
- * centered in a framed container, and a bottom dock with the selection context
- * card and the command palette. Reads the player observation only — it never
- * computes gameplay. Renders the result overlay when the match finishes.
- */
+type MatchHudFooterProps = Pick<
+  MatchHudProps,
+  | 'selection'
+  | 'construction'
+  | 'mineral'
+  | 'buildings'
+  | 'onCancelConstruction'
+  | 'onCancelProduction'
+  | 'onUpgradeCastle'
+  | 'onResearch'
+  | 'onCancelResearch'
+  | 'onTrain'
+  | 'onSetRally'
+  | 'production'
+  | 'research'
+  | 'resources'
+  | 'commandMode'
+  | 'onStop'
+  | 'onHold'
+  | 'onSurrender'
+  | 'onArm'
+  | 'workerSelected'
+  | 'buildHint'
+>
+
+function MatchHudFooter({
+  selection,
+  construction,
+  mineral,
+  buildings,
+  onCancelConstruction,
+  onCancelProduction,
+  onUpgradeCastle,
+  onResearch,
+  onCancelResearch,
+  onTrain,
+  onSetRally,
+  production,
+  research,
+  resources,
+  commandMode,
+  onStop,
+  onHold,
+  onSurrender,
+  onArm,
+  workerSelected,
+  buildHint
+}: MatchHudFooterProps) {
+  return (
+    <footer className="flex h-44 max-h-44 min-h-44 shrink-0 flex-nowrap items-stretch justify-center gap-2 overflow-x-auto overflow-y-hidden border-t bg-card/70 px-3 pt-3 pb-5 backdrop-blur sm:gap-3 sm:px-4 sm:pt-4 sm:pb-6">
+      <SelectionPanel
+        selection={selection}
+        construction={construction}
+        mineral={mineral}
+        buildings={buildings}
+        humanPlayer={0}
+        onCancelConstruction={onCancelConstruction}
+        onCancelProduction={onCancelProduction}
+        onUpgradeCastle={onUpgradeCastle}
+        onResearch={onResearch}
+        onCancelResearch={onCancelResearch}
+        onTrain={onTrain}
+        onSetRally={onSetRally}
+        production={production}
+        research={research}
+        resources={resources}
+      />
+      <CommandBar
+        disabled={selection.length === 0}
+        mode={commandMode}
+        onStop={onStop}
+        onHold={onHold}
+        onSurrender={onSurrender}
+        {...{ workerSelected, attackCapableSelected: selectionCanAttack(selection) }}
+        monkSelected={selection.length === 1 && selection[0]?.kind === 'monk'}
+        healReady={selectionCanHeal(selection)}
+        healCooldownRemaining={selection[0]?.healCooldownRemaining ?? 0}
+        minerals={resources?.mineral ?? 0}
+        castleTier={resources?.castleTier ?? 1}
+        buildHint={buildHint}
+        buildings={buildings}
+        onArm={onArm}
+      />
+    </footer>
+  )
+}
+
 export function MatchHud({
   status,
   messageLog,
@@ -78,11 +171,15 @@ export function MatchHud({
   onArm,
   onCancelConstruction,
   onCancelProduction,
+  onUpgradeCastle,
+  onResearch,
+  onCancelResearch,
   onTrain,
   onSetRally,
   workerSelected,
   buildings,
   production,
+  research,
   buildHint,
   onNewMatch,
   onChangeScenario,
@@ -115,34 +212,31 @@ export function MatchHud({
           className="aspect-square h-full max-h-full max-w-full min-h-0 min-w-0 overflow-hidden rounded-xl border border-border/50 shadow-2xl"
         />
       </main>
-      <footer className="flex h-40 max-h-40 min-h-40 shrink-0 flex-nowrap items-stretch justify-center gap-2 overflow-hidden border-t bg-card/70 p-3 backdrop-blur sm:gap-3 sm:p-4">
-        <SelectionPanel
-          selection={selection}
-          compact={commandMode !== 'idle'}
-          construction={construction}
-          mineral={mineral}
-          buildings={buildings}
-          humanPlayer={0}
-          onCancelConstruction={onCancelConstruction}
-          onCancelProduction={onCancelProduction}
-          onTrain={onTrain}
-          onSetRally={onSetRally}
-          production={production}
-          resources={resources}
-        />
-        <CommandBar
-          disabled={selection.length === 0}
-          mode={commandMode}
-          onStop={onStop}
-          onHold={onHold}
-          onSurrender={onSurrender}
-          workerSelected={workerSelected}
-          minerals={resources?.mineral ?? 0}
-          buildHint={buildHint}
-          buildings={buildings}
-          onArm={onArm}
-        />
-      </footer>
+      <MatchHudFooter
+        {...{
+          selection,
+          construction,
+          mineral,
+          buildings,
+          onCancelConstruction,
+          onCancelProduction,
+          onUpgradeCastle,
+          onResearch,
+          onCancelResearch,
+          onTrain,
+          onSetRally,
+          production,
+          research,
+          resources,
+          commandMode,
+          onStop,
+          onHold,
+          onSurrender,
+          onArm,
+          workerSelected,
+          buildHint
+        }}
+      />
       {matchResult !== null ? <MatchOverlay result={matchResult} onNewMatch={onNewMatch} /> : null}
     </div>
   )

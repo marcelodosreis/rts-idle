@@ -1,6 +1,6 @@
-import type { BuildCatalogEntry, ProductionCatalogEntry } from '@rts/protocol'
+import type { BuildCatalogEntry, ProductionCatalogEntry, ResearchCatalogEntry } from '@rts/protocol'
 import { PROGRESS_PALETTE } from '@rts/renderer'
-import { economyProgressTone, type TrainableUnitKind } from '@rts/shared'
+import type { ResearchType, TrainableUnitKind } from '@rts/shared'
 import { useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -12,29 +12,26 @@ import {
   mineralRemainingLine
 } from '../selection/selection-panel-logic'
 import { ProductionPanel } from './ProductionPanel'
-import {
-  type HudConstruction,
-  type HudMineral,
-  type HudResources,
-  type HudSelectionUnit,
-  KIND_LABEL,
-  OWNER_COLORS
-} from './types'
+import { type HudConstruction, type HudMineral, type HudResources, type HudSelectionUnit, KIND_LABEL } from './types'
+import { economyStatus, UnitChip } from './UnitSelectionCard'
 
 export { constructionStatusLine, mineralRemainingLine } from '../selection/selection-panel-logic'
 
 interface SelectionPanelProps {
   readonly selection: readonly HudSelectionUnit[]
-  readonly compact: boolean
   readonly construction: HudConstruction | null
   readonly mineral: HudMineral | null
   readonly buildings: readonly BuildCatalogEntry[]
   readonly humanPlayer: number
   readonly onCancelConstruction: (buildingId: number) => void
   readonly onCancelProduction: (producerId: number, queueIndex: number) => void
+  readonly onUpgradeCastle: (castleId: number) => void
+  readonly onResearch: (monasteryId: number, researchType: ResearchType) => void
+  readonly onCancelResearch: (monasteryId: number, queueIndex: number) => void
   readonly onTrain: (unitKind: TrainableUnitKind) => void
   readonly onSetRally: (producerId: number) => void
   readonly production: readonly ProductionCatalogEntry[]
+  readonly research: readonly ResearchCatalogEntry[]
   readonly resources: HudResources | null
 }
 
@@ -46,149 +43,74 @@ function kindSummary(selection: readonly HudSelectionUnit[]): string {
   return [...counts.entries()].map(([label, count]) => (count > 1 ? `${label} ×${count}` : label)).join(' · ')
 }
 
-function hpColor(ratio: number): string {
-  if (ratio > 0.5) {
-    return 'bg-emerald-500'
-  }
-  if (ratio > 0.25) {
-    return 'bg-yellow-500'
-  }
-  return 'bg-red-500'
-}
-
-function economyLabel(unit: HudSelectionUnit): string | null {
-  if (unit.economy === undefined) {
-    return null
-  }
-  if (unit.economy.phase === 'gathering') {
-    return `Mining ${unit.economy.progressTicks}/${unit.economy.progressMax}`
-  }
-  if (unit.economy.phase === 'to_base') {
-    return `Returning ${unit.economy.cargoAmount}/${unit.economy.cargoCapacity}`
-  }
-  if (unit.economy.phase === 'to_node') {
-    return 'Going to mineral'
-  }
-  return `Waiting for Base ${unit.economy.cargoAmount}/${unit.economy.cargoCapacity}`
-}
-
-function economyStatus(unit: HudSelectionUnit): { readonly label: string; readonly color: string } | null {
-  if (unit.economy !== undefined) {
-    const label = economyLabel(unit)
-    if (label === null) {
-      return null
-    }
-    return {
-      label,
-      color: PROGRESS_PALETTE[economyProgressTone(unit.economy.phase)].text
-    }
-  }
-  if (unit.carrying === true) {
-    return { label: 'Carrying cargo', color: PROGRESS_PALETTE.delivery.text }
-  }
-  return null
-}
-
-function orderLabel(unit: HudSelectionUnit): string {
-  if (unit.economy !== undefined) {
-    return economyLabel(unit) ?? 'Idle'
-  }
-  if (unit.carrying === true) {
-    return 'Carrying cargo'
-  }
-  switch (unit.orderState) {
-    case 'moving':
-      return 'Moving'
-    case 'attacking':
-      return 'Attacking'
-    case 'hold':
-      return 'Holding position'
-    case 'patrol':
-      return 'Patrolling'
-    case 'attack_move':
-      return 'Attack-moving'
-    case 'repairing':
-      return `Repairing ${unit.repairProgressTicks ?? 0}/${unit.repairProgressMax ?? 10}`
-    default:
-      return unit.moving ? 'Moving' : 'Idle'
-  }
-}
-
-function UnitChip({ unit }: { readonly unit: HudSelectionUnit }) {
-  const hasHp = unit.hp !== undefined && unit.maxHp !== undefined && unit.maxHp > 0
-  const ratio = hasHp ? Math.max(0, Math.min(1, unit.hp! / unit.maxHp!)) : 0
-  const hpPercent = Math.round(ratio * 100)
-  const unitLabel = `${KIND_LABEL[unit.kind]} #${unit.id}`
-  const statusText = orderLabel(unit)
-  const economyTone = unit.economy === undefined ? null : economyProgressTone(unit.economy.phase)
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild={true}>
-        <button
-          type="button"
-          className={`flex cursor-help flex-col items-center rounded border-0 px-1 py-0.5 outline-none focus-visible:ring-2 focus-visible:ring-ring ${OWNER_COLORS[unit.owner] ?? 'bg-muted/30 text-foreground'}`}
-          aria-label={`${unitLabel}, owner ${unit.owner}, ${statusText}${hasHp ? `, ${hpPercent}% health` : ''}`}
-        >
-          <span className="text-[11px] font-bold leading-none">{KIND_LABEL[unit.kind].charAt(0)}</span>
-          {hasHp && (
-            <div className="mt-0.5 h-0.5 w-5 overflow-hidden rounded-full bg-black/30">
-              <div className={`h-full ${hpColor(ratio)}`} style={{ width: `${hpPercent}%` }} />
-            </div>
-          )}
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="top" sideOffset={6} className="space-y-0.5">
-        <p className="font-semibold">{unitLabel}</p>
-        <p>Owner: P{unit.owner}</p>
-        <p>Status: {statusText}</p>
-        {unit.economy !== undefined && (
-          <div className="space-y-0.5">
-            <div className="h-1.5 w-28 overflow-hidden rounded-full bg-black/30">
-              <div
-                className="h-full"
-                style={{
-                  backgroundColor: PROGRESS_PALETTE[economyTone ?? 'delivery'].fill,
-                  width: `${Math.round(
-                    100 *
-                      (unit.economy.phase === 'gathering'
-                        ? unit.economy.progressTicks / Math.max(1, unit.economy.progressMax)
-                        : unit.economy.cargoAmount / Math.max(1, unit.economy.cargoCapacity))
-                  )}%`
-                }}
-              />
-            </div>
-            <p>{statusText}</p>
-          </div>
-        )}
-        {hasHp && (
-          <p>
-            HP: {unit.hp}/{unit.maxHp} ({hpPercent}%)
-          </p>
-        )}
-      </TooltipContent>
-    </Tooltip>
-  )
-}
-
 function constructionLabel(construction: HudConstruction): string {
-  if (construction.buildingType === 'BASE') {
-    return 'Base'
+  if (construction.buildingType === 'CASTLE') {
+    return `Castle ${construction.tier === 2 ? 'II' : 'I'}`
   }
   if (construction.buildingType === 'BARRACKS') {
     return 'Barracks'
   }
-  return 'Supply Depot'
+  if (construction.buildingType === 'ARCHERY') {
+    return 'Archery'
+  }
+  if (construction.buildingType === 'MONASTERY') {
+    return 'Monastery'
+  }
+  if (construction.buildingType === 'HOUSE') {
+    return 'House'
+  }
+  return 'Tower'
 }
 
-function constructionTitleStatus(status: HudConstruction['status']): string {
-  if (status === 'COMPLETED') {
+function hasCastleUpgrade(construction: HudConstruction): boolean {
+  return construction.tierUpgrade !== undefined && construction.tierUpgrade !== null
+}
+
+function progressPercent(progressTicks: number, totalTicks: number): number {
+  return Math.min(100, Math.max(0, Math.round((100 * progressTicks) / Math.max(1, totalTicks))))
+}
+
+function ConstructionProgressBar({ construction }: { readonly construction: HudConstruction }) {
+  const progress = construction.tierUpgrade ?? {
+    progressTicks: construction.progressTicks,
+    totalTicks: construction.totalTicks
+  }
+  const visible = construction.status !== 'COMPLETED' || hasCastleUpgrade(construction)
+  if (!visible) {
+    return null
+  }
+  return (
+    <span
+      className="mt-0.5 block h-1.5 w-full overflow-hidden rounded-full bg-black/30"
+      role="progressbar"
+      aria-label={`${constructionLabel(construction)} progress`}
+      aria-valuemin={0}
+      aria-valuemax={progress.totalTicks}
+      aria-valuenow={progress.progressTicks}
+      data-testid="construction-progress-bar"
+    >
+      <span
+        className="block h-full"
+        style={{
+          backgroundColor: PROGRESS_PALETTE.construction.fill,
+          width: `${progressPercent(progress.progressTicks, progress.totalTicks)}%`
+        }}
+      />
+    </span>
+  )
+}
+
+function constructionTitleStatus(construction: HudConstruction): string {
+  if (hasCastleUpgrade(construction)) {
+    return 'Upgrading'
+  }
+  if (construction.status === 'COMPLETED') {
     return 'Ready'
   }
-  if (status === 'PAUSED') {
+  if (construction.status === 'PAUSED') {
     return 'Paused'
   }
-  return status.replace('_', ' ')
+  return construction.status.replace('_', ' ')
 }
 
 function constructionHint(status: HudConstruction['status']): string {
@@ -199,6 +121,64 @@ function constructionHint(status: HudConstruction['status']): string {
     return 'Construction complete.'
   }
   return 'Select the builder and press Stop to pause.'
+}
+
+function ConstructionTooltip({ construction }: { readonly construction: HudConstruction }) {
+  const label = `${constructionLabel(construction)} · ${constructionTitleStatus(construction)}`
+  const hpAvailable = construction.hp !== undefined && construction.maxHp !== undefined
+  const showProgress = construction.status !== 'COMPLETED' || hasCastleUpgrade(construction)
+  return (
+    <TooltipContent side="top" sideOffset={6} className="space-y-0.5">
+      <p className="font-semibold">{label}</p>
+      <p>Owner: P{construction.owner}</p>
+      <p>Status: {constructionTitleStatus(construction)}</p>
+      {showProgress && <p>Progress: {constructionStatusLine(construction)}</p>}
+      {construction.builderId !== null && <p>Worker: #{construction.builderId}</p>}
+      {hpAvailable && (
+        <p>
+          HP: {construction.hp}/{construction.maxHp}
+        </p>
+      )}
+      {construction.production !== undefined && <p>Production queue: {construction.production.queue.length}/5</p>}
+    </TooltipContent>
+  )
+}
+
+function ConstructionCardHeader({ construction }: { readonly construction: HudConstruction }) {
+  const showProgress = construction.status !== 'COMPLETED' || hasCastleUpgrade(construction)
+  return (
+    <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
+      <CardTitle className="truncate text-[11px] text-muted-foreground">
+        <span className="flex min-w-0 items-center justify-between gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild={true}>
+              <button
+                type="button"
+                className="truncate text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={`${constructionLabel(construction)} · ${constructionTitleStatus(construction)}`}
+              >
+                {constructionLabel(construction)} · {constructionTitleStatus(construction)}
+              </button>
+            </TooltipTrigger>
+            <ConstructionTooltip construction={construction} />
+          </Tooltip>
+          <span className="flex shrink-0 items-center gap-2 font-medium">
+            {showProgress && (
+              <span style={{ color: PROGRESS_PALETTE.construction.text }} data-testid="construction-status">
+                {constructionStatusLine(construction)}
+              </span>
+            )}
+            {construction.hp !== undefined && construction.maxHp !== undefined && (
+              <span aria-live="polite" data-testid="construction-health">
+                HP: {construction.hp}/{construction.maxHp}
+              </span>
+            )}
+          </span>
+        </span>
+        <ConstructionProgressBar construction={construction} />
+      </CardTitle>
+    </CardHeader>
+  )
 }
 
 function ConstructionCancelButton({
@@ -242,18 +222,14 @@ function ConstructionCancelButton({
 function UnitSelectionCard({
   selection,
   selectionLabel,
-  activeEconomy,
-  compact
+  activeEconomy
 }: {
   readonly selection: readonly HudSelectionUnit[]
   readonly selectionLabel: string
   readonly activeEconomy: { readonly label: string; readonly color: string } | null
-  readonly compact: boolean
 }) {
   return (
-    <Card
-      className={`flex min-h-0 w-full shrink-0 flex-col overflow-hidden py-1 ${compact ? 'max-w-[12rem] sm:max-w-[16rem]' : 'max-w-[22rem]'}`}
-    >
+    <Card className="flex min-h-0 w-64 max-w-[calc(100vw-2rem)] shrink-0 flex-col overflow-hidden py-1">
       <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
         <CardTitle className="flex min-w-0 items-center justify-between gap-2 text-[11px] text-muted-foreground">
           <span className="truncate">{selectionLabel}</span>
@@ -267,7 +243,7 @@ function UnitSelectionCard({
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className={`flex flex-wrap px-2 py-0.5 ${compact ? 'gap-0' : 'gap-0.5'}`} aria-live="polite">
+      <CardContent className="flex flex-wrap gap-0.5 px-2 py-0.5" aria-live="polite">
         {selection.length > 0 && selection.map((unit) => <UnitChip key={unit.id} unit={unit} />)}
       </CardContent>
     </Card>
@@ -280,9 +256,13 @@ type ConstructionSelectionCardProps = Pick<
   | 'humanPlayer'
   | 'onCancelConstruction'
   | 'onCancelProduction'
+  | 'onCancelResearch'
+  | 'onResearch'
+  | 'onUpgradeCastle'
   | 'onSetRally'
   | 'onTrain'
   | 'production'
+  | 'research'
   | 'resources'
 > & {
   readonly construction: HudConstruction
@@ -296,9 +276,13 @@ function ConstructionSelectionCard({
   humanPlayer,
   onCancelConstruction,
   onCancelProduction,
+  onCancelResearch,
+  onResearch,
+  onUpgradeCastle,
   onSetRally,
   onTrain,
   production,
+  research,
   resources,
   confirmingId,
   setConfirmingId
@@ -310,30 +294,10 @@ function ConstructionSelectionCard({
   const confirming = confirmingId === construction.id
   return (
     <Card
-      className="flex min-h-0 w-full max-w-[22rem] shrink-0 flex-col gap-0 overflow-hidden py-1"
+      className={`flex min-h-0 ${construction.buildingType === 'MONASTERY' ? 'w-[26rem]' : 'w-72'} max-w-[calc(100vw-2rem)] shrink-0 flex-col gap-0 overflow-hidden py-1`}
       data-testid="construction-panel"
     >
-      <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
-        <CardTitle className="truncate text-[11px] text-muted-foreground">
-          <span className="flex min-w-0 items-center justify-between gap-2">
-            <span className="truncate">
-              {constructionLabel(construction)} · {constructionTitleStatus(construction.status)}
-            </span>
-            <span className="flex shrink-0 items-center gap-2 font-medium">
-              {construction.hp !== undefined && construction.maxHp !== undefined && (
-                <span aria-live="polite" data-testid="construction-health">
-                  HP: {construction.hp}/{construction.maxHp}
-                </span>
-              )}
-              {construction.status !== 'COMPLETED' && (
-                <span style={{ color: PROGRESS_PALETTE.construction.text }} data-testid="construction-status">
-                  {constructionStatusLine(construction)}
-                </span>
-              )}
-            </span>
-          </span>
-        </CardTitle>
-      </CardHeader>
+      <ConstructionCardHeader construction={construction} />
       <CardContent className="flex flex-col gap-1 px-2 py-0.5 text-[11px] text-muted-foreground">
         {construction.status !== 'COMPLETED' && (
           <span className="leading-snug" aria-live="polite">
@@ -356,11 +320,16 @@ function ConstructionSelectionCard({
         />
         <ProductionPanel
           construction={construction}
+          buildings={buildings}
           production={production}
           resources={resources}
           onTrain={onTrain}
+          onUpgrade={onUpgradeCastle}
+          research={research}
+          onResearch={onResearch}
           onSetRally={() => onSetRally(construction.id)}
           onCancelProduction={(queueIndex) => onCancelProduction(construction.id, queueIndex)}
+          onCancelResearch={(queueIndex) => onCancelResearch(construction.id, queueIndex)}
         />
       </CardContent>
     </Card>
@@ -369,16 +338,19 @@ function ConstructionSelectionCard({
 
 export function SelectionPanel({
   selection,
-  compact,
   construction,
   mineral,
   buildings,
   humanPlayer,
   onCancelConstruction,
   onCancelProduction,
+  onCancelResearch,
+  onResearch,
+  onUpgradeCastle,
   onTrain,
   onSetRally,
   production,
+  research,
   resources
 }: SelectionPanelProps) {
   const [confirmingId, setConfirmingId] = useState<number | null>(null)
@@ -393,9 +365,13 @@ export function SelectionPanel({
         humanPlayer={humanPlayer}
         onCancelConstruction={onCancelConstruction}
         onCancelProduction={onCancelProduction}
+        onCancelResearch={onCancelResearch}
+        onResearch={onResearch}
+        onUpgradeCastle={onUpgradeCastle}
         onTrain={onTrain}
         onSetRally={onSetRally}
         production={production}
+        research={research}
         resources={resources}
         confirmingId={confirmingId}
         setConfirmingId={setConfirmingId}
@@ -405,7 +381,7 @@ export function SelectionPanel({
   if (mineral !== null) {
     return (
       <Card
-        className="flex min-h-0 w-full max-w-[22rem] shrink-0 flex-col overflow-hidden py-1"
+        className="flex min-h-0 w-64 max-w-[calc(100vw-2rem)] shrink-0 flex-col overflow-hidden py-1"
         data-testid="mineral-panel"
       >
         <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
@@ -424,12 +400,5 @@ export function SelectionPanel({
       </Card>
     )
   }
-  return (
-    <UnitSelectionCard
-      selection={selection}
-      selectionLabel={selectionLabel}
-      activeEconomy={activeEconomy}
-      compact={compact}
-    />
-  )
+  return <UnitSelectionCard selection={selection} selectionLabel={selectionLabel} activeEconomy={activeEconomy} />
 }

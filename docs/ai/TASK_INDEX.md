@@ -53,6 +53,9 @@
 | P2.10.01 | Persistent unit health bars | done | P2.07 | renderer, web | unit, e2e |
 | P2.10.02 | Building health and shared damage | done | P2.10.01 | game-data, simulation, protocol, renderer, server, web | unit, simulation, contracts, integration, e2e |
 | P2.10 | Repair | done | P2.10.02 | shared, game-data, protocol, simulation, server, renderer, web | unit, simulation, contracts, integration, determinism, invariants, e2e |
+| P2.11 | Research and modifiers | done | P2.07, P2.10 | shared, game-data, protocol, simulation, server, renderer, web | unit, simulation, contracts, determinism, invariants, e2e |
+| P2.11.01 | Monk Heal | done | P2.11 | shared, game-data, protocol, simulation, server, renderer, web | unit, simulation, contracts, determinism, invariants, e2e |
+| P2.12 | Economic integration | pending | P2.11 | simulation, server, web | integration, determinism, e2e |
 
 ## Phase 3 — Navigation and Combat
 
