@@ -1,5 +1,5 @@
 import { competitiveBaseLocations, competitiveMineralLocation } from '@rts/game-data'
-import { type Fixed, type PlayerId, tilesToFixed, type UnitKind } from '@rts/shared'
+import { type BuildingType, type CastleTier, type Fixed, type PlayerId, tilesToFixed, type UnitKind } from '@rts/shared'
 
 export interface DemoSpawn {
   readonly owner: PlayerId
@@ -7,6 +7,7 @@ export interface DemoSpawn {
   readonly x: Fixed
   readonly y: Fixed
   readonly worker?: boolean
+  readonly initialHp?: number
 }
 
 export interface DemoBaseSpawn {
@@ -14,6 +15,8 @@ export interface DemoBaseSpawn {
   readonly x: Fixed
   readonly y: Fixed
   readonly initialHp?: number
+  readonly buildingType?: BuildingType
+  readonly tier?: CastleTier
 }
 
 export interface DemoMineralNodeSpawn {
@@ -26,6 +29,7 @@ export interface DemoScenario {
   readonly id: string
   readonly label: string
   readonly startingGold?: number
+  readonly startingCastleTier?: CastleTier
   readonly spawns: readonly DemoSpawn[]
   readonly buildings?: readonly DemoBaseSpawn[]
   readonly mineralNodes?: readonly DemoMineralNodeSpawn[]
@@ -51,17 +55,17 @@ const MINERAL_NODE = competitiveMineralLocation()
 /** Demo seed — shared with `demo.ts`; keeps every scenario deterministic. */
 export const DEMO_SEED = 123456
 
-/** Six units per side, two of each archetype (pawn/warrior/archer). */
-const KINDS_PER_SIDE: readonly UnitKind[] = [PAWN, WARRIOR, ARCHER, PAWN, WARRIOR, ARCHER]
+/** Eight units per side, including one Monk and one Lancer support pair. */
+const KINDS_PER_SIDE: readonly UnitKind[] = [PAWN, WARRIOR, ARCHER, PAWN, WARRIOR, ARCHER, 'monk', 'lancer']
 
 /**
- * Six-versus-six scenario: six units per side with two of each archetype (two pawns,
- * two warriors, two archers), mirrored so each blue unit faces the same kind
+ * Eight-versus-eight scenario: eight units per side with two of each core archetype,
+ * one Monk, and one Lancer, mirrored so each blue unit faces the same kind
  * of red counterpart. Blue sits in a compact block near the camera home
  * (tile 8), red is mirrored opposite; the squads are close enough to be visible
  * at the start, and the enemy side marches over to attack the idle player.
  */
-function sixVsSixScenario(): DemoScenario {
+function eightVsEightScenario(): DemoScenario {
   const spawns: DemoSpawn[] = []
   const attacks: (readonly [number, number])[] = []
   // Blue block first, then the mirrored red block, so pair `i` attacks `i + 6`.
@@ -78,7 +82,7 @@ function sixVsSixScenario(): DemoScenario {
   for (let i = 0; i < KINDS_PER_SIDE.length; i += 1) {
     attacks.push([i, i + KINDS_PER_SIDE.length], [i + KINDS_PER_SIDE.length, i])
   }
-  return { id: '6v6', label: '6v6', spawns, attacks }
+  return { id: '8v8', label: '8v8', spawns, attacks }
 }
 
 function defaultScenario(): DemoScenario {
@@ -133,6 +137,37 @@ function regressionScenario(): DemoScenario {
   }
 }
 
+function researchScenario(): DemoScenario {
+  return {
+    ...regressionScenario(),
+    id: 'research',
+    label: 'Research',
+    startingGold: 500,
+    startingCastleTier: 2,
+    buildings: [
+      { owner: 0, buildingType: 'CASTLE', tier: 2, ...tile(PLAYER_BASE.x, PLAYER_BASE.y) },
+      { owner: 0, buildingType: 'MONASTERY', ...tile(11, 9) },
+      { owner: 1, ...tile(OPPONENT_BASE.x, OPPONENT_BASE.y) }
+    ]
+  }
+}
+
+function monkHealScenario(): DemoScenario {
+  return {
+    id: 'monk-heal',
+    label: 'Monk Heal',
+    startingGold: 250,
+    spawns: [
+      { owner: 0, kind: 'monk', ...tile(8, 11) },
+      { owner: 0, kind: 'warrior', initialHp: 90, ...tile(9, 11) },
+      { owner: 0, kind: 'monk', ...tile(8, 12) },
+      { owner: 0, kind: 'warrior', initialHp: 90, ...tile(9, 12) }
+    ],
+    buildings: [{ owner: 1, ...tile(OPPONENT_BASE.x, OPPONENT_BASE.y) }],
+    attacks: []
+  }
+}
+
 /**
  * Demo scenario catalog. Each faction spawns in its own spot near the camera
  * home, so the whole opening is visible; in offensive mode the enemy side
@@ -142,7 +177,9 @@ function regressionScenario(): DemoScenario {
 export const DEMO_SCENARIOS: readonly DemoScenario[] = [
   defaultScenario(),
   regressionScenario(),
-  sixVsSixScenario(),
+  researchScenario(),
+  monkHealScenario(),
+  eightVsEightScenario(),
   {
     id: 'ffa',
     label: 'Free for all',
