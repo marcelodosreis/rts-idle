@@ -5,7 +5,7 @@ export { TRAINABLE_UNIT_KINDS }
 
 export interface UnitProductionDefinition {
   readonly unitKind: TrainableUnitKind
-  readonly producer: Extract<BuildingType, 'BASE' | 'BARRACKS'>
+  readonly producer: Extract<BuildingType, 'CASTLE' | 'BARRACKS' | 'ARCHERY' | 'MONASTERY'>
   readonly costMinerals: number
   readonly trainingTicks: number
   readonly supply: number
@@ -16,7 +16,7 @@ export const UNIT_PRODUCTION_DEFINITIONS: Readonly<Record<TrainableUnitKind, Uni
   {
     pawn: Object.freeze({
       unitKind: 'pawn',
-      producer: 'BASE',
+      producer: 'CASTLE',
       costMinerals: 50,
       trainingTicks: 100,
       supply: 1
@@ -34,12 +34,26 @@ export const UNIT_PRODUCTION_DEFINITIONS: Readonly<Record<TrainableUnitKind, Uni
       costMinerals: 125,
       trainingTicks: 300,
       supply: 1
+    }),
+    lancer: Object.freeze({
+      unitKind: 'lancer',
+      producer: 'BARRACKS',
+      costMinerals: 100,
+      trainingTicks: 200,
+      supply: 1
+    }),
+    monk: Object.freeze({
+      unitKind: 'monk',
+      producer: 'MONASTERY',
+      costMinerals: 125,
+      trainingTicks: 300,
+      supply: 1
     })
   }
 )
 
 export function isProductionBuilding(value: BuildingType): value is UnitProductionDefinition['producer'] {
-  return value === 'BASE' || value === 'BARRACKS'
+  return value === 'CASTLE' || value === 'BARRACKS' || value === 'ARCHERY' || value === 'MONASTERY'
 }
 
 export function isTrainableUnitKind(value: UnitKind): value is TrainableUnitKind {

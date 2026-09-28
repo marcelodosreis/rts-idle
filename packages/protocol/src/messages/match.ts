@@ -6,6 +6,8 @@ import {
   isRecord,
   type MapDefinition,
   normalizeMapDefinition,
+  RESEARCH_TYPES,
+  type ResearchType,
   TRAINABLE_UNIT_KINDS,
   type TrainableUnitKind
 } from '@rts/shared'
@@ -30,10 +32,16 @@ export interface BuildCatalogEntry {
 
 export interface ProductionCatalogEntry {
   readonly unitKind: TrainableUnitKind
-  readonly producer: Extract<BuildingType, 'BASE' | 'BARRACKS'>
+  readonly producer: Extract<BuildingType, 'CASTLE' | 'BARRACKS' | 'ARCHERY' | 'MONASTERY'>
   readonly costMinerals: number
   readonly trainingTicks: number
   readonly supply: number
+}
+
+export interface ResearchCatalogEntry {
+  readonly researchType: ResearchType
+  readonly costMinerals: number
+  readonly researchTicks: number
 }
 
 export interface MatchRequest {
@@ -50,6 +58,7 @@ export interface MatchConfig {
   readonly map: MapDefinition
   readonly buildings: readonly BuildCatalogEntry[]
   readonly production: readonly ProductionCatalogEntry[]
+  readonly research: readonly ResearchCatalogEntry[]
 }
 
 function isPositiveInteger(value: unknown): value is number {
@@ -105,10 +114,22 @@ function isProductionCatalogEntry(value: unknown): value is ProductionCatalogEnt
   return (
     isRecord(value) &&
     isOneOf(TRAINABLE_UNIT_KINDS, field(value, 'unitKind')) &&
-    (field(value, 'producer') === 'BASE' || field(value, 'producer') === 'BARRACKS') &&
+    (field(value, 'producer') === 'CASTLE' ||
+      field(value, 'producer') === 'BARRACKS' ||
+      field(value, 'producer') === 'ARCHERY' ||
+      field(value, 'producer') === 'MONASTERY') &&
     isPositiveInteger(field(value, 'costMinerals')) &&
     isPositiveInteger(field(value, 'trainingTicks')) &&
     isPositiveInteger(field(value, 'supply'))
+  )
+}
+
+function isResearchCatalogEntry(value: unknown): value is ResearchCatalogEntry {
+  return (
+    isRecord(value) &&
+    isOneOf(RESEARCH_TYPES, field(value, 'researchType')) &&
+    isPositiveInteger(field(value, 'costMinerals')) &&
+    isPositiveInteger(field(value, 'researchTicks'))
   )
 }
 
@@ -120,6 +141,7 @@ export function isMatchConfig(value: unknown): value is MatchConfig {
   const scenarios = field(value, 'scenarios')
   const buildings = field(value, 'buildings')
   const production = field(value, 'production')
+  const research = field(value, 'research')
   return (
     field(value, 'type') === 'match_config' &&
     isScenarioSummary(field(value, 'scenario')) &&
@@ -129,6 +151,8 @@ export function isMatchConfig(value: unknown): value is MatchConfig {
     Array.isArray(buildings) &&
     buildings.every(isBuildCatalogEntry) &&
     Array.isArray(production) &&
-    production.every(isProductionCatalogEntry)
+    production.every(isProductionCatalogEntry) &&
+    Array.isArray(research) &&
+    research.every(isResearchCatalogEntry)
   )
 }

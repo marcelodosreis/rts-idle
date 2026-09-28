@@ -17,19 +17,22 @@ import {
   PRODUCTION_ITEM_STATUSES,
   type ProductionItemStatus,
   REPAIR_STOP_REASONS,
+  RESEARCH_TYPES,
+  type ResearchType,
   SIMULATION_EVENT_TYPES,
   type SimulationEvent,
   TRAINABLE_UNIT_KINDS,
   UNIT_KINDS,
   type UnitKind
 } from '@rts/shared'
+import { isSnapshotPlayer } from './snapshot-guards.js'
 
-/** High-level unit behavior for the renderer (drives idle/run/attack). */
 export const ORDER_STATES = [
   'idle',
   'moving',
   'building',
   'attacking',
+  'healing',
   'repairing',
   'hold',
   'patrol',
@@ -50,7 +53,6 @@ export interface SnapshotEconomy {
   readonly nodeId: EntityId
 }
 
-/** A unit as projected on the wire: position, owner, kind, combat state, order. */
 export interface SnapshotUnit {
   readonly id: EntityId
   readonly x: Fixed
@@ -59,17 +61,19 @@ export interface SnapshotUnit {
   readonly kind?: UnitKind
   readonly hp?: number
   readonly maxHp?: number
-  /** Horizontal fixed-unit target used to orient work animations. */
+  readonly armor?: number
+  readonly damage?: number
+  readonly movementSpeedFixed?: number
+  readonly cargoCapacity?: number
   readonly lookAtX?: Fixed
   readonly orderState?: OrderState
   readonly repairProgressTicks?: number
   readonly repairProgressMax?: number
+  readonly healCooldownRemaining?: number
   readonly economy?: SnapshotEconomy
-  /** True while the worker holds cargo, independent of its current order. */
   readonly carrying?: boolean
 }
 
-/** A competitive slot as projected on the wire. */
 export interface SnapshotPlayer {
   readonly id: PlayerId
   readonly defeated: boolean
@@ -77,26 +81,28 @@ export interface SnapshotPlayer {
   readonly usedSupply: number
   readonly reservedSupply?: number
   readonly supplyCap: number
+  readonly highestCastleTierReached?: number
+  readonly completedResearch?: readonly ResearchType[]
+  readonly queuedResearch?: readonly ResearchType[]
 }
 
 export type ConstructionStatus = BuildingStatus
 export { BUILDING_STATUSES }
 
-/** Closed match lifecycle phases projected on the wire. */
 export const MATCH_PHASES = ['RUNNING', 'FINISHED'] as const
 export type MatchPhase = (typeof MATCH_PHASES)[number]
 
-/** A building or foundation projected for authoritative world rendering. */
 export interface SnapshotBuilding {
   readonly id: EntityId
   readonly buildingType: (typeof BUILDING_TYPES)[number]
   readonly x: Fixed
   readonly y: Fixed
   readonly owner: PlayerId
-  /** Worker currently assigned to construction, or null while paused/completed. */
   readonly builderId?: EntityId | null
   readonly footprint: { readonly width: number; readonly height: number }
   readonly status: ConstructionStatus
+  readonly tier?: number
+  readonly tierUpgrade?: { readonly progressTicks: number; readonly totalTicks: number } | null
   readonly progressTicks: number
   readonly totalTicks: number
   readonly hp?: number
@@ -105,7 +111,7 @@ export interface SnapshotBuilding {
   readonly production?: SnapshotProduction
 }
 
-export interface SnapshotProductionItem {
+export interface SnapshotUnitProductionItem {
   readonly unitKind: (typeof TRAINABLE_UNIT_KINDS)[number]
   readonly costMinerals: number
   readonly reservedSupply: number
@@ -114,11 +120,20 @@ export interface SnapshotProductionItem {
   readonly status: ProductionItemStatus
 }
 
+export interface SnapshotResearchProductionItem {
+  readonly researchType: ResearchType
+  readonly costMinerals: number
+  readonly progressTicks: number
+  readonly totalTicks: number
+  readonly status: ProductionItemStatus
+}
+
+export type SnapshotProductionItem = SnapshotUnitProductionItem | SnapshotResearchProductionItem
+
 export interface SnapshotProduction {
   readonly queue: readonly SnapshotProductionItem[]
 }
 
-/** A neutral Mineral Node projected for rendering and contextual targeting. */
 export interface SnapshotMineralNode {
   readonly id: EntityId
   readonly x: Fixed
@@ -126,7 +141,6 @@ export interface SnapshotMineralNode {
   readonly remaining: number
 }
 
-/** Server → client view of a completed tick. */
 export interface SnapshotMessage {
   readonly type: 'snapshot'
   readonly tick: number
@@ -137,13 +151,11 @@ export interface SnapshotMessage {
   readonly players: readonly SnapshotPlayer[]
   readonly events: readonly SimulationEvent[]
 }
-
 function isPositionedEntity(value: unknown): boolean {
   return (
     isRecord(value) && isInteger(field(value, 'id')) && isInteger(field(value, 'x')) && isInteger(field(value, 'y'))
   )
 }
-
 function isFootprint(value: unknown): boolean {
   return (
     isRecord(value) &&
@@ -153,7 +165,6 @@ function isFootprint(value: unknown): boolean {
     (field(value, 'height') as number) > 0
   )
 }
-
 function isSnapshotBuilding(value: unknown): boolean {
   if (!isPositionedEntity(value) || !isRecord(value)) {
     return false
@@ -162,6 +173,15 @@ function isSnapshotBuilding(value: unknown): boolean {
   const progressTicks = field(value, 'progressTicks')
   const totalTicks = field(value, 'totalTicks')
   const production = field(value, 'production')
+  const tierUpgrade = field(value, 'tierUpgrade')
+  const upgradeProgress =
+    tierUpgrade === undefined || tierUpgrade === null || !isRecord(tierUpgrade)
+      ? undefined
+      : field(tierUpgrade, 'progressTicks')
+  const upgradeTotal =
+    tierUpgrade === undefined || tierUpgrade === null || !isRecord(tierUpgrade)
+      ? undefined
+      : field(tierUpgrade, 'totalTicks')
   const rallyPoint = field(value, 'rallyPoint')
   return (
     isOneOf(BUILDING_TYPES, field(value, 'buildingType')) &&
@@ -176,14 +196,24 @@ function isSnapshotBuilding(value: unknown): boolean {
     totalTicks > 0 &&
     isOptionalNonNegativeInteger(field(value, 'hp')) &&
     isOptionalNonNegativeInteger(field(value, 'maxHp')) &&
+    isOptionalNonNegativeInteger(field(value, 'tier')) &&
+    isOptionalNonNegativeInteger(field(value, 'armor')) &&
     (rallyPoint === undefined ||
       rallyPoint === null ||
       (isRecord(rallyPoint) && isInteger(field(rallyPoint, 'x')) && isInteger(field(rallyPoint, 'y')))) &&
     progressTicks <= totalTicks &&
-    (production === undefined || isSnapshotProduction(production))
+    (production === undefined || isSnapshotProduction(production)) &&
+    (tierUpgrade === undefined ||
+      tierUpgrade === null ||
+      (isRecord(tierUpgrade) &&
+        isNonNegativeInteger(field(tierUpgrade, 'progressTicks')) &&
+        isNonNegativeInteger(field(tierUpgrade, 'totalTicks')) &&
+        isInteger(upgradeProgress) &&
+        isInteger(upgradeTotal) &&
+        upgradeTotal > 0 &&
+        upgradeProgress <= upgradeTotal))
   )
 }
-
 function isSnapshotProduction(value: unknown): value is SnapshotProduction {
   if (!isRecord(value)) {
     return false
@@ -198,6 +228,18 @@ function isSnapshotProduction(value: unknown): value is SnapshotProduction {
     }
     const progressTicks = field(item, 'progressTicks')
     const totalTicks = field(item, 'totalTicks')
+    const researchType = field(item, 'researchType')
+    if (researchType !== undefined) {
+      return (
+        isOneOf(RESEARCH_TYPES, researchType) &&
+        isNonNegativeInteger(field(item, 'costMinerals')) &&
+        isOneOf(PRODUCTION_ITEM_STATUSES, field(item, 'status')) &&
+        isNonNegativeInteger(progressTicks) &&
+        isInteger(totalTicks) &&
+        totalTicks > 0 &&
+        progressTicks <= totalTicks
+      )
+    }
     return (
       isOneOf(TRAINABLE_UNIT_KINDS, field(item, 'unitKind')) &&
       isNonNegativeInteger(field(item, 'costMinerals')) &&
@@ -210,11 +252,9 @@ function isSnapshotProduction(value: unknown): value is SnapshotProduction {
     )
   })
 }
-
 function isSnapshotMineralNode(value: unknown): boolean {
   return isPositionedEntity(value) && isRecord(value) && isNonNegativeInteger(field(value, 'remaining'))
 }
-
 function isSnapshotEconomy(value: unknown): boolean {
   if (!isRecord(value)) {
     return false
@@ -240,7 +280,6 @@ function isSnapshotEconomy(value: unknown): boolean {
     progressTicks <= progressMax
   )
 }
-
 function isSnapshotUnit(value: unknown): boolean {
   if (!isRecord(value)) {
     return false
@@ -257,31 +296,19 @@ function isSnapshotUnit(value: unknown): boolean {
     (kind === undefined || isOneOf(UNIT_KINDS, kind)) &&
     isOptionalNonNegativeInteger(field(value, 'hp')) &&
     isOptionalNonNegativeInteger(field(value, 'maxHp')) &&
+    isOptionalNonNegativeInteger(field(value, 'armor')) &&
+    isOptionalNonNegativeInteger(field(value, 'damage')) &&
+    isOptionalNonNegativeInteger(field(value, 'movementSpeedFixed')) &&
+    isOptionalNonNegativeInteger(field(value, 'cargoCapacity')) &&
     isOptionalNonNegativeInteger(field(value, 'repairProgressTicks')) &&
     isOptionalNonNegativeInteger(field(value, 'repairProgressMax')) &&
+    isOptionalNonNegativeInteger(field(value, 'healCooldownRemaining')) &&
     (field(value, 'lookAtX') === undefined || isInteger(field(value, 'lookAtX'))) &&
     (orderState === undefined || isOneOf(ORDER_STATES, orderState)) &&
     (economy === undefined || isSnapshotEconomy(economy)) &&
     (carrying === undefined || typeof carrying === 'boolean')
   )
 }
-
-function isSnapshotPlayer(value: unknown): boolean {
-  if (!isRecord(value)) {
-    return false
-  }
-  return (
-    isInteger(field(value, 'id')) &&
-    isPlayerId(field(value, 'id')) &&
-    typeof field(value, 'defeated') === 'boolean' &&
-    isInteger(field(value, 'gold')) &&
-    isNonNegativeInteger(field(value, 'usedSupply')) &&
-    isOptionalNonNegativeInteger(field(value, 'reservedSupply')) &&
-    isNonNegativeInteger(field(value, 'supplyCap')) &&
-    (field(value, 'supplyCap') as number) <= 200
-  )
-}
-
 function isSimulationEvent(value: unknown): boolean {
   if (!isRecord(value)) {
     return false
@@ -296,6 +323,13 @@ function isSimulationEvent(value: unknown): boolean {
     case 'damageDealt':
       return (
         isInteger(field(value, 'targetId')) && isInteger(field(value, 'amount')) && isInteger(field(value, 'targetHp'))
+      )
+    case 'healCast':
+      return (
+        isInteger(field(value, 'healerId')) &&
+        isInteger(field(value, 'targetId')) &&
+        isInteger(field(value, 'amount')) &&
+        isInteger(field(value, 'targetHp'))
       )
     case 'repairStopped':
       return (

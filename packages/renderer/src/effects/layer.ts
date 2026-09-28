@@ -47,6 +47,9 @@ export class EffectsLayer {
         case 'damageDealt':
           this.spawnPopup(event.targetId, event.amount, now)
           break
+        case 'healCast':
+          this.spawnHeal(event.healerId, event.targetId, event.amount, now)
+          break
         case 'unitDied':
           this.spawnExplosion(event.entityId, now)
           break
@@ -108,6 +111,56 @@ export class EffectsLayer {
     const label = new Text({
       text: `-${amount}`,
       style: { fontSize: 14, fill: 0xffffff, stroke: { color: 0x000000, width: 3 } }
+    })
+    label.anchor.set(0.5, 0.5)
+    label.position.set(position.x, position.y - 14)
+    label.eventMode = 'none'
+    const container = new Container()
+    container.addChild(label)
+    this.effectsLayer.addChild(container)
+    this.active.push({
+      display: container,
+      expiresAt: now + POPUP_LIFETIME_MS,
+      update: (current) => {
+        const progress = (current - now) / POPUP_LIFETIME_MS
+        label.y = position.y - 14 - POPUP_RISE_PX * progress
+        label.alpha = 1 - progress
+      }
+    })
+  }
+
+  private spawnHeal(healerId: number, targetId: number, amount: number, now: number): void {
+    const from = this.positions.get(healerId)
+    const to = this.positions.get(targetId)
+    if (from === undefined || to === undefined) {
+      return
+    }
+    const a = toRenderPixels(from)
+    const b = toRenderPixels(to)
+    const beam = new Graphics()
+    beam.moveTo(a.x, a.y).lineTo(b.x, b.y)
+    beam.stroke({ color: 0x74f7a2, width: 4, alpha: 0.9 })
+    beam.eventMode = 'none'
+    this.effectsLayer.addChild(beam)
+    this.active.push({
+      display: beam,
+      expiresAt: now + STREAK_LIFETIME_MS * 4,
+      update: (current) => {
+        beam.alpha = 0.9 * (1 - (current - now) / (STREAK_LIFETIME_MS * 4))
+      }
+    })
+    this.spawnPositivePopup(targetId, amount, now)
+  }
+
+  private spawnPositivePopup(targetId: number, amount: number, now: number): void {
+    const point = this.positions.get(targetId)
+    if (point === undefined) {
+      return
+    }
+    const position = toRenderPixels(point)
+    const label = new Text({
+      text: `+${amount}`,
+      style: { fontSize: 14, fill: 0x74f7a2, stroke: { color: 0x000000, width: 3 } }
     })
     label.anchor.set(0.5, 0.5)
     label.position.set(position.x, position.y - 14)
