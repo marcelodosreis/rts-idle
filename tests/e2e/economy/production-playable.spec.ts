@@ -91,7 +91,9 @@ test('cancels any queued production row with confirmation and refund feedback', 
 
   await selectEconomyBase(page)
   await page.getByTestId('train-pawn').click()
+  await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 1/5')
   await page.getByTestId('train-pawn').click()
+  await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 2/5')
   await page.getByTestId('train-pawn').click()
   await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 3/5')
   const queueFitsSelection = await page
