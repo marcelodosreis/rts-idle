@@ -182,7 +182,9 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
 - [x] P2.09.01 — Producer cancellation and destruction (`docs/tasks/done/P2.09.01.md`; master-plan deliverable P2.09)
 - [x] ECONOMY-UI-002 — Build menu
 - [x] ECONOMY-UI-003 — Production panel for Pawn, Warrior, and Archer
-- [ ] P2.10 — Repair
+- [x] P2.10.01 — Persistent unit health bars (`docs/tasks/done/P2.10.01.md`)
+- [x] P2.10.02 — Building health and shared damage (`docs/tasks/done/P2.10.02.md`)
+- [x] P2.10 — Repair (`docs/tasks/done/P2.10.md`)
 - [ ] P2.11 — Research and modifiers
 - [ ] P2.12 — Economic integration
 

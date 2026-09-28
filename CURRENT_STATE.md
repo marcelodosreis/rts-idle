@@ -17,7 +17,7 @@ See `docs/tasks/todo.md` for full phase list.
 - ECS engine (10 components, custom, Map-based stores)
 - Fixed timestep (20 ticks/s, single-writer `step()`)
 - Deterministic simulation (xoshiro128**, fixed-point, SHA-256 hashes)
-- 11 commands: MOVE, STOP, HOLD, PATROL, ATTACK, ATTACK_MOVE, GATHER, DEPOSIT, BUILD, CANCEL_CONSTRUCTION, SURRENDER
+- Authoritative commands include MOVE, STOP, HOLD, PATROL, ATTACK, ATTACK_MOVE, GATHER, DEPOSIT, REPAIR, BUILD, CANCEL_CONSTRUCTION, TRAIN, CANCEL_PRODUCTION, RALLY, and SURRENDER
 - 8 pipeline systems: orders → movement → economy → combat → death → supply → victory → invariants
 - 3 unit types: pawn (100hp/10dmg), warrior (150hp/15dmg), archer (60hp/8dmg/range 3)
 - Combat with simultaneous death, victory/draw/tick-limit
@@ -28,8 +28,8 @@ See `docs/tasks/todo.md` for full phase list.
   camera setup, target precedence, pointer capture, and focus-loss cleanup
 - Unit selection (click + box), command bar, match overlay
 - Playable regression scenario with four controllable workers and no enemies,
-  250 starting minerals, contextual GATHER, pickaxe/carry animations, progress
-  feedback, and live Mineral HUD
+   250 starting minerals, contextual GATHER, pickaxe/carry animations, progress
+   feedback, live Mineral HUD, and a player Base starting at 250/500 HP
 - Manual DEPOSIT: a worker that keeps cargo after a manual move shows the carry
   pose and deposits when the player right-clicks an owned completed Base
 - Unified Building construction with HUD placement feedback, shared selection,
@@ -40,6 +40,10 @@ See `docs/tasks/todo.md` for full phase list.
   TRAIN queues, mineral/supply reservations, deterministic production state,
   blocked-exit waiting, production snapshots, player-facing HUD flow, and
   per-item cancellation with authoritative refunds and reservation cleanup
+- Persistent troop health bars, plus authoritative health for completed Base,
+  Barracks, and Supply Depot buildings using the shared damage/death path
+- Authoritative pawn repair for explicitly mechanical units and completed
+  buildings, with centralized cadence/cost/healing rules and browser coverage
 - WebSocket server (isolated per-connection sessions)
 - React SPA with BrowserRouter, lazy match/Laboratory routes, and not-found handling
 - Feature-first web layout with independent Laboratory browser, editor, stress,
@@ -105,6 +109,14 @@ item can be canceled through the authoritative command path, refunds follow
 queued/active/completed-waiting state, and producer removal releases all
 reservations without refund. The match HUD shows each queue row, refund
 feedback, and two-step cancellation confirmation.
+
+P2.10.01 Persistent Unit Health Bars and P2.10.02 Building Health and Shared
+Damage are complete. Full-health troops keep their overhead HP bars; completed
+buildings use the shared Health component and can be damaged and destroyed.
+P2.10 Repair is complete. Pawns select the deterministic first worker from the
+selection, repair mechanical owned targets every 10 ticks for centralized
+5-HP/1-Mineral rules, and expose authoritative progress/HP through the HUD and
+regression E2E scenario.
 
 Quality Hardening remains deferred after the completed QUAL-016 output hygiene
 and QUAL-018 tracking work. The Concept Authority closure (AUTH-005A through
