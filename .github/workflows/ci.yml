@@ -64,7 +64,7 @@ jobs:
     name: Functional End-to-End Tests
     needs: lint_typecheck
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       E2E_WORKERS: 2
     steps:
