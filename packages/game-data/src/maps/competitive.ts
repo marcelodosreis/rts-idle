@@ -19,7 +19,7 @@ function inRect(x: number, y: number, rect: Rect): boolean {
 
 /** Returns footprint-aware base origins for the two opposite starting sides. */
 export function competitiveBaseLocations(): readonly [MapPosition, MapPosition] {
-  const footprint = BUILDING_FOOTPRINTS.BASE
+  const footprint = BUILDING_FOOTPRINTS.CASTLE
   return [
     BASE_ORIGIN,
     {
@@ -32,7 +32,7 @@ export function competitiveBaseLocations(): readonly [MapPosition, MapPosition] 
 /** Returns a land position on the perpendicular bisector of both base centers. */
 export function competitiveMineralLocation(): MapPosition {
   const [first, second] = competitiveBaseLocations()
-  const footprint = BUILDING_FOOTPRINTS.BASE
+  const footprint = BUILDING_FOOTPRINTS.CASTLE
   const firstCenter = { x: first.x + footprint.width / 2, y: first.y + footprint.height / 2 }
   const secondCenter = { x: second.x + footprint.width / 2, y: second.y + footprint.height / 2 }
   const midpoint = {

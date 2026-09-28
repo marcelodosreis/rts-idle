@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 47 |
+| open | 50 |
 | closed | 14 |
-| **total** | **61** |
+| **total** | **64** |
 
 ## Details
 
@@ -73,7 +73,10 @@
 | 2026-09-27-firefox-host-libraries | open | environment | QH.19 | 1 test(s) |
 | 2026-09-27-production-queue-index-key | open | convention | QH.19 | 1 test(s) |
 | 2026-09-27-repair-facing-while-moving | open | presentation | — | 1 test(s) |
+| 2026-09-28-castle-tier-hud-history-lock | open | presentation | — | 1 test(s) |
 | 2026-09-28-editor-playtest-invalid-spawn | open | coverage | QH.20 | 1 test(s) |
+| 2026-09-28-heal-effect-stuck-first-frame | open | presentation | QH.19 | 1 test(s) |
+| 2026-09-28-production-queue-remount | open | presentation | — | 1 test(s) |
 | 2026-09-28-repair-deposit-precedence | open | coverage | QH.20 | 2 test(s) |
 | 2026-09-28-stale-match-renderer-resources | open | presentation | QH.20 | 1 test(s) |
 

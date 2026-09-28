@@ -13,10 +13,10 @@ export interface BuildingDefinition {
 }
 
 /** Baseline building content values; balance is intentionally deferred. */
-export const BASE_BUILDING: BuildingDefinition = Object.freeze({
-  type: 'BASE',
-  label: 'Base',
-  footprint: BUILDING_FOOTPRINTS.BASE,
+export const CASTLE_BUILDING: BuildingDefinition = Object.freeze({
+  type: 'CASTLE',
+  label: 'Castle',
+  footprint: BUILDING_FOOTPRINTS.CASTLE,
   costMinerals: 100,
   constructionTicks: 100,
   supplyProvided: 10,
@@ -35,10 +35,32 @@ export const BARRACKS_BUILDING: BuildingDefinition = Object.freeze({
   mechanical: true
 })
 
-export const SUPPLY_DEPOT_BUILDING: BuildingDefinition = Object.freeze({
-  type: 'SUPPLY_DEPOT',
-  label: 'Supply Depot',
-  footprint: BUILDING_FOOTPRINTS.SUPPLY_DEPOT,
+export const ARCHERY_BUILDING: BuildingDefinition = Object.freeze({
+  type: 'ARCHERY',
+  label: 'Archery',
+  footprint: BUILDING_FOOTPRINTS.ARCHERY,
+  costMinerals: 150,
+  constructionTicks: 100,
+  supplyProvided: 0,
+  maxHp: 400,
+  mechanical: true
+})
+
+export const MONASTERY_BUILDING: BuildingDefinition = Object.freeze({
+  type: 'MONASTERY',
+  label: 'Monastery',
+  footprint: BUILDING_FOOTPRINTS.MONASTERY,
+  costMinerals: BARRACKS_BUILDING.costMinerals,
+  constructionTicks: BARRACKS_BUILDING.constructionTicks,
+  supplyProvided: 0,
+  maxHp: 400,
+  mechanical: true
+})
+
+export const HOUSE_BUILDING: BuildingDefinition = Object.freeze({
+  type: 'HOUSE',
+  label: 'House',
+  footprint: BUILDING_FOOTPRINTS.HOUSE,
   costMinerals: 100,
   constructionTicks: 100,
   supplyProvided: 8,
@@ -46,8 +68,22 @@ export const SUPPLY_DEPOT_BUILDING: BuildingDefinition = Object.freeze({
   mechanical: true
 })
 
+export const TOWER_BUILDING: BuildingDefinition = Object.freeze({
+  type: 'TOWER',
+  label: 'Tower',
+  footprint: BUILDING_FOOTPRINTS.TOWER,
+  costMinerals: 125,
+  constructionTicks: 100,
+  supplyProvided: 0,
+  maxHp: 300,
+  mechanical: true
+})
+
 export const BUILDING_DEFINITIONS = Object.freeze({
-  BASE: BASE_BUILDING,
+  CASTLE: CASTLE_BUILDING,
   BARRACKS: BARRACKS_BUILDING,
-  SUPPLY_DEPOT: SUPPLY_DEPOT_BUILDING
+  ARCHERY: ARCHERY_BUILDING,
+  MONASTERY: MONASTERY_BUILDING,
+  HOUSE: HOUSE_BUILDING,
+  TOWER: TOWER_BUILDING
 } satisfies Record<BuildingType, BuildingDefinition>)
