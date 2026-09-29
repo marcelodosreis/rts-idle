@@ -1,6 +1,6 @@
-import type { BuildCatalogEntry, ProductionCatalogEntry, SnapshotProductionItem } from '@rts/protocol'
+import type { BuildCatalogEntry, ProductionCatalogEntry } from '@rts/protocol'
 import { PROGRESS_PALETTE } from '@rts/renderer'
-import { economyProgressTone, MAX_PRODUCTION_QUEUE, type TrainableUnitKind } from '@rts/shared'
+import { economyProgressTone, type TrainableUnitKind } from '@rts/shared'
 import { useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -11,25 +11,27 @@ import {
   constructionStatusLine,
   mineralRemainingLine
 } from '../selection/selection-panel-logic'
+import { ProductionPanel } from './ProductionPanel'
 import {
   type HudConstruction,
   type HudMineral,
   type HudResources,
   type HudSelectionUnit,
   KIND_LABEL,
-  OWNER_COLORS,
-  TRAINABLE_LABEL
+  OWNER_COLORS
 } from './types'
 
 export { constructionStatusLine, mineralRemainingLine } from '../selection/selection-panel-logic'
 
 interface SelectionPanelProps {
   readonly selection: readonly HudSelectionUnit[]
+  readonly compact: boolean
   readonly construction: HudConstruction | null
   readonly mineral: HudMineral | null
   readonly buildings: readonly BuildCatalogEntry[]
   readonly humanPlayer: number
   readonly onCancelConstruction: (buildingId: number) => void
+  readonly onCancelProduction: (producerId: number, queueIndex: number) => void
   readonly onTrain: (unitKind: TrainableUnitKind) => void
   readonly onSetRally: (producerId: number) => void
   readonly production: readonly ProductionCatalogEntry[]
@@ -197,82 +199,6 @@ function constructionHint(status: HudConstruction['status']): string {
   return 'Select the builder and press Stop to pause.'
 }
 
-function trainingStatusLine(item: SnapshotProductionItem): string {
-  const status = item.status === 'COMPLETED_WAITING' ? 'Waiting for exit' : 'Training'
-  return `${TRAINABLE_LABEL[item.unitKind]} · ${item.progressTicks}/${item.totalTicks} · ${status}`
-}
-
-function ProductionPanel({
-  construction,
-  production,
-  resources,
-  onTrain,
-  onSetRally
-}: {
-  readonly construction: HudConstruction
-  readonly production: readonly ProductionCatalogEntry[]
-  readonly resources: HudResources | null
-  readonly onTrain: (unitKind: TrainableUnitKind) => void
-  readonly onSetRally: () => void
-}) {
-  if (
-    construction.status !== 'COMPLETED' ||
-    production.every((entry) => entry.producer !== construction.buildingType)
-  ) {
-    return null
-  }
-  const options = production.filter((entry) => entry.producer === construction.buildingType)
-  const queue = construction.production?.queue ?? []
-  const queueFull = queue.length >= MAX_PRODUCTION_QUEUE
-  return (
-    <div className="space-y-1" data-testid="production-panel">
-      <div className="flex flex-wrap gap-1">
-        {options.map((entry) => {
-          const affordable = (resources?.mineral ?? 0) >= entry.costMinerals
-          return (
-            <Button
-              key={entry.unitKind}
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-6 px-1.5 text-[11px]"
-              disabled={queueFull || !affordable}
-              onClick={() => onTrain(entry.unitKind)}
-              data-testid={`train-${entry.unitKind}`}
-              title={`${entry.costMinerals} minerals · ${entry.trainingTicks} ticks · ${entry.supply} supply`}
-            >
-              {TRAINABLE_LABEL[entry.unitKind]} · {entry.costMinerals}
-            </Button>
-          )
-        })}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-6 px-1.5 text-[11px]"
-          onClick={onSetRally}
-          data-testid="set-rally"
-        >
-          Set rally
-        </Button>
-      </div>
-      <p className="text-[11px] font-medium text-muted-foreground">
-        <span data-testid="production-queue-count">
-          Queue {queue.length}/{MAX_PRODUCTION_QUEUE}
-        </span>
-        <span className="mx-1" aria-hidden="true">
-          ·
-        </span>
-        <span data-testid="rally-point">
-          {construction.rallyPoint === null || construction.rallyPoint === undefined
-            ? 'Rally: none'
-            : `Rally: ${construction.rallyPoint.x}, ${construction.rallyPoint.y}`}
-        </span>
-      </p>
-    </div>
-  )
-}
-
 function ConstructionCancelButton({
   construction,
   humanPlayer,
@@ -314,14 +240,18 @@ function ConstructionCancelButton({
 function UnitSelectionCard({
   selection,
   selectionLabel,
-  activeEconomy
+  activeEconomy,
+  compact
 }: {
   readonly selection: readonly HudSelectionUnit[]
   readonly selectionLabel: string
   readonly activeEconomy: { readonly label: string; readonly color: string } | null
+  readonly compact: boolean
 }) {
   return (
-    <Card className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1">
+    <Card
+      className={`flex min-h-0 w-full shrink-0 flex-col overflow-hidden py-1 ${compact ? 'max-w-[12rem] sm:max-w-[16rem]' : 'max-w-[22rem]'}`}
+    >
       <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
         <CardTitle className="flex min-w-0 items-center justify-between gap-2 text-[11px] text-muted-foreground">
           <span className="truncate">{selectionLabel}</span>
@@ -335,7 +265,7 @@ function UnitSelectionCard({
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-wrap gap-0.5 px-2 py-0.5" aria-live="polite">
+      <CardContent className={`flex flex-wrap px-2 py-0.5 ${compact ? 'gap-0' : 'gap-0.5'}`} aria-live="polite">
         {selection.length > 0 && selection.map((unit) => <UnitChip key={unit.id} unit={unit} />)}
       </CardContent>
     </Card>
@@ -344,7 +274,14 @@ function UnitSelectionCard({
 
 type ConstructionSelectionCardProps = Pick<
   SelectionPanelProps,
-  'buildings' | 'humanPlayer' | 'onCancelConstruction' | 'onSetRally' | 'onTrain' | 'production' | 'resources'
+  | 'buildings'
+  | 'humanPlayer'
+  | 'onCancelConstruction'
+  | 'onCancelProduction'
+  | 'onSetRally'
+  | 'onTrain'
+  | 'production'
+  | 'resources'
 > & {
   readonly construction: HudConstruction
   readonly confirmingId: number | null
@@ -356,6 +293,7 @@ function ConstructionSelectionCard({
   buildings,
   humanPlayer,
   onCancelConstruction,
+  onCancelProduction,
   onSetRally,
   onTrain,
   production,
@@ -368,9 +306,11 @@ function ConstructionSelectionCard({
     buildings.find((building) => building.type === construction.buildingType)?.costMinerals ?? 0
   )
   const confirming = confirmingId === construction.id
-  const activeProduction = construction.production?.queue[0]
   return (
-    <Card className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1" data-testid="construction-panel">
+    <Card
+      className="flex min-h-0 w-full max-w-[22rem] shrink-0 flex-col gap-0 overflow-hidden py-1"
+      data-testid="construction-panel"
+    >
       <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
         <CardTitle className="truncate text-[11px] text-muted-foreground">
           <span className="flex min-w-0 items-center justify-between gap-2">
@@ -386,22 +326,15 @@ function ConstructionSelectionCard({
                 {constructionStatusLine(construction)}
               </span>
             )}
-            {construction.status === 'COMPLETED' && activeProduction !== undefined && (
-              <span
-                className="shrink-0 font-medium"
-                style={{ color: PROGRESS_PALETTE.training.text }}
-                data-testid="training-status"
-              >
-                {trainingStatusLine(activeProduction)}
-              </span>
-            )}
           </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-1 px-2 py-0.5 text-[11px] text-muted-foreground">
-        <span className="leading-snug" aria-live="polite">
-          {constructionHint(construction.status)}
-        </span>
+        {construction.status !== 'COMPLETED' && (
+          <span className="leading-snug" aria-live="polite">
+            {constructionHint(construction.status)}
+          </span>
+        )}
         <ConstructionCancelButton
           construction={construction}
           humanPlayer={humanPlayer}
@@ -422,6 +355,7 @@ function ConstructionSelectionCard({
           resources={resources}
           onTrain={onTrain}
           onSetRally={() => onSetRally(construction.id)}
+          onCancelProduction={(queueIndex) => onCancelProduction(construction.id, queueIndex)}
         />
       </CardContent>
     </Card>
@@ -430,11 +364,13 @@ function ConstructionSelectionCard({
 
 export function SelectionPanel({
   selection,
+  compact,
   construction,
   mineral,
   buildings,
   humanPlayer,
   onCancelConstruction,
+  onCancelProduction,
   onTrain,
   onSetRally,
   production,
@@ -451,6 +387,7 @@ export function SelectionPanel({
         buildings={buildings}
         humanPlayer={humanPlayer}
         onCancelConstruction={onCancelConstruction}
+        onCancelProduction={onCancelProduction}
         onTrain={onTrain}
         onSetRally={onSetRally}
         production={production}
@@ -462,7 +399,10 @@ export function SelectionPanel({
   }
   if (mineral !== null) {
     return (
-      <Card className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1" data-testid="mineral-panel">
+      <Card
+        className="flex min-h-0 w-full max-w-[22rem] shrink-0 flex-col overflow-hidden py-1"
+        data-testid="mineral-panel"
+      >
         <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
           <CardTitle className="truncate text-[11px] text-muted-foreground">Mineral Node</CardTitle>
           <p
@@ -479,5 +419,12 @@ export function SelectionPanel({
       </Card>
     )
   }
-  return <UnitSelectionCard selection={selection} selectionLabel={selectionLabel} activeEconomy={activeEconomy} />
+  return (
+    <UnitSelectionCard
+      selection={selection}
+      selectionLabel={selectionLabel}
+      activeEconomy={activeEconomy}
+      compact={compact}
+    />
+  )
 }

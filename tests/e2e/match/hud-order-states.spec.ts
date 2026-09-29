@@ -27,7 +27,7 @@ async function workerPosition(page: Page, id: number): Promise<{ readonly x: num
 }
 
 async function startMatch(page: Page): Promise<number> {
-  await page.goto('/?scenario=economy&aggression=passive')
+  await page.goto('/?scenario=default')
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
   const workers = await page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}

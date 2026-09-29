@@ -86,8 +86,8 @@ function seedMineralNodes(context: SeedContext, nodes: readonly DemoMineralNodeS
 
 function seedAttacks(context: SeedContext, scenario: DemoScenario, aggression: 'offensive' | 'passive'): void {
   for (const [attacker, target] of scenario.attacks) {
-    // The player's units start idle in interactive scenarios; cinematic
-    // scenarios (playerIdle: false) let both sides fight on their own.
+    // The player's units start idle in interactive scenarios; only enemy
+    // orders are seeded when aggression is offensive.
     if ((scenario.playerIdle !== false && scenario.spawns[attacker]!.owner === 0) || aggression === 'passive') {
       continue
     }

@@ -26,6 +26,7 @@ function buildHudProps(session: MatchSessionState, hostRef: RefObject<HTMLDivEle
     onSurrender: session.surrender,
     onArm: session.arm,
     onCancelConstruction: session.cancelConstruction,
+    onCancelProduction: session.cancelProduction,
     onTrain: session.train,
     onSetRally: (producerId) => session.arm({ kind: 'rally', producerId }),
     workerSelected: selectionUnits.length === 1 && selectionUnits[0]?.kind === 'pawn' && selectionUnits[0]?.owner === 0,

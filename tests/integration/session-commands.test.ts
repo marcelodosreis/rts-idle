@@ -44,27 +44,39 @@ describe('game session commands', () => {
     })
   })
 
-  it('seeds the economy sandbox with four Workers, two Bases, 250 minerals, and one Mineral Node', () => {
+  it('seeds the economy sandbox with five workers, five enemy pawns, two Bases, 250 minerals, and one Mineral Node', () => {
     const session = createAuthoritativeMatch({
       type: 'match_request',
-      scenarioId: 'economy',
+      scenarioId: 'default',
       aggression: 'passive',
       map: { source: 'catalog' }
     }).session
 
-    expect(session.projectUnits()).toHaveLength(4)
+    expect(session.projectUnits()).toHaveLength(10)
     expect(session.projectUnits().map(({ x, y }) => ({ x, y }))).toEqual([
+      { x: tilesToFixed(7), y: tilesToFixed(11) },
       { x: tilesToFixed(8), y: tilesToFixed(11) },
       { x: tilesToFixed(9), y: tilesToFixed(11) },
       { x: tilesToFixed(10), y: tilesToFixed(11) },
-      { x: tilesToFixed(11), y: tilesToFixed(11) }
+      { x: tilesToFixed(11), y: tilesToFixed(11) },
+      { x: tilesToFixed(22), y: tilesToFixed(27) },
+      { x: tilesToFixed(23), y: tilesToFixed(27) },
+      { x: tilesToFixed(24), y: tilesToFixed(27) },
+      { x: tilesToFixed(25), y: tilesToFixed(27) },
+      { x: tilesToFixed(26), y: tilesToFixed(27) }
     ])
     expect(session.projectUnits()).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ owner: 0, kind: 'pawn' }),
         expect.objectContaining({ owner: 0, kind: 'pawn' }),
         expect.objectContaining({ owner: 0, kind: 'pawn' }),
-        expect.objectContaining({ owner: 0, kind: 'pawn' })
+        expect.objectContaining({ owner: 0, kind: 'pawn' }),
+        expect.objectContaining({ owner: 0, kind: 'pawn' }),
+        expect.objectContaining({ owner: 1, kind: 'pawn' }),
+        expect.objectContaining({ owner: 1, kind: 'pawn' }),
+        expect.objectContaining({ owner: 1, kind: 'pawn' }),
+        expect.objectContaining({ owner: 1, kind: 'pawn' }),
+        expect.objectContaining({ owner: 1, kind: 'pawn' })
       ])
     )
     expect(session.projectPlayers().find((player) => player.id === 0)?.gold).toBe(250)
@@ -113,7 +125,7 @@ describe('game session commands', () => {
   it('projects a builder as moving, then building at its work point', () => {
     const session = createAuthoritativeMatch({
       type: 'match_request',
-      scenarioId: 'economy',
+      scenarioId: 'default',
       aggression: 'passive',
       map: { source: 'catalog' }
     }).session

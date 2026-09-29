@@ -852,7 +852,7 @@ Destruction does not refund cost.
 - One active item per producer.
 - A destroyed producer loses its queue and frees supply reservations.
 - A canceled, not-yet-started item: full refund.
-- A canceled active item: proportional refund of 75% of the remaining portion.
+- Active and completed-waiting items cannot be canceled.
 - On completion, the supply reservation becomes used supply.
 - A blocked exit keeps the unit as "completed waiting for space".
 - Do not create overlap to force a spawn.

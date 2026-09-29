@@ -2,7 +2,7 @@ import { assertNever } from '@rts/shared'
 import { Application, Graphics, type Ticker } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
 import { AssetLibrary } from '../assets/asset-library.js'
-import { RALLY_COLOR } from '../effects/colors.js'
+import { POINTER_COLOR, RALLY_COLOR, SELECTION_COLOR } from '../effects/colors.js'
 import { EffectsLayer } from '../effects/layer.js'
 import { CommandPing } from '../effects/ping.js'
 import { SelectionController } from '../effects/selection.js'
@@ -230,7 +230,8 @@ export class PixiRenderer implements GameRenderer {
       case 'secondary-activate':
         if (interaction.target.kind === 'ground') {
           if (this.selectedRallyProducerId === null) {
-            this.ping?.show(interaction.target.position.x, interaction.target.position.y)
+            const color = selection.get().length > 0 ? SELECTION_COLOR : POINTER_COLOR
+            this.ping?.show(interaction.target.position.x, interaction.target.position.y, color)
           }
         }
         break
@@ -262,12 +263,12 @@ export class PixiRenderer implements GameRenderer {
 
   setSelectedRallyProducer(id: number | null): void {
     this.selectedRallyProducerId = id
-    this.ping?.hide()
+    this.ping?.hidePersistent()
   }
 
   setSelectedRallyPoint(point: { readonly x: number; readonly y: number } | null): void {
     if (point === null) {
-      this.ping?.hide()
+      this.ping?.hidePersistent()
       return
     }
     this.ping?.showPersistent(point.x, point.y, RALLY_COLOR)

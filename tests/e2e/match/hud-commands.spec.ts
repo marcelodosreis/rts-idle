@@ -87,6 +87,24 @@ test('STOP cancels auto-orders and an armed ATTACK re-engages the target', async
     .toBe(true)
 })
 
+test('left-clicking empty ground cancels an armed attack-move mode', async ({ page }) => {
+  await settleUnits(page)
+  const units = await unitsByOwner(page)
+  const worker = units.find((unit) => unit.owner === 0)
+  expect(worker).toBeDefined()
+  await page.evaluate((id) => window.__rtsDebug!.setSelection([id]), worker!.id)
+
+  const attackMove = page.getByRole('button', { name: 'Attack-move', exact: true })
+  await attackMove.click()
+  await expect(attackMove).toHaveAttribute('aria-pressed', 'true')
+
+  const ground = await worldToPage(page, worker!.x + 800, worker!.y + 800)
+  await page.mouse.click(ground.x, ground.y)
+
+  await expect(attackMove).toHaveAttribute('aria-pressed', 'false')
+  await expect(page.getByText('Pick a target: attack_move.')).toHaveCount(0)
+})
+
 test('SURRENDER ends the match with a defeat overlay', async ({ page }) => {
   await settleUnits(page)
   await page.getByRole('button', { name: 'Surrender' }).click()

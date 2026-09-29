@@ -33,7 +33,7 @@ async function selectWorker(page: import('@playwright/test').Page, id: number): 
 }
 
 async function startMatch(page: import('@playwright/test').Page): Promise<void> {
-  await page.goto('/?scenario=economy&aggression=passive')
+  await page.goto('/?scenario=regression')
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
 }
 
@@ -83,8 +83,12 @@ test('Supply Depot capacity activates only after construction completes', async 
   await selectWorker(page, workerId)
   await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 10')
   await page.getByRole('button', { name: 'Supply Depot · 100', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Supply Depot · 100', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true'
+  )
 
-  const target = { x: tilesToFixed(12), y: tilesToFixed(9) }
+  const target = { x: tilesToFixed(10), y: tilesToFixed(10) }
   const point = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
   await page.mouse.click(point.x, point.y)
   await expect.poll(() => constructionAt(page, target)).toMatchObject({ status: 'FOUNDATION' })
@@ -102,7 +106,7 @@ test('construction stays at the clicked location while the worker travels', asyn
   await selectWorker(page, workerId)
   await page.getByRole('button', { name: 'Base · 100', exact: true }).click()
 
-  const target = { x: tilesToFixed(12), y: tilesToFixed(9) }
+  const target = { x: tilesToFixed(10), y: tilesToFixed(10) }
   const clickTarget = { x: target.x + FIXED_SCALE / 2, y: target.y + FIXED_SCALE / 2 }
   const point = await page.evaluate((fixed) => {
     const canvas = document.querySelector('canvas')
@@ -130,13 +134,13 @@ test('construction stays at the clicked location while the worker travels', asyn
     })
   await expect
     .poll(() => page.evaluate((id) => window.__rtsDebug!.getPositions()[String(id)]!, workerId), { timeout: 5_000 })
-    .toEqual({ x: tilesToFixed(12), y: tilesToFixed(10) })
+    .toEqual({ x: tilesToFixed(10), y: tilesToFixed(12) })
 
   await page.mouse.click(point.x, point.y)
   await expect(page.getByTestId('construction-panel')).toContainText('Base · Ready')
   await expect(page.getByTestId('construction-panel')).not.toContainText('100/100')
   await expect(page.getByTestId('construction-panel')).not.toContainText('No worker assigned')
-  await expect(page.getByTestId('construction-panel')).toContainText('Construction complete.')
+  await expect(page.getByTestId('construction-panel')).toContainText('Base · Ready')
 })
 
 test('construction preview explains an occupied location before sending a command', async ({ page }) => {
@@ -146,7 +150,7 @@ test('construction preview explains an occupied location before sending a comman
   await selectWorker(page, workers[0]!)
   await page.getByRole('button', { name: 'Base · 100', exact: true }).click()
 
-  const target = { x: tilesToFixed(12), y: tilesToFixed(9) }
+  const target = { x: tilesToFixed(10), y: tilesToFixed(10) }
   const targetPoint = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
   await page.mouse.click(targetPoint.x, targetPoint.y)
   await expect.poll(() => constructionAt(page, target), { timeout: 15_000 }).toMatchObject({ status: 'COMPLETED' })
@@ -167,7 +171,7 @@ test('a construction can pause and resume with another worker through the HUD', 
   await selectWorker(page, builder)
   await page.getByRole('button', { name: 'Base · 100', exact: true }).click()
 
-  const target = { x: tilesToFixed(12), y: tilesToFixed(9) }
+  const target = { x: tilesToFixed(10), y: tilesToFixed(10) }
   const targetPoint = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
   await page.mouse.click(targetPoint.x, targetPoint.y)
 
@@ -186,7 +190,7 @@ test('a construction can pause and resume with another worker through the HUD', 
   await expect(page.getByTestId('construction-panel')).not.toContainText('Paused')
 
   await expect.poll(() => page.getByTestId('construction-status').textContent()).not.toBe(pausedProgress)
-  await expect(page.getByTestId('construction-panel')).toContainText('Construction complete.', { timeout: 15_000 })
+  await expect(page.getByTestId('construction-panel')).toContainText('Base · Ready', { timeout: 15_000 })
   await expect(page.getByTestId('cancel-construction')).toHaveCount(0)
 })
 
@@ -198,7 +202,7 @@ test('an in-progress construction can be cancelled through the HUD with a partia
   await selectWorker(page, workerId)
   await page.getByRole('button', { name: 'Base · 100', exact: true }).click()
 
-  const target = { x: tilesToFixed(12), y: tilesToFixed(9) }
+  const target = { x: tilesToFixed(10), y: tilesToFixed(10) }
   const targetPoint = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
   await page.mouse.click(targetPoint.x, targetPoint.y)
   await expect.poll(() => constructionAt(page, target)).toMatchObject({ status: 'FOUNDATION' })

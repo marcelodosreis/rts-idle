@@ -5,6 +5,7 @@ import { applyAttack } from './attack.js'
 import { applyAttackMove } from './attack-move.js'
 import { applyBuild } from './build.js'
 import { applyCancelConstruction } from './cancel-construction.js'
+import { applyCancelProduction } from './cancel-production.js'
 import { applyDeposit } from './deposit.js'
 import { applyGather } from './gather.js'
 import { applyHold } from './hold.js'
@@ -70,6 +71,9 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
       return
     case 'TRAIN':
       applyTrain(state, command)
+      return
+    case 'CANCEL_PRODUCTION':
+      applyCancelProduction(state, command)
       return
     case 'RALLY':
       applyRally(state, command)

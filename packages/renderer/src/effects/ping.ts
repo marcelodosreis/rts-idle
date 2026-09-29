@@ -11,6 +11,7 @@ const PING_LIFETIME_MS = 800
 export class CommandPing {
   private readonly graphics: Graphics
   private pingUntil: number | null = 0
+  private persistent = false
 
   constructor(interactionLayer: Container) {
     this.graphics = new Graphics()
@@ -20,10 +21,12 @@ export class CommandPing {
   }
 
   show(worldX: number, worldY: number, color = SELECTION_COLOR): void {
+    this.persistent = false
     this.draw(worldX, worldY, color, Date.now() + PING_LIFETIME_MS)
   }
 
   showPersistent(worldX: number, worldY: number, color: number): void {
+    this.persistent = true
     this.draw(worldX, worldY, color, null)
   }
 
@@ -37,7 +40,14 @@ export class CommandPing {
   }
 
   hide(): void {
+    this.persistent = false
     this.graphics.visible = false
+  }
+
+  hidePersistent(): void {
+    if (this.persistent) {
+      this.hide()
+    }
   }
 
   /** Hides the ping once its lifetime has elapsed. */
