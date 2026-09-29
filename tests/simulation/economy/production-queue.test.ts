@@ -33,7 +33,7 @@ function scenario(
     world.store(Position).set(START_ENTITY_ID, { x: tilesToFixed(12), y: 0 })
     world.store(Owner).set(START_ENTITY_ID, { owner: 0 })
     world.store(Building).set(START_ENTITY_ID, {
-      buildingType: 'BASE',
+      buildingType: 'CASTLE',
       status: 'COMPLETED',
       progressTicks: 1,
       totalTicks: 1,
@@ -360,7 +360,7 @@ describe('production queue', () => {
     const spawnedId = START_ENTITY_ID + 101
     expect(state.world.store(Kind).get(spawnedId)).toBe('warrior')
     expect(state.world.store(Movement).get(spawnedId)).toMatchObject({
-      speedTilesPerSecond: 4,
+      speedTilesPerSecondFixed: 40,
       destX: tilesToFixed(6),
       destY: tilesToFixed(6)
     })

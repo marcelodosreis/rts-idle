@@ -1,4 +1,4 @@
-import { SUPPLY_DEPOT_BUILDING } from '@rts/game-data'
+import { HOUSE_BUILDING } from '@rts/game-data'
 import { START_ENTITY_ID, tilesToFixed } from '@rts/shared'
 import {
   Building,
@@ -19,7 +19,7 @@ function worldWithBaseAndUnits(unitCount: number): ReturnType<typeof createWorld
   world.store(Position).set(START_ENTITY_ID, { x: 0, y: 0 })
   world.store(Owner).set(START_ENTITY_ID, { owner: 0 })
   world.store(Building).set(START_ENTITY_ID, {
-    buildingType: 'BASE',
+    buildingType: 'CASTLE',
     status: 'COMPLETED',
     progressTicks: 100,
     totalTicks: 100,
@@ -37,7 +37,7 @@ function worldWithBaseAndUnits(unitCount: number): ReturnType<typeof createWorld
 }
 
 describe('authoritative supply accounting', () => {
-  it('starts with Base capacity and one supply per existing unit', () => {
+  it('starts with Castle capacity and one supply per existing unit', () => {
     const state = createSimulation({
       seed: 1,
       identity: TEST_IDENTITY,
@@ -47,38 +47,38 @@ describe('authoritative supply accounting', () => {
     expect(state.players[0]).toMatchObject({ usedSupply: 4, supplyCap: 10 })
   })
 
-  it('does not count an unfinished Depot and activates it on completion', () => {
+  it('does not count an unfinished House and activates it on completion', () => {
     const world = worldWithBaseAndUnits(1)
     world.createEntity(START_ENTITY_ID + 2)
     world.store(Position).set(START_ENTITY_ID + 2, { x: tilesToFixed(4), y: 0 })
     world.store(Owner).set(START_ENTITY_ID + 2, { owner: 0 })
     world.store(Building).set(START_ENTITY_ID + 2, {
-      buildingType: 'SUPPLY_DEPOT',
+      buildingType: 'HOUSE',
       status: 'UNDER_CONSTRUCTION',
       progressTicks: 99,
-      totalTicks: SUPPLY_DEPOT_BUILDING.constructionTicks,
+      totalTicks: HOUSE_BUILDING.constructionTicks,
       builderId: null,
-      footprint: { x: 4, y: 0, ...SUPPLY_DEPOT_BUILDING.footprint }
+      footprint: { x: 4, y: 0, ...HOUSE_BUILDING.footprint }
     })
     const state = createSimulation({ seed: 1, identity: TEST_IDENTITY, initialWorld: world }).inspectState()
     expect(state.players[0]?.supplyCap).toBe(10)
     state.world.store(Building).set(START_ENTITY_ID + 2, {
       ...state.world.store(Building).get(START_ENTITY_ID + 2)!,
       status: 'COMPLETED',
-      progressTicks: SUPPLY_DEPOT_BUILDING.constructionTicks
+      progressTicks: HOUSE_BUILDING.constructionTicks
     })
     updateSupply(state)
     expect(state.players[0]).toMatchObject({ usedSupply: 1, supplyCap: 18 })
   })
 
-  it('allows over-cap after a completed Depot is removed without removing units', () => {
+  it('allows over-cap after a completed House is removed without removing units', () => {
     const world = worldWithBaseAndUnits(12)
     const depotId = START_ENTITY_ID + 13
     world.createEntity(depotId)
     world.store(Position).set(depotId, { x: 20, y: 20 })
     world.store(Owner).set(depotId, { owner: 0 })
     world.store(Building).set(depotId, {
-      buildingType: 'SUPPLY_DEPOT',
+      buildingType: 'HOUSE',
       status: 'COMPLETED',
       progressTicks: 100,
       totalTicks: 100,
@@ -100,7 +100,7 @@ describe('authoritative supply accounting', () => {
       world.store(Position).set(id, { x: 4 + index * 2, y: 0 })
       world.store(Owner).set(id, { owner: 0 })
       world.store(Building).set(id, {
-        buildingType: 'SUPPLY_DEPOT',
+        buildingType: 'HOUSE',
         status: 'COMPLETED',
         progressTicks: 100,
         totalTicks: 100,

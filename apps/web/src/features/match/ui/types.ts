@@ -1,5 +1,5 @@
 import type { ConstructionStatus, EconomyPhase, OrderState, SnapshotProduction } from '@rts/protocol'
-import type { BuildingType, TrainableUnitKind, UnitKind } from '@rts/shared'
+import type { BuildingType, ResearchType, TrainableUnitKind, UnitKind } from '@rts/shared'
 
 /** HUD-only construction status: authoritative statuses plus a derived paused state. */
 export const HUD_CONSTRUCTION_STATUSES = [
@@ -20,8 +20,13 @@ export interface HudSelectionUnit {
   readonly orderState?: OrderState
   readonly hp?: number
   readonly maxHp?: number
+  readonly damage?: number
+  readonly armor?: number
+  readonly movementSpeedFixed?: number
+  readonly cargoCapacity?: number
   readonly repairProgressTicks?: number
   readonly repairProgressMax?: number
+  readonly healCooldownRemaining?: number
   readonly economy?: {
     readonly phase: EconomyPhase
     readonly cargoAmount: number
@@ -36,11 +41,13 @@ export interface HudSelectionUnit {
 export interface HudConstruction {
   readonly id: number
   readonly buildingType: BuildingType
+  readonly tier?: number
   readonly owner: number
   readonly status: HudConstructionStatus
   readonly progressTicks: number
   readonly totalTicks: number
   readonly builderId: number | null
+  readonly tierUpgrade?: { readonly progressTicks: number; readonly totalTicks: number } | null
   readonly hp?: number
   readonly maxHp?: number
   readonly rallyPoint?: { readonly x: number; readonly y: number } | null
@@ -56,18 +63,25 @@ export interface HudResources {
   readonly mineral: number
   readonly supply: number
   readonly supplyCap: number
+  readonly castleTier: number
+  readonly completedResearch: readonly ResearchType[]
+  readonly queuedResearch: readonly ResearchType[]
 }
 
 export const TRAINABLE_LABEL: Readonly<Record<TrainableUnitKind, string>> = {
   pawn: 'Pawn',
   warrior: 'Warrior',
-  archer: 'Archer'
+  archer: 'Archer',
+  lancer: 'Lancer',
+  monk: 'Monk'
 }
 
 export const KIND_LABEL: Readonly<Record<HudSelectionUnit['kind'], string>> = {
   pawn: 'Worker',
   warrior: 'Soldier',
-  archer: 'Ranger'
+  archer: 'Ranger',
+  lancer: 'Lancer',
+  monk: 'Monk'
 }
 
 /** Tailwind text/bg classes per faction slot (0=blue, 1=red, 2=purple, 3=yellow). */

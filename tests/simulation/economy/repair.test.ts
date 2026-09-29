@@ -35,7 +35,7 @@ function scenario(gold = 10, targetHp = 50, buildingHp = 500) {
   world.store(Position).set(BUILDING_ID, { x: 0, y: 0 })
   world.store(Owner).set(BUILDING_ID, { owner: 0 })
   world.store(Building).set(BUILDING_ID, {
-    buildingType: 'BASE',
+    buildingType: 'CASTLE',
     status: 'COMPLETED',
     progressTicks: 100,
     totalTicks: 100,

@@ -67,7 +67,8 @@ export class GameSession {
   }
 
   projectUnits(): readonly SnapshotUnit[] {
-    return projectUnits(this.simulation.inspectState().world)
+    const state = this.simulation.inspectState()
+    return projectUnits(state.world, state.players)
   }
 
   projectBuildings(): readonly SnapshotBuilding[] {
@@ -79,7 +80,8 @@ export class GameSession {
   }
 
   projectPlayers(): readonly SnapshotPlayer[] {
-    return projectPlayers(this.simulation.inspectState().players)
+    const state = this.simulation.inspectState()
+    return projectPlayers(state.players, state.world)
   }
 
   identity(): RulesIdentity {

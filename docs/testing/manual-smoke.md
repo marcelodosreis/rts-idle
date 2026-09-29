@@ -39,7 +39,7 @@ marches toward the enemy, then fights in place where they meet.
 | 8 | Bottom bar **Attack-move** / **Patrol** then right-click ground | The selection moves attacking en route / patrols back and forth. |
 | 9 | Bottom bar **Surrender** | The match ends with a **Defeat** overlay and a "New match" button. |
 | 10 | Wait for the match to end (or Surrender) | Overlay shows **Victory / Defeat / Draw**; "New match" reloads a fresh session. |
-| 11 | Top bar **scenario** selector | Reloads into a different scenario (`Default`, `6v6`, Free for all). |
+| 11 | Top bar **scenario** selector | Reloads into a different scenario (`Default`, `8v8`, Free for all). |
 | 12 | Middle-drag / wheel | Camera pans / zooms (0.05×–4×). |
 | 13 | Top bar **Sprites** switch | Turning it off reloads the match with fallback circles/terrain graphics; commands and simulation remain active. |
 

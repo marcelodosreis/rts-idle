@@ -29,7 +29,7 @@ const build = (unitId: number, sequence = 1) => ({
   tick: 1,
   playerId: 0,
   sequence,
-  intent: { type: 'BUILD' as const, payload: { unitId, buildingType: 'BASE' as const, x: 0, y: 0 } }
+  intent: { type: 'BUILD' as const, payload: { unitId, buildingType: 'CASTLE' as const, x: 0, y: 0 } }
 })
 
 const cancel = (buildingId: number, sequence = 2, playerId = 0) => ({

@@ -24,7 +24,7 @@ is moving from isolated sessions to shared rooms.** This alone reduces cost 20×
 | CPU per tick per session | ~0.3 ms |
 | Memory per session | ~3 MB |
 | Client bundle (first load) | ~10 MB |
-| Scenario: 6v6 | 12 units + 2 bases + 1 mineral node |
+| Scenario: 8v8 | 16 units + 2 bases + 1 mineral node |
 
 ## 2. Architecture A: Isolated sessions (current)
 

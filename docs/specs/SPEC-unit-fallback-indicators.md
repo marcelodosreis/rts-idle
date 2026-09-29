@@ -52,7 +52,7 @@ encodes side. This serves colorblind users and remains readable at varying zoom 
 
 - `tests/unit/renderer/unit-fallback.test.ts` — asserts letter and shape per kind.
 - `tests/e2e/laboratory/sprite-fallback.spec.ts` — asserts `glyph` and `shape` fields
-  match kinds and that all three kinds are present in the 6v6 demo.
+  match kinds and that the core roster plus Monk and Lancer are present in the 8v8 demo.
 
 ```bash
 pnpm run test:unit

@@ -1,7 +1,8 @@
+import { isProductionBuilding } from '@rts/game-data'
 import { productionRefund } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { Building } from '../ecs/building-component.js'
-import { Owner, Production } from '../ecs/components.js'
+import { isResearchProductionItem, Owner, Production } from '../ecs/components.js'
 import type { GameState } from '../state/state.js'
 import { reject } from './reject.js'
 
@@ -25,7 +26,7 @@ function validateProducer(
   if (building === undefined) {
     reject(command, 'ENTITY_UNAVAILABLE', `CANCEL_PRODUCTION: producer ${producerId} does not exist`)
   }
-  if (building.status !== 'COMPLETED' || (building.buildingType !== 'BASE' && building.buildingType !== 'BARRACKS')) {
+  if (building.status !== 'COMPLETED' || !isProductionBuilding(building.buildingType)) {
     reject(command, 'INVALID_STATE', `CANCEL_PRODUCTION: producer ${producerId} is not completed`)
   }
   if (state.world.store(Owner).get(producerId)?.owner !== command.playerId) {
@@ -37,6 +38,9 @@ function validateProducer(
   }
   if (queue[queueIndex]?.status !== 'QUEUED') {
     reject(command, 'INVALID_STATE', 'CANCEL_PRODUCTION: only queued items can be canceled')
+  }
+  if (isResearchProductionItem(queue[queueIndex]!)) {
+    reject(command, 'INVALID_STATE', 'CANCEL_PRODUCTION: queue item is Research')
   }
   return { producerId, player, queue }
 }
@@ -59,6 +63,9 @@ export function applyCancelProduction(state: GameState, command: ScheduledComman
   const remaining = queue.filter((_, index) => index !== queueIndex)
   const nextQueue = remaining.map((entry, index) => (index === 0 ? { ...entry, status: 'ACTIVE' as const } : entry))
   player.gold += refund
+  if (isResearchProductionItem(item)) {
+    throw new Error('applyCancelProduction: validated item is Research')
+  }
   player.reservedSupply -= item.reservedSupply
   state.world.store(Production).set(producerId, { queue: nextQueue })
 }

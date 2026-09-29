@@ -1,4 +1,4 @@
-import { BARRACKS_BUILDING, BASE_BUILDING } from '@rts/game-data'
+import { BARRACKS_BUILDING, CASTLE_BUILDING } from '@rts/game-data'
 import { BUILDING_GEOMETRY, fixedToRenderPixels } from '@rts/shared'
 import { describe, expect, it } from 'vitest'
 import { buildingVisualStyle } from '../../../packages/renderer/src/world/building-visual-style.js'
@@ -14,13 +14,13 @@ function layerContainers(): { readonly worldObjects: Container; readonly interac
 }
 
 describe('WorldObjectLayer construction anchors', () => {
-  it('uses a tile-aligned BASE canvas for foundation, preview, and completed geometry', () => {
+  it('uses a tile-aligned Castle canvas for foundation, preview, and completed geometry', () => {
     const layers = layerContainers()
     const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
-    const baseFootprint = BASE_BUILDING.footprint
+    const baseFootprint = CASTLE_BUILDING.footprint
     const construction = {
       id: 42,
-      buildingType: 'BASE' as const,
+      buildingType: 'CASTLE' as const,
       x: 768,
       y: 512,
       owner: 0,
@@ -36,8 +36,8 @@ describe('WorldObjectLayer construction anchors', () => {
     expect(foundationPosition).toEqual({ x: 192, y: 128 })
     const foundationBounds = foundation.getLocalBounds()
     const foundationWidth = foundationBounds.width
-    expect(foundationBounds.width).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BASE.visualSize.width) + 4)
-    expect(foundationBounds.height).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BASE.visualSize.height) + 13)
+    expect(foundationBounds.width).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.CASTLE.visualSize.width) + 4)
+    expect(foundationBounds.height).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.CASTLE.visualSize.height) + 13)
     expect(foundation.getLocalBounds().x).toBeGreaterThanOrEqual(-3)
     expect(layer.buildingAt(200, 140)).toBe(42)
     expect(layer.buildingAt(515, 337)).toBeNull()
@@ -48,13 +48,13 @@ describe('WorldObjectLayer construction anchors', () => {
       y: construction.y,
       width: baseFootprint.width,
       height: baseFootprint.height,
-      buildingType: 'BASE',
+      buildingType: 'CASTLE',
       valid: true
     })
     const preview = layers.interaction.children[0]!
     expect({ x: preview.position.x, y: preview.position.y }).toEqual(foundationPosition)
-    expect(preview.getLocalBounds().width).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BASE.visualSize.width) + 4)
-    expect(preview.getLocalBounds().height).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BASE.visualSize.height) + 4)
+    expect(preview.getLocalBounds().width).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.CASTLE.visualSize.width) + 4)
+    expect(preview.getLocalBounds().height).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.CASTLE.visualSize.height) + 4)
 
     layer.present([construction], [])
     expect(layers.interaction.children).toEqual([preview])
@@ -64,7 +64,7 @@ describe('WorldObjectLayer construction anchors', () => {
     const completed = layers.worldObjects.children[0]!
     expect({ x: completed.position.x, y: completed.position.y }).toEqual(foundationPosition)
     expect(completed.getLocalBounds().width).toBeCloseTo(foundationWidth, 0)
-    expect(completed.getLocalBounds().height).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BASE.visualSize.height) + 4)
+    expect(completed.getLocalBounds().height).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.CASTLE.visualSize.height) + 4)
     expect(completed.getLocalBounds().x).toBeGreaterThanOrEqual(-3)
   })
 
@@ -127,6 +127,31 @@ describe('WorldObjectLayer construction anchors', () => {
     expect(layers.worldObjects.children[0]!.getLocalBounds().y).toBeLessThan(0)
   })
 
+  it('draws the construction progress bar above a Castle during tier upgrade', () => {
+    const layers = layerContainers()
+    const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
+    layer.present(
+      [
+        {
+          id: 10,
+          buildingType: 'CASTLE',
+          x: 0,
+          y: 0,
+          owner: 0,
+          footprint: CASTLE_BUILDING.footprint,
+          status: 'COMPLETED',
+          progressTicks: 100,
+          totalTicks: 100,
+          tier: 1,
+          tierUpgrade: { progressTicks: 40, totalTicks: 100 }
+        }
+      ],
+      []
+    )
+
+    expect(layers.worldObjects.children[0]!.getLocalBounds().y).toBeLessThan(0)
+  })
+
   it('draws a health bar above a damaged building', () => {
     const layers = layerContainers()
     const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
@@ -134,11 +159,11 @@ describe('WorldObjectLayer construction anchors', () => {
       [
         {
           id: 9,
-          buildingType: 'BASE',
+          buildingType: 'CASTLE',
           x: 0,
           y: 0,
           owner: 0,
-          footprint: BASE_BUILDING.footprint,
+          footprint: CASTLE_BUILDING.footprint,
           status: 'COMPLETED',
           progressTicks: 100,
           totalTicks: 100,
@@ -154,15 +179,15 @@ describe('WorldObjectLayer construction anchors', () => {
 })
 
 describe('building presentation styles', () => {
-  it('uses the owner-colored Base style for initial and completed Bases', () => {
-    expect(buildingVisualStyle('BASE', 'COMPLETED', 0)).toEqual({
-      kind: 'base',
+  it('uses the owner-colored Castle style for initial and completed Castles', () => {
+    expect(buildingVisualStyle('CASTLE', 'COMPLETED', 0)).toEqual({
+      kind: 'castle',
       fillColor: 0x2e7d32,
       fillAlpha: 0.8,
       strokeColor: 0xc084fc
     })
-    expect(buildingVisualStyle('BASE', 'COMPLETED', 1)).toEqual({
-      kind: 'base',
+    expect(buildingVisualStyle('CASTLE', 'COMPLETED', 1)).toEqual({
+      kind: 'castle',
       fillColor: 0xc62828,
       fillAlpha: 0.8,
       strokeColor: 0xc084fc
@@ -179,7 +204,7 @@ describe('building presentation styles', () => {
   })
 
   it('preserves an owner-colored foundation state for progress rendering', () => {
-    expect(buildingVisualStyle('BASE', 'UNDER_CONSTRUCTION', 0)).toEqual({
+    expect(buildingVisualStyle('CASTLE', 'UNDER_CONSTRUCTION', 0)).toEqual({
       kind: 'foundation',
       fillColor: 0x2e7d32,
       fillAlpha: 0.3,
@@ -209,7 +234,7 @@ describe('WorldObjectLayer hit testing', () => {
       [
         {
           id: 7,
-          buildingType: 'BASE',
+          buildingType: 'CASTLE',
           x: 0,
           y: 0,
           owner: 0,

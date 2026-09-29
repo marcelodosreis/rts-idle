@@ -104,7 +104,7 @@ active and pending packets remain here. See [`docs/tasks/README.md`](README.md).
 ## Phase 2 — Economy and production
 
 Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
-`docs/tasks/done/P2.09.01.md` (production cancellation and producer cleanup).
+`docs/tasks/P2.11.md` (Castle II research and modifiers).
 
 ### VS-01 — Economy v0 (P2.01–P2.02)
 
@@ -185,7 +185,8 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
 - [x] P2.10.01 — Persistent unit health bars (`docs/tasks/done/P2.10.01.md`)
 - [x] P2.10.02 — Building health and shared damage (`docs/tasks/done/P2.10.02.md`)
 - [x] P2.10 — Repair (`docs/tasks/done/P2.10.md`)
-- [ ] P2.11 — Research and modifiers
+- [x] P2.11 — Research and modifiers (`docs/tasks/P2.11.md`): Castle II, Monastery queue, Attack/Defense/Economy/Movement, armor, modifiers, HUD, and E2E
+- [x] P2.11.01 — Monk Heal (`docs/tasks/P2.11.01.md`): self/allied healing, cooldown, HUD, effects, and E2E
 - [ ] P2.12 — Economic integration
 
 ## Phase 3 — Navigation, full combat, and fog

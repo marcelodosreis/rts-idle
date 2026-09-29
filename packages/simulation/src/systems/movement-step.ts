@@ -1,4 +1,4 @@
-import { FIXED_SCALE, intSqrt } from '@rts/shared'
+import { FIXED_SCALE, intSqrt, MOVEMENT_SPEED_SCALE } from '@rts/shared'
 
 /** Simulation tick rate, ticks per second (ADR-009). */
 export const TICKS_PER_SECOND = 20
@@ -32,8 +32,8 @@ export interface MovementStepInput {
   readonly y: number
   readonly destX: number
   readonly destY: number
-  /** Movement speed in tiles per second (integer). */
-  readonly speedTilesPerSecond: number
+  /** Movement speed in tiles per second multiplied by MOVEMENT_SPEED_SCALE. */
+  readonly speedTilesPerSecondFixed: number
   /** Accumulated fractional x in sub-units (0..MOVEMENT_SUB-1). */
   readonly remainderX: number
   /** Accumulated fractional y in sub-units (0..MOVEMENT_SUB-1). */
@@ -50,13 +50,13 @@ export interface MovementStepResult {
 
 /**
  * Advances a unit one tick toward its destination in a straight line at
- * `speedTilesPerSecond`. All arithmetic is integer: the per-tick displacement
+ * `speedTilesPerSecondFixed`. All arithmetic is integer: the per-tick displacement
  * is computed in sub-units and split into an integer fixed-unit carry plus a
  * remainder that accumulates across ticks. Arrives exactly at the destination
  * (no overshoot) when the remaining distance fits in one step.
  */
 export function movementStep(input: MovementStepInput): MovementStepResult {
-  const { x, y, destX, destY, speedTilesPerSecond, remainderX, remainderY } = input
+  const { x, y, destX, destY, speedTilesPerSecondFixed, remainderX, remainderY } = input
   const dx = destX - x
   const dy = destY - y
   const distanceSquared = dx * dx + dy * dy
@@ -66,7 +66,7 @@ export function movementStep(input: MovementStepInput): MovementStepResult {
   }
 
   const distance = intSqrt(distanceSquared)
-  const stepSub = (speedTilesPerSecond * FIXED_SCALE * MOVEMENT_SUB) / TICKS_PER_SECOND
+  const stepSub = (speedTilesPerSecondFixed * FIXED_SCALE * MOVEMENT_SUB) / (TICKS_PER_SECOND * MOVEMENT_SPEED_SCALE)
   const stepFixed = Math.floor(stepSub / MOVEMENT_SUB)
 
   if (distance <= stepFixed) {

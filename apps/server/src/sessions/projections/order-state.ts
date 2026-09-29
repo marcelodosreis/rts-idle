@@ -21,5 +21,8 @@ export function deriveOrderState(front: Order | undefined, hasMovement: boolean)
   if (front?.type === 'REPAIR') {
     return 'repairing'
   }
+  if (front?.type === 'HEAL') {
+    return 'healing'
+  }
   return hasMovement ? 'moving' : 'idle'
 }

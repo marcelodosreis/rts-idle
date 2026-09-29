@@ -25,9 +25,12 @@ const MINERAL_COLOR = progressFillColor('mining')
 const MINERAL_OUTLINE_COLOR = 0xffffff
 const BUILDING_FACTIONS = ['blue', 'red', 'purple', 'yellow'] as const
 const BUILDING_ASSET_NAMES = {
-  BASE: 'castle',
+  CASTLE: 'castle',
   BARRACKS: 'barracks',
-  SUPPLY_DEPOT: 'house1'
+  ARCHERY: 'archery',
+  MONASTERY: 'monastery',
+  HOUSE: 'house1',
+  TOWER: 'tower'
 } as const
 
 const pixelsPerTile = fixedToRenderPixels(FIXED_SCALE)
@@ -145,8 +148,8 @@ export class WorldObjectLayer {
 
   private createBuildingSprite(texture: Texture, visualSize: RenderBuildingSize, artSize: RenderBuildingSize): Sprite {
     const sprite = new Sprite(texture)
-    sprite.width = artSize.width
-    sprite.height = artSize.height
+    const scale = Math.min(artSize.width / texture.width, artSize.height / texture.height)
+    sprite.scale.set(scale)
     sprite.anchor.set(0.5, 0.5)
     sprite.position.set(visualSize.width / 2, visualSize.height / 2)
     return sprite
@@ -175,7 +178,7 @@ export class WorldObjectLayer {
     size: RenderBuildingSize,
     artSize: RenderBuildingSize
   ): void {
-    if (style.kind === 'base') {
+    if (style.kind === 'castle') {
       this.drawBase(graphic, size, artSize, style)
       return
     }
@@ -224,6 +227,18 @@ export class WorldObjectLayer {
         border: BAR_BORDER,
         radius: BAR_RADIUS
       })
+    } else if (building.tierUpgrade !== undefined && building.tierUpgrade !== null) {
+      drawProgressBar(graphic, {
+        x: 0,
+        y: -10,
+        width,
+        height: BAR_HEIGHT,
+        ratio: clampRatio(building.tierUpgrade.progressTicks, building.tierUpgrade.totalTicks),
+        fillColor: progressFillColor('construction'),
+        background: BAR_BACKGROUND,
+        border: BAR_BORDER,
+        radius: BAR_RADIUS
+      })
     } else if (building.production?.queue[0] !== undefined) {
       const item = building.production.queue[0]
       drawProgressBar(graphic, {
@@ -232,7 +247,7 @@ export class WorldObjectLayer {
         width,
         height: BAR_HEIGHT,
         ratio: clampRatio(item.progressTicks, item.totalTicks),
-        fillColor: progressFillColor('training'),
+        fillColor: 'researchType' in item ? progressFillColor('construction') : progressFillColor('training'),
         background: BAR_BACKGROUND,
         border: BAR_BORDER,
         radius: BAR_RADIUS

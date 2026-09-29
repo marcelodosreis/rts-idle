@@ -1,6 +1,7 @@
 import { fixedToRenderPixels, UNIT_GEOMETRY } from '@rts/shared'
-import { AnimatedSprite, Circle, Container, Graphics, Text, Texture, type Ticker } from 'pixi.js'
+import { AnimatedSprite, Circle, Container, Graphics, type Text, Texture, type Ticker } from 'pixi.js'
 import type { FrameAnim, RenderUnit, SpriteAnim, UnitKind } from '../core/types.js'
+import { STANDARD_ATTACK_CYCLE_MS } from '../core/visual-timing.js'
 import {
   BAR_BACKGROUND,
   BAR_BORDER,
@@ -11,20 +12,16 @@ import {
   drawProgressBar,
   hpColor
 } from '../effects/progress-bar.js'
-import { ownerColor } from '../world/owner-color.js'
 import { drawEconomyBar } from './economy.js'
 import { type EconomyFrames, economyAnimation, FACTIONS, unitAssetKey } from './economy-animation.js'
 import { facingForState } from './facing.js'
 import { FALLBACK_GLYPH, type FallbackShape } from './fallback.js'
+import { createFallbackVisual } from './fallback-visual.js'
+import { LANCER_ATTACK_DIRECTIONS, type LancerAttackDirection, lancerDirectionForDelta } from './lancer-animation.js'
 
-/** Visual radius of a unit cell (one tile diameter). */
 export const UNIT_RADIUS = fixedToRenderPixels(UNIT_GEOMETRY.pawn.cellSize / 2)
-/** Click hit radius: must stay small so a box-drag starting near a unit still
- * lands on empty ground and opens the selection box. */
 export const CLICK_RADIUS = fixedToRenderPixels(UNIT_GEOMETRY.pawn.clickRadius)
-/** Right-click target hit radius matching the larger sprite (selection ring stays UNIT_RADIUS). */
 export const TARGET_RADIUS = fixedToRenderPixels(UNIT_GEOMETRY.pawn.targetRadius)
-/** Height of the overhead health bar above the unit in render pixels. */
 const HP_BAR_OFFSET_Y = -34
 
 export function normalizedUnitScale(kind: UnitKind): number {
@@ -42,34 +39,31 @@ export interface UnitFrameState {
   readonly carrying?: boolean
   readonly building?: boolean
   readonly repairing?: boolean
+  readonly healing?: boolean
 }
 
-/**
- * Attack-animation subtype per kind: the curated pack names them differently
- * (warrior_attack1/attack2, archer_shoot). Pawns have no attack pose, so they
- * reuse the axe "interact" swing as a temporary melee animation instead of
- * standing idle (swap for a real pose when the pack gains one).
- */
-const ATTACK_SUBTYPE: Readonly<Record<UnitKind, string>> = { pawn: 'interact_axe', warrior: 'attack1', archer: 'shoot' }
+const ATTACK_SUBTYPE: Readonly<Record<UnitKind, string>> = {
+  pawn: 'interact_axe',
+  warrior: 'attack1',
+  archer: 'shoot',
+  lancer: 'downright_attack',
+  monk: 'heal'
+}
 
 export interface UnitFrames extends EconomyFrames {
   readonly idle: AnimatedSprite
   readonly run: AnimatedSprite
   readonly attack: AnimatedSprite | null
+  readonly attackVariants: Readonly<Record<LancerAttackDirection, AnimatedSprite | null>> | null
+  readonly healEffect: AnimatedSprite | null
 }
 
-/**
- * A private copy of a template animation. `preloadKind` caches ONE template
- * pair per kind+faction; every unit must clone it because a Pixi display
- * object can belong to only one container (shared instances would make only
- * the last unit visible and couple their state/scale). Unit sprites are
- * centered on their tile (anchor 0.5/0.5) rather than feet-anchored.
- */
-function cloneAnimation(template: AnimatedSprite): AnimatedSprite {
+function cloneAnimation(template: AnimatedSprite, loop = true): AnimatedSprite {
   const textures = template.textures.filter((texture): texture is Texture => texture instanceof Texture)
   const clone = new AnimatedSprite(textures, false)
   clone.anchor.set(0.5, 0.5)
   clone.animationSpeed = template.animationSpeed
+  clone.loop = loop
   clone.play()
   return clone
 }
@@ -79,6 +73,18 @@ function cloneUnitFrames(template: UnitFrames): UnitFrames {
     idle: cloneAnimation(template.idle),
     run: cloneAnimation(template.run),
     attack: template.attack === null ? null : cloneAnimation(template.attack),
+    attackVariants:
+      template.attackVariants === null
+        ? null
+        : (Object.fromEntries(
+            LANCER_ATTACK_DIRECTIONS.map((direction) => [
+              direction,
+              template.attackVariants?.[direction] === null || template.attackVariants?.[direction] === undefined
+                ? null
+                : cloneAnimation(template.attackVariants[direction]!)
+            ])
+          ) as Record<LancerAttackDirection, AnimatedSprite | null>),
+    healEffect: template.healEffect === null ? null : cloneAnimation(template.healEffect, false),
     build: template.build === null ? null : cloneAnimation(template.build),
     gather: template.gather === null ? null : cloneAnimation(template.gather),
     carryIdle: template.carryIdle === null ? null : cloneAnimation(template.carryIdle),
@@ -93,12 +99,14 @@ function installFrames(container: Container, frames: UnitFrames): void {
     frames.idle,
     frames.run,
     frames.attack,
+    ...(frames.attackVariants === null ? [] : Object.values(frames.attackVariants)),
     frames.build,
     frames.gather,
     frames.repairRun,
     frames.repairInteract,
     frames.carryIdle,
-    frames.carryRun
+    frames.carryRun,
+    frames.healEffect
   ]
   for (const frame of allFrames) {
     if (frame !== null) {
@@ -114,46 +122,8 @@ export function frameKey(owner: number, kind: UnitKind, anim: FrameAnim): string
   return unitAssetKey(owner, kind, subtype)
 }
 
-function createFallbackVisual(kind: UnitKind, owner: number): { readonly body: Graphics; readonly label: Text } {
-  const fallback = new Graphics()
-  const fallbackColor = ownerColor(owner, 0x000000)
-  const glyph = FALLBACK_GLYPH[kind]
-  switch (glyph.shape) {
-    case 'circle':
-      fallback.circle(0, 0, UNIT_RADIUS).fill(fallbackColor)
-      fallback.circle(0, 0, UNIT_RADIUS).stroke({ color: 0x000000, width: 3, alpha: 0.3 })
-      break
-    case 'square':
-      fallback.roundRect(-UNIT_RADIUS, -UNIT_RADIUS, UNIT_RADIUS * 2, UNIT_RADIUS * 2, 6).fill(fallbackColor)
-      fallback.roundRect(-UNIT_RADIUS, -UNIT_RADIUS, UNIT_RADIUS * 2, UNIT_RADIUS * 2, 6).stroke({
-        color: 0x000000,
-        width: 3,
-        alpha: 0.3
-      })
-      break
-    case 'triangle':
-      fallback
-        .moveTo(0, -UNIT_RADIUS)
-        .lineTo(-UNIT_RADIUS, UNIT_RADIUS)
-        .lineTo(UNIT_RADIUS, UNIT_RADIUS)
-        .closePath()
-        .fill(fallbackColor)
-      fallback
-        .moveTo(0, -UNIT_RADIUS)
-        .lineTo(-UNIT_RADIUS, UNIT_RADIUS)
-        .lineTo(UNIT_RADIUS, UNIT_RADIUS)
-        .closePath()
-        .stroke({ color: 0x000000, width: 3, alpha: 0.3 })
-      break
-  }
-  const label = new Text({
-    text: glyph.letter,
-    style: { fontSize: 22, fontWeight: 'bold', fill: 0xffffff, stroke: { color: 0x000000, width: 3 } }
-  })
-  label.anchor.set(0.5, 0.5)
-  label.eventMode = 'none'
-  label.resolution = 2
-  return { body: fallback, label }
+export function healEffectKey(owner: number): string {
+  return unitAssetKey(owner, 'monk', 'heal_effect')
 }
 
 export class UnitSprite {
@@ -166,12 +136,9 @@ export class UnitSprite {
   private readonly hpBar: Graphics
   private readonly economyBar: Graphics
   private label: Text | null = null
-  /** Horizontal facing: 1 = right, -1 = left. Only updated while moving so
-   * idle keeps looking the way the unit last walked. */
   private facing = 1
-  /** Wall-clock timestamp until which the attack animation is shown. */
   private attackUntil = 0
-  /** Last reported health, for the debug hook and e2e assertions. */
+  private attackDirection: LancerAttackDirection = 'downright'
   private healthNow: { readonly current: number; readonly max: number } | null = null
 
   constructor(kind: UnitKind, owner: number, frames: UnitFrames | null) {
@@ -180,10 +147,8 @@ export class UnitSprite {
     this.container = new Container()
     this.container.eventMode = 'static'
     this.container.cursor = 'pointer'
-    // Circular hit area centered on the sprite so selection matches its bounds.
     this.container.hitArea = new Circle(0, 0, CLICK_RADIUS)
     if (frames !== null) {
-      // Own private copies so this unit animates independently of its kind.
       this.frames = cloneUnitFrames(frames)
       installFrames(this.container, this.frames)
       this.body = this.frames.idle
@@ -226,14 +191,13 @@ export class UnitSprite {
   }
 
   setState(state: UnitFrameState): void {
-    const { moving, now, economy, carrying = false, building = false, repairing = false } = state
+    const { moving, now, economy, carrying = false, building = false, repairing = false, healing = false } = state
     if (this.frames === null) {
       return
     }
-    // Only re-face while moving, so idle keeps looking the way the unit last
-    // walked instead of snapping back to the right when it stops.
     this.facing = facingForState(this.facing, this.container.position.x, state)
-    const attacking = now < this.attackUntil && this.frames.attack !== null
+    const attack = this.frames.attackVariants?.[this.attackDirection] ?? this.frames.attack
+    const attacking = (now < this.attackUntil || healing) && attack !== null && attack !== undefined
     let next: AnimatedSprite
     const economyFrame = economyAnimation(this.frames, { phase: economy?.phase, moving, carrying, building, repairing })
     if (
@@ -243,10 +207,9 @@ export class UnitSprite {
         economyFrame === this.frames.repairRun ||
         economyFrame === this.frames.repairInteract)
     ) {
-      // Work animations outrank combat; the carry pose does not (see below).
       next = economyFrame
     } else if (attacking) {
-      next = this.frames.attack!
+      next = attack!
     } else if (economyFrame !== null && economyFrame !== undefined) {
       next = economyFrame
     } else if (moving) {
@@ -257,8 +220,6 @@ export class UnitSprite {
     if (this.body !== next) {
       this.body.visible = false
     }
-    // Always make the target visible: `swapFrames`/the constructor add idle
-    // hidden, so `body === next` alone must still reveal it.
     next.visible = true
     this.body = next
     const scale = normalizedUnitScale(this.kind)
@@ -270,16 +231,38 @@ export class UnitSprite {
   }
   beginAttack(until: number): void {
     this.attackUntil = until
-    // Restart the swing from the first frame so every attack plays a full
-    // cycle instead of resuming wherever the loop happened to be.
     this.frames?.attack?.gotoAndPlay(0)
   }
 
-  faceToward(targetRenderX: number): void {
+  beginHealEffect(): void {
+    const effect = this.frames?.healEffect
+    if (effect === null || effect === undefined) {
+      return
+    }
+    const scale = normalizedUnitScale(this.kind)
+    effect.scale.set(scale, scale)
+    effect.gotoAndPlay(0)
+    effect.visible = true
+    effect.onComplete = () => {
+      effect.visible = false
+    }
+  }
+
+  faceToward(targetRenderX: number, targetRenderY: number): void {
     if (this.frames === null) {
       return
     }
     this.facing = this.container.position.x < targetRenderX ? 1 : -1
+    if (this.kind === 'lancer') {
+      this.attackDirection = lancerDirectionForDelta(
+        targetRenderX - this.container.position.x,
+        targetRenderY - this.container.position.y
+      )
+    }
+    this.applyScale()
+  }
+
+  private applyScale(): void {
     const scale = normalizedUnitScale(this.kind)
     this.body.scale.set(scale * this.facing, scale)
   }
@@ -290,8 +273,8 @@ export class UnitSprite {
    * animation to show.
    */
   attackCycleMs(): number {
-    const attack = this.frames?.attack
-    return attack === undefined || attack === null ? 0 : attack.totalFrames * 100
+    const attack = this.frames?.attackVariants?.[this.attackDirection] ?? this.frames?.attack
+    return attack === undefined || attack === null ? 0 : STANDARD_ATTACK_CYCLE_MS
   }
 
   health(): { readonly current: number; readonly max: number } | null {
@@ -356,7 +339,10 @@ export class UnitSprite {
     if (this.body === this.frames.run) {
       return 'run'
     }
-    if (this.body === this.frames.attack) {
+    if (
+      this.body === this.frames.attack ||
+      Object.values(this.frames.attackVariants ?? {}).includes(this.body as AnimatedSprite)
+    ) {
       return 'attack'
     }
     if (this.body === this.frames.build) {
@@ -380,35 +366,33 @@ export class UnitSprite {
     return 'idle'
   }
 
-  /** Whether the current body is actually in the container display list. */
   bodyInTree(): boolean {
     return this.container.children.includes(this.body)
   }
 
-  /** Current horizontal facing (1 = right, -1 = left). */
   facingNow(): number {
     return this.facing
   }
 
-  /** Current horizontal scale of the visible body (for debug/e2e assertions). */
   bodyScale(): number {
     return this.body.scale.x
   }
 
-  /** Glyph letter when in fallback mode, else null. */
   glyphNow(): string | null {
     return this.frames === null ? FALLBACK_GLYPH[this.kind].letter : null
   }
 
-  /** Fallback shape when in fallback mode, else null. */
   shapeNow(): FallbackShape | null {
     return this.frames === null ? FALLBACK_GLYPH[this.kind].shape : null
   }
 
-  /** Advances the visible animated body (no-op for placeholder graphics). */
   advanceAnimation(ticker: Ticker): void {
     if (this.body instanceof AnimatedSprite) {
       this.body.update(ticker)
+    }
+    const healEffect = this.frames?.healEffect
+    if (healEffect?.visible) {
+      healEffect.update(ticker)
     }
   }
 }

@@ -1,6 +1,7 @@
 import { BUILDING_DEFINITIONS, type BuildingDefinition } from '@rts/game-data'
-import { BUILDING_GEOMETRY, tilesToFixed } from '@rts/shared'
+import { BUILDING_GEOMETRY, BUILDING_TYPES, tilesToFixed } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
+import { hasCurrentCastleTier } from '../domain/tier-access.js'
 import { Building, type BuildingData } from '../ecs/building-component.js'
 import { Kind, Orders, Owner, Position } from '../ecs/components.js'
 import { clearMovement, setMovementDestination } from '../movement/destination.js'
@@ -36,12 +37,11 @@ function validateBuild(state: GameState, command: ScheduledCommand): BuildContex
   if (player === undefined || player.defeated) {
     reject(command, 'INVALID_PHASE', `BUILD: player ${command.playerId} is not active`)
   }
-  if (
-    (buildingType !== 'BASE' && buildingType !== 'BARRACKS' && buildingType !== 'SUPPLY_DEPOT') ||
-    !Number.isInteger(x) ||
-    !Number.isInteger(y)
-  ) {
+  if (!BUILDING_TYPES.includes(buildingType) || !Number.isInteger(x) || !Number.isInteger(y)) {
     reject(command, 'INVALID_PAYLOAD', 'BUILD: building type and tile coordinates are invalid')
+  }
+  if (buildingType === 'MONASTERY' && !hasCurrentCastleTier(state, command.playerId, 2)) {
+    reject(command, 'TECH_REQUIREMENT', 'BUILD: Monastery requires Castle II')
   }
   const definition = BUILDING_DEFINITIONS[buildingType]
   if (!state.world.hasEntity(unitId)) {

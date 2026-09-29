@@ -1,4 +1,4 @@
-import type { BuildingStatus, BuildingType, Fixed } from '@rts/shared'
+import type { BuildingStatus, BuildingType, CastleTier, Fixed } from '@rts/shared'
 import type { CanonicalReader } from '../canonical/reader.js'
 import type { CanonicalWriter } from '../canonical/writer.js'
 import { buildingTypeFromTag, buildingTypeTag } from './codecs.js'
@@ -12,6 +12,8 @@ export interface BuildingData {
   readonly progressTicks: number
   readonly totalTicks: number
   readonly builderId: number | null
+  readonly tier?: CastleTier
+  readonly tierUpgrade?: { readonly progressTicks: number; readonly totalTicks: number } | null
   readonly footprint: { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
   readonly rallyPoint?: { readonly x: Fixed; readonly y: Fixed } | null
 }
@@ -39,6 +41,13 @@ export const Building: ComponentType<BuildingData> = {
     if (value.builderId !== null) {
       writer.writeU32(value.builderId)
     }
+    writer.writeU8(value.tier ?? 1)
+    const tierUpgrade = value.tierUpgrade ?? null
+    writer.writeU8(tierUpgrade === null ? 0 : 1)
+    if (tierUpgrade !== null) {
+      writer.writeI32(tierUpgrade.progressTicks)
+      writer.writeI32(tierUpgrade.totalTicks)
+    }
     writer.writeI32(value.footprint.x)
     writer.writeI32(value.footprint.y)
     writer.writeI32(value.footprint.width)
@@ -64,6 +73,16 @@ export const Building: ComponentType<BuildingData> = {
       throw new Error(`Building: invalid builder presence ${builderPresent}`)
     }
     const builderId = builderPresent === 1 ? reader.readU32() : null
+    const tier = reader.readU8()
+    if (tier < 1 || tier > 3) {
+      throw new Error(`Building: invalid tier ${tier}`)
+    }
+    const tierUpgradePresent = reader.readU8()
+    if (tierUpgradePresent !== 0 && tierUpgradePresent !== 1) {
+      throw new Error(`Building: invalid tier upgrade presence ${tierUpgradePresent}`)
+    }
+    const tierUpgrade =
+      tierUpgradePresent === 1 ? { progressTicks: reader.readI32(), totalTicks: reader.readI32() } : null
     const footprint = { x: reader.readI32(), y: reader.readI32(), width: reader.readI32(), height: reader.readI32() }
     const rallyPresent = reader.readU8()
     if (rallyPresent !== 0 && rallyPresent !== 1) {
@@ -75,6 +94,8 @@ export const Building: ComponentType<BuildingData> = {
       progressTicks,
       totalTicks,
       builderId,
+      tier: tier as CastleTier,
+      tierUpgrade,
       footprint,
       rallyPoint: rallyPresent === 1 ? { x: reader.readI32(), y: reader.readI32() } : null
     }

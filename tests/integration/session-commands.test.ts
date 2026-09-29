@@ -30,7 +30,7 @@ describe('game session commands', () => {
   it('returns the server scenario catalog when a local map fails bootstrap', () => {
     const result = bootstrapMatch({
       type: 'match_request',
-      scenarioId: '6v6',
+      scenarioId: '8v8',
       aggression: 'offensive',
       map: { source: 'local', definition: { width: 1, height: 1, tiles: ['land'] } }
     })
@@ -82,7 +82,7 @@ describe('game session commands', () => {
     expect(session.projectPlayers().find((player) => player.id === 0)?.gold).toBe(250)
     expect(session.projectBuildings()).toHaveLength(2)
     expect(session.projectBuildings()).toEqual(
-      expect.arrayContaining([expect.objectContaining({ buildingType: 'BASE', owner: 0 })])
+      expect.arrayContaining([expect.objectContaining({ buildingType: 'CASTLE', owner: 0 })])
     )
     expect(session.projectMineralNodes()).toEqual([expect.objectContaining({ remaining: 3000 })])
     const worker = session.projectUnits()[0]!
@@ -136,7 +136,7 @@ describe('game session commands', () => {
         tick: 1,
         playerId: 0,
         sequence: 1,
-        intent: { type: 'BUILD', payload: { unitId: worker.id, buildingType: 'BASE', x: 11, y: 9 } }
+        intent: { type: 'BUILD', payload: { unitId: worker.id, buildingType: 'CASTLE', x: 11, y: 9 } }
       }
     ])
     expect(session.advance().rejected).toEqual([])
@@ -161,7 +161,7 @@ describe('game session commands', () => {
     world.store(Position).set(2, { x: 256, y: 0 })
     world.store(Owner).set(2, { owner: 0 })
     world.store(Building).set(2, {
-      buildingType: 'BASE',
+      buildingType: 'CASTLE',
       status: 'COMPLETED',
       progressTicks: 1,
       totalTicks: 1,
@@ -179,7 +179,7 @@ describe('game session commands', () => {
 
     expect(session.projectUnits()).toEqual([expect.objectContaining({ id: 1, x: 0, y: 0, owner: 0, kind: 'pawn' })])
     expect(session.projectBuildings()).toEqual([
-      expect.objectContaining({ id: 2, x: 256, y: 0, owner: 0, buildingType: 'BASE' })
+      expect.objectContaining({ id: 2, x: 256, y: 0, owner: 0, buildingType: 'CASTLE' })
     ])
     expect(session.projectMineralNodes()).toEqual([{ id: 3, x: 512, y: 0, remaining: 25 }])
   })

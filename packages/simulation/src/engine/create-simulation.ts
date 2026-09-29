@@ -9,7 +9,16 @@ import type { SimulationHost } from './simulation-host.js'
 
 /** The four competitive player slots, initialized undefeated with an empty wallet. */
 function createPlayers(): PlayerState[] {
-  return PLAYER_IDS.map((id) => ({ id, defeated: false, gold: 0, usedSupply: 0, reservedSupply: 0, supplyCap: 0 }))
+  return PLAYER_IDS.map((id) => ({
+    id,
+    defeated: false,
+    gold: 0,
+    usedSupply: 0,
+    reservedSupply: 0,
+    supplyCap: 0,
+    completedResearch: [],
+    highestCastleTierReached: 1 as const
+  }))
 }
 
 const DEFAULT_MAP_BOUNDS = { width: 32, height: 32 } as const
@@ -44,7 +53,9 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
             ...player,
             usedSupply: player.usedSupply ?? 0,
             reservedSupply: player.reservedSupply ?? 0,
-            supplyCap: player.supplyCap ?? 0
+            supplyCap: player.supplyCap ?? 0,
+            completedResearch: player.completedResearch ?? [],
+            highestCastleTierReached: player.highestCastleTierReached ?? 1
           })),
     mapBounds: options.mapBounds ?? DEFAULT_MAP_BOUNDS,
     world,

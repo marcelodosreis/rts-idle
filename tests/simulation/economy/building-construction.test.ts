@@ -36,7 +36,7 @@ const build = (workerId: number, sequence: number, x = 0, y = 0) => ({
   tick: 1,
   playerId: 0,
   sequence,
-  intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'BASE' as const, x, y } }
+  intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'CASTLE' as const, x, y } }
 })
 
 const buildBarracks = (workerId: number, sequence: number) => ({
@@ -50,7 +50,7 @@ const buildDepot = (workerId: number, sequence: number) => ({
   tick: 1,
   playerId: 0,
   sequence,
-  intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'SUPPLY_DEPOT' as const, x: 0, y: 0 } }
+  intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'HOUSE' as const, x: 0, y: 0 } }
 })
 
 const cancelConstruction = (buildingId: number, sequence: number) => ({

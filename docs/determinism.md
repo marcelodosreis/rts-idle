@@ -36,6 +36,7 @@ replays. This document is the operational reference; the math lives in
 
 ## Compatibility
 
-`SIMULATION_VERSION` is the tag on every state. It is `0.9.0` (player supply and
-Supply Depot state joined the canonical snapshot stream). A mismatch in
+`SIMULATION_VERSION` is the tag on every state. It is `0.13.0` (Castle II,
+Research, modifiers, and fixed-point movement joined the canonical snapshot
+stream). A mismatch in
 rules identity means the states are not interchangeable.

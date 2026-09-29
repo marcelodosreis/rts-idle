@@ -2,7 +2,7 @@ import type { ScheduledCommand } from '../contracts/commands.js'
 import { setMovementDestination } from '../movement/destination.js'
 import { setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
-import { validateIntegerTarget, validateOwnedUnits } from './validate-units.js'
+import { validateAttackCapableUnits, validateIntegerTarget } from './validate-units.js'
 
 /**
  * ATTACK_MOVE orders the selected units to move to a destination while
@@ -15,7 +15,7 @@ export function applyAttackMove(state: GameState, command: ScheduledCommand): vo
     throw new Error('applyAttackMove: expected an ATTACK_MOVE command')
   }
   const payload = command.intent.payload
-  validateOwnedUnits(state, command, payload.unitIds)
+  validateAttackCapableUnits(state, command, payload.unitIds)
   validateIntegerTarget(command, payload.x, payload.y)
   for (const unitId of payload.unitIds) {
     setOrders(state, unitId, [{ type: 'ATTACK_MOVE', x: payload.x, y: payload.y }])

@@ -32,7 +32,7 @@ function assertBaseFitsMap(
 ): void {
   const x = fixedX / FIXED_POINT_SCALE
   const y = fixedY / FIXED_POINT_SCALE
-  const footprint = BUILDING_DEFINITIONS.BASE.footprint
+  const footprint = BUILDING_DEFINITIONS.CASTLE.footprint
   for (let row = y; row < y + footprint.height; row += 1) {
     for (let col = x; col < x + footprint.width; col += 1) {
       if (

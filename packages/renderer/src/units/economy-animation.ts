@@ -1,4 +1,5 @@
 import type { EconomyPhase } from '@rts/protocol'
+import type { UnitKind } from '@rts/shared'
 import type { AnimatedSprite } from 'pixi.js'
 
 export const FACTIONS = ['blue', 'red', 'purple', 'yellow'] as const
@@ -8,8 +9,9 @@ export function factionForOwner(owner: number): Faction {
   return FACTIONS[owner % FACTIONS.length] ?? 'blue'
 }
 
-export function unitAssetKey(owner: number, kind: 'pawn' | 'warrior' | 'archer', subtype: string): string {
-  return `units.${factionForOwner(owner)}.${kind}.${kind}_${subtype}`
+export function unitAssetKey(owner: number, kind: UnitKind, subtype: string): string {
+  const assetName = kind === 'lancer' || kind === 'monk' ? subtype : `${kind}_${subtype}`
+  return `units.${factionForOwner(owner)}.${kind}.${assetName}`
 }
 
 export interface EconomyFrames {

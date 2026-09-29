@@ -200,7 +200,15 @@ export class PixiRenderer implements GameRenderer {
         this.units.beginAttack(event.attackerId, now)
         const target = frame.units.find((unit) => unit.id === event.targetId)
         if (target !== undefined) {
-          this.units.faceToward(event.attackerId, target.x)
+          this.units.faceToward(event.attackerId, target.x, target.y)
+        }
+      }
+      if (event.type === 'healCast') {
+        this.units.beginAttack(event.healerId, now)
+        this.units.beginHealEffect(event.targetId)
+        const target = frame.units.find((unit) => unit.id === event.targetId)
+        if (target !== undefined) {
+          this.units.faceToward(event.healerId, target.x, target.y)
         }
       }
     }

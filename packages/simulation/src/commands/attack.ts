@@ -4,7 +4,7 @@ import { Owner } from '../ecs/components.js'
 import { clearMovement } from '../movement/destination.js'
 import { setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
-import { validateOwnedUnits } from './validate-units.js'
+import { validateAttackCapableUnits } from './validate-units.js'
 
 /**
  * ATTACK orders the selected units to acquire and attack a specific target.
@@ -17,7 +17,7 @@ export function applyAttack(state: GameState, command: ScheduledCommand): void {
     throw new Error('applyAttack: expected an ATTACK command')
   }
   const payload = command.intent.payload
-  validateOwnedUnits(state, command, payload.unitIds)
+  validateAttackCapableUnits(state, command, payload.unitIds)
   if (!state.world.hasEntity(payload.targetId)) {
     throw new CommandRejectedError('ENTITY_UNAVAILABLE', command, `ATTACK: target ${payload.targetId} does not exist`)
   }

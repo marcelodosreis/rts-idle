@@ -9,6 +9,7 @@ import {
   Orders,
   Owner,
   Position,
+  Production,
   type RulesIdentity,
   type World
 } from '@rts/simulation'
@@ -45,6 +46,13 @@ function seedUnit(context: SeedContext, spawn: DemoSpawn): void {
     kind: spawn.kind,
     worker: spawn.worker === true
   })
+  if (spawn.initialHp !== undefined) {
+    const health = context.world.store(Health).get(id)
+    if (health === undefined || spawn.initialHp < 0 || spawn.initialHp > health.max) {
+      throw new Error(`DemoSession: invalid initial HP for unit ${id}`)
+    }
+    context.world.store(Health).set(id, { current: spawn.initialHp, max: health.max })
+  }
   context.ids.push(id)
 }
 
@@ -56,24 +64,30 @@ function seedUnits(context: SeedContext, spawns: readonly DemoSpawn[]): void {
 
 function seedBuildings(context: SeedContext, buildings: readonly DemoBaseSpawn[]): void {
   for (const base of buildings) {
+    const buildingType = base.buildingType ?? 'CASTLE'
+    const definition = BUILDING_DEFINITIONS[buildingType]
     const id = allocate(context)
     context.world.createEntity(id)
     context.world.store(Position).set(id, { x: base.x, y: base.y })
     context.world.store(Owner).set(id, { owner: base.owner })
     context.world.store(Building).set(id, {
-      buildingType: 'BASE',
+      buildingType,
       status: 'COMPLETED',
-      progressTicks: BUILDING_DEFINITIONS.BASE.constructionTicks,
-      totalTicks: BUILDING_DEFINITIONS.BASE.constructionTicks,
+      progressTicks: definition.constructionTicks,
+      totalTicks: definition.constructionTicks,
       builderId: null,
+      ...(base.tier === undefined ? {} : { tier: base.tier }),
       footprint: {
         x: base.x / 256,
         y: base.y / 256,
-        ...BUILDING_DEFINITIONS.BASE.footprint
+        ...definition.footprint
       },
       rallyPoint: null
     })
-    const maxHp = BUILDING_DEFINITIONS.BASE.maxHp
+    if (buildingType === 'MONASTERY') {
+      context.world.store(Production).set(id, { queue: [] })
+    }
+    const maxHp = definition.maxHp
     context.world.store(Health).set(id, { current: base.initialHp ?? maxHp, max: maxHp })
   }
 }
@@ -127,7 +141,9 @@ export function createDemoSession(
     initialPlayers: PLAYER_IDS.map((id) => ({
       id,
       defeated: false,
-      gold: id === 0 ? (scenario.startingGold ?? 0) : 0
+      gold: id === 0 ? (scenario.startingGold ?? 0) : 0,
+      completedResearch: [],
+      highestCastleTierReached: scenario.startingCastleTier ?? 1
     }))
   })
 }

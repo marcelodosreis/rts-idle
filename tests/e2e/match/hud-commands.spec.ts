@@ -39,10 +39,17 @@ async function unitsByOwner(page: Page): Promise<UnitInfo[]> {
 }
 
 test('STOP cancels auto-orders and an armed ATTACK re-engages the target', async ({ page }) => {
-  await page.goto('/?scenario=6v6&aggression=offensive')
+  await page.goto('/?scenario=8v8&aggression=offensive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
-  const blueIds = units.filter((unit) => unit.owner === 0).map((unit) => unit.id)
+  const blueIds = await page.evaluate(() => {
+    const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
+    return Object.entries(owners)
+      .filter(([id, owner]) => owner === 0 && kinds[id] !== 'monk')
+      .map(([id]) => Number(id))
+      .slice(0, 6)
+  })
   const redIds = units.filter((unit) => unit.owner === 1).map((unit) => unit.id)
   expect(blueIds.length).toBeGreaterThan(0)
   expect(redIds.length).toBeGreaterThan(0)
@@ -89,7 +96,7 @@ test('STOP cancels auto-orders and an armed ATTACK re-engages the target', async
 })
 
 test('left-clicking empty ground cancels an armed attack-move mode', async ({ page }) => {
-  await page.goto('/?scenario=6v6&aggression=offensive')
+  await page.goto('/?scenario=8v8&aggression=offensive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
   const worker = units.find((unit) => unit.owner === 0)
@@ -108,7 +115,7 @@ test('left-clicking empty ground cancels an armed attack-move mode', async ({ pa
 })
 
 test('SURRENDER ends the match with a defeat overlay', async ({ page }) => {
-  await page.goto('/?scenario=6v6&aggression=offensive')
+  await page.goto('/?scenario=8v8&aggression=offensive')
   await settleUnits(page)
   await page.getByRole('button', { name: 'Surrender' }).click()
 

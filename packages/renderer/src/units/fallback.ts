@@ -10,5 +10,7 @@ export interface FallbackGlyph {
 export const FALLBACK_GLYPH: Readonly<Record<UnitKind, FallbackGlyph>> = {
   pawn: { letter: 'P', shape: 'circle' },
   warrior: { letter: 'W', shape: 'square' },
-  archer: { letter: 'A', shape: 'triangle' }
+  archer: { letter: 'A', shape: 'triangle' },
+  lancer: { letter: 'L', shape: 'square' },
+  monk: { letter: 'M', shape: 'circle' }
 }

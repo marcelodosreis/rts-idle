@@ -1,5 +1,7 @@
 /** Pixi's animation speed is frames per 60 FPS visual tick. */
 export const PIXI_BASE_FPS = 60
+/** Shared visual attack-cycle duration for every combat animation. */
+export const STANDARD_ATTACK_CYCLE_MS = 400
 
 export function durationMsToFps(durationMs: number): number {
   if (!Number.isFinite(durationMs) || durationMs <= 0) {
@@ -17,4 +19,11 @@ export function fpsToPixiAnimationSpeed(fps: number): number {
 
 export function durationMsToPixiAnimationSpeed(durationMs: number): number {
   return fpsToPixiAnimationSpeed(durationMsToFps(durationMs))
+}
+
+export function frameCountToPixiAnimationSpeed(frameCount: number, cycleMs: number): number {
+  if (!Number.isInteger(frameCount) || frameCount <= 0) {
+    throw new Error('frameCountToPixiAnimationSpeed: frame count must be positive')
+  }
+  return fpsToPixiAnimationSpeed(frameCount / (cycleMs / 1000))
 }

@@ -90,7 +90,7 @@ describe('MatchInteractionController', () => {
       buildings: () => [
         {
           id: 7,
-          buildingType: 'SUPPLY_DEPOT',
+          buildingType: 'HOUSE',
           x: 100,
           y: 200,
           owner: 0,
@@ -113,7 +113,7 @@ describe('MatchInteractionController', () => {
       buildings: () => [
         {
           id: 7,
-          buildingType: 'BASE',
+          buildingType: 'CASTLE',
           x: 100,
           y: 200,
           owner: 0,
@@ -168,7 +168,7 @@ describe('MatchInteractionController', () => {
       buildings: () => [
         {
           id: 7,
-          buildingType: 'BASE',
+          buildingType: 'CASTLE',
           x: 100,
           y: 200,
           owner: 0,
@@ -194,7 +194,7 @@ describe('MatchInteractionController', () => {
       buildings: () => [
         {
           id: 7,
-          buildingType: 'BASE',
+          buildingType: 'CASTLE',
           x: 100,
           y: 200,
           owner: 0,

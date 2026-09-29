@@ -75,7 +75,7 @@ describe('Economy v0 edge cases', () => {
     scenario.world.store(Position).set(secondBase, { x: tilesToFixed(2), y: 0 })
     scenario.world.store(Owner).set(secondBase, { owner: 0 })
     scenario.world.store(Building).set(secondBase, {
-      buildingType: 'BASE',
+      buildingType: 'CASTLE',
       status: 'COMPLETED',
       progressTicks: 1,
       totalTicks: 1,

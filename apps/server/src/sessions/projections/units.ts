@@ -1,8 +1,11 @@
 import type { SnapshotUnit } from '@rts/protocol'
-import { FIXED_SCALE } from '@rts/shared'
+import { FIXED_SCALE, MOVEMENT_SPEED_SCALE } from '@rts/shared'
+import type { PlayerState } from '@rts/simulation'
 import {
+  AbilityCooldown,
   Building,
   Cargo,
+  Combat,
   Health,
   Kind,
   Movement,
@@ -11,6 +14,7 @@ import {
   Owner,
   Position,
   REPAIR_TICKS_PER_STEP,
+  unitStatsFor,
   type World
 } from '@rts/simulation'
 import { projectEconomy } from './economy.js'
@@ -33,7 +37,50 @@ function lookAtX(world: World, order: Order | undefined): number | undefined {
   return undefined
 }
 
-export function projectUnits(world: World): readonly SnapshotUnit[] {
+function projectArmor(world: World, id: number, players: readonly PlayerState[]): number | undefined {
+  const combat = world.store(Combat).get(id)
+  const owner = world.store(Owner).get(id)
+  const kind = world.store(Kind).get(id)
+  if (combat === undefined || owner === undefined || kind === undefined) {
+    return undefined
+  }
+  const player = players.find((candidate) => candidate.id === owner.owner)
+  return (
+    combat.armor + (unitStatsFor(kind).militaryDefenseUpgrade && player?.completedResearch.includes('DEFENSE') ? 1 : 0)
+  )
+}
+
+function projectDamage(world: World, id: number, players: readonly PlayerState[]): number | undefined {
+  const combat = world.store(Combat).get(id)
+  const owner = world.store(Owner).get(id)
+  const kind = world.store(Kind).get(id)
+  if (combat === undefined || owner === undefined || kind === undefined) {
+    return undefined
+  }
+  const player = players.find((candidate) => candidate.id === owner.owner)
+  return (
+    combat.damage + (unitStatsFor(kind).militaryAttackUpgrade && player?.completedResearch.includes('ATTACK') ? 2 : 0)
+  )
+}
+
+function projectMovementSpeed(world: World, id: number, players: readonly PlayerState[]): number | undefined {
+  const owner = world.store(Owner).get(id)
+  const kind = world.store(Kind).get(id)
+  if (owner === undefined || kind === undefined) {
+    return undefined
+  }
+  const stats = unitStatsFor(kind)
+  const player = players.find((candidate) => candidate.id === owner.owner)
+  const baseSpeed = stats.movementSpeedTilesPerSecond * MOVEMENT_SPEED_SCALE
+  return stats.movementUpgrade && player?.completedResearch.includes('MOVEMENT') ? (baseSpeed * 11) / 10 : baseSpeed
+}
+
+function projectHealCooldown(world: World, id: number): number | undefined {
+  const cooldown = world.store(AbilityCooldown).get(id)?.healCooldownRemaining
+  return cooldown === undefined || cooldown === 0 ? undefined : cooldown
+}
+
+export function projectUnits(world: World, players: readonly PlayerState[] = []): readonly SnapshotUnit[] {
   const positions = world.store(Position)
   const owners = world.store(Owner)
   const healths = world.store(Health)
@@ -51,9 +98,13 @@ export function projectUnits(world: World): readonly SnapshotUnit[] {
         throw new Error(`GameSession: entity ${id} is missing position or owner`)
       }
       const health = healths.get(id)
+      const armor = projectArmor(world, id, players)
+      const damage = projectDamage(world, id, players)
+      const movementSpeedFixed = projectMovementSpeed(world, id, players)
       const front = orders.get(id)?.queue[0]
       const cargo = cargos.get(id)
       const economy = projectEconomy(front, cargo)
+      const healCooldownRemaining = projectHealCooldown(world, id)
       const targetX = lookAtX(world, front)
       return {
         id,
@@ -68,7 +119,12 @@ export function projectUnits(world: World): readonly SnapshotUnit[] {
           : {}),
         ...(economy === undefined ? {} : { economy }),
         ...(cargo === undefined || cargo.amount === 0 ? {} : { carrying: true }),
-        ...(health === undefined ? {} : { hp: health.current, maxHp: health.max })
+        ...(health === undefined ? {} : { hp: health.current, maxHp: health.max }),
+        ...(armor === undefined ? {} : { armor }),
+        ...(damage === undefined ? {} : { damage }),
+        ...(movementSpeedFixed === undefined ? {} : { movementSpeedFixed }),
+        ...(cargo === undefined ? {} : { cargoCapacity: cargo.capacity }),
+        ...(healCooldownRemaining === undefined ? {} : { healCooldownRemaining })
       }
     })
 }

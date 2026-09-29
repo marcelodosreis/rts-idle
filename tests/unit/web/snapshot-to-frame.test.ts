@@ -45,7 +45,7 @@ describe('snapshot to frame mapping', () => {
       buildings: [
         {
           id: 5,
-          buildingType: 'BASE',
+          buildingType: 'CASTLE',
           x: 768,
           y: 1024,
           owner: 0,
@@ -98,7 +98,7 @@ describe('snapshot to frame mapping', () => {
     expect(frame.buildings).toEqual([
       {
         id: 5,
-        buildingType: 'BASE',
+        buildingType: 'CASTLE',
         x: 768,
         y: 1024,
         owner: 0,
@@ -122,6 +122,38 @@ describe('snapshot to frame mapping', () => {
     ])
     expect(frame.mineralNodes).toEqual([{ id: 4, x: 700, y: 800, remaining: 25 }])
     expect(frame.events).toEqual([{ type: 'damageDealt', targetId: 1, amount: 10, targetHp: 90 }])
+  })
+
+  it('forwards Castle tier upgrade progress to the renderer', () => {
+    const frame = snapshotToFrame({
+      type: 'snapshot',
+      tick: 4,
+      phase: 'RUNNING',
+      units: [],
+      buildings: [
+        {
+          id: 5,
+          buildingType: 'CASTLE',
+          x: 0,
+          y: 0,
+          owner: 0,
+          footprint: { width: 2, height: 2 },
+          status: 'COMPLETED',
+          tier: 1,
+          tierUpgrade: { progressTicks: 40, totalTicks: 100 },
+          progressTicks: 100,
+          totalTicks: 100
+        }
+      ],
+      mineralNodes: [],
+      players: [],
+      events: []
+    })
+
+    expect(frame.buildings?.[0]).toMatchObject({
+      tier: 1,
+      tierUpgrade: { progressTicks: 40, totalTicks: 100 }
+    })
   })
 
   it('maps an empty snapshot', () => {

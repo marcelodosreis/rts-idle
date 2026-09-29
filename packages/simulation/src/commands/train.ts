@@ -2,6 +2,7 @@ import { UNIT_PRODUCTION_DEFINITIONS } from '@rts/game-data'
 import type { TrainableUnitKind } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { MAX_PRODUCTION_QUEUE } from '../data/production-rules.js'
+import { hasCurrentCastleTier } from '../domain/tier-access.js'
 import { Building } from '../ecs/building-component.js'
 import { Owner, Production } from '../ecs/components.js'
 import type { GameState } from '../state/state.js'
@@ -30,12 +31,18 @@ function validateTrain(
   if (building === undefined || building.status !== 'COMPLETED') {
     reject(command, 'INVALID_STATE', `TRAIN: producer ${producerId} is not a completed production building`)
   }
+  if (building.tierUpgrade !== undefined && building.tierUpgrade !== null) {
+    reject(command, 'INVALID_STATE', `TRAIN: producer ${producerId} is upgrading`)
+  }
   if (state.world.store(Owner).get(producerId)?.owner !== command.playerId) {
     reject(command, 'NOT_OWNER', `TRAIN: player ${command.playerId} does not own producer ${producerId}`)
   }
   const definition = getDefinition(unitKind)
   if (definition === undefined || definition.producer !== building.buildingType) {
     reject(command, 'INVALID_PAYLOAD', `TRAIN: unit ${unitKind} is not trainable`)
+  }
+  if ((unitKind === 'lancer' || unitKind === 'monk') && !hasCurrentCastleTier(state, command.playerId, 2)) {
+    reject(command, 'TECH_REQUIREMENT', `TRAIN: ${unitKind} requires Castle II`)
   }
   const queue = state.world.store(Production).get(producerId)?.queue ?? []
   if (queue.length >= MAX_PRODUCTION_QUEUE) {

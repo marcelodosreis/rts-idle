@@ -22,7 +22,7 @@ describe('playtest map bridge', () => {
   it('returns null unless the URL requests ?map=local', () => {
     const storage = fakeStorage(new Map([[PLAYTEST_STORAGE_KEY, JSON.stringify(MAP)]]))
     expect(readPlaytestMap('', storage)).toBeNull()
-    expect(readPlaytestMap('?scenario=6v6', storage)).toBeNull()
+    expect(readPlaytestMap('?scenario=8v8', storage)).toBeNull()
   })
 
   it('reads and validates the stored map', () => {

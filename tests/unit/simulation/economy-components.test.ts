@@ -19,7 +19,7 @@ describe('economy ECS state', () => {
     world.store(Position).set(START_ENTITY_ID, { x: 100, y: 200 })
     world.store(MineralNode).set(START_ENTITY_ID, { remaining: 37 })
     world.store(Building).set(START_ENTITY_ID, {
-      buildingType: 'BASE',
+      buildingType: 'CASTLE',
       status: 'COMPLETED',
       progressTicks: 1,
       totalTicks: 1,
@@ -47,7 +47,7 @@ describe('economy ECS state', () => {
     const restored = simulationFromSnapshot(simulation.exportSnapshot()).inspectState().world
 
     expect(restored.store(MineralNode).get(START_ENTITY_ID)).toEqual({ remaining: 37 })
-    expect(restored.store(Building).get(START_ENTITY_ID)).toMatchObject({ buildingType: 'BASE', status: 'COMPLETED' })
+    expect(restored.store(Building).get(START_ENTITY_ID)).toMatchObject({ buildingType: 'CASTLE', status: 'COMPLETED' })
     expect(restored.store(Cargo).get(START_ENTITY_ID)).toEqual({ amount: 4, capacity: 10 })
     expect(restored.store(Orders).get(START_ENTITY_ID)?.queue).toEqual([
       {
@@ -65,7 +65,7 @@ describe('economy ECS state', () => {
     world.createEntity(START_ENTITY_ID)
     world.store(MineralNode).set(START_ENTITY_ID, { remaining: 3_000 })
     world.store(Building).set(START_ENTITY_ID, {
-      buildingType: 'BASE',
+      buildingType: 'CASTLE',
       status: 'COMPLETED',
       progressTicks: 1,
       totalTicks: 1,

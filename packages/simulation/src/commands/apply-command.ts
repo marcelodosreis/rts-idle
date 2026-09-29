@@ -1,4 +1,3 @@
-import { assertNever } from '@rts/shared'
 import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
 import type { GameState } from '../state/state.js'
 import { applyAttack } from './attack.js'
@@ -8,14 +7,17 @@ import { applyCancelConstruction } from './cancel-construction.js'
 import { applyCancelProduction } from './cancel-production.js'
 import { applyDeposit } from './deposit.js'
 import { applyGather } from './gather.js'
+import { applyHeal } from './heal.js'
 import { applyHold } from './hold.js'
 import { applyMove } from './move.js'
 import { applyPatrol } from './patrol.js'
 import { applyRally } from './rally.js'
 import { applyRepair } from './repair.js'
+import { applyCancelResearch, applyResearch } from './research.js'
 import { applyStop } from './stop.js'
 import { applySurrender } from './surrender.js'
 import { applyTrain } from './train.js'
+import { applyUpgradeCastle } from './upgrade-castle.js'
 
 /** Shared admission boundary: handlers only validate command-specific data. */
 function assertCommandAdmissible(state: GameState, command: ScheduledCommand): void {
@@ -39,6 +41,10 @@ function assertCommandAdmissible(state: GameState, command: ScheduledCommand): v
  */
 export function applyCommand(state: GameState, command: ScheduledCommand): void {
   assertCommandAdmissible(state, command)
+  dispatchCommand(state, command)
+}
+
+function dispatchCommand(state: GameState, command: ScheduledCommand): void {
   switch (command.intent.type) {
     case 'MOVE':
       applyMove(state, command)
@@ -48,6 +54,9 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
       return
     case 'HOLD':
       applyHold(state, command)
+      return
+    case 'HEAL':
+      applyHeal(state, command)
       return
     case 'PATROL':
       applyPatrol(state, command)
@@ -64,8 +73,18 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
     case 'DEPOSIT':
       applyDeposit(state, command)
       return
+    default:
+      dispatchEconomyCommand(state, command)
+  }
+}
+
+function dispatchEconomyCommand(state: GameState, command: ScheduledCommand): void {
+  switch (command.intent.type) {
     case 'BUILD':
       applyBuild(state, command)
+      return
+    case 'UPGRADE_CASTLE':
+      applyUpgradeCastle(state, command)
       return
     case 'CANCEL_CONSTRUCTION':
       applyCancelConstruction(state, command)
@@ -75,6 +94,12 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
       return
     case 'CANCEL_PRODUCTION':
       applyCancelProduction(state, command)
+      return
+    case 'RESEARCH':
+      applyResearch(state, command)
+      return
+    case 'CANCEL_RESEARCH':
+      applyCancelResearch(state, command)
       return
     case 'RALLY':
       applyRally(state, command)
@@ -86,6 +111,6 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
       applySurrender(state, command)
       return
     default:
-      assertNever(command.intent, 'applyCommand')
+      throw new Error(`applyCommand: unsupported intent ${command.intent.type}`)
   }
 }

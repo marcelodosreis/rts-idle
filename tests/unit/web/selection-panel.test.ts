@@ -11,7 +11,7 @@ describe('selection panel labels', () => {
     expect(
       constructionStatusLine({
         id: 1,
-        buildingType: 'BASE',
+        buildingType: 'CASTLE',
         owner: 0,
         status: 'COMPLETED',
         progressTicks: 100,
@@ -25,7 +25,7 @@ describe('selection panel labels', () => {
     expect(
       constructionStatusLine({
         id: 1,
-        buildingType: 'BASE',
+        buildingType: 'CASTLE',
         owner: 0,
         status: 'PAUSED',
         progressTicks: 35,
@@ -35,12 +35,27 @@ describe('selection panel labels', () => {
     ).toBe('35/100 · No worker assigned')
   })
 
+  it('uses the construction progress pattern during a Castle upgrade', () => {
+    expect(
+      constructionStatusLine({
+        id: 1,
+        buildingType: 'CASTLE',
+        owner: 0,
+        status: 'COMPLETED',
+        progressTicks: 100,
+        totalTicks: 100,
+        builderId: null,
+        tierUpgrade: { progressTicks: 82, totalTicks: 100 }
+      })
+    ).toBe('82/100')
+  })
+
   it('shows the selected mineral quantity', () => {
     expect(mineralRemainingLine({ id: 4, remaining: 275 })).toBe('275 remaining')
   })
 
   it('allows cancelling only non-completed constructions owned by the player', () => {
-    const base = { id: 1, buildingType: 'BASE' as const, progressTicks: 0, totalTicks: 100, builderId: null }
+    const base = { id: 1, buildingType: 'CASTLE' as const, progressTicks: 0, totalTicks: 100, builderId: null }
     expect(canCancelConstruction({ ...base, owner: 0, status: 'FOUNDATION' }, 0)).toBe(true)
     expect(canCancelConstruction({ ...base, owner: 0, status: 'COMPLETED' }, 0)).toBe(false)
     expect(canCancelConstruction({ ...base, owner: 1, status: 'FOUNDATION' }, 0)).toBe(false)
@@ -49,7 +64,7 @@ describe('selection panel labels', () => {
   it('estimates the refund from the remaining progress and definition cost', () => {
     const construction = {
       id: 1,
-      buildingType: 'BASE' as const,
+      buildingType: 'CASTLE' as const,
       owner: 0,
       status: 'FOUNDATION' as const,
       progressTicks: 0,

@@ -15,11 +15,16 @@ export interface RenderUnit {
   /** Current/maximum health, present when the unit is combat-capable. */
   readonly hp?: number
   readonly maxHp?: number
+  readonly damage?: number
+  readonly armor?: number
+  readonly movementSpeedFixed?: number
+  readonly cargoCapacity?: number
   readonly lookAtX?: number
   /** Authoritative behavior state from the simulation (drives idle/run). */
   readonly orderState?: OrderState
   readonly repairProgressTicks?: number
   readonly repairProgressMax?: number
+  readonly healCooldownRemaining?: number
   readonly economy?: SnapshotEconomy
   /** True while the worker holds cargo, independent of its current order. */
   readonly carrying?: boolean

@@ -39,10 +39,17 @@ async function unitsByOwner(page: Page): Promise<UnitInfo[]> {
 }
 
 test('right-clicking an enemy attacks it and preserves the selection', async ({ page }) => {
-  await page.goto('/?scenario=6v6&aggression=offensive')
+  await page.goto('/?scenario=8v8&aggression=offensive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
-  const blueIds = units.filter((unit) => unit.owner === 0).map((unit) => unit.id)
+  const blueIds = await page.evaluate(() => {
+    const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
+    return Object.entries(owners)
+      .filter(([id, owner]) => owner === 0 && kinds[id] !== 'monk')
+      .map(([id]) => Number(id))
+      .slice(0, 6)
+  })
   const red = units.find((unit) => unit.owner === 1)
   expect(blueIds.length).toBeGreaterThan(0)
   expect(red).toBeDefined()
@@ -71,10 +78,17 @@ test('right-clicking an enemy attacks it and preserves the selection', async ({ 
 })
 
 test('Control+click on an enemy does not change the selection', async ({ page }) => {
-  await page.goto('/?scenario=6v6&aggression=offensive')
+  await page.goto('/?scenario=8v8&aggression=offensive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
-  const blueIds = units.filter((unit) => unit.owner === 0).map((unit) => unit.id)
+  const blueIds = await page.evaluate(() => {
+    const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
+    return Object.entries(owners)
+      .filter(([id, owner]) => owner === 0 && kinds[id] !== 'monk')
+      .map(([id]) => Number(id))
+      .slice(0, 6)
+  })
   const red = units.find((unit) => unit.owner === 1)
   expect(blueIds.length).toBeGreaterThan(0)
   expect(red).toBeDefined()

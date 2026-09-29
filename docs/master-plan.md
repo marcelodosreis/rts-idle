@@ -4,7 +4,37 @@
 
 This plan covers the foundation, the first complete game, and the content expansion. The architectural decisions are defined; decisions conditioned on measurements have explicit criteria and escalation rules.
 
-**Status of this deliverable:** planning complete. No file was changed, no dependency was installed, and no spike was presented as executed.
+**Status of this deliverable:** active design authority. The current one-faction
+Mineral design below supersedes earlier two-faction, Energy, Tech Lab, and
+Factory proposals in this file.
+
+## Current Design Authority
+
+This section is authoritative for the current product and takes precedence over
+any historical baseline later in this document.
+
+- One faction and one resource: Minerals.
+- Pawns gather Minerals and deposit them at owned Castles.
+- Canonical buildings are Castle, Barracks, Archery, Monastery, House, and Tower.
+- House1/House2/House3 are visual variants of one House definition.
+- Castle I is initial. Castle II is an individual Castle upgrade that occupies
+  that Castle's Pawn queue. Castle III is reserved future content.
+- Castle II globally unlocks Monastery, Monk, Lancer, and the four current
+  researches: Attack, Defense, Economy, and Movement.
+- Barracks produces Warrior and Lancer. Archery produces Archer. Monastery
+  produces Monk. Castle produces Pawn.
+- Attack is 150 Minerals/30s and adds +2 damage to military attack capability.
+- Defense is 150 Minerals/30s and adds +1 armor to military defense capability.
+- Economy is 175 Minerals/35s and changes Pawn cargo from 10 to 12.
+- Movement is 175 Minerals/35s and adds 10% speed to every current unit.
+- Research is single-level, global per player, queued in Monasteries, limited to
+  five entries, unique across Monasteries, cancelable, and proportionally
+  refundable using the production refund rule.
+- Armor resolves as `max(1, incomingDamage - armor)` and is visible in snapshots
+  and the HUD.
+- Research affects existing and future units without mutating static definitions.
+- There is no Energy, faction mechanic, global faction ability, Titan, Colossus,
+  Late Game research, or Tier III content in the current scope.
 
 ---
 
@@ -66,63 +96,42 @@ These are the **initial candidate versions for the spike**, not versions already
 
 # 2. Scope and delivery milestones
 
-## 2.1. Milestone M1 — Complete playable RTS
+## 2.1. Current product slice — One-faction Mineral RTS
 
-Deliver:
+The current product has one faction and one resource: Minerals. The playable
+slice includes deterministic construction, production, supply, repair, combat,
+Castle tiers, Monastery research, and browser validation through the real server.
 
-- One competitive map.
-- Two factions.
-- Three units per faction, including worker.
-- Mineral and Energy.
-- Construction, production, supply, repair, and research.
-- Combat, projectiles, navigation, collision, and fog.
-- Full RTS controls planned in this plan.
-- Room with four slots in the structure.
-- Initial map limited to two participants.
-- Human vs Bot through the real server flow.
-- Agent interface.
-- Victory, defeat, draw, and shutdown.
-- Basic reconnection.
-- Reproducible replay.
-- Headless CLI, fuzz, and benchmarks.
-- CI and automated E2E flow.
+Current roster:
 
-Unit roster:
-
-| Vanguard | Nexus |
+| Unit | Role |
 |---|---|
-| Worker | Worker |
-| Soldier | Drone |
-| Ranger | Pulse |
+| Pawn | Worker, builder, emergency low-damage combatant |
+| Warrior | Durable melee frontline |
+| Archer | Fragile ranged damage |
+| Lancer | Fast engage, flank, and pursuit unit |
+| Monk | Fragile healer/support unit |
 
-Available buildings:
+Current buildings:
 
-- Base, including new expansion bases.
-- Supply.
-- Barracks.
-- Tech Lab.
+- Castle: main building, Pawn production, Mineral deposit, individual Tier.
+- Barracks: Warrior and Lancer production.
+- Archery: Archer production and Tower prerequisite.
+- Monastery: Monk production and global research.
+- House: supply only; House1/2/3 are visual variants.
+- Tower: fixed ranged defense and vision control.
 
-Research:
+Castle I is the initial tier. Castle II unlocks Monastery, Monk, Lancer, and
+the four approved researches: Attack, Defense, Economy, and Movement. Castle III
+is reserved for future content and has no current gameplay beyond its reserved
+tier value.
 
-- Attack.
-- Economy.
+## 2.2. Future content boundary
 
-## 2.2. Milestone M2 — Expanded MVP
-
-Add:
-
-- Eight units per faction.
-- Factory and Defense.
-- Six research topics per faction.
-- Representative abilities using the generic contract.
-- AI covering technology, expansion, and expanded composition.
-- Agent vs Agent, Bot vs Bot, and Agent vs Bot validated.
-- Technical scenario with four participants.
-- Complete balance tooling.
-- Expanded stress and validation.
-- Audio, onboarding, and visual polish.
-
-**M1 is a complete game. M2 completes the expanded content of the prompt.**
+Future work may deepen navigation, fog, projectiles, AI, multiplayer, Monk
+support behavior, Tower combat, and Tier III content. It must not reintroduce
+Energy, a second faction, faction-specific research, Tech Lab, Factory,
+Faction Mechanic, Titan, or Colossus into the current design.
 
 ## 2.3. Product limits
 
@@ -788,7 +797,7 @@ For enemy targets, do not publicly distinguish "exists but is hidden" from "does
 
 ---
 
-# 11. Closed gameplay rules
+# 11. Historical gameplay baseline (superseded by Current Design Authority)
 
 The numbers below are **implementation and test baselines**, not a claim of competitive balance.
 
@@ -796,33 +805,33 @@ The numbers below are **implementation and test baselines**, not a claim of comp
 
 Each participant starts with:
 
-- One completed Base.
-- Eight workers.
-- `400 Mineral`.
-- `0 Energy`.
+- One completed Castle I.
+- Eight Pawns.
+- `400 Minerals`.
 - Initial supply `8/15`.
 - No research.
-- Faction and starting point defined in the configuration.
+- The one faction and starting point defined in the configuration.
 
 ## 11.2. Resources
 
-| Property | Mineral | Energy |
-|---|---:|---:|
-| Cargo per trip | 10 | 5 |
-| Collection time | 1 s | 2 s |
-| Initial amount per node | 3,000 | 6,000 |
+| Property | Minerals |
+|---|---:|
+| Cargo per trip | 10 |
+| Collection time | 10 minerals per 200 ticks |
+| Initial amount per node | 3,000 |
 
 Rules:
 
 - Resources only enter the wallet when deposited.
-- Deposit at any completed own Base.
-- One entity gathers from a node at a time; contention is resolved by deterministic order.
+- Deposit at any completed own Castle.
+- Any number of eligible Pawns may gather from a node in parallel.
 - A dead worker loses its cargo.
 - An exhausted node does not produce negative resources.
 - Without an accessible deposit point, the worker keeps its cargo and enters an explicit waiting state.
-- Energy is gathered directly; there will be no extractor in the MVP.
 
-## 11.3. Construction
+There is no Energy resource or secondary economic building.
+
+## 11.3. Construction and Castle tiers
 
 - Cost deducted when accepting `BUILD`.
 - The foundation immediately reserves the footprint.
@@ -834,6 +843,16 @@ Rules:
 - No acceleration from multiple workers in the MVP.
 - A paused construction remains a foundation.
 - No global rule against wall-offs is imposed; blockades may be player decisions.
+- House1, House2, and House3 share one House definition and differ only in the deterministic visual variant selected at construction.
+
+Castle rules:
+
+- Each Castle owns its own Tier I, Tier II, or reserved Tier III value.
+- Castle I → Castle II uses the Castle cost and construction duration and occupies the Castle's Pawn production queue.
+- A Castle does not train Pawns while its tier upgrade is active.
+- A completed Castle II unlocks Tier II content globally for its owner.
+- Requirements for new Tier II buildings check for at least one current Castle II and do not require proximity.
+- Losing every Castle II blocks new Tier II construction but does not disable existing Tier II buildings, Lancer/Monk production in existing producers, active research, or completed research.
 
 Cancellation:
 
@@ -872,7 +891,32 @@ In that case:
 - Pause production progress while `used + reserved > cap`.
 - Do not destroy existing units.
 
-## 11.5. Repair
+## 11.5. Research
+
+- Research is produced by completed Monasteries.
+- The research queue has a maximum of five items.
+- Research is global per player and each topic is single-level.
+- The same topic cannot be active or queued in two Monasteries.
+- Every topic requires Tier II access and a completed Monastery.
+- Research cancellation uses the production refund rule.
+- A research started before the loss of the last Castle II continues normally.
+- Completed research remains active permanently.
+
+| Research | Cost | Duration | Effect |
+|---|---:|---:|---|
+| Attack | 150 Minerals | 30 s | +2 damage for military attack capability units |
+| Defense | 150 Minerals | 30 s | +1 armor for military defense capability units |
+| Economy | 175 Minerals | 35 s | Pawn cargo 10 → 12 |
+| Movement | 175 Minerals | 35 s | +10% movement speed for all current units |
+
+Research never mutates static unit definitions. Modifiers apply to existing and
+future units through their capabilities. Damage is resolved as:
+
+```text
+effectiveDamage = max(1, incomingDamage - armor)
+```
+
+## 11.6. Repair
 
 - The worker repairs buildings and units with the `mechanical` tag.
 - Every `0.5 s`: up to 5 HP per 1 Mineral.
@@ -881,7 +925,7 @@ In that case:
 - Initial limit: one active repairer per target.
 - A dead target cannot be repaired.
 
-## 11.6. Victory
+## 11.7. Victory
 
 A participant loses when:
 
@@ -908,7 +952,7 @@ The limit is part of the rules and the replay.
 
 ---
 
-# 12. Combat and abilities
+# 12. Combat baseline (current armor formula retained; ability content superseded)
 
 ## 12.1. Damage
 
@@ -975,9 +1019,9 @@ Do not scan all entities for each attacker. Query the spatial index.
 - Each entity receives one impact per explosion.
 - Spatial query, followed by exact distance.
 
-## 12.6. Abilities
+## 12.6. Unit abilities
 
-Contract:
+The current design has no global faction ability contract.
 
 ```text
 id
@@ -992,21 +1036,21 @@ requirements
 
 Effects used initially:
 
-- Temporary armor modification.
-- Temporary speed modification.
+- Monk's Heal is a unit-specific support ability and was not part of the base
+  P2.11 research packet; it is delivered by the P2.11.01 extension.
 
-M2 content:
+Future unit-specific content:
 
-- **Brace:** Guardian/Titan, +3 armor for 5 s, cooldown 12 s, cost 5 Energy.
-- **Overclock:** Drone/Pulse/Phantom, +25% speed for 5 s, cooldown 12 s, cost 5 Energy.
+- No faction mechanic or Energy-cost ability exists in the current design.
 
-No stacks of the same effect. A valid reapplication renews the duration.
+Future abilities must remain unit-specific and deterministic.
 
-Expiration occurs before the commands of the corresponding tick.
+No ability timer was part of the base P2.11 research packet; P2.11.01 adds the
+Monk-specific deterministic Heal cooldown.
 
 ---
 
-# 13. Initial unit data
+# 13. Historical unit data (superseded by Current Design Authority)
 
 Conventions:
 
@@ -1067,7 +1111,7 @@ The differences above are starting points for self-play and analysis; they must 
 
 ---
 
-# 14. Buildings, research, and map
+# 14. Historical buildings and research baseline (superseded by Current Design Authority)
 
 ## 14.1. Buildings
 

@@ -29,7 +29,7 @@ function depositScenario(options: DepositScenarioOptions = {}) {
   world.store(Position).set(base, { x: 0, y: 0 })
   world.store(Owner).set(base, { owner: options.baseOwner ?? 0 })
   world.store(Building).set(base, {
-    buildingType: 'BASE',
+    buildingType: 'CASTLE',
     status: 'COMPLETED',
     progressTicks: 1,
     totalTicks: 1,

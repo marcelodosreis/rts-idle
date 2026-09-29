@@ -19,8 +19,10 @@ be integer fixed units.
 | `PATROL` | `unitIds, x, y` | Walk back and forth between the current position and the target. |
 | `ATTACK` | `unitIds, targetId` | Acquire and attack a specific enemy (chases when out of range). |
 | `ATTACK_MOVE` | `unitIds, x, y` | Move to a destination, attacking enemies encountered en route; defend on arrival. |
-| `GATHER` | `unitIds, nodeId` | Workers repeatedly gather minerals, return to the nearest owned Base, and deposit. |
-| `TRAIN` | `producerId, unitKind` | Queue Pawn at an owned completed Base, or Warrior/Archer at an owned completed Barracks, reserving minerals and supply. |
+| `GATHER` | `unitIds, nodeId` | Pawns repeatedly gather Minerals, return to the nearest owned Castle, and deposit. |
+| `TRAIN` | `producerId, unitKind` | Queue the unit allowed by the selected owned completed producer, reserving Minerals and supply. |
+| `RESEARCH` | `monasteryId, researchType` | Queue one of the four Tier II researches at an owned completed Monastery. |
+| `CANCEL_RESEARCH` | `monasteryId, queueIndex` | Cancel a research item and refund according to its authoritative queue state. |
 | `CANCEL_PRODUCTION` | `producerId, queueIndex` | Cancel any item in an owned producer queue, refunding according to its state and releasing its reserved supply. |
 | `CANCEL_CONSTRUCTION` | `buildingId` | Cancel an owned not-yet-completed construction: refund part of the cost and free its footprint (see below). |
 | `SURRENDER` | — | The issuing player concedes: marked defeated, their units disband. |
@@ -75,8 +77,9 @@ The command intent type lives in
 
 ## Production (P2.07)
 
-The P2.07 contract is for `TRAIN` to accept Pawn at a completed owned Base, and
-Warrior or Archer at a completed owned Barracks.
+The current production contract accepts Pawn at Castle, Warrior/Lancer at
+Barracks, Archer at Archery, and Monk at Monastery. Lancer and Monk require the
+player's Tier II unlock.
 The queue holds at most five items and reserves the mineral cost and one supply
 per item at acceptance. The authoritative production definitions, including the
 balance for all three trainable unit kinds, live in `@rts/game-data` and are
@@ -87,7 +90,7 @@ One item advances per producer. Production pauses while
 deterministic producer exit when space is available; otherwise it remains in
 `COMPLETED_WAITING`, retaining its reservations until the exit is free.
 
-`RALLY` sets an owned completed Base or Barracks producer's fixed-coordinate
+`RALLY` sets an owned completed Castle, Barracks, Archery, or Monastery producer's fixed-coordinate
 rally point. The point is projected on buildings, and a newly spawned unit
 receives the existing movement destination when the point is configured.
 

@@ -1,7 +1,7 @@
 import type { EntityId, PlayerId, UnitKind } from '@rts/shared'
 import { MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
 import { unitStatsFor } from '../data/unit-stats.js'
-import { Cargo, Combat, Health, Kind, Orders, Owner, Position } from './components.js'
+import { AbilityCooldown, Cargo, Combat, Health, Kind, Orders, Owner, Position } from './components.js'
 import type { World } from './world.js'
 
 export interface CreateUnitOptions {
@@ -22,11 +22,13 @@ export function createUnitEntity(world: World, options: CreateUnitOptions): void
   world.store(Kind).set(options.id, options.kind)
   world.store(Health).set(options.id, { current: stats.maxHp, max: stats.maxHp })
   world.store(Combat).set(options.id, {
+    armor: stats.armor,
     damage: stats.damage,
     rangeTiles: stats.rangeTiles,
     cooldownTicks: stats.cooldownTicks,
     cooldownRemaining: 0
   })
+  world.store(AbilityCooldown).set(options.id, { healCooldownRemaining: 0 })
   world.store(Orders).set(options.id, { queue: [] })
   if (options.worker === true) {
     world.store(Cargo).set(options.id, { amount: 0, capacity: MINERAL_CARGO_CAPACITY })

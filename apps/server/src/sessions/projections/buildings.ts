@@ -30,6 +30,8 @@ export function projectBuildings(world: World): readonly SnapshotBuilding[] {
         status: building.status,
         progressTicks: building.progressTicks,
         totalTicks: building.totalTicks,
+        tier: building.tier ?? 1,
+        tierUpgrade: building.tierUpgrade ?? null,
         rallyPoint: building.rallyPoint ?? null,
         ...(health === undefined ? {} : { hp: health.current, maxHp: health.max }),
         ...(production === undefined ? {} : { production: { queue: production.queue.map((item) => ({ ...item })) } })

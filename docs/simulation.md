@@ -13,8 +13,8 @@ The deterministic core. This document is the operational reference for
 - The canonical byte format and the state hash are pinned by
   `tests/simulation/hash-golden.test.ts` and the determinism suites. Changing
   the format is a deliberate act (regen the golden).
-- `SIMULATION_VERSION` is `0.11.0` (producer rally points joined
-  the canonical snapshot stream).
+- `SIMULATION_VERSION` is `0.13.0` (Castle II, Research, modifiers, and
+  fixed-point movement joined the canonical snapshot stream).
 
 ## Single writer
 
@@ -32,12 +32,14 @@ The pipeline order is part of the deterministic contract:
 | 1 | `orders` | Advance the per-unit order queue (PATROL leg rotation) |
 | 2 | `movement` | Advance units toward their destination (integer remainder) |
 | 3 | `economy` | Gather minerals, return cargo, and deposit using post-movement positions |
-| 4 | `combat` | Resolve attack intent; accumulate damage in the per-tick buffer |
-| 5 | `death` | Apply the damage buffer simultaneously; remove the dead, clear refs |
-| 6 | `supply` | Recompute used/capacity supply from the live world |
-| 7 | `production` | Advance Base/Barracks queues and spawn completed units |
-| 8 | `victory` | Decide win/draw/tick-limit; mark losers defeated |
-| 9 | `invariants` | Validate the state (never mutates, throws on violation) |
+| 4 | `tier` | Complete Castle tier upgrades and unlock current Tier II access |
+| 5 | `research` | Advance Monastery queues and apply completed modifiers |
+| 6 | `combat` | Resolve attack intent; accumulate damage in the per-tick buffer |
+| 7 | `death` | Apply the damage buffer simultaneously; remove the dead, clear refs |
+| 8 | `supply` | Recompute used/capacity supply from the live world |
+| 9 | `production` | Advance Castle/producer queues and spawn completed units |
+| 10 | `victory` | Decide win/draw/tick-limit; mark losers defeated |
+| 11 | `invariants` | Validate the state (never mutates, throws on violation) |
 
 Appending a step is a deliberate change; reordering is forbidden
 (`tests/simulation/lifecycle/pipeline-order.test.ts`).
@@ -52,13 +54,15 @@ Registered in `createWorld()` in this order (part of the canonical schema):
 - `Orders` — the per-unit order queue.
 - `Health` — current/max hit points.
 - `Combat` — damage, range (tiles), cooldown (ticks), remaining cooldown.
-- `Kind` — unit archetype (`pawn` / `warrior` / `archer`), driven by
+- `Kind` — unit archetype (`pawn` / `warrior` / `archer` / `lancer` / `monk`), driven by
   `data/unit-stats.ts` per-role combat stats.
 - `MineralNode` — remaining mineral amount.
 - `Building` — placed building: type, lifecycle status, progress, builder, footprint.
 - `Cargo` — a Worker's carried mineral amount and capacity.
 - `Production` — a producer's canonical queue, progress, reservations, and
   completion-waiting state.
+- `Production` — a producer's canonical FIFO queue, including Monk training and
+  Research entries for Monasteries.
 
 ## Commands
 
@@ -76,7 +80,7 @@ client as `events[]` in the snapshot message (master plan §23.2):
 
 ## Players and victory
 
-`GameState.players` holds the four competitive slots (`defeated`, `gold`). A
+`GameState.players` holds the four competitive slots (`defeated`, `minerals`). A
 player is eliminated when they surrender or lose all living units. The match
 finishes when one player remains (win), nobody remains (draw), or the tick
 limit is reached (5000 ticks ≈ 4 minutes at 20/s). `phase` becomes `FINISHED`
@@ -88,16 +92,16 @@ liveness.
 `GATHER` is valid for owned pawn Workers with Cargo and a live Mineral Node.
 Workers move through the existing straight-line Movement component, complete
 one atomic 10-mineral batch after 200 ticks, then return to the nearest owned
-Base (distance, then entity id). Nodes permit any number of simultaneous
+Castle (distance, then entity id). Nodes permit any number of simultaneous
 Workers, and only nodes with complete 10-mineral batches can be gathered.
 Partial batch progress is discarded when an order is interrupted; the node and
-Cargo remain unchanged. `PlayerState.gold` is the internal v0 mineral wallet
+Cargo remain unchanged. `PlayerState.minerals` is the authoritative Mineral wallet
 and changes only on deposit. Nodes, cargo, order phase/progress, and wallet
 balances are canonical; a dead Worker loses its Cargo component.
 
 ## Production v0
 
-Completed Base and Barracks entities own a maximum five-item `Production` queue. `TRAIN`
+Completed Castle, Barracks, Archery, and Monastery entities own a maximum five-item `Production` queue. `TRAIN`
 reserves minerals and supply before adding an item. Pawn items take 100 ticks;
 Warrior items cost 100 minerals and take 200 ticks; Archer items cost 125
 minerals and take 300 ticks.
@@ -113,6 +117,14 @@ becomes the spawned unit's normal movement destination.
 mineral cost and releases its reserved supply without reordering the rest of
 the queue. The authoritative producer-removal lifecycle releases all queue
 reservations and never refunds production costs.
+
+## Research v0
+
+Completed Monasteries accept a maximum five-item shared Monk/Research queue. `RESEARCH`
+reserves Minerals atomically and `CANCEL_RESEARCH` uses the production refund
+rule. Attack, Defense, Economy, and Movement are single-level global
+technologies. Their capabilities affect existing and future units without
+changing static unit definitions. Research state is canonical and deterministic.
 
 ## Serialization
 

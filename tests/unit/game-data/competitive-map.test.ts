@@ -54,7 +54,7 @@ describe('competitive map', () => {
 
   it('places base origins as footprint-aware opposite corners', () => {
     const [northwest, southeast] = competitiveBaseLocations()
-    const footprint = BUILDING_DEFINITIONS.BASE.footprint
+    const footprint = BUILDING_DEFINITIONS.CASTLE.footprint
 
     expect(northwest).toEqual({ x: 6, y: 6 })
     expect(southeast).toEqual({ x: 21, y: 22 })
@@ -66,8 +66,8 @@ describe('competitive map', () => {
 
   it('keeps every base footprint on buildable terrain', () => {
     for (const origin of competitiveBaseLocations()) {
-      for (let y = origin.y; y < origin.y + BUILDING_DEFINITIONS.BASE.footprint.height; y += 1) {
-        for (let x = origin.x; x < origin.x + BUILDING_DEFINITIONS.BASE.footprint.width; x += 1) {
+      for (let y = origin.y; y < origin.y + BUILDING_DEFINITIONS.CASTLE.footprint.height; y += 1) {
+        for (let x = origin.x; x < origin.x + BUILDING_DEFINITIONS.CASTLE.footprint.width; x += 1) {
           expect(tileAtPosition(map, x, y), `base tile ${x},${y}`).toBe('land')
         }
       }
@@ -77,7 +77,7 @@ describe('competitive map', () => {
   it('places the mineral node right of the channel at equal distance from both base centers', () => {
     const [first, second] = competitiveBaseLocations()
     const mineral = competitiveMineralLocation()
-    const footprint = BUILDING_DEFINITIONS.BASE.footprint
+    const footprint = BUILDING_DEFINITIONS.CASTLE.footprint
     const firstCenter = { x: first.x + footprint.width / 2, y: first.y + footprint.height / 2 }
     const secondCenter = { x: second.x + footprint.width / 2, y: second.y + footprint.height / 2 }
     const firstDistance = (mineral.x - firstCenter.x) ** 2 + (mineral.y - firstCenter.y) ** 2
@@ -90,7 +90,7 @@ describe('competitive map', () => {
   })
 
   it('uses tile-aligned visual canvases for every building footprint', () => {
-    for (const type of ['BASE', 'BARRACKS', 'SUPPLY_DEPOT'] as const) {
+    for (const type of ['CASTLE', 'BARRACKS', 'HOUSE'] as const) {
       const geometry = BUILDING_GEOMETRY[type]
       expect(fixedToRenderPixels(geometry.visualSize.width)).toBe(geometry.footprint.width * 64)
       expect(fixedToRenderPixels(geometry.visualSize.height)).toBe(geometry.footprint.height * 64)

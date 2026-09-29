@@ -1,9 +1,24 @@
-import { UNIT_PRODUCTION_DEFINITIONS } from '@rts/game-data'
+import { RESEARCH_DEFINITIONS, UNIT_PRODUCTION_DEFINITIONS } from '@rts/game-data'
+import type { ProductionItemStatus } from '@rts/shared'
 import { GATHER_TICKS_PER_BATCH, MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
 import { MAX_PRODUCTION_QUEUE } from '../data/production-rules.js'
 import { MAX_SUPPLY_CAPACITY } from '../data/supply-rules.js'
+import { effectiveCargoCapacity } from '../domain/research-effects.js'
 import { Building } from '../ecs/building-component.js'
-import { Cargo, Combat, Health, Kind, MineralNode, Orders, Owner, Position, Production } from '../ecs/components.js'
+import {
+  Cargo,
+  Combat,
+  Health,
+  isResearchProductionItem,
+  Kind,
+  MineralNode,
+  Orders,
+  Owner,
+  Position,
+  Production,
+  type ResearchProductionItem,
+  type UnitProductionItem
+} from '../ecs/components.js'
 import {
   type BuildingFootprint,
   type PlacementMapBounds,
@@ -63,7 +78,12 @@ function checkConstruction(state: GameState, id: number): void {
     }
   }
   if (construction.rallyPoint !== undefined && construction.rallyPoint !== null) {
-    if (construction.buildingType !== 'BASE' && construction.buildingType !== 'BARRACKS') {
+    if (
+      construction.buildingType !== 'CASTLE' &&
+      construction.buildingType !== 'BARRACKS' &&
+      construction.buildingType !== 'ARCHERY' &&
+      construction.buildingType !== 'MONASTERY'
+    ) {
       fail(`construction ${id} has a rally point but cannot produce units`)
     }
     if (!Number.isInteger(construction.rallyPoint.x) || !Number.isInteger(construction.rallyPoint.y)) {
@@ -81,12 +101,13 @@ function checkEconomyEntity(state: GameState, id: number): void {
   }
   checkConstruction(state, id)
   const cargo = state.world.store(Cargo).get(id)
+  const expectedCapacity = effectiveCargoCapacity(state, id, MINERAL_CARGO_CAPACITY)
   if (
     cargo !== undefined &&
     (!Number.isInteger(cargo.amount) ||
       cargo.amount < 0 ||
       cargo.amount > cargo.capacity ||
-      cargo.capacity !== MINERAL_CARGO_CAPACITY)
+      cargo.capacity !== expectedCapacity)
   ) {
     fail(`entity ${id} has invalid cargo ${cargo.amount}/${cargo.capacity}`)
   }
@@ -120,6 +141,41 @@ function checkEconomyEntity(state: GameState, id: number): void {
   }
 }
 
+function checkQueueItemStatus(id: number, index: number, status: ProductionItemStatus): void {
+  if (index === 0 && status === 'QUEUED') {
+    fail(`production ${id} has queued active item`)
+  }
+  if (index > 0 && status === 'ACTIVE') {
+    fail(`production ${id} has multiple active items`)
+  }
+}
+
+function checkResearchItem(id: number, index: number, item: ResearchProductionItem): void {
+  const definition = RESEARCH_DEFINITIONS[item.researchType]
+  if (item.costMinerals !== definition.costMinerals || item.totalTicks !== definition.researchTicks) {
+    fail(`production ${id} has stale Research definition for ${item.researchType}`)
+  }
+  if (item.status === 'COMPLETED_WAITING') {
+    fail(`production ${id} has completed Research waiting in queue`)
+  }
+  checkQueueItemStatus(id, index, item.status)
+}
+
+function checkUnitItem(id: number, index: number, item: UnitProductionItem): number {
+  const definition = UNIT_PRODUCTION_DEFINITIONS[item.unitKind]
+  if (item.costMinerals !== definition.costMinerals || item.reservedSupply !== definition.supply) {
+    fail(`production ${id} has stale definition for ${item.unitKind}`)
+  }
+  if (!Number.isInteger(item.progressTicks) || item.progressTicks < 0 || item.progressTicks > item.totalTicks) {
+    fail(`production ${id} has invalid progress`)
+  }
+  if (item.totalTicks !== definition.trainingTicks) {
+    fail(`production ${id} has invalid duration`)
+  }
+  checkQueueItemStatus(id, index, item.status)
+  return item.reservedSupply
+}
+
 function checkProduction(state: GameState, id: number, reserved: Map<number, number>): void {
   const production = state.world.store(Production).get(id)
   if (production === undefined) {
@@ -128,7 +184,10 @@ function checkProduction(state: GameState, id: number, reserved: Map<number, num
   const building = state.world.store(Building).get(id)
   const owner = state.world.store(Owner).get(id)?.owner
   if (
-    (building?.buildingType !== 'BASE' && building?.buildingType !== 'BARRACKS') ||
+    (building?.buildingType !== 'CASTLE' &&
+      building?.buildingType !== 'BARRACKS' &&
+      building?.buildingType !== 'ARCHERY' &&
+      building?.buildingType !== 'MONASTERY') ||
     building.status !== 'COMPLETED' ||
     owner === undefined
   ) {
@@ -137,25 +196,21 @@ function checkProduction(state: GameState, id: number, reserved: Map<number, num
   if (production.queue.length > MAX_PRODUCTION_QUEUE) {
     fail(`production ${id} exceeds queue limit`)
   }
+  if (
+    production.queue.length > 0 &&
+    building?.buildingType === 'CASTLE' &&
+    building.tierUpgrade !== undefined &&
+    building.tierUpgrade !== null
+  ) {
+    fail(`production ${id} has a Pawn queue during Castle upgrade`)
+  }
   let totalReserved = 0
   for (const [index, item] of production.queue.entries()) {
-    const definition = UNIT_PRODUCTION_DEFINITIONS[item.unitKind]
-    if (item.costMinerals !== definition.costMinerals || item.reservedSupply !== definition.supply) {
-      fail(`production ${id} has stale definition for ${item.unitKind}`)
+    if (isResearchProductionItem(item)) {
+      checkResearchItem(id, index, item)
+      continue
     }
-    if (!Number.isInteger(item.progressTicks) || item.progressTicks < 0 || item.progressTicks > item.totalTicks) {
-      fail(`production ${id} has invalid progress`)
-    }
-    if (item.totalTicks !== definition.trainingTicks) {
-      fail(`production ${id} has invalid duration`)
-    }
-    if (index === 0 && item.status === 'QUEUED') {
-      fail(`production ${id} has queued active item`)
-    }
-    if (index > 0 && item.status === 'ACTIVE') {
-      fail(`production ${id} has multiple active items`)
-    }
-    totalReserved += item.reservedSupply
+    totalReserved += checkUnitItem(id, index, item)
   }
   reserved.set(owner, (reserved.get(owner) ?? 0) + totalReserved)
 }

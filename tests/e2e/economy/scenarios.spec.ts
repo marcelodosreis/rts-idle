@@ -24,10 +24,10 @@ test('the default scenario spawns five workers and five enemy pawns', async ({ p
   expect(Object.keys(positions).length).toBe(10)
 })
 
-test('the optional 6v6 scenario spawns twelve units', async ({ page }) => {
-  await page.goto('/?scenario=6v6&aggression=passive')
+test('the optional 8v8 scenario spawns sixteen units', async ({ page }) => {
+  await page.goto('/?scenario=8v8&aggression=passive')
   const positions = await settleUnits(page)
-  expect(Object.keys(positions).length).toBe(12)
+  expect(Object.keys(positions).length).toBe(16)
 })
 
 test('the regression scenario preserves four economy workers', async ({ page }) => {

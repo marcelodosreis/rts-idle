@@ -1,6 +1,6 @@
 import type { MatchConfig, ScenarioSummary } from '@rts/protocol'
 import { type GameRenderer, type InputProfile, PixiRenderer } from '@rts/renderer'
-import type { CommandIntent, MapDefinition, MatchResult } from '@rts/shared'
+import type { CommandIntent, MapDefinition, MatchResult, ResearchType } from '@rts/shared'
 import { FIXED_SCALE, fixedToRenderPixels, renderPixelsToFixed, TILE_PIXELS } from '@rts/shared'
 import type { MutableRefObject } from 'react'
 import { connectMatch } from '../../../shared/transport/connection'
@@ -20,6 +20,9 @@ export interface SessionResources {
   readonly mineral: number
   readonly supply: number
   readonly supplyCap: number
+  readonly castleTier: number
+  readonly completedResearch: readonly ResearchType[]
+  readonly queuedResearch: readonly ResearchType[]
 }
 
 /** The subset of command-mode state the session lifecycle depends on. */
@@ -76,7 +79,10 @@ function createSelectionUpdaters(runtime: MatchSessionRuntime, setters: MatchSes
     const producerId =
       construction !== null &&
       construction.status === 'COMPLETED' &&
-      (construction.buildingType === 'BASE' || construction.buildingType === 'BARRACKS')
+      (construction.buildingType === 'CASTLE' ||
+        construction.buildingType === 'BARRACKS' ||
+        construction.buildingType === 'ARCHERY' ||
+        construction.buildingType === 'MONASTERY')
         ? construction.id
         : null
     runtime.renderer?.setSelectedRallyProducer(producerId)

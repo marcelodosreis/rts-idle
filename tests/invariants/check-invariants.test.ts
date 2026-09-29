@@ -146,7 +146,7 @@ describe('central invariants (P1.08)', () => {
       queue: [{ type: 'GATHER', nodeId: 99, baseId: null, phase: 'TO_NODE', progressTicks: 200 }]
     })
     world.store(Movement).set(id, {
-      speedTilesPerSecond: 4,
+      speedTilesPerSecondFixed: 40,
       destX: 10_000,
       destY: 0,
       remainderX: 0,
@@ -165,7 +165,7 @@ describe('central invariants (P1.08)', () => {
       queue: [{ type: 'GATHER', nodeId: 99, baseId: null, phase: 'TO_NODE', progressTicks: 0 }]
     })
     world.store(Movement).set(id, {
-      speedTilesPerSecond: 4,
+      speedTilesPerSecondFixed: 40,
       destX: 10_000,
       destY: 0,
       remainderX: 0,
@@ -191,7 +191,7 @@ describe('central invariants (P1.08)', () => {
     const id = world.aliveIds()[0]!
     world.store(Kind).set(id, 'pawn')
     world.store(Orders).set(id, {
-      queue: [{ type: 'BUILD', buildingId: 99, buildingType: 'BASE', workPoint: { x: 0, y: 0 } }]
+      queue: [{ type: 'BUILD', buildingId: 99, buildingType: 'CASTLE', workPoint: { x: 0, y: 0 } }]
     })
     const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
 
