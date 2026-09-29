@@ -30,7 +30,9 @@ describe('match session runtime selection', () => {
   it('deduplicates ids and orders projected units while preserving moving state', () => {
     const runtime = runtimeWithState()
     const setSelection = vi.fn()
-    runtime.renderer = { setSelection } as never
+    const setSelectedRallyProducer = vi.fn()
+    const setSelectedRallyPoint = vi.fn()
+    runtime.renderer = { setSelection, setSelectedRallyProducer, setSelectedRallyPoint } as never
 
     const selection = runtime.selectUnits([3, 1, 3])
 
@@ -39,6 +41,7 @@ describe('match session runtime selection', () => {
     expect(selection.units[0]?.moving).toBe(false)
     expect(selection.units[1]?.moving).toBe(true)
     expect(setSelection).toHaveBeenCalledWith([3, 1])
+    expect(setSelectedRallyProducer).toHaveBeenCalledWith(null)
   })
 
   it('keeps unit, building, and mineral selection mutually exclusive', () => {

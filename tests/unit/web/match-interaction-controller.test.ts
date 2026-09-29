@@ -10,6 +10,7 @@ function context(overrides: Partial<MatchInteractionContext> = {}): MatchInterac
   const base: MatchInteractionContext = {
     isMatchEnded: () => false,
     selectedUnitIds: () => [1, 2],
+    selectedConstructionId: () => null,
     mode: () => 'idle',
     unitStates: new Map([
       [1, { kind: 'pawn', owner: 0, carrying: true }],
@@ -43,6 +44,67 @@ describe('MatchInteractionController', () => {
       { type: 'MOVE', payload: { unitIds: [1, 2], x: 10.4, y: 20.6 } },
       { type: 'ATTACK', payload: { unitIds: [1, 2], targetId: 9 } }
     ])
+  })
+
+  it('sets a producer rally point without requiring a unit selection', () => {
+    const match = context({ selectedUnitIds: () => [], mode: () => ({ kind: 'rally', producerId: 7 }) })
+    const controller = new MatchInteractionController(match)
+
+    controller.groundCommand(10.4, 20.6)
+
+    expect((match as MatchInteractionContext & { sent: CommandIntent[] }).sent).toEqual([
+      { type: 'RALLY', payload: { producerId: 7, x: 10.4, y: 20.6 } }
+    ])
+  })
+
+  it('uses a selected completed Base or Barracks as the rally shortcut target', () => {
+    const match = context({
+      selectedUnitIds: () => [],
+      selectedConstructionId: () => 7,
+      buildings: () => [
+        {
+          id: 7,
+          buildingType: 'BARRACKS',
+          x: 100,
+          y: 200,
+          owner: 0,
+          footprint: { width: 2, height: 2 },
+          status: 'COMPLETED',
+          progressTicks: 100,
+          totalTicks: 100
+        }
+      ]
+    })
+
+    new MatchInteractionController(match).groundCommand(30, 40)
+
+    expect((match as MatchInteractionContext & { sent: CommandIntent[] }).sent).toEqual([
+      { type: 'RALLY', payload: { producerId: 7, x: 30, y: 40 } }
+    ])
+  })
+
+  it('does not use a Supply Depot as a rally shortcut target', () => {
+    const match = context({
+      selectedUnitIds: () => [],
+      selectedConstructionId: () => 7,
+      buildings: () => [
+        {
+          id: 7,
+          buildingType: 'SUPPLY_DEPOT',
+          x: 100,
+          y: 200,
+          owner: 0,
+          footprint: { width: 2, height: 2 },
+          status: 'COMPLETED',
+          progressTicks: 100,
+          totalTicks: 100
+        }
+      ]
+    })
+
+    new MatchInteractionController(match).groundCommand(30, 40)
+
+    expect((match as MatchInteractionContext & { sent: CommandIntent[] }).sent).toEqual([])
   })
 
   it('deposits only carrying owned workers at a completed owned building', () => {

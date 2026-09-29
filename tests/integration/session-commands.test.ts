@@ -124,7 +124,7 @@ describe('game session commands', () => {
         tick: 1,
         playerId: 0,
         sequence: 1,
-        intent: { type: 'BUILD', payload: { unitId: worker.id, buildingType: 'BASE', x: 10, y: 9 } }
+        intent: { type: 'BUILD', payload: { unitId: worker.id, buildingType: 'BASE', x: 11, y: 9 } }
       }
     ])
     expect(session.advance().rejected).toEqual([])

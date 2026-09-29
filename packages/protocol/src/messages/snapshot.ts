@@ -85,6 +85,7 @@ export interface SnapshotBuilding {
   readonly status: ConstructionStatus
   readonly progressTicks: number
   readonly totalTicks: number
+  readonly rallyPoint?: { readonly x: Fixed; readonly y: Fixed } | null
   readonly production?: SnapshotProduction
 }
 
@@ -145,6 +146,7 @@ function isSnapshotBuilding(value: unknown): boolean {
   const progressTicks = field(value, 'progressTicks')
   const totalTicks = field(value, 'totalTicks')
   const production = field(value, 'production')
+  const rallyPoint = field(value, 'rallyPoint')
   return (
     isOneOf(BUILDING_TYPES, field(value, 'buildingType')) &&
     isPlayerId(field(value, 'owner')) &&
@@ -156,6 +158,9 @@ function isSnapshotBuilding(value: unknown): boolean {
     isInteger(progressTicks) &&
     isInteger(totalTicks) &&
     totalTicks > 0 &&
+    (rallyPoint === undefined ||
+      rallyPoint === null ||
+      (isRecord(rallyPoint) && isInteger(field(rallyPoint, 'x')) && isInteger(field(rallyPoint, 'y')))) &&
     progressTicks <= totalTicks &&
     (production === undefined || isSnapshotProduction(production))
   )

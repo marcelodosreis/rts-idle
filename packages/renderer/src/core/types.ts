@@ -1,5 +1,5 @@
 import type { OrderState, SnapshotBuilding, SnapshotEconomy } from '@rts/protocol'
-import type { MapDefinition, SimulationEvent, UnitKind } from '@rts/shared'
+import type { BuildingType, MapDefinition, SimulationEvent, UnitKind } from '@rts/shared'
 import type { PointData } from 'pixi.js'
 import type { InputProfile, WorldInteraction } from '../input/input-types.js'
 
@@ -59,6 +59,7 @@ export interface RenderBuildPreview {
   readonly y: number
   readonly width: number
   readonly height: number
+  readonly buildingType?: BuildingType
   readonly valid: boolean
 }
 
@@ -98,6 +99,8 @@ export interface GameRenderer {
   resize(width: number, height: number): void
   dispose(): void
   setSelection(ids: readonly number[]): void
+  setSelectedRallyProducer(id: number | null): void
+  setSelectedRallyPoint(point: { readonly x: number; readonly y: number } | null): void
   getSelection(): readonly number[]
   getSelectionBoxState(): {
     readonly visible: boolean

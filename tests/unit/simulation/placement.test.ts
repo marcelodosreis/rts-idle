@@ -1,4 +1,4 @@
-import { FIXED_SCALE } from '@rts/shared'
+import { BUILDING_GEOMETRY, FIXED_SCALE } from '@rts/shared'
 import {
   type BuildingFootprint,
   constructionWorkPoint,
@@ -88,6 +88,15 @@ describe('construction work point', () => {
 
   it('uses top as the deterministic tie-breaker', () => {
     expect(constructionWorkPoint(fixed(6, 4), footprint, mapBounds)).toEqual(fixed(5, 4))
+  })
+
+  it('uses the cropped Barracks bounds instead of its logical four-tile height', () => {
+    const barracks = { x: 4, y: 4, width: 3, height: 4 }
+    const visualSize = BUILDING_GEOMETRY.BARRACKS.visualSize
+    expect(constructionWorkPoint(fixed(5, 8), barracks, mapBounds, visualSize)).toEqual({
+      x: 4 * FIXED_SCALE + visualSize.width / 2,
+      y: 4 * FIXED_SCALE + visualSize.height
+    })
   })
 
   it.each([

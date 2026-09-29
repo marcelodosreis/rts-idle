@@ -1,7 +1,7 @@
 import type { BuildCatalogEntry } from '@rts/protocol'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
-import { buildingTypeForMode, type CommandMode } from '../commands/useCommandModes'
+import { buildingTypeForMode, type CommandMode, isRallyMode } from '../commands/useCommandModes'
 
 interface CommandBarProps {
   readonly disabled: boolean
@@ -69,6 +69,7 @@ export function CommandBar({
   buildHint,
   buildings
 }: CommandBarProps) {
+  const targetHint = isRallyMode(mode) ? 'Pick a rally target.' : `Pick a target: ${mode}.`
   return (
     <div className="flex flex-wrap items-stretch gap-2">
       <CommandGroup label="Orders">
@@ -135,7 +136,7 @@ export function CommandBar({
         >
           {buildingTypeForMode(mode) !== null
             ? (buildHint ?? 'Move over the map to preview a building location.')
-            : `Pick a target: ${mode}.`}
+            : targetHint}
         </div>
       ) : null}
     </div>

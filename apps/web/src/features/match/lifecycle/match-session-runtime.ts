@@ -42,6 +42,8 @@ function emptySelection(runtime: MatchSessionRuntime): MatchSelection {
   runtime.selectedConstructionId = null
   runtime.selectedMineralId = null
   runtime.renderer?.setSelection([])
+  runtime.renderer?.setSelectedRallyProducer(null)
+  runtime.renderer?.setSelectedRallyPoint(null)
   return { ids: [], units: [], construction: null, mineral: null }
 }
 
@@ -68,6 +70,7 @@ function toHudConstruction(construction: SnapshotBuilding): HudConstruction {
     progressTicks: construction.progressTicks,
     totalTicks: construction.totalTicks,
     builderId: construction.builderId ?? null,
+    rallyPoint: construction.rallyPoint ?? null,
     ...(construction.production === undefined ? {} : { production: construction.production })
   }
 }
@@ -81,6 +84,8 @@ function selectUnits(runtime: MatchSessionRuntime, ids: readonly number[]): Matc
   runtime.selectedConstructionId = null
   runtime.selectedMineralId = null
   runtime.renderer?.setSelection(normalizedIds)
+  runtime.renderer?.setSelectedRallyProducer(null)
+  runtime.renderer?.setSelectedRallyPoint(null)
   return project(runtime)
 }
 

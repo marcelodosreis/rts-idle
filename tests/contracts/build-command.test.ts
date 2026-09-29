@@ -91,7 +91,7 @@ describe('BUILD command contract', () => {
       buildingType: 'BARRACKS',
       status: 'FOUNDATION',
       totalTicks: 100,
-      footprint: { x: 4, y: 4, width: 3, height: 3 }
+      footprint: { x: 4, y: 4, width: 3, height: 4 }
     })
   })
 })

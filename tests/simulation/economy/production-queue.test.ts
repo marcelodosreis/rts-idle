@@ -5,9 +5,11 @@ import {
   Cargo,
   Combat,
   createSimulation,
+  createUnitEntity,
   createWorld,
   Health,
   Kind,
+  Movement,
   Owner,
   Position,
   Production,
@@ -18,7 +20,12 @@ import { TEST_IDENTITY } from '../../fixtures/index.js'
 
 function scenario(
   gold = 250,
-  options: { readonly withBase?: boolean; readonly blockSpawn?: boolean; readonly overCap?: boolean } = {}
+  options: {
+    readonly withBase?: boolean
+    readonly blockSpawn?: boolean
+    readonly overCap?: boolean
+    readonly withEnemy?: boolean
+  } = {}
 ) {
   const world = createWorld()
   if (options.withBase !== false) {
@@ -53,6 +60,15 @@ function scenario(
     world.store(Kind).set(blockerId, 'pawn')
     world.store(Health).set(blockerId, { current: 100, max: 100 })
     world.store(Combat).set(blockerId, { damage: 10, rangeTiles: 1, cooldownTicks: 20, cooldownRemaining: 0 })
+  }
+  if (options.withEnemy) {
+    createUnitEntity(world, {
+      id: START_ENTITY_ID + 100,
+      x: tilesToFixed(20),
+      y: tilesToFixed(20),
+      owner: 1,
+      kind: 'pawn'
+    })
   }
   if (options.overCap) {
     world.store(Production).set(START_ENTITY_ID + 1, {
@@ -95,6 +111,13 @@ const train = (unitKind: 'pawn' | 'warrior' | 'archer', sequence: number, produc
   playerId: 0,
   sequence,
   intent: { type: 'TRAIN' as const, payload: { producerId, unitKind } }
+})
+
+const rally = (producerId: number, sequence: number, x = tilesToFixed(8), y = tilesToFixed(6)) => ({
+  tick: 1,
+  playerId: 0,
+  sequence,
+  intent: { type: 'RALLY' as const, payload: { producerId, x, y } }
 })
 
 describe('production queue', () => {
@@ -214,7 +237,7 @@ describe('production queue', () => {
   })
 
   it('keeps a completed item waiting when the deterministic exit is occupied', () => {
-    const sim = scenario(250, { blockSpawn: true })
+    const sim = scenario(250, { blockSpawn: true, withEnemy: true })
     sim.step([train('warrior', 1)])
     for (let tick = 0; tick < 199; tick += 1) {
       sim.step()
@@ -228,5 +251,70 @@ describe('production queue', () => {
         .get(START_ENTITY_ID + 1)?.queue[0]?.status
     ).toBe('COMPLETED_WAITING')
     expect(sim.inspectState().players[0]?.reservedSupply).toBe(1)
+  })
+
+  it('retries a blocked exit and follows the latest rally point after spawning', () => {
+    const sim = scenario(250, { blockSpawn: true, withEnemy: true })
+    sim.step([rally(START_ENTITY_ID + 1, 1, tilesToFixed(6), tilesToFixed(6)), train('warrior', 2)])
+    for (let tick = 0; tick < 199; tick += 1) {
+      sim.step()
+    }
+    sim.step()
+
+    expect(
+      sim
+        .inspectState()
+        .world.store(Production)
+        .get(START_ENTITY_ID + 1)?.queue[0]?.status
+    ).toBe('COMPLETED_WAITING')
+    expect(sim.inspectState().players[0]?.reservedSupply).toBe(1)
+
+    const unblock = sim.step([
+      {
+        tick: sim.inspectState().tick + 1,
+        playerId: 0,
+        sequence: 3,
+        intent: { type: 'MOVE', payload: { unitIds: [START_ENTITY_ID + 10], x: tilesToFixed(6), y: 0 } }
+      }
+    ])
+    expect(unblock.rejected).toEqual([])
+    for (let tick = 0; tick < 20; tick += 1) {
+      sim.step()
+    }
+
+    const state = sim.inspectState()
+    expect(state.world.store(Production).get(START_ENTITY_ID + 1)?.queue).toEqual([])
+    expect(state.players[0]).toMatchObject({ reservedSupply: 0, usedSupply: 2 })
+    const spawnedId = START_ENTITY_ID + 101
+    expect(state.world.store(Kind).get(spawnedId)).toBe('warrior')
+    expect(state.world.store(Movement).get(spawnedId)).toMatchObject({
+      speedTilesPerSecond: 4,
+      destX: tilesToFixed(6),
+      destY: tilesToFixed(6)
+    })
+  })
+
+  it('stores rally canonically and rejects rally for an unavailable producer', () => {
+    const sim = scenario(250)
+    const expected = scenario(250)
+    const result = sim.step([rally(START_ENTITY_ID, 1, tilesToFixed(5), tilesToFixed(4))])
+
+    expect(result.rejected).toEqual([])
+    expect(sim.inspectState().world.store(Building).get(START_ENTITY_ID)?.rallyPoint).toEqual({
+      x: tilesToFixed(5),
+      y: tilesToFixed(4)
+    })
+
+    const restored = simulationFromSnapshot(sim.exportSnapshot())
+    expect(restored.hashState()).toBe(sim.hashState())
+
+    const rejected = expected.step([rally(START_ENTITY_ID + 99, 1, tilesToFixed(5), tilesToFixed(4))]).rejected
+    expect(rejected).toHaveLength(1)
+    expect(
+      expected
+        .inspectState()
+        .world.store(Building)
+        .get(START_ENTITY_ID + 1)?.rallyPoint
+    ).toBeNull()
   })
 })

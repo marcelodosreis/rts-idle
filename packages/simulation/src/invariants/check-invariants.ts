@@ -62,6 +62,14 @@ function checkConstruction(state: GameState, id: number): void {
       fail(`construction ${id} references missing worker ${construction.builderId}`)
     }
   }
+  if (construction.rallyPoint !== undefined && construction.rallyPoint !== null) {
+    if (construction.buildingType !== 'BASE' && construction.buildingType !== 'BARRACKS') {
+      fail(`construction ${id} has a rally point but cannot produce units`)
+    }
+    if (!Number.isInteger(construction.rallyPoint.x) || !Number.isInteger(construction.rallyPoint.y)) {
+      fail(`construction ${id} has invalid rally point`)
+    }
+  }
 }
 
 function checkEconomyEntity(state: GameState, id: number): void {

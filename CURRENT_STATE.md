@@ -57,13 +57,16 @@ minerals through the authoritative command path. In the economy scenario, the pl
 can also place Base/Barracks/Supply Depot construction, pause it by stopping the
 worker, and resume it by assigning another worker through the construction HUD.
 The top bar shows authoritative `used / cap` supply and updates on Depot completion.
+Completed Base/Barracks producers accept rally points; trained units wait at a
+blocked exit without overlap and follow the latest authoritative rally point
+after spawning.
 
-No production cancellation/rally UI, real AI,
+No production cancellation UI, real AI,
 pathfinding, fog of war, or multiplayer.
 
 ## Current Limitations
 
-- No production cancellation/rally UI
+- No production cancellation UI
 - No AI (enemies are pre-scripted)
 - No pathfinding (straight-line movement)
 - No collision/avoidance
@@ -92,9 +95,10 @@ caught by E2E and documented in
 `docs/postmortems/2026-09-24-devtools-menu-content-ids.md`.
 
 P2.07 Production Queue and Unit Training is complete for the target roster:
-Base trains Pawn and Barracks trains Warrior/Archer. The build menu and
-production panel are covered by the playable browser flow. P2.08 blocked spawn
-and rally follows this production slice.
+Base trains Pawn and Barracks trains Warrior/Archer. P2.08 Blocked Spawn and
+Rally is complete: producer rally points are authoritative, blocked exits retain
+completed items and reservations, and the browser flow covers setting rally,
+training, waiting, and recovery.
 
 Quality Hardening remains deferred after the completed QUAL-016 output hygiene
 and QUAL-018 tracking work. The Concept Authority closure (AUTH-005A through

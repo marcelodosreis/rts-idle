@@ -1,4 +1,5 @@
 import { BARRACKS_BUILDING, BASE_BUILDING } from '@rts/game-data'
+import { BUILDING_GEOMETRY, fixedToRenderPixels } from '@rts/shared'
 import { describe, expect, it } from 'vitest'
 import { buildingVisualStyle } from '../../../packages/renderer/src/world/building-visual-style.js'
 
@@ -13,7 +14,7 @@ function layerContainers(): { readonly worldObjects: Container; readonly interac
 }
 
 describe('WorldObjectLayer construction anchors', () => {
-  it('uses the snapshot footprint for foundation, preview, and completed BASE geometry', () => {
+  it('uses a tile-aligned BASE canvas for foundation, preview, and completed geometry', () => {
     const layers = layerContainers()
     const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
     const baseFootprint = BASE_BUILDING.footprint
@@ -35,10 +36,11 @@ describe('WorldObjectLayer construction anchors', () => {
     expect(foundationPosition).toEqual({ x: 192, y: 128 })
     const foundationBounds = foundation.getLocalBounds()
     const foundationWidth = foundationBounds.width
-    expect(foundationBounds.width).toBeGreaterThanOrEqual(baseFootprint.width * 64)
-    expect(foundationBounds.height).toBeGreaterThanOrEqual(baseFootprint.height * 64)
+    expect(foundationBounds.width).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BASE.visualSize.width) + 4)
+    expect(foundationBounds.height).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BASE.visualSize.height) + 13)
     expect(foundation.getLocalBounds().x).toBeGreaterThanOrEqual(-3)
     expect(layer.buildingAt(200, 140)).toBe(42)
+    expect(layer.buildingAt(515, 337)).toBeNull()
     expect(layer.buildingAt(500, 500)).toBeNull()
 
     layer.setBuildPreview({
@@ -46,12 +48,13 @@ describe('WorldObjectLayer construction anchors', () => {
       y: construction.y,
       width: baseFootprint.width,
       height: baseFootprint.height,
+      buildingType: 'BASE',
       valid: true
     })
     const preview = layers.interaction.children[0]!
     expect({ x: preview.position.x, y: preview.position.y }).toEqual(foundationPosition)
-    expect(preview.getLocalBounds().width).toBe(baseFootprint.width * 64 + 4)
-    expect(preview.getLocalBounds().height).toBe(baseFootprint.height * 64 + 4)
+    expect(preview.getLocalBounds().width).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BASE.visualSize.width) + 4)
+    expect(preview.getLocalBounds().height).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BASE.visualSize.height) + 4)
 
     layer.present([construction], [])
     expect(layers.interaction.children).toEqual([preview])
@@ -61,11 +64,11 @@ describe('WorldObjectLayer construction anchors', () => {
     const completed = layers.worldObjects.children[0]!
     expect({ x: completed.position.x, y: completed.position.y }).toEqual(foundationPosition)
     expect(completed.getLocalBounds().width).toBeCloseTo(foundationWidth, 0)
-    expect(completed.getLocalBounds().height).toBeGreaterThanOrEqual(baseFootprint.height * 64)
+    expect(completed.getLocalBounds().height).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BASE.visualSize.height) + 4)
     expect(completed.getLocalBounds().x).toBeGreaterThanOrEqual(-3)
   })
 
-  it('uses the snapshot footprint for Barracks geometry', () => {
+  it('uses a tile-aligned Barracks canvas for geometry', () => {
     const layers = layerContainers()
     const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
     layer.present(
@@ -85,8 +88,8 @@ describe('WorldObjectLayer construction anchors', () => {
       []
     )
     const barracks = layers.worldObjects.children[0]!
-    expect(barracks.getLocalBounds().width).toBe(BARRACKS_BUILDING.footprint.width * 64 + 4)
-    expect(barracks.getLocalBounds().height).toBe(BARRACKS_BUILDING.footprint.height * 64 + 4)
+    expect(barracks.getLocalBounds().width).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BARRACKS.visualSize.width) + 4)
+    expect(barracks.getLocalBounds().height).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BARRACKS.visualSize.height) + 4)
   })
 
   it('draws the training progress bar above a completed producer', () => {
@@ -131,20 +134,21 @@ describe('building presentation styles', () => {
       kind: 'base',
       fillColor: 0x2e7d32,
       fillAlpha: 0.8,
-      strokeColor: 0xf8fafc
+      strokeColor: 0xc084fc
     })
     expect(buildingVisualStyle('BASE', 'COMPLETED', 1)).toEqual({
       kind: 'base',
       fillColor: 0xc62828,
       fillAlpha: 0.8,
-      strokeColor: 0xf8fafc
+      strokeColor: 0xc084fc
     })
   })
 
   it('keeps Barracks distinct while using the same owner-color convention', () => {
     expect(buildingVisualStyle('BARRACKS', 'COMPLETED', 0)).toMatchObject({
       kind: 'completed',
-      fillColor: 0x2e7d32
+      fillColor: 0x2e7d32,
+      strokeColor: 0xc084fc
     })
     expect(buildingVisualStyle('BARRACKS', 'COMPLETED', 0).kind).not.toBe('base')
   })

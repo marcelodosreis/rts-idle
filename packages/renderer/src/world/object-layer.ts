@@ -1,5 +1,12 @@
-import { FIXED_SCALE, fixedToRenderPixels } from '@rts/shared'
-import { type Container, Graphics } from 'pixi.js'
+import {
+  BUILDING_GEOMETRY,
+  type BuildingType,
+  type BuildingVisualSize,
+  FIXED_SCALE,
+  fixedToRenderPixels
+} from '@rts/shared'
+import { Container, Graphics, Sprite, type Texture } from 'pixi.js'
+import type { AssetLibrary } from '../assets/asset-library.js'
 import type { RenderBuilding, RenderBuildPreview, RenderMineralNode } from '../core/types.js'
 import {
   BAR_BACKGROUND,
@@ -15,14 +22,32 @@ import { buildingVisualStyle } from './building-visual-style.js'
 const MINERAL_RADIUS = 30
 const MINERAL_COLOR = progressFillColor('mining')
 const MINERAL_OUTLINE_COLOR = 0xffffff
+const BUILDING_FACTIONS = ['blue', 'red', 'purple', 'yellow'] as const
+const BUILDING_ASSET_NAMES = {
+  BASE: 'castle',
+  BARRACKS: 'barracks',
+  SUPPLY_DEPOT: 'house1'
+} as const
 
 const pixelsPerTile = fixedToRenderPixels(FIXED_SCALE)
+
+interface RenderBuildingSize {
+  readonly width: number
+  readonly height: number
+}
+
+function renderVisualSize(size: BuildingVisualSize): RenderBuildingSize {
+  return { width: fixedToRenderPixels(size.width), height: fixedToRenderPixels(size.height) }
+}
 
 /** Minimal static presentation and hit testing for economy world objects. */
 export class WorldObjectLayer {
   private readonly worldObjectsLayer: Container
   private readonly interactionLayer: Container
-  private readonly buildings = new Map<number, Graphics>()
+  private readonly buildings = new Map<number, Container>()
+  private readonly buildingArt = new Map<number, Sprite | Graphics>()
+  private readonly buildingOverlays = new Map<number, Graphics>()
+  private readonly buildingTextures = new Map<string, Texture>()
   private readonly constructionHitboxes = new Map<
     number,
     { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
@@ -33,9 +58,30 @@ export class WorldObjectLayer {
   private preview: RenderBuildPreview | null = null
   private previewGraphic: Graphics | null = null
 
-  constructor(worldObjectsLayer: Container, interactionLayer: Container) {
+  constructor(
+    worldObjectsLayer: Container,
+    interactionLayer: Container,
+    private readonly assets: AssetLibrary | null = null
+  ) {
     this.worldObjectsLayer = worldObjectsLayer
     this.interactionLayer = interactionLayer
+  }
+
+  async loadAssets(): Promise<void> {
+    if (this.assets === null) {
+      return
+    }
+    const keys = BUILDING_FACTIONS.flatMap((faction) =>
+      Object.values(BUILDING_ASSET_NAMES).map((name) => `buildings.${faction}.${name}`)
+    )
+    const loaded = await Promise.all(
+      keys.map(async (key) => ({ key, texture: await this.assets!.croppedTexture(key) }))
+    )
+    for (const entry of loaded) {
+      if (entry.texture !== null) {
+        this.buildingTextures.set(entry.key, entry.texture)
+      }
+    }
   }
 
   present(buildings: readonly RenderBuilding[], mineralNodes: readonly RenderMineralNode[]): void {
@@ -55,31 +101,107 @@ export class WorldObjectLayer {
   }
 
   private drawBuilding(building: RenderBuilding): void {
-    let graphic = this.buildings.get(building.id)
-    if (graphic === undefined) {
-      graphic = new Graphics()
-      graphic.eventMode = 'none'
-      this.worldObjectsLayer.addChild(graphic)
-      this.buildings.set(building.id, graphic)
-    }
+    const graphic = this.getBuildingContainer(building)
     const style = buildingVisualStyle(building.buildingType, building.status, building.owner)
-    const footprint = building.footprint
-    if (style.kind === 'base') {
-      this.drawBase(graphic, footprint, style)
-    } else {
-      const width = footprint.width * pixelsPerTile
-      const height = footprint.height * pixelsPerTile
-      graphic
-        .clear()
-        .rect(0, 0, width, height)
-        .fill({ color: style.fillColor, alpha: style.fillAlpha })
-        .stroke({ color: style.strokeColor, width: 4 })
+    const visualSize = this.buildingVisualSize(building)
+    const artSize = this.buildingArtSize(building)
+    const art = this.buildingArt.get(building.id)
+    if (art instanceof Graphics) {
+      this.drawFallbackBuilding(art, style, visualSize, artSize)
+    } else if (art !== undefined) {
+      art.alpha = style.kind === 'foundation' ? 0.4 : 1
     }
-    if (style.kind === 'foundation') {
+    const overlay = this.buildingOverlays.get(building.id)!
+    this.drawBuildingOverlay(overlay, building, style.kind === 'foundation', visualSize)
+    graphic.position.set(fixedToRenderPixels(building.x), fixedToRenderPixels(building.y))
+    this.constructionHitboxes.set(building.id, {
+      x: fixedToRenderPixels(building.x),
+      y: fixedToRenderPixels(building.y),
+      width: visualSize.width,
+      height: visualSize.height
+    })
+  }
+
+  private getBuildingContainer(building: RenderBuilding): Container {
+    const existing = this.buildings.get(building.id)
+    if (existing !== undefined) {
+      return existing
+    }
+    const container = new Container()
+    container.eventMode = 'none'
+    const texture = this.buildingTextures.get(this.buildingAssetKey(building))
+    const visualSize = this.buildingVisualSize(building)
+    const artSize = this.buildingArtSize(building)
+    const art = texture === undefined ? new Graphics() : this.createBuildingSprite(texture, visualSize, artSize)
+    const overlay = new Graphics()
+    container.addChild(art, overlay)
+    this.worldObjectsLayer.addChild(container)
+    this.buildings.set(building.id, container)
+    this.buildingArt.set(building.id, art)
+    this.buildingOverlays.set(building.id, overlay)
+    return container
+  }
+
+  private createBuildingSprite(texture: Texture, visualSize: RenderBuildingSize, artSize: RenderBuildingSize): Sprite {
+    const sprite = new Sprite(texture)
+    sprite.width = artSize.width
+    sprite.height = artSize.height
+    sprite.anchor.set(0.5, 0.5)
+    sprite.position.set(visualSize.width / 2, visualSize.height / 2)
+    return sprite
+  }
+
+  private buildingVisualSize(building: RenderBuilding): RenderBuildingSize {
+    return renderVisualSize(BUILDING_GEOMETRY[building.buildingType].visualSize)
+  }
+
+  private buildingArtSize(building: RenderBuilding): RenderBuildingSize {
+    return renderVisualSize(BUILDING_GEOMETRY[building.buildingType].artSize)
+  }
+
+  private buildingAssetKey(building: RenderBuilding): string {
+    const faction = BUILDING_FACTIONS[building.owner % BUILDING_FACTIONS.length] ?? BUILDING_FACTIONS[0]
+    return this.buildingAssetKeyForType(faction, building.buildingType)
+  }
+
+  private buildingAssetKeyForType(faction: (typeof BUILDING_FACTIONS)[number], buildingType: BuildingType): string {
+    return `buildings.${faction}.${BUILDING_ASSET_NAMES[buildingType]}`
+  }
+
+  private drawFallbackBuilding(
+    graphic: Graphics,
+    style: ReturnType<typeof buildingVisualStyle>,
+    size: RenderBuildingSize,
+    artSize: RenderBuildingSize
+  ): void {
+    if (style.kind === 'base') {
+      this.drawBase(graphic, size, artSize, style)
+      return
+    }
+    graphic
+      .clear()
+      .rect((size.width - artSize.width) / 2, (size.height - artSize.height) / 2, artSize.width, artSize.height)
+      .fill({ color: style.fillColor, alpha: style.fillAlpha })
+      .stroke({ color: style.strokeColor, width: 4 })
+  }
+
+  private drawBuildingOverlay(
+    graphic: Graphics,
+    building: RenderBuilding,
+    isFoundation: boolean,
+    size: { readonly width: number; readonly height: number }
+  ): void {
+    const width = size.width
+    const height = size.height
+    graphic
+      .clear()
+      .rect(0, 0, width, height)
+      .stroke({ color: progressFillColor('construction'), width: 4 })
+    if (isFoundation) {
       drawProgressBar(graphic, {
         x: 0,
         y: -10,
-        width: footprint.width * pixelsPerTile,
+        width,
         height: BAR_HEIGHT,
         ratio: clampRatio(building.progressTicks, building.totalTicks),
         fillColor: progressFillColor('construction'),
@@ -92,7 +214,7 @@ export class WorldObjectLayer {
       drawProgressBar(graphic, {
         x: 0,
         y: -10,
-        width: footprint.width * pixelsPerTile,
+        width,
         height: BAR_HEIGHT,
         ratio: clampRatio(item.progressTicks, item.totalTicks),
         fillColor: progressFillColor('training'),
@@ -101,13 +223,6 @@ export class WorldObjectLayer {
         radius: BAR_RADIUS
       })
     }
-    graphic.position.set(fixedToRenderPixels(building.x), fixedToRenderPixels(building.y))
-    this.constructionHitboxes.set(building.id, {
-      x: fixedToRenderPixels(building.x),
-      y: fixedToRenderPixels(building.y),
-      width: footprint.width * pixelsPerTile,
-      height: footprint.height * pixelsPerTile
-    })
   }
 
   private presentMineralNodes(mineralNodes: readonly RenderMineralNode[]): void {
@@ -142,19 +257,15 @@ export class WorldObjectLayer {
 
   private drawBase(
     graphic: Graphics,
-    footprint: { readonly width: number; readonly height: number },
+    size: RenderBuildingSize,
+    artSize: RenderBuildingSize,
     style: ReturnType<typeof buildingVisualStyle>
   ): void {
-    // Building visuals share the top-left footprint anchor used by previews and foundations.
-    const width = footprint.width * pixelsPerTile
-    const height = footprint.height * pixelsPerTile
+    const x = (size.width - artSize.width) / 2
+    const y = (size.height - artSize.height) / 2
     graphic.clear()
-    graphic.rect(0, 0, width, height)
+    graphic.rect(x, y, artSize.width, artSize.height)
     graphic.fill({ color: style.fillColor, alpha: style.fillAlpha })
-    graphic.stroke({ color: style.strokeColor, width: 4 })
-    graphic.moveTo(0, 0)
-    graphic.lineTo(width / 2, -22)
-    graphic.lineTo(width, 0)
     graphic.stroke({ color: style.strokeColor, width: 4 })
   }
 
@@ -178,8 +289,12 @@ export class WorldObjectLayer {
       this.interactionLayer.addChild(this.previewGraphic)
     }
     const graphic = this.previewGraphic
-    const width = this.preview.width * pixelsPerTile
-    const height = this.preview.height * pixelsPerTile
+    const fallbackSize =
+      this.preview.buildingType === undefined
+        ? null
+        : renderVisualSize(BUILDING_GEOMETRY[this.preview.buildingType].visualSize)
+    const width = fallbackSize?.width ?? this.preview.width * pixelsPerTile
+    const height = fallbackSize?.height ?? this.preview.height * pixelsPerTile
     graphic.clear()
     graphic.rect(0, 0, width, height)
     graphic.fill({ color: this.preview.valid ? 0x22c55e : 0xef4444, alpha: 0.28 })
@@ -212,14 +327,14 @@ export class WorldObjectLayer {
   buildingAt(x: number, y: number): number | null {
     let topmost: number | null = null
     for (const [id, hitbox] of this.constructionHitboxes) {
-      if (x >= hitbox.x && x <= hitbox.x + hitbox.width && y >= hitbox.y && y <= hitbox.y + hitbox.height) {
+      if (x >= hitbox.x && x < hitbox.x + hitbox.width && y >= hitbox.y && y < hitbox.y + hitbox.height) {
         topmost = id
       }
     }
     return topmost
   }
 
-  private removeMissing(graphics: Map<number, Graphics>, seen: ReadonlySet<number>): void {
+  private removeMissing(graphics: Map<number, Container | Graphics>, seen: ReadonlySet<number>): void {
     for (const [id, graphic] of graphics) {
       if (seen.has(id)) {
         continue
@@ -227,6 +342,10 @@ export class WorldObjectLayer {
       this.worldObjectsLayer.removeChild(graphic)
       graphic.destroy()
       graphics.delete(id)
+      if (graphics === this.buildings) {
+        this.buildingArt.delete(id)
+        this.buildingOverlays.delete(id)
+      }
     }
   }
 }

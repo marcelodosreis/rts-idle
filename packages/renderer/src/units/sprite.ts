@@ -1,3 +1,4 @@
+import { fixedToRenderPixels, UNIT_GEOMETRY } from '@rts/shared'
 import { AnimatedSprite, Circle, Container, Graphics, Text, Texture, type Ticker } from 'pixi.js'
 import type { FrameAnim, RenderUnit, SpriteAnim, UnitKind } from '../core/types.js'
 import {
@@ -15,17 +16,20 @@ import { drawEconomyBar } from './economy.js'
 import { type EconomyFrames, economyAnimation, FACTIONS, unitAssetKey } from './economy-animation.js'
 import { FALLBACK_GLYPH, type FallbackShape } from './fallback.js'
 
-/** Visual radius of a unit placeholder / selection ring (1 tile = 64 px). */
-export const UNIT_RADIUS = 28
+/** Visual radius of a unit cell (one tile diameter). */
+export const UNIT_RADIUS = fixedToRenderPixels(UNIT_GEOMETRY.pawn.cellSize / 2)
 /** Click hit radius: must stay small so a box-drag starting near a unit still
  * lands on empty ground and opens the selection box. */
-export const CLICK_RADIUS = 28
+export const CLICK_RADIUS = fixedToRenderPixels(UNIT_GEOMETRY.pawn.clickRadius)
 /** Right-click target hit radius matching the larger sprite (selection ring stays UNIT_RADIUS). */
-export const TARGET_RADIUS = 44
-/** Sprite scale: 192 px unit cells render about 1.5 tiles tall (96 px). */
-const SPRITE_SCALE = 0.5
+export const TARGET_RADIUS = fixedToRenderPixels(UNIT_GEOMETRY.pawn.targetRadius)
 /** Height of the overhead health bar above the unit in render pixels. */
 const HP_BAR_OFFSET_Y = -34
+
+export function normalizedUnitScale(kind: UnitKind): number {
+  const geometry = UNIT_GEOMETRY[kind]
+  return geometry.targetVisibleHeight / geometry.sourceVisibleHeight
+}
 
 /** Frame selection inputs for {@link UnitSprite.setState}. */
 export interface UnitFrameState {
@@ -103,6 +107,48 @@ export function frameKey(owner: number, kind: UnitKind, anim: FrameAnim): string
   return unitAssetKey(owner, kind, subtype)
 }
 
+function createFallbackVisual(kind: UnitKind, owner: number): { readonly body: Graphics; readonly label: Text } {
+  const fallback = new Graphics()
+  const fallbackColor = ownerColor(owner, 0x000000)
+  const glyph = FALLBACK_GLYPH[kind]
+  switch (glyph.shape) {
+    case 'circle':
+      fallback.circle(0, 0, UNIT_RADIUS).fill(fallbackColor)
+      fallback.circle(0, 0, UNIT_RADIUS).stroke({ color: 0x000000, width: 3, alpha: 0.3 })
+      break
+    case 'square':
+      fallback.roundRect(-UNIT_RADIUS, -UNIT_RADIUS, UNIT_RADIUS * 2, UNIT_RADIUS * 2, 6).fill(fallbackColor)
+      fallback.roundRect(-UNIT_RADIUS, -UNIT_RADIUS, UNIT_RADIUS * 2, UNIT_RADIUS * 2, 6).stroke({
+        color: 0x000000,
+        width: 3,
+        alpha: 0.3
+      })
+      break
+    case 'triangle':
+      fallback
+        .moveTo(0, -UNIT_RADIUS)
+        .lineTo(-UNIT_RADIUS, UNIT_RADIUS)
+        .lineTo(UNIT_RADIUS, UNIT_RADIUS)
+        .closePath()
+        .fill(fallbackColor)
+      fallback
+        .moveTo(0, -UNIT_RADIUS)
+        .lineTo(-UNIT_RADIUS, UNIT_RADIUS)
+        .lineTo(UNIT_RADIUS, UNIT_RADIUS)
+        .closePath()
+        .stroke({ color: 0x000000, width: 3, alpha: 0.3 })
+      break
+  }
+  const label = new Text({
+    text: glyph.letter,
+    style: { fontSize: 22, fontWeight: 'bold', fill: 0xffffff, stroke: { color: 0x000000, width: 3 } }
+  })
+  label.anchor.set(0.5, 0.5)
+  label.eventMode = 'none'
+  label.resolution = 2
+  return { body: fallback, label }
+}
+
 export class UnitSprite {
   readonly container: Container
   readonly kind: UnitKind
@@ -137,38 +183,11 @@ export class UnitSprite {
       this.fallback = null
     } else {
       this.frames = null
-      const fallbackColor = ownerColor(owner, 0x000000)
-      this.fallback = new Graphics()
-      const glyph = FALLBACK_GLYPH[kind]
-      switch (glyph.shape) {
-        case 'circle':
-          this.fallback.circle(0, 0, UNIT_RADIUS).fill(fallbackColor)
-          this.fallback.circle(0, 0, UNIT_RADIUS).stroke({ color: 0x000000, width: 3, alpha: 0.3 })
-          break
-        case 'square':
-          this.fallback.roundRect(-22, -22, 44, 44, 6).fill(fallbackColor)
-          this.fallback.roundRect(-22, -22, 44, 44, 6).stroke({ color: 0x000000, width: 3, alpha: 0.3 })
-          break
-        case 'triangle':
-          this.fallback.moveTo(0, -28).lineTo(-24, 16).lineTo(24, 16).closePath().fill(fallbackColor)
-          this.fallback
-            .moveTo(0, -28)
-            .lineTo(-24, 16)
-            .lineTo(24, 16)
-            .closePath()
-            .stroke({ color: 0x000000, width: 3, alpha: 0.3 })
-          break
-      }
-      this.body = this.fallback
-      this.container.addChild(this.fallback)
-      this.label = new Text({
-        text: glyph.letter,
-        style: { fontSize: 22, fontWeight: 'bold', fill: 0xffffff, stroke: { color: 0x000000, width: 3 } }
-      })
-      this.label.anchor.set(0.5, 0.5)
-      this.label.eventMode = 'none'
-      this.label.resolution = 2
-      this.container.addChild(this.label)
+      const fallback = createFallbackVisual(kind, owner)
+      this.fallback = fallback.body
+      this.body = fallback.body
+      this.container.addChild(fallback.body, fallback.label)
+      this.label = fallback.label
     }
     this.hpBar = new Graphics()
     this.hpBar.visible = false
@@ -232,7 +251,8 @@ export class UnitSprite {
     // hidden, so `body === next` alone must still reveal it.
     next.visible = true
     this.body = next
-    this.body.scale.set(SPRITE_SCALE * this.facing, SPRITE_SCALE)
+    const scale = normalizedUnitScale(this.kind)
+    this.body.scale.set(scale * this.facing, scale)
   }
 
   setEconomyBar(economy: RenderUnit['economy']): void {
@@ -252,13 +272,13 @@ export class UnitSprite {
    * unit fires so it never attacks from behind, even while standing.
    */
   faceToward(targetRenderX: number): void {
-    // The fallback circle has no facing, and its body must keep its drawn
-    // scale. Applying SPRITE_SCALE here shrank the placeholder on first attack.
+    // The fallback shapes have no facing and keep their normalized size.
     if (this.frames === null) {
       return
     }
     this.facing = this.container.position.x < targetRenderX ? 1 : -1
-    this.body.scale.set(SPRITE_SCALE * this.facing, SPRITE_SCALE)
+    const scale = normalizedUnitScale(this.kind)
+    this.body.scale.set(scale * this.facing, scale)
   }
 
   /**

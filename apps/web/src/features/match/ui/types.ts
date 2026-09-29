@@ -39,6 +39,7 @@ export interface HudConstruction {
   readonly progressTicks: number
   readonly totalTicks: number
   readonly builderId: number | null
+  readonly rallyPoint?: { readonly x: number; readonly y: number } | null
   readonly production?: SnapshotProduction
 }
 

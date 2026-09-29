@@ -65,6 +65,7 @@ export const COMMAND_TYPES = [
   'BUILD',
   'CANCEL_CONSTRUCTION',
   'TRAIN',
+  'RALLY',
   'SURRENDER'
 ] as const
 
@@ -85,6 +86,13 @@ export interface TrainPayload {
   readonly producerId: EntityId
   readonly unitKind: TrainableUnitKind
 }
+
+export interface RallyPayload {
+  readonly producerId: EntityId
+  readonly x: Fixed
+  readonly y: Fixed
+}
+
 /** SURRENDER has no payload: the issuing player concedes their own match. */
 export type SurrenderPayload = Record<string, never>
 
@@ -107,4 +115,5 @@ export type CommandIntent =
   | { readonly type: 'BUILD'; readonly payload: BuildPayload }
   | { readonly type: 'CANCEL_CONSTRUCTION'; readonly payload: CancelConstructionPayload }
   | { readonly type: 'TRAIN'; readonly payload: TrainPayload }
+  | { readonly type: 'RALLY'; readonly payload: RallyPayload }
   | { readonly type: 'SURRENDER'; readonly payload: SurrenderPayload }

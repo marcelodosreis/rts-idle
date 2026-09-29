@@ -1,5 +1,5 @@
 import { BUILDING_DEFINITIONS, type BuildingDefinition } from '@rts/game-data'
-import { tilesToFixed } from '@rts/shared'
+import { BUILDING_GEOMETRY, tilesToFixed } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { Building, type BuildingData } from '../ecs/building-component.js'
 import { Kind, Orders, Owner, Position } from '../ecs/components.js'
@@ -147,7 +147,12 @@ function assignBuilder(state: GameState, buildingId: number, workerId: number, f
   if (workerPosition === undefined) {
     throw new Error(`BUILD: worker ${workerId} has no position`)
   }
-  const workPoint = constructionWorkPoint(workerPosition, footprint, state.mapBounds)
+  const workPoint = constructionWorkPoint(
+    workerPosition,
+    footprint,
+    state.mapBounds,
+    BUILDING_GEOMETRY[current.buildingType].visualSize
+  )
   buildings.set(buildingId, { ...current, builderId: workerId, footprint })
   setOrders(state, workerId, [{ type: 'BUILD', buildingId, buildingType: current.buildingType, workPoint }])
   if (workerPosition.x === workPoint.x && workerPosition.y === workPoint.y) {

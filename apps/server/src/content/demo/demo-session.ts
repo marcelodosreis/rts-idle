@@ -69,7 +69,8 @@ function seedBuildings(context: SeedContext, buildings: readonly DemoBaseSpawn[]
         x: base.x / 256,
         y: base.y / 256,
         ...BUILDING_DEFINITIONS.BASE.footprint
-      }
+      },
+      rallyPoint: null
     })
   }
 }

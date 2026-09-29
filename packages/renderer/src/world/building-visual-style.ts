@@ -19,14 +19,19 @@ export function buildingVisualStyle(
   owner: number
 ): BuildingVisualStyle {
   if (status === 'COMPLETED' && buildingType === 'BASE') {
-    return { kind: 'base', fillColor: ownerColor(owner), fillAlpha: 0.8, strokeColor: 0xf8fafc }
+    return {
+      kind: 'base',
+      fillColor: ownerColor(owner),
+      fillAlpha: 0.8,
+      strokeColor: progressFillColor('construction')
+    }
   }
   if (status === 'COMPLETED') {
     return {
       kind: 'completed',
       fillColor: ownerColor(owner),
       fillAlpha: 0.82,
-      strokeColor: 0xf8fafc
+      strokeColor: progressFillColor('construction')
     }
   }
   return {

@@ -1,3 +1,4 @@
+import { competitiveBaseLocations, competitiveMineralLocation } from '@rts/game-data'
 import { type Fixed, type PlayerId, tilesToFixed, type UnitKind } from '@rts/shared'
 
 export interface DemoSpawn {
@@ -44,6 +45,8 @@ function tile(x: number, y: number): { readonly x: Fixed; readonly y: Fixed } {
 const PAWN: UnitKind = 'pawn'
 const WARRIOR: UnitKind = 'warrior'
 const ARCHER: UnitKind = 'archer'
+const [PLAYER_BASE, OPPONENT_BASE] = competitiveBaseLocations()
+const MINERAL_NODE = competitiveMineralLocation()
 
 /** Demo seed — shared with `demo.ts`; keeps every scenario deterministic. */
 export const DEMO_SEED = 123456
@@ -97,10 +100,10 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
       { owner: 0, kind: PAWN, worker: true, ...tile(11, 11) }
     ],
     buildings: [
-      { owner: 0, ...tile(6, 8) },
-      { owner: 1, ...tile(24, 24) }
+      { owner: 0, ...tile(PLAYER_BASE.x, PLAYER_BASE.y) },
+      { owner: 1, ...tile(OPPONENT_BASE.x, OPPONENT_BASE.y) }
     ],
-    mineralNodes: [{ remaining: 3000, ...tile(14, 7) }],
+    mineralNodes: [{ remaining: 3000, ...tile(MINERAL_NODE.x, MINERAL_NODE.y) }],
     attacks: []
   },
   {

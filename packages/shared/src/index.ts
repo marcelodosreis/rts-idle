@@ -1,6 +1,7 @@
 export const version = '0.1.0'
 
 export * from './assets/asset-manifest.js'
+export * from './domain/building-geometry.js'
 export * from './domain/commands.js'
 export * from './domain/construction.js'
 export * from './domain/economy-progress.js'

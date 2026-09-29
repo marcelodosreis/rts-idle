@@ -1,7 +1,7 @@
 import type { Container } from 'pixi.js'
 import { Graphics } from 'pixi.js'
+import { SELECTION_COLOR } from './colors.js'
 
-const PING_COLOR = 0xffffff
 const PING_LIFETIME_MS = 800
 
 /**
@@ -10,7 +10,7 @@ const PING_LIFETIME_MS = 800
  */
 export class CommandPing {
   private readonly graphics: Graphics
-  private pingUntil = 0
+  private pingUntil: number | null = 0
 
   constructor(interactionLayer: Container) {
     this.graphics = new Graphics()
@@ -19,18 +19,30 @@ export class CommandPing {
     interactionLayer.addChild(this.graphics)
   }
 
-  show(worldX: number, worldY: number): void {
+  show(worldX: number, worldY: number, color = SELECTION_COLOR): void {
+    this.draw(worldX, worldY, color, Date.now() + PING_LIFETIME_MS)
+  }
+
+  showPersistent(worldX: number, worldY: number, color: number): void {
+    this.draw(worldX, worldY, color, null)
+  }
+
+  private draw(worldX: number, worldY: number, color: number, pingUntil: number | null): void {
     this.graphics.clear()
-    this.graphics.circle(0, 0, 14).stroke({ color: PING_COLOR, width: 2 })
-    this.graphics.circle(0, 0, 4).fill(PING_COLOR)
+    this.graphics.circle(0, 0, 14).stroke({ color, width: 2 })
+    this.graphics.circle(0, 0, 4).fill(color)
     this.graphics.position.set(worldX, worldY)
     this.graphics.visible = true
-    this.pingUntil = Date.now() + PING_LIFETIME_MS
+    this.pingUntil = pingUntil
+  }
+
+  hide(): void {
+    this.graphics.visible = false
   }
 
   /** Hides the ping once its lifetime has elapsed. */
   expireIfElapsed(now: number): void {
-    if (this.graphics.visible && now > this.pingUntil) {
+    if (this.graphics.visible && this.pingUntil !== null && now > this.pingUntil) {
       this.graphics.visible = false
     }
   }

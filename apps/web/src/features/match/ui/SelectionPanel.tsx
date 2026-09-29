@@ -31,6 +31,7 @@ interface SelectionPanelProps {
   readonly humanPlayer: number
   readonly onCancelConstruction: (buildingId: number) => void
   readonly onTrain: (unitKind: TrainableUnitKind) => void
+  readonly onSetRally: (producerId: number) => void
   readonly production: readonly ProductionCatalogEntry[]
   readonly resources: HudResources | null
 }
@@ -205,14 +206,19 @@ function ProductionPanel({
   construction,
   production,
   resources,
-  onTrain
+  onTrain,
+  onSetRally
 }: {
   readonly construction: HudConstruction
   readonly production: readonly ProductionCatalogEntry[]
   readonly resources: HudResources | null
   readonly onTrain: (unitKind: TrainableUnitKind) => void
+  readonly onSetRally: () => void
 }) {
-  if (construction.status !== 'COMPLETED') {
+  if (
+    construction.status !== 'COMPLETED' ||
+    production.every((entry) => entry.producer !== construction.buildingType)
+  ) {
     return null
   }
   const options = production.filter((entry) => entry.producer === construction.buildingType)
@@ -239,9 +245,29 @@ function ProductionPanel({
             </Button>
           )
         })}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-6 px-1.5 text-[11px]"
+          onClick={onSetRally}
+          data-testid="set-rally"
+        >
+          Set rally
+        </Button>
       </div>
-      <p className="text-[11px] font-medium text-muted-foreground" data-testid="production-queue-count">
-        Queue {queue.length}/{MAX_PRODUCTION_QUEUE}
+      <p className="text-[11px] font-medium text-muted-foreground">
+        <span data-testid="production-queue-count">
+          Queue {queue.length}/{MAX_PRODUCTION_QUEUE}
+        </span>
+        <span className="mx-1" aria-hidden="true">
+          ·
+        </span>
+        <span data-testid="rally-point">
+          {construction.rallyPoint === null || construction.rallyPoint === undefined
+            ? 'Rally: none'
+            : `Rally: ${construction.rallyPoint.x}, ${construction.rallyPoint.y}`}
+        </span>
       </p>
     </div>
   )
@@ -318,7 +344,7 @@ function UnitSelectionCard({
 
 type ConstructionSelectionCardProps = Pick<
   SelectionPanelProps,
-  'buildings' | 'humanPlayer' | 'onCancelConstruction' | 'onTrain' | 'production' | 'resources'
+  'buildings' | 'humanPlayer' | 'onCancelConstruction' | 'onSetRally' | 'onTrain' | 'production' | 'resources'
 > & {
   readonly construction: HudConstruction
   readonly confirmingId: number | null
@@ -330,6 +356,7 @@ function ConstructionSelectionCard({
   buildings,
   humanPlayer,
   onCancelConstruction,
+  onSetRally,
   onTrain,
   production,
   resources,
@@ -389,7 +416,13 @@ function ConstructionSelectionCard({
             onCancelConstruction(construction.id)
           }}
         />
-        <ProductionPanel construction={construction} production={production} resources={resources} onTrain={onTrain} />
+        <ProductionPanel
+          construction={construction}
+          production={production}
+          resources={resources}
+          onTrain={onTrain}
+          onSetRally={() => onSetRally(construction.id)}
+        />
       </CardContent>
     </Card>
   )
@@ -403,6 +436,7 @@ export function SelectionPanel({
   humanPlayer,
   onCancelConstruction,
   onTrain,
+  onSetRally,
   production,
   resources
 }: SelectionPanelProps) {
@@ -418,6 +452,7 @@ export function SelectionPanel({
         humanPlayer={humanPlayer}
         onCancelConstruction={onCancelConstruction}
         onTrain={onTrain}
+        onSetRally={onSetRally}
         production={production}
         resources={resources}
         confirmingId={confirmingId}

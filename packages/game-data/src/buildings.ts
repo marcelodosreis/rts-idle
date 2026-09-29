@@ -1,4 +1,5 @@
 import type { BuildingType } from '@rts/shared'
+import { BUILDING_FOOTPRINTS } from './building-footprints.js'
 
 export interface BuildingDefinition {
   readonly type: BuildingType
@@ -13,7 +14,7 @@ export interface BuildingDefinition {
 export const BASE_BUILDING: BuildingDefinition = Object.freeze({
   type: 'BASE',
   label: 'Base',
-  footprint: Object.freeze({ width: 2, height: 2 }),
+  footprint: BUILDING_FOOTPRINTS.BASE,
   costMinerals: 100,
   constructionTicks: 100,
   supplyProvided: 10
@@ -22,7 +23,7 @@ export const BASE_BUILDING: BuildingDefinition = Object.freeze({
 export const BARRACKS_BUILDING: BuildingDefinition = Object.freeze({
   type: 'BARRACKS',
   label: 'Barracks',
-  footprint: Object.freeze({ width: 3, height: 3 }),
+  footprint: BUILDING_FOOTPRINTS.BARRACKS,
   costMinerals: 150,
   constructionTicks: 100,
   supplyProvided: 0
@@ -31,7 +32,7 @@ export const BARRACKS_BUILDING: BuildingDefinition = Object.freeze({
 export const SUPPLY_DEPOT_BUILDING: BuildingDefinition = Object.freeze({
   type: 'SUPPLY_DEPOT',
   label: 'Supply Depot',
-  footprint: Object.freeze({ width: 2, height: 2 }),
+  footprint: BUILDING_FOOTPRINTS.SUPPLY_DEPOT,
   costMinerals: 100,
   constructionTicks: 100,
   supplyProvided: 8

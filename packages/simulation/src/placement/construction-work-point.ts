@@ -1,4 +1,4 @@
-import { distSquaredFixed, type Fixed, tilesToFixed } from '@rts/shared'
+import { type BuildingVisualSize, distSquaredFixed, type Fixed, tilesToFixed } from '@rts/shared'
 import type { BuildingFootprint, PlacementMapBounds } from './building-placement.js'
 
 export interface FixedPosition {
@@ -22,23 +22,35 @@ const SIDE_RULES: readonly SideRule[] = [
   { normalAxis: 'x', edge: 'MIN' }
 ]
 
-function clampToMap(value: number, mapLength: number): number {
-  return Math.max(0, Math.min(value, mapLength - 1))
+function clampToMapFixed(value: number, mapLength: number): number {
+  return Math.max(0, Math.min(value, tilesToFixed(mapLength - 1)))
 }
 
-function candidateForSide(rule: SideRule, footprint: BuildingFootprint, bounds: PlacementMapBounds): FixedPosition {
+function axisSize(axis: Axis, footprint: BuildingFootprint, visualSize: BuildingVisualSize | null): number {
+  if (visualSize !== null) {
+    return axis === 'x' ? visualSize.width : visualSize.height
+  }
+  return tilesToFixed(axis === 'x' ? footprint.width : footprint.height)
+}
+
+function candidateForSide(
+  rule: SideRule,
+  footprint: BuildingFootprint,
+  bounds: PlacementMapBounds,
+  visualSize: BuildingVisualSize | null
+): FixedPosition {
   const tangentialAxis: Axis = rule.normalAxis === 'x' ? 'y' : 'x'
-  const normalOrigin = footprint[rule.normalAxis]
-  const normalSize = rule.normalAxis === 'x' ? footprint.width : footprint.height
-  const tangentialOrigin = footprint[tangentialAxis]
-  const tangentialSize = tangentialAxis === 'x' ? footprint.width : footprint.height
+  const normalOrigin = tilesToFixed(footprint[rule.normalAxis])
+  const normalSize = axisSize(rule.normalAxis, footprint, visualSize)
+  const tangentialOrigin = tilesToFixed(footprint[tangentialAxis])
+  const tangentialSize = axisSize(tangentialAxis, footprint, visualSize)
   const normalLimit = rule.normalAxis === 'x' ? bounds.width : bounds.height
   const tangentialLimit = tangentialAxis === 'x' ? bounds.width : bounds.height
   const normal = rule.edge === 'MIN' ? normalOrigin : normalOrigin + normalSize
   const tangential = tangentialOrigin + Math.floor(tangentialSize / 2)
 
-  const normalFixed = tilesToFixed(clampToMap(normal, normalLimit))
-  const tangentialFixed = tilesToFixed(clampToMap(tangential, tangentialLimit))
+  const normalFixed = clampToMapFixed(normal, normalLimit)
+  const tangentialFixed = clampToMapFixed(tangential, tangentialLimit)
   return rule.normalAxis === 'x' ? { x: normalFixed, y: tangentialFixed } : { x: tangentialFixed, y: normalFixed }
 }
 
@@ -46,12 +58,13 @@ function candidateForSide(rule: SideRule, footprint: BuildingFootprint, bounds: 
 export function constructionWorkPoint(
   workerPosition: FixedPosition,
   footprint: BuildingFootprint,
-  bounds: PlacementMapBounds
+  bounds: PlacementMapBounds,
+  visualSize: BuildingVisualSize | null = null
 ): FixedPosition {
-  let nearest = candidateForSide(SIDE_RULES[0]!, footprint, bounds)
+  let nearest = candidateForSide(SIDE_RULES[0]!, footprint, bounds, visualSize)
   let nearestDistance = distSquaredFixed(workerPosition.x, workerPosition.y, nearest.x, nearest.y)
   for (const rule of SIDE_RULES.slice(1)) {
-    const candidate = candidateForSide(rule, footprint, bounds)
+    const candidate = candidateForSide(rule, footprint, bounds, visualSize)
     const candidateDistance = distSquaredFixed(workerPosition.x, workerPosition.y, candidate.x, candidate.y)
     if (candidateDistance < nearestDistance) {
       nearest = candidate

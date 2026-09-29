@@ -1,13 +1,10 @@
-import type { MapDefinition, MapPosition, MapTileKind, StairEntry } from './types.js'
+import { BUILDING_FOOTPRINTS } from '../building-footprints.js'
+import type { MapDefinition, MapPosition, MapTileKind } from './types.js'
 
 const LAND: MapTileKind = 'land'
 const WATER: MapTileKind = 'water'
-const ELEVATED: MapTileKind = 'elevated'
-
-/** Mirror a 2D coordinate by 180° rotation for map symmetry (master plan §14.3). */
-function mirrored(x: number, y: number, size: number): MapPosition {
-  return { x: size - 1 - x, y: size - 1 - y }
-}
+const COMPETITIVE_MAP_SIZE = 32
+const BASE_ORIGIN: MapPosition = { x: 6, y: 6 }
 
 interface Rect {
   readonly left: number
@@ -20,21 +17,45 @@ function inRect(x: number, y: number, rect: Rect): boolean {
   return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
 }
 
-const STAIR_LEFT: StairEntry = { x: 13, y: 12, direction: 'left' }
-const STAIR_RIGHT: StairEntry = { x: 18, y: 23, direction: 'right' }
+/** Returns footprint-aware base origins for the two opposite starting sides. */
+export function competitiveBaseLocations(): readonly [MapPosition, MapPosition] {
+  const footprint = BUILDING_FOOTPRINTS.BASE
+  return [
+    BASE_ORIGIN,
+    {
+      x: COMPETITIVE_MAP_SIZE - footprint.width - BASE_ORIGIN.x,
+      y: COMPETITIVE_MAP_SIZE - footprint.height - BASE_ORIGIN.y
+    }
+  ]
+}
+
+/** Returns a land position on the perpendicular bisector of both base centers. */
+export function competitiveMineralLocation(): MapPosition {
+  const [first, second] = competitiveBaseLocations()
+  const footprint = BUILDING_FOOTPRINTS.BASE
+  const firstCenter = { x: first.x + footprint.width / 2, y: first.y + footprint.height / 2 }
+  const secondCenter = { x: second.x + footprint.width / 2, y: second.y + footprint.height / 2 }
+  const midpoint = {
+    x: (firstCenter.x + secondCenter.x) / 2,
+    y: (firstCenter.y + secondCenter.y) / 2
+  }
+  const x = 24
+  return {
+    x,
+    y: midpoint.y - ((secondCenter.x - firstCenter.x) / (secondCenter.y - firstCenter.y)) * (x - midpoint.x)
+  }
+}
 
 /**
  * Baseline competitive map: 32×32 tiles, symmetric by 180° rotation. A wide
  * all-water frame (4 tiles) surrounds the playable interior so the map floats
- * on open water. The interior holds a central contestable water channel and an
- * elevated plateau near each base reached by a stair ramp. Terrain is
- * presentation only today; gameplay terrain/pathfinding arrives in Phase 3.
+ * on open water. The interior holds a central contestable water channel.
+ * Terrain is presentation only today; gameplay terrain/pathfinding arrives in
+ * Phase 3.
  */
 export function createCompetitiveMap(): MapDefinition {
-  const size = 32
+  const size = COMPETITIVE_MAP_SIZE
   const border = 4
-  const plateauA: MapPosition = { x: 13, y: 10 }
-  const plateauB = mirrored(plateauA.x, plateauA.y, size)
   const tiles: MapTileKind[] = Array.from({ length: size * size }, () => LAND)
 
   for (let y = 0; y < size; y += 1) {
@@ -43,25 +64,10 @@ export function createCompetitiveMap(): MapDefinition {
 
       const onBorder = x < border || x >= size - border || y < border || y >= size - border
       const centralChannel = inRect(x, y, { left: 14, top: 14, right: 17, bottom: 17 })
-      const plateau = inRect(x, y, {
-        left: plateauA.x - 1,
-        top: plateauA.y - 1,
-        right: plateauA.x + 1,
-        bottom: plateauA.y + 1
-      })
-      const plateauBRegion = inRect(x, y, {
-        left: plateauB.x - 1,
-        top: plateauB.y - 1,
-        right: plateauB.x + 1,
-        bottom: plateauB.y + 1
-      })
-
       if (onBorder) {
         tiles[index] = WATER
       } else if (centralChannel) {
         tiles[index] = WATER
-      } else if (plateau || plateauBRegion) {
-        tiles[index] = ELEVATED
       }
     }
   }
@@ -70,7 +76,6 @@ export function createCompetitiveMap(): MapDefinition {
     width: size,
     height: size,
     tiles,
-    stairs: [STAIR_LEFT, STAIR_RIGHT],
     palette: 'color1',
     decorationSeed: 1
   }

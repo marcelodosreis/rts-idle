@@ -1,4 +1,4 @@
-import { BARRACKS_BUILDING, BASE_BUILDING, SUPPLY_DEPOT_BUILDING } from '@rts/game-data'
+import { BARRACKS_BUILDING, BASE_BUILDING, BUILDING_FOOTPRINTS, SUPPLY_DEPOT_BUILDING } from '@rts/game-data'
 import { START_ENTITY_ID } from '@rts/shared'
 import { Building, createSimulation, createWorld, simulationFromSnapshot } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
@@ -9,7 +9,7 @@ describe('base construction data and persistence', () => {
     expect(BASE_BUILDING).toEqual({
       type: 'BASE',
       label: 'Base',
-      footprint: { width: 2, height: 2 },
+      footprint: BUILDING_FOOTPRINTS.BASE,
       costMinerals: 100,
       constructionTicks: 100,
       supplyProvided: 10
@@ -20,7 +20,7 @@ describe('base construction data and persistence', () => {
     expect(BARRACKS_BUILDING).toEqual({
       type: 'BARRACKS',
       label: 'Barracks',
-      footprint: { width: 3, height: 3 },
+      footprint: BUILDING_FOOTPRINTS.BARRACKS,
       costMinerals: 150,
       constructionTicks: 100,
       supplyProvided: 0
@@ -31,7 +31,7 @@ describe('base construction data and persistence', () => {
     expect(SUPPLY_DEPOT_BUILDING).toEqual({
       type: 'SUPPLY_DEPOT',
       label: 'Supply Depot',
-      footprint: { width: 2, height: 2 },
+      footprint: BUILDING_FOOTPRINTS.SUPPLY_DEPOT,
       costMinerals: 100,
       constructionTicks: 100,
       supplyProvided: 8
@@ -48,7 +48,8 @@ describe('base construction data and persistence', () => {
       progressTicks: 7,
       totalTicks: 100,
       builderId: null,
-      footprint: { x: 2, y: 3, width: 2, height: 2 }
+      footprint: { x: 2, y: 3, ...BUILDING_FOOTPRINTS.BASE },
+      rallyPoint: null
     })
     const restored = simulationFromSnapshot(sim.exportSnapshot()).inspectState()
     expect(restored.world.store(Building).get(START_ENTITY_ID)).toEqual({
@@ -57,7 +58,8 @@ describe('base construction data and persistence', () => {
       progressTicks: 7,
       totalTicks: 100,
       builderId: null,
-      footprint: { x: 2, y: 3, width: 2, height: 2 }
+      footprint: { x: 2, y: 3, ...BUILDING_FOOTPRINTS.BASE },
+      rallyPoint: null
     })
   })
 
@@ -71,7 +73,8 @@ describe('base construction data and persistence', () => {
       progressTicks: 0,
       totalTicks: 100,
       builderId: START_ENTITY_ID,
-      footprint: { x: 4, y: 5, width: 3, height: 3 }
+      footprint: { x: 4, y: 5, ...BUILDING_FOOTPRINTS.BARRACKS },
+      rallyPoint: null
     })
     const restored = simulationFromSnapshot(sim.exportSnapshot()).inspectState()
     expect(restored.world.store(Building).get(START_ENTITY_ID)).toEqual({
@@ -80,7 +83,8 @@ describe('base construction data and persistence', () => {
       progressTicks: 0,
       totalTicks: 100,
       builderId: START_ENTITY_ID,
-      footprint: { x: 4, y: 5, width: 3, height: 3 }
+      footprint: { x: 4, y: 5, ...BUILDING_FOOTPRINTS.BARRACKS },
+      rallyPoint: null
     })
   })
 })

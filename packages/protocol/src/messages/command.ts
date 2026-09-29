@@ -54,6 +54,8 @@ function isCommandIntent(value: unknown): boolean {
         isInteger(field(payload, 'producerId')) &&
         TRAINABLE_UNIT_KINDS.includes(field(payload, 'unitKind') as (typeof TRAINABLE_UNIT_KINDS)[number])
       )
+    case 'RALLY':
+      return isInteger(field(payload, 'producerId')) && isInteger(field(payload, 'x')) && isInteger(field(payload, 'y'))
     case 'SURRENDER':
       return Object.keys(payload).length === 0
     default:
