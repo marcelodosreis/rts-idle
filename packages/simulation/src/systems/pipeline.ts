@@ -5,6 +5,7 @@ import { deathSystem } from './death-system.js'
 import { economySystem } from './economy-system.js'
 import { movementSystem } from './movement-system.js'
 import { ordersSystem } from './orders-system.js'
+import { productionSystem } from './production-system.js'
 import { updateSupply } from './supply-system.js'
 import { victorySystem } from './victory-system.js'
 
@@ -22,6 +23,7 @@ export const SYSTEM_PIPELINE: readonly { readonly name: string; readonly system:
     { name: 'combat', system: combatSystem },
     { name: 'death', system: deathSystem },
     { name: 'supply', system: updateSupply },
+    { name: 'production', system: productionSystem },
     { name: 'victory', system: victorySystem },
     { name: 'invariants', system: checkInvariants }
   ])

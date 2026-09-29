@@ -4,7 +4,7 @@ Every implementation task should fit this compact packet.
 
 ## Task
 
-- ID: `[MODULE]-[NUMBER]`
+- ID: `P<phase>.<stage>[.<substage>]` or `<TRACK>.<stage>[.<substage>]`
 - Objective: one sentence describing the result.
 - Why: problem solved or capability enabled.
 - Scope: files/packages expected to change.
@@ -19,7 +19,9 @@ ADRs, fixtures, and tests; do not list whole directories unless necessary.
 
 Describe exact inputs, outputs, state transitions, errors, invariants,
 determinism requirements, compatibility impact, and user-visible behavior.
-For browser work include route, natural interaction, and E2E target.
+For gameplay work, include the screen, natural interaction, visible feedback,
+blocked/error states, route, and E2E target. Backend-only gameplay delivery is
+not an acceptable completion scope.
 
 ## Design
 
@@ -41,9 +43,17 @@ pnpm run test:e2e:focused tests/e2e/<target>.spec.ts
 
 Expected E2E count: `[record the --list total here, if applicable]`
 
+## Player-facing completion
+
+- [ ] The player can reach the feature through the intended screen.
+- [ ] The player can perform the natural interaction.
+- [ ] Progress, success, and blocked/error states are visible.
+- [ ] The real server path is covered by browser E2E.
+
 ## Acceptance and stop conditions
 
 - [ ] Each objective behavior is verified.
+- [ ] Player-facing gameplay flow is complete, when applicable.
 - [ ] Required tests and validation pass.
 - [ ] No public API, architecture boundary, or deterministic contract regressed.
 - [ ] Scope is complete; stop without unrelated cleanup or future features.

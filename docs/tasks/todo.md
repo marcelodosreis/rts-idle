@@ -103,9 +103,9 @@ active and pending packets remain here. See [`docs/tasks/README.md`](README.md).
 
 ## Phase 2 — Economy and production
 
-Execution plan: `docs/tasks/done/VS-01-plan.md`. Latest completed task packet:
-`docs/tasks/done/BUILD-005.md` (construction cancellation). No active packet; next
-candidate is the production queue (`PROD-001`/`PROD-002`, P2.07).
+Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
+`docs/tasks/done/PROD-001-002.md` (canonical ID `P2.07`, production queue and
+unit training). It remains in progress until the player-facing flow is complete.
 
 ### VS-01 — Economy v0 (P2.01–P2.02)
 
@@ -177,7 +177,14 @@ candidate is the production queue (`PROD-001`/`PROD-002`, P2.07).
 
 ### Remaining Phase 2
 
-- [ ] P2.04–P2.12 (see `docs/master-plan.md`)
+- [x] P2.07 — Production queue and unit training for Pawn, Warrior, and Archer (`PROD-001-002`); Base trains Pawn and Barracks trains Warrior/Archer
+- [ ] P2.08 — Blocked spawn and rally
+- [ ] P2.09 — Producer cancellation and destruction
+- [x] ECONOMY-UI-002 — Build menu
+- [x] ECONOMY-UI-003 — Production panel for Pawn, Warrior, and Archer
+- [ ] P2.10 — Repair
+- [ ] P2.11 — Research and modifiers
+- [ ] P2.12 — Economic integration
 
 ## Phase 3 — Navigation, full combat, and fog
 - [ ] P3.01–P3.12 (see `docs/master-plan.md`)
@@ -210,59 +217,59 @@ candidate is the production queue (`PROD-001`/`PROD-002`, P2.07).
 
 | Packet | Status | Dependencies | Packages | Validation |
 |--------|--------|--------------|----------|------------|
-| AUTH-005A | done | — | protocol, server | contracts, integration |
-| AUTH-005 | done | AUTH-005A | protocol, server | contracts, integration |
-| AUTH-006 | done | AUTH-005 | server, simulation, web | integration, simulation, e2e |
-| AUTH-007 | done | AUTH-006 | web, renderer, architecture | architecture |
-| AUTH-008 | done | AUTH-007 | protocol, server, web | e2e |
-| AUTH-009 | done | AUTH-008 | protocol, renderer, web | unit |
-| AUTH-010 | done | — | simulation | simulation, orders |
-| AUTH-011 | done | AUTH-010 | simulation | simulation, orders, determinism |
-| AUTH-012 | done | AUTH-011 | simulation | simulation, orders, determinism |
-| AUTH-013 | done | AUTH-012 | simulation | simulation, determinism |
-| AUTH-014 | done | — | shared, renderer | unit |
-| AUTH-015 | done | AUTH-014 | renderer, web | unit |
-| AUTH-016 | done | AUTH-015 | docs | lint |
-| AUTH-017 | done | AUTH-013 | protocol, simulation | contracts, simulation, architecture |
-| AUTH-018 | done | AUTH-005–017 | docs, quality | verify, browser |
+| ARCH.03.01 | done | — | protocol, server | contracts, integration |
+| ARCH.03.02 | done | ARCH.03.01 | protocol, server | contracts, integration |
+| ARCH.03.03 | done | ARCH.03.02 | server, simulation, web | integration, simulation, e2e |
+| ARCH.03.04 | done | ARCH.03.03 | web, renderer, architecture | architecture |
+| ARCH.03.05 | done | ARCH.03.04 | protocol, server, web | e2e |
+| ARCH.03.06 | done | ARCH.03.05 | protocol, renderer, web | unit |
+| ARCH.03.07 | done | — | simulation | simulation, orders |
+| ARCH.03.08 | done | ARCH.03.07 | simulation | simulation, orders, determinism |
+| ARCH.03.09 | done | ARCH.03.08 | simulation | simulation, orders, determinism |
+| ARCH.03.10 | done | ARCH.03.09 | simulation | simulation, determinism |
+| ARCH.03.11 | done | — | shared, renderer | unit |
+| ARCH.03.12 | done | ARCH.03.11 | renderer, web | unit |
+| ARCH.03.13 | done | ARCH.03.12 | docs | lint |
+| ARCH.03.14 | done | ARCH.03.10 | protocol, simulation | contracts, simulation, architecture |
+| ARCH.03.15 | done | ARCH.03.01–14 | docs, quality | verify, browser |
 
 ### Fundação
-- [ ] QUAL-000 Spec + ADR
-- [x] QUAL-019 Clean code, SOLID, and strong-typing baseline
-- [x] QUAL-020 Web app function decomposition (React ≤50 lines)
-- [x] QUAL-021 Typed-domain completion (registries + branded AssetKey)
-- [x] QUAL-022 Public API and docs sync
-- [x] QUAL-023 Session projections and tools coverage
-- [x] QUAL-024 Mandatory enforcement (git, CI, governance)
-- [x] QUAL-017 Front-matter + guard + resumo (postmortem tracking)
-- [x] QUAL-018 Board + tracking guard + protocolo
-- [x] QUAL-016 Higiene de saída (test output)
+- [ ] QH.00 Spec + ADR
+- [x] QH.19 Clean code, SOLID, and strong-typing baseline
+- [x] QH.20 Web app function decomposition (React ≤50 lines)
+- [x] QH.21 Typed-domain completion (registries + branded AssetKey)
+- [x] QH.22 Public API and docs sync
+- [x] QH.23 Session projections and tools coverage
+- [x] QH.24 Mandatory enforcement (git, CI, governance)
+- [x] QH.17 Front-matter + guard + summary (postmortem tracking)
+- [x] QH.18 Board + tracking guard + protocol
+- [x] QH.16 Output hygiene (test output)
 
 > QUAL-016 e QUAL-018 foram concluídas. As demais tasks de Quality Hardening
 > permanecem adiadas até o fechamento das fases principais.
 
 ### Low Effort
-- [ ] QUAL-004 Input helper (deps: QUAL-000)
-- [ ] QUAL-007 Barrier input (deps: QUAL-004)
-- [ ] QUAL-012 expectAnim + barrier (deps: QUAL-000)
-- [ ] QUAL-008 Dynamic geometry (deps: QUAL-002)
-- [ ] QUAL-015 Branch baseline (deps: none)
+- [ ] QH.04 Input helper (deps: QH.00)
+- [ ] QH.07 Barrier input (deps: QH.04)
+- [ ] QH.12 expectAnim + barrier (deps: QH.00)
+- [ ] QH.08 Dynamic geometry (deps: QH.02)
+- [ ] QH.15 Branch baseline (deps: none)
 
 ### Core
-- [ ] QUAL-001 Structural harness (deps: QUAL-000)
-- [ ] QUAL-002 HUD contract (deps: QUAL-001)
-- [ ] QUAL-003 Display list invariants (deps: QUAL-001)
-- [ ] QUAL-005 Gesture matrix (deps: QUAL-004)
-- [ ] QUAL-009 Concurrent isolation (deps: QUAL-000)
-- [ ] QUAL-010 Barrier singleton (deps: QUAL-000)
+- [ ] QH.01 Structural harness (deps: QH.00)
+- [ ] QH.02 HUD contract (deps: QH.01)
+- [ ] QH.03 Display list invariants (deps: QH.01)
+- [ ] QH.05 Gesture matrix (deps: QH.04)
+- [ ] QH.09 Concurrent isolation (deps: QH.00)
+- [ ] QH.10 Barrier singleton (deps: QH.00)
 
 ### Structural
-- [ ] QUAL-011 Toggle CI parallelism (deps: QUAL-009, QUAL-010)
-- [ ] QUAL-006 WebKit/touch (deps: QUAL-005)
+- [ ] QH.11 Toggle CI parallelism (deps: QH.09, QH.10)
+- [ ] QH.06 WebKit/touch (deps: QH.05)
 
 ### Conditional
-- [ ] QUAL-013 Path-based E2E gate (deps: QUAL-002, QUAL-005)
-- [ ] QUAL-014 Coverage ratchet (deps: QUAL-016)
+- [ ] QH.13 Path-based E2E gate (deps: QH.02, QH.05)
+- [ ] QH.14 Coverage ratchet (deps: QH.16)
 
 ### Browser Validation
-- [x] E2E-001 Gate stratification: complete, functional, and performance gates
+- [x] Browser gate stratification: complete, functional, and performance gates

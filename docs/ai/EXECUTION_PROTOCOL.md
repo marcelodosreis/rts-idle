@@ -89,6 +89,22 @@ Read broader architecture docs. **Requires explicit justification** — e.g., "I
 
 ## Execution Steps
 
+### 0. Confirm Decision Authority
+
+Before planning or editing:
+
+```text
+Extract the user's requested outcome and complete user-visible flow.
+Cross-check every variant against the task packet, task index, relevant spec,
+and master plan section when applicable.
+List conflicts, open decisions, and proposed non-goals explicitly.
+Do not remove, narrow, or reinterpret a requirement without explicit user approval.
+If an ambiguity affects behavior or scope, stop and ask before implementation.
+```
+
+The agent may decide implementation details only when the repository contract or
+approved packet determines them. Product scope belongs to the user.
+
 ### 1. Load Context
 
 ```text
@@ -171,6 +187,17 @@ Never use `pnpm run test:e2e -- <file>` for focused iteration. The guarded
 `test:e2e` script is reserved for explicitly scoped completion runs. Keep
 command output bounded (roughly 4–8k tokens) and summarize large diffs rather
 than printing them in full.
+
+Before reporting `PASS`, perform a scope audit:
+
+```text
+Compare the implementation with the original user request.
+Verify every supported variant has implementation, a UI path when requested,
+and regression/acceptance coverage. For gameplay, the UI path is mandatory even
+when the task packet initially describes simulation or protocol work.
+Confirm no requirement was silently moved to non-goal status.
+If any requested user-visible path is unavailable, report PARTIAL or BLOCKED.
+```
 
 ### 6. Commit
 

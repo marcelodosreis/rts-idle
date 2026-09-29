@@ -35,6 +35,9 @@ See `docs/tasks/todo.md` for full phase list.
   pause/resume, worker reassignment, and completion status
 - Authoritative supply accounting: Base capacity, unit usage, completed Supply
   Depot capacity, over-cap handling, canonical snapshots, and Supply HUD
+- Producer production: Base trains Pawn; Barracks trains Warrior/Archer with
+  TRAIN queues, mineral/supply reservations, deterministic production state,
+  blocked-exit waiting, production snapshots, and player-facing HUD flow
 - WebSocket server (isolated per-connection sessions)
 - React SPA with BrowserRouter, lazy match/Laboratory routes, and not-found handling
 - Feature-first web layout with independent Laboratory browser, editor, stress,
@@ -55,11 +58,12 @@ can also place Base/Barracks/Supply Depot construction, pause it by stopping the
 worker, and resume it by assigning another worker through the construction HUD.
 The top bar shows authoritative `used / cap` supply and updates on Depot completion.
 
-No production, real AI, pathfinding, fog of war, or multiplayer.
+No production cancellation/rally UI, real AI,
+pathfinding, fog of war, or multiplayer.
 
 ## Current Limitations
 
-- No production queue
+- No production cancellation/rally UI
 - No AI (enemies are pre-scripted)
 - No pathfinding (straight-line movement)
 - No collision/avoidance
@@ -87,9 +91,10 @@ function ≤50 bar with no suppressed violations; one refactor regression was
 caught by E2E and documented in
 `docs/postmortems/2026-09-24-devtools-menu-content-ids.md`.
 
-The latest gameplay packet is BUILD-005 Construction cancellation (P2.05). The
-next gameplay candidate is `PROD-001`/`PROD-002` (production queue and unit
-training); production queues, training, and reserved supply have not started.
+P2.07 Production Queue and Unit Training is complete for the target roster:
+Base trains Pawn and Barracks trains Warrior/Archer. The build menu and
+production panel are covered by the playable browser flow. P2.08 blocked spawn
+and rally follows this production slice.
 
 Quality Hardening remains deferred after the completed QUAL-016 output hygiene
 and QUAL-018 tracking work. The Concept Authority closure (AUTH-005A through

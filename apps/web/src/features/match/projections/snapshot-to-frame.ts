@@ -17,7 +17,8 @@ export function snapshotToFrame(message: SnapshotMessage): RenderFrame {
       footprint: construction.footprint,
       status: construction.status,
       progressTicks: construction.progressTicks,
-      totalTicks: construction.totalTicks
+      totalTicks: construction.totalTicks,
+      ...(construction.production === undefined ? {} : { production: construction.production })
     })),
     mineralNodes: message.mineralNodes.map((node) => ({
       id: node.id,

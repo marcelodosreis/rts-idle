@@ -2,8 +2,8 @@ import type { World } from '../ecs/world.js'
 import type { PlacementMapBounds } from '../placement/building-placement.js'
 import type { PlayerState } from '../state/state.js'
 
-export type InitialPlayerState = Omit<PlayerState, 'usedSupply' | 'supplyCap'> &
-  Partial<Pick<PlayerState, 'usedSupply' | 'supplyCap'>>
+export type InitialPlayerState = Omit<PlayerState, 'usedSupply' | 'reservedSupply' | 'supplyCap'> &
+  Partial<Pick<PlayerState, 'usedSupply' | 'reservedSupply' | 'supplyCap'>>
 
 import type { SimulationEvent } from '../systems/events.js'
 import type { CommandRejectedError } from './commands.js'

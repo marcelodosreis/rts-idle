@@ -71,6 +71,7 @@ function writePlayers(writer: CanonicalWriter, players: readonly PlayerState[]):
     writer.writeU8(player.defeated ? 1 : 0)
     writer.writeI32(player.gold)
     writer.writeI32(player.usedSupply)
+    writer.writeI32(player.reservedSupply)
     writer.writeI32(player.supplyCap)
   }
 }
@@ -110,11 +111,12 @@ function readPlayers(reader: CanonicalReader): PlayerState[] {
     const defeated = reader.readU8() === 1
     const gold = reader.readI32()
     const usedSupply = reader.readI32()
+    const reservedSupply = reader.readI32()
     const supplyCap = reader.readI32()
-    if (usedSupply < 0 || supplyCap < 0 || supplyCap > MAX_SUPPLY_CAPACITY) {
-      throw new Error(`readPlayers: invalid supply ${usedSupply}/${supplyCap}`)
+    if (usedSupply < 0 || reservedSupply < 0 || supplyCap < 0 || supplyCap > MAX_SUPPLY_CAPACITY) {
+      throw new Error(`readPlayers: invalid supply ${usedSupply}+${reservedSupply}/${supplyCap}`)
     }
-    players.push({ id, defeated, gold, usedSupply, supplyCap })
+    players.push({ id, defeated, gold, usedSupply, reservedSupply, supplyCap })
   }
   return players
 }

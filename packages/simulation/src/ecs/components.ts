@@ -1,4 +1,4 @@
-import type { Fixed, PlayerId, UnitKind } from '@rts/shared'
+import type { Fixed, PlayerId, ProductionItemStatus, TrainableUnitKind, UnitKind } from '@rts/shared'
 import type { CanonicalReader } from '../canonical/reader.js'
 import type { CanonicalWriter } from '../canonical/writer.js'
 import type { Order } from '../contracts/orders.js'
@@ -313,5 +313,75 @@ export const Cargo: ComponentType<CargoData> = {
   },
   decode(reader) {
     return { amount: reader.readI32(), capacity: reader.readI32() }
+  }
+}
+
+export interface ProductionItem {
+  readonly unitKind: TrainableUnitKind
+  readonly costMinerals: number
+  readonly reservedSupply: number
+  readonly progressTicks: number
+  readonly totalTicks: number
+  readonly status: ProductionItemStatus
+}
+
+export interface ProductionData {
+  readonly queue: readonly ProductionItem[]
+}
+
+const PRODUCTION_STATUS_TAGS = {
+  ACTIVE: 0,
+  QUEUED: 1,
+  COMPLETED_WAITING: 2
+} as const
+
+function productionStatusFromTag(tag: number): ProductionItemStatus {
+  switch (tag) {
+    case PRODUCTION_STATUS_TAGS.ACTIVE:
+      return 'ACTIVE'
+    case PRODUCTION_STATUS_TAGS.QUEUED:
+      return 'QUEUED'
+    case PRODUCTION_STATUS_TAGS.COMPLETED_WAITING:
+      return 'COMPLETED_WAITING'
+    default:
+      throw new Error(`Production: invalid status tag ${tag}`)
+  }
+}
+
+function trainableKindFromTag(tag: number): TrainableUnitKind {
+  const kind = kindFromTag(tag)
+  if (kind !== 'pawn' && kind !== 'warrior' && kind !== 'archer') {
+    throw new Error(`Production: invalid trainable unit kind ${kind}`)
+  }
+  return kind
+}
+
+export const Production: ComponentType<ProductionData> = {
+  name: 'production',
+  encode(writer, value) {
+    writer.writeLength(value.queue.length)
+    for (const item of value.queue) {
+      writer.writeU8(kindTag(item.unitKind))
+      writer.writeI32(item.costMinerals)
+      writer.writeI32(item.reservedSupply)
+      writer.writeI32(item.progressTicks)
+      writer.writeI32(item.totalTicks)
+      writer.writeU8(PRODUCTION_STATUS_TAGS[item.status])
+    }
+  },
+  decode(reader) {
+    const count = reader.readLength()
+    const queue: ProductionItem[] = []
+    for (let index = 0; index < count; index += 1) {
+      queue.push({
+        unitKind: trainableKindFromTag(reader.readU8()),
+        costMinerals: reader.readI32(),
+        reservedSupply: reader.readI32(),
+        progressTicks: reader.readI32(),
+        totalTicks: reader.readI32(),
+        status: productionStatusFromTag(reader.readU8())
+      })
+    }
+    return { queue }
   }
 }

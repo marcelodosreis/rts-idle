@@ -2,7 +2,7 @@ import { type Container, Graphics, type PointData } from 'pixi.js'
 import type { UnitLayer } from '../units/layer.js'
 import { UNIT_RADIUS } from '../units/sprite.js'
 
-const SELECTION_COLOR = 0xfbc02d
+const SELECTION_COLOR = 0xef4444
 const BOX_FILL_COLOR = 0x1565c0
 const RING_PADDING = 4
 

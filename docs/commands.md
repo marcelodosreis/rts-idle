@@ -20,6 +20,7 @@ be integer fixed units.
 | `ATTACK` | `unitIds, targetId` | Acquire and attack a specific enemy (chases when out of range). |
 | `ATTACK_MOVE` | `unitIds, x, y` | Move to a destination, attacking enemies encountered en route; defend on arrival. |
 | `GATHER` | `unitIds, nodeId` | Workers repeatedly gather minerals, return to the nearest owned Base, and deposit. |
+| `TRAIN` | `producerId, unitKind` | Queue Pawn at an owned completed Base, or Warrior/Archer at an owned completed Barracks, reserving minerals and supply. |
 | `CANCEL_CONSTRUCTION` | `buildingId` | Cancel an owned not-yet-completed construction: refund part of the cost and free its footprint (see below). |
 | `SURRENDER` | — | The issuing player concedes: marked defeated, their units disband. |
 
@@ -48,7 +49,7 @@ authority.
 | `INVALID_PHASE` | Command not allowed in the current phase (e.g. re-surrender). |
 | `INVALID_PLACEMENT` | Building placement is out of bounds, invalid, or overlapping. |
 | `INVALID_STATE` | Command rejected by the target's state (e.g. cancelling a completed building). |
-| `INSUFFICIENT_RESOURCES` | The player cannot afford the command (BUILD). |
+| `INSUFFICIENT_RESOURCES` | The player cannot afford the command or has no available supply (BUILD/TRAIN). |
 | `NOT_OWNER` | A unit (or the ATTACK target) does not belong to the player. |
 | `ENTITY_UNAVAILABLE` | A unit or target does not exist or is not ownable. |
 
@@ -70,3 +71,18 @@ accepted. The server projects snapshots back with `hp/maxHp`, `kind`,
 and `mineralNodes[]` observations, `players`, `phase`, and per-tick `events[]`.
 The command intent type lives in
 `@rts/shared` so protocol and simulation share one definition.
+
+## Production (P2.07)
+
+The P2.07 contract is for `TRAIN` to accept Pawn at a completed owned Base, and
+Warrior or Archer at a completed owned Barracks.
+The queue holds at most five items and reserves the mineral cost and one supply
+per item at acceptance. The authoritative production definitions, including the
+balance for all three trainable unit kinds, live in `@rts/game-data` and are
+centralized in `UNIT_PRODUCTION_DEFINITIONS`.
+
+One item advances per producer. Production pauses while
+`usedSupply + reservedSupply > supplyCap`. A completed item spawns at the
+deterministic producer exit when space is available; otherwise it remains in
+`COMPLETED_WAITING`. Spawn rally behavior and production cancellation are later
+Phase 2 tasks.

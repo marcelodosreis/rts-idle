@@ -1,5 +1,5 @@
-import type { ConstructionStatus, EconomyPhase, OrderState } from '@rts/protocol'
-import type { BuildingType, UnitKind } from '@rts/shared'
+import type { ConstructionStatus, EconomyPhase, OrderState, SnapshotProduction } from '@rts/protocol'
+import type { BuildingType, TrainableUnitKind, UnitKind } from '@rts/shared'
 
 /** HUD-only construction status: authoritative statuses plus a derived paused state. */
 export const HUD_CONSTRUCTION_STATUSES = [
@@ -39,6 +39,7 @@ export interface HudConstruction {
   readonly progressTicks: number
   readonly totalTicks: number
   readonly builderId: number | null
+  readonly production?: SnapshotProduction
 }
 
 export interface HudMineral {
@@ -50,6 +51,12 @@ export interface HudResources {
   readonly mineral: number
   readonly supply: number
   readonly supplyCap: number
+}
+
+export const TRAINABLE_LABEL: Readonly<Record<TrainableUnitKind, string>> = {
+  pawn: 'Pawn',
+  warrior: 'Warrior',
+  archer: 'Archer'
 }
 
 export const KIND_LABEL: Readonly<Record<HudSelectionUnit['kind'], string>> = {

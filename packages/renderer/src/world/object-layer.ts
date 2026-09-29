@@ -9,10 +9,12 @@ import {
   clampRatio,
   drawProgressBar
 } from '../effects/progress-bar.js'
+import { progressFillColor } from '../effects/progress-palette.js'
 import { buildingVisualStyle } from './building-visual-style.js'
 
 const MINERAL_RADIUS = 30
-const MINERAL_COLOR = 0xfbbf24
+const MINERAL_COLOR = progressFillColor('mining')
+const MINERAL_OUTLINE_COLOR = 0xffffff
 
 const pixelsPerTile = fixedToRenderPixels(FIXED_SCALE)
 
@@ -80,7 +82,20 @@ export class WorldObjectLayer {
         width: footprint.width * pixelsPerTile,
         height: BAR_HEIGHT,
         ratio: clampRatio(building.progressTicks, building.totalTicks),
-        fillColor: 0x22c55e,
+        fillColor: progressFillColor('construction'),
+        background: BAR_BACKGROUND,
+        border: BAR_BORDER,
+        radius: BAR_RADIUS
+      })
+    } else if (building.production?.queue[0] !== undefined) {
+      const item = building.production.queue[0]
+      drawProgressBar(graphic, {
+        x: 0,
+        y: -10,
+        width: footprint.width * pixelsPerTile,
+        height: BAR_HEIGHT,
+        ratio: clampRatio(item.progressTicks, item.totalTicks),
+        fillColor: progressFillColor('training'),
         background: BAR_BACKGROUND,
         border: BAR_BORDER,
         radius: BAR_RADIUS
@@ -110,7 +125,7 @@ export class WorldObjectLayer {
     if (graphic === undefined) {
       graphic = new Graphics()
       graphic.poly([0, -34, 28, 0, 0, 34, -28, 0]).fill({ color: MINERAL_COLOR, alpha: 0.9 })
-      graphic.poly([0, -34, 28, 0, 0, 34, -28, 0]).stroke({ color: 0xfef3c7, width: 4 })
+      graphic.poly([0, -34, 28, 0, 0, 34, -28, 0]).stroke({ color: MINERAL_OUTLINE_COLOR, width: 4 })
       graphic.eventMode = 'none'
       this.worldObjectsLayer.addChild(graphic)
       this.mineralNodes.set(node.id, graphic)

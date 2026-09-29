@@ -1,4 +1,6 @@
-import type { BuildCatalogEntry } from '@rts/protocol'
+import type { BuildCatalogEntry, ProductionCatalogEntry, SnapshotProductionItem } from '@rts/protocol'
+import { PROGRESS_PALETTE } from '@rts/renderer'
+import { economyProgressTone, MAX_PRODUCTION_QUEUE, type TrainableUnitKind } from '@rts/shared'
 import { useState } from 'react'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -9,7 +11,15 @@ import {
   constructionStatusLine,
   mineralRemainingLine
 } from '../selection/selection-panel-logic'
-import { type HudConstruction, type HudMineral, type HudSelectionUnit, KIND_LABEL, OWNER_COLORS } from './types'
+import {
+  type HudConstruction,
+  type HudMineral,
+  type HudResources,
+  type HudSelectionUnit,
+  KIND_LABEL,
+  OWNER_COLORS,
+  TRAINABLE_LABEL
+} from './types'
 
 export { constructionStatusLine, mineralRemainingLine } from '../selection/selection-panel-logic'
 
@@ -20,6 +30,9 @@ interface SelectionPanelProps {
   readonly buildings: readonly BuildCatalogEntry[]
   readonly humanPlayer: number
   readonly onCancelConstruction: (buildingId: number) => void
+  readonly onTrain: (unitKind: TrainableUnitKind) => void
+  readonly production: readonly ProductionCatalogEntry[]
+  readonly resources: HudResources | null
 }
 
 function kindSummary(selection: readonly HudSelectionUnit[]): string {
@@ -56,6 +69,23 @@ function economyLabel(unit: HudSelectionUnit): string | null {
   return `Waiting for Base ${unit.economy.cargoAmount}/${unit.economy.cargoCapacity}`
 }
 
+function economyStatus(unit: HudSelectionUnit): { readonly label: string; readonly color: string } | null {
+  if (unit.economy !== undefined) {
+    const label = economyLabel(unit)
+    if (label === null) {
+      return null
+    }
+    return {
+      label,
+      color: PROGRESS_PALETTE[economyProgressTone(unit.economy.phase)].text
+    }
+  }
+  if (unit.carrying === true) {
+    return { label: 'Carrying cargo', color: PROGRESS_PALETTE.delivery.text }
+  }
+  return null
+}
+
 function orderLabel(unit: HudSelectionUnit): string {
   if (unit.economy !== undefined) {
     return economyLabel(unit) ?? 'Idle'
@@ -85,6 +115,7 @@ function UnitChip({ unit }: { readonly unit: HudSelectionUnit }) {
   const hpPercent = Math.round(ratio * 100)
   const unitLabel = `${KIND_LABEL[unit.kind]} #${unit.id}`
   const statusText = orderLabel(unit)
+  const economyTone = unit.economy === undefined ? null : economyProgressTone(unit.economy.phase)
 
   return (
     <Tooltip>
@@ -110,8 +141,9 @@ function UnitChip({ unit }: { readonly unit: HudSelectionUnit }) {
           <div className="space-y-0.5">
             <div className="h-1.5 w-28 overflow-hidden rounded-full bg-black/30">
               <div
-                className={`h-full ${unit.economy.phase === 'gathering' ? 'bg-amber-400' : 'bg-emerald-400'}`}
+                className="h-full"
                 style={{
+                  backgroundColor: PROGRESS_PALETTE[economyTone ?? 'delivery'].fill,
                   width: `${Math.round(
                     100 *
                       (unit.economy.phase === 'gathering'
@@ -164,74 +196,233 @@ function constructionHint(status: HudConstruction['status']): string {
   return 'Select the builder and press Stop to pause.'
 }
 
+function trainingStatusLine(item: SnapshotProductionItem): string {
+  const status = item.status === 'COMPLETED_WAITING' ? 'Waiting for exit' : 'Training'
+  return `${TRAINABLE_LABEL[item.unitKind]} · ${item.progressTicks}/${item.totalTicks} · ${status}`
+}
+
+function ProductionPanel({
+  construction,
+  production,
+  resources,
+  onTrain
+}: {
+  readonly construction: HudConstruction
+  readonly production: readonly ProductionCatalogEntry[]
+  readonly resources: HudResources | null
+  readonly onTrain: (unitKind: TrainableUnitKind) => void
+}) {
+  if (construction.status !== 'COMPLETED') {
+    return null
+  }
+  const options = production.filter((entry) => entry.producer === construction.buildingType)
+  const queue = construction.production?.queue ?? []
+  const queueFull = queue.length >= MAX_PRODUCTION_QUEUE
+  return (
+    <div className="space-y-1" data-testid="production-panel">
+      <div className="flex flex-wrap gap-1">
+        {options.map((entry) => {
+          const affordable = (resources?.mineral ?? 0) >= entry.costMinerals
+          return (
+            <Button
+              key={entry.unitKind}
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-6 px-1.5 text-[11px]"
+              disabled={queueFull || !affordable}
+              onClick={() => onTrain(entry.unitKind)}
+              data-testid={`train-${entry.unitKind}`}
+              title={`${entry.costMinerals} minerals · ${entry.trainingTicks} ticks · ${entry.supply} supply`}
+            >
+              {TRAINABLE_LABEL[entry.unitKind]} · {entry.costMinerals}
+            </Button>
+          )
+        })}
+      </div>
+      <p className="text-[11px] font-medium text-muted-foreground" data-testid="production-queue-count">
+        Queue {queue.length}/{MAX_PRODUCTION_QUEUE}
+      </p>
+    </div>
+  )
+}
+
+function ConstructionCancelButton({
+  construction,
+  humanPlayer,
+  refund,
+  confirming,
+  onConfirm
+}: {
+  readonly construction: HudConstruction
+  readonly humanPlayer: number
+  readonly refund: number
+  readonly confirming: boolean
+  readonly onConfirm: () => void
+}) {
+  if (!canCancelConstruction(construction, humanPlayer)) {
+    return null
+  }
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild={true}>
+        <Button
+          type="button"
+          variant={confirming ? 'destructive' : 'outline'}
+          size="sm"
+          className="h-6 shrink-0 self-start whitespace-nowrap px-1.5 text-[11px]"
+          data-testid="cancel-construction"
+          aria-label={confirming ? 'Confirm construction cancellation' : 'Cancel construction'}
+          onClick={onConfirm}
+        >
+          {confirming ? 'Confirm' : 'Cancel'}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={6}>
+        {confirming ? `Click again to confirm · refund ~${refund}` : `Estimated refund ~${refund} minerals`}
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+
+function UnitSelectionCard({
+  selection,
+  selectionLabel,
+  activeEconomy
+}: {
+  readonly selection: readonly HudSelectionUnit[]
+  readonly selectionLabel: string
+  readonly activeEconomy: { readonly label: string; readonly color: string } | null
+}) {
+  return (
+    <Card className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1">
+      <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
+        <CardTitle className="flex min-w-0 items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <span className="truncate">{selectionLabel}</span>
+          <span
+            data-testid="economy-status"
+            className="shrink-0 truncate font-medium empty:invisible"
+            style={{ color: activeEconomy?.color }}
+            aria-live="polite"
+          >
+            {activeEconomy?.label}
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-0.5 px-2 py-0.5" aria-live="polite">
+        {selection.length > 0 && selection.map((unit) => <UnitChip key={unit.id} unit={unit} />)}
+      </CardContent>
+    </Card>
+  )
+}
+
+type ConstructionSelectionCardProps = Pick<
+  SelectionPanelProps,
+  'buildings' | 'humanPlayer' | 'onCancelConstruction' | 'onTrain' | 'production' | 'resources'
+> & {
+  readonly construction: HudConstruction
+  readonly confirmingId: number | null
+  readonly setConfirmingId: (id: number | null) => void
+}
+
+function ConstructionSelectionCard({
+  construction,
+  buildings,
+  humanPlayer,
+  onCancelConstruction,
+  onTrain,
+  production,
+  resources,
+  confirmingId,
+  setConfirmingId
+}: ConstructionSelectionCardProps) {
+  const refund = cancelRefundEstimate(
+    construction,
+    buildings.find((building) => building.type === construction.buildingType)?.costMinerals ?? 0
+  )
+  const confirming = confirmingId === construction.id
+  const activeProduction = construction.production?.queue[0]
+  return (
+    <Card className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1" data-testid="construction-panel">
+      <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
+        <CardTitle className="truncate text-[11px] text-muted-foreground">
+          <span className="flex min-w-0 items-center justify-between gap-2">
+            <span className="truncate">
+              {constructionLabel(construction)} · {constructionTitleStatus(construction.status)}
+            </span>
+            {construction.status !== 'COMPLETED' && (
+              <span
+                className="shrink-0 font-medium"
+                style={{ color: PROGRESS_PALETTE.construction.text }}
+                data-testid="construction-status"
+              >
+                {constructionStatusLine(construction)}
+              </span>
+            )}
+            {construction.status === 'COMPLETED' && activeProduction !== undefined && (
+              <span
+                className="shrink-0 font-medium"
+                style={{ color: PROGRESS_PALETTE.training.text }}
+                data-testid="training-status"
+              >
+                {trainingStatusLine(activeProduction)}
+              </span>
+            )}
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-1 px-2 py-0.5 text-[11px] text-muted-foreground">
+        <span className="leading-snug" aria-live="polite">
+          {constructionHint(construction.status)}
+        </span>
+        <ConstructionCancelButton
+          construction={construction}
+          humanPlayer={humanPlayer}
+          refund={refund}
+          confirming={confirming}
+          onConfirm={() => {
+            if (!confirming) {
+              setConfirmingId(construction.id)
+              return
+            }
+            setConfirmingId(null)
+            onCancelConstruction(construction.id)
+          }}
+        />
+        <ProductionPanel construction={construction} production={production} resources={resources} onTrain={onTrain} />
+      </CardContent>
+    </Card>
+  )
+}
+
 export function SelectionPanel({
   selection,
   construction,
   mineral,
   buildings,
   humanPlayer,
-  onCancelConstruction
+  onCancelConstruction,
+  onTrain,
+  production,
+  resources
 }: SelectionPanelProps) {
   const [confirmingId, setConfirmingId] = useState<number | null>(null)
-  const activeEconomy =
-    selection
-      .map((unit) => economyLabel(unit) ?? (unit.carrying === true ? 'Carrying cargo' : null))
-      .find((label) => label !== null) ?? null
+  const activeEconomy = selection.map(economyStatus).find((status) => status !== null) ?? null
+  const selectionLabel =
+    selection.length === 0 ? 'No selection — click a unit' : `${selection.length} · ${kindSummary(selection)}`
   if (construction !== null) {
-    const label = constructionLabel(construction)
-    const status = constructionTitleStatus(construction.status)
-    const cost = buildings.find((building) => building.type === construction.buildingType)?.costMinerals ?? 0
-    const refund = cancelRefundEstimate(construction, cost)
-    const canCancel = canCancelConstruction(construction, humanPlayer)
-    const confirming = confirmingId === construction.id
     return (
-      <Card
-        className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1"
-        data-testid="construction-panel"
-      >
-        <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
-          <CardTitle className="truncate text-[11px] text-muted-foreground">
-            {label} · {status}
-          </CardTitle>
-          {construction.status !== 'COMPLETED' && (
-            <p className="h-4 truncate text-[11px] font-medium text-amber-300" data-testid="construction-status">
-              {constructionStatusLine(construction)}
-            </p>
-          )}
-        </CardHeader>
-        <CardContent className="flex flex-col gap-1 px-2 py-0.5 text-[11px] text-muted-foreground">
-          <span className="leading-snug" aria-live="polite">
-            {constructionHint(construction.status)}
-          </span>
-          {canCancel && (
-            <Tooltip>
-              <TooltipTrigger asChild={true}>
-                <Button
-                  type="button"
-                  variant={confirming ? 'destructive' : 'outline'}
-                  size="sm"
-                  className="h-6 shrink-0 self-start whitespace-nowrap px-1.5 text-[11px]"
-                  data-testid="cancel-construction"
-                  aria-label={confirming ? 'Confirm construction cancellation' : 'Cancel construction'}
-                  onClick={() => {
-                    if (!confirming) {
-                      setConfirmingId(construction.id)
-                      return
-                    }
-                    setConfirmingId(null)
-                    onCancelConstruction(construction.id)
-                  }}
-                >
-                  {confirming ? 'Confirm' : 'Cancel'}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" sideOffset={6}>
-                {confirming ? `Click again to confirm · refund ~${refund}` : `Estimated refund ~${refund} minerals`}
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </CardContent>
-      </Card>
+      <ConstructionSelectionCard
+        construction={construction}
+        buildings={buildings}
+        humanPlayer={humanPlayer}
+        onCancelConstruction={onCancelConstruction}
+        onTrain={onTrain}
+        production={production}
+        resources={resources}
+        confirmingId={confirmingId}
+        setConfirmingId={setConfirmingId}
+      />
     )
   }
   if (mineral !== null) {
@@ -239,7 +430,11 @@ export function SelectionPanel({
       <Card className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1" data-testid="mineral-panel">
         <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
           <CardTitle className="truncate text-[11px] text-muted-foreground">Mineral Node</CardTitle>
-          <p className="h-4 truncate text-[11px] font-medium text-amber-300" data-testid="mineral-remaining">
+          <p
+            className="h-4 truncate text-[11px] font-medium"
+            style={{ color: PROGRESS_PALETTE.mining.text }}
+            data-testid="mineral-remaining"
+          >
             {mineralRemainingLine(mineral)}
           </p>
         </CardHeader>
@@ -249,19 +444,5 @@ export function SelectionPanel({
       </Card>
     )
   }
-  return (
-    <Card className="flex min-h-0 w-full max-w-[22rem] flex-col overflow-hidden py-1">
-      <CardHeader className="shrink-0 gap-0.5 px-2 py-0">
-        <CardTitle className="truncate text-[11px] text-muted-foreground">
-          {selection.length === 0 ? 'No selection — click a unit' : `${selection.length} · ${kindSummary(selection)}`}
-        </CardTitle>
-        <p data-testid="economy-status" className="h-4 truncate text-[11px] font-medium text-amber-300 empty:invisible">
-          {activeEconomy}
-        </p>
-      </CardHeader>
-      <CardContent className="flex flex-wrap gap-0.5 px-2 py-0.5" aria-live="polite">
-        {selection.length > 0 && selection.map((unit) => <UnitChip key={unit.id} unit={unit} />)}
-      </CardContent>
-    </Card>
-  )
+  return <UnitSelectionCard selection={selection} selectionLabel={selectionLabel} activeEconomy={activeEconomy} />
 }

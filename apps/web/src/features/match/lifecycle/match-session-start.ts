@@ -209,7 +209,7 @@ function createRendererView(
   handler: (interaction: Parameters<ReturnType<typeof createWorldInteractionHandler>>[0]) => void,
   updaters: SelectionUpdaters
 ): ReturnType<typeof createMatchRendererLifecycle> {
-  const { refs, setters, playtestMap, spritesEnabled, appendLog } = params
+  const { refs, playtestMap, spritesEnabled, appendLog } = params
   return createMatchRendererLifecycle({
     host: params.host,
     runtime,
@@ -239,7 +239,6 @@ function createRendererView(
     },
     onError: (error) => {
       refs.rendererRef.current = null
-      setters.setStatus('error')
       appendLog('error', error instanceof Error ? error.message : String(error))
     }
   })

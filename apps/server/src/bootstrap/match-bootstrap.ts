@@ -4,7 +4,7 @@ import { normalizeMapDefinition } from '@rts/shared'
 import { createDemoSession } from '../content/demo/demo-session.js'
 import { DEMO_SCENARIOS, DEMO_SEED, scenarioById } from '../content/demo/scenarios.js'
 import type { GameSession } from '../sessions/session.js'
-import { BUILDINGS, SCENARIOS } from './catalog.js'
+import { BUILDINGS, PRODUCTION, SCENARIOS } from './catalog.js'
 import { mapIdentity } from './identity.js'
 import { assertScenarioFitsMap } from './map-validation.js'
 
@@ -37,7 +37,8 @@ export function createAuthoritativeMatch(request: MatchRequest): AuthoritativeMa
       scenario: { id: scenario.id, label: scenario.label },
       scenarios: SCENARIOS,
       map: normalized.map,
-      buildings: BUILDINGS
+      buildings: BUILDINGS,
+      production: PRODUCTION
     }
   }
 }

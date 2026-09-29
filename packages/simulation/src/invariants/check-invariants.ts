@@ -1,7 +1,9 @@
+import { UNIT_PRODUCTION_DEFINITIONS } from '@rts/game-data'
 import { GATHER_TICKS_PER_BATCH, MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
+import { MAX_PRODUCTION_QUEUE } from '../data/production-rules.js'
 import { MAX_SUPPLY_CAPACITY } from '../data/supply-rules.js'
 import { Building } from '../ecs/building-component.js'
-import { Cargo, Combat, Health, Kind, MineralNode, Orders, Owner, Position } from '../ecs/components.js'
+import { Cargo, Combat, Health, Kind, MineralNode, Orders, Owner, Position, Production } from '../ecs/components.js'
 import {
   type BuildingFootprint,
   type PlacementMapBounds,
@@ -110,6 +112,46 @@ function checkEconomyEntity(state: GameState, id: number): void {
   }
 }
 
+function checkProduction(state: GameState, id: number, reserved: Map<number, number>): void {
+  const production = state.world.store(Production).get(id)
+  if (production === undefined) {
+    return
+  }
+  const building = state.world.store(Building).get(id)
+  const owner = state.world.store(Owner).get(id)?.owner
+  if (
+    (building?.buildingType !== 'BASE' && building?.buildingType !== 'BARRACKS') ||
+    building.status !== 'COMPLETED' ||
+    owner === undefined
+  ) {
+    fail(`production ${id} has no completed owned producer`)
+  }
+  if (production.queue.length > MAX_PRODUCTION_QUEUE) {
+    fail(`production ${id} exceeds queue limit`)
+  }
+  let totalReserved = 0
+  for (const [index, item] of production.queue.entries()) {
+    const definition = UNIT_PRODUCTION_DEFINITIONS[item.unitKind]
+    if (item.costMinerals !== definition.costMinerals || item.reservedSupply !== definition.supply) {
+      fail(`production ${id} has stale definition for ${item.unitKind}`)
+    }
+    if (!Number.isInteger(item.progressTicks) || item.progressTicks < 0 || item.progressTicks > item.totalTicks) {
+      fail(`production ${id} has invalid progress`)
+    }
+    if (item.totalTicks !== definition.trainingTicks) {
+      fail(`production ${id} has invalid duration`)
+    }
+    if (index === 0 && item.status === 'QUEUED') {
+      fail(`production ${id} has queued active item`)
+    }
+    if (index > 0 && item.status === 'ACTIVE') {
+      fail(`production ${id} has multiple active items`)
+    }
+    totalReserved += item.reservedSupply
+  }
+  reserved.set(owner, (reserved.get(owner) ?? 0) + totalReserved)
+}
+
 /** Validates one entity: position required, health bounded, combat stats sane. */
 function checkEntity(state: GameState, id: number): void {
   const positions = state.world.store(Position)
@@ -161,6 +203,9 @@ function checkPlayers(state: GameState): void {
     if (!Number.isInteger(player.usedSupply) || player.usedSupply < 0) {
       fail(`player ${player.id} has invalid used supply ${player.usedSupply}`)
     }
+    if (!Number.isInteger(player.reservedSupply) || player.reservedSupply < 0) {
+      fail(`player ${player.id} has invalid reserved supply ${player.reservedSupply}`)
+    }
     if (!Number.isInteger(player.supplyCap) || player.supplyCap < 0 || player.supplyCap > MAX_SUPPLY_CAPACITY) {
       fail(`player ${player.id} has invalid supply cap ${player.supplyCap}`)
     }
@@ -176,8 +221,10 @@ function checkPlayers(state: GameState): void {
  * state; a violation means a system produced an illegal state.
  */
 export function checkInvariants(state: GameState): void {
+  const reserved = new Map<number, number>()
   for (const id of state.world.aliveIds()) {
     checkEntity(state, id)
+    checkProduction(state, id, reserved)
   }
   const footprints = state.world
     .aliveIds()
@@ -185,6 +232,11 @@ export function checkInvariants(state: GameState): void {
     .filter((footprint): footprint is NonNullable<typeof footprint> => footprint !== undefined)
   checkBuildingFootprints(state.mapBounds, footprints)
   checkPlayers(state)
+  for (const player of state.players) {
+    if (player.reservedSupply !== (reserved.get(player.id) ?? 0)) {
+      fail(`player ${player.id} has mismatched reserved supply`)
+    }
+  }
   if (state.pendingDamage.size !== 0) {
     fail('the per-tick damage buffer was not cleared')
   }

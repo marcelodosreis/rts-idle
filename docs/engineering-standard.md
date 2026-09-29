@@ -99,10 +99,17 @@ guards file length and the typed-domain policy (see `typed-domain.test.ts`).
   functional browser iteration, `pnpm run test:e2e:perf` for renderer benchmark
   changes, and `pnpm run test:e2e:all` for the complete Chromium + Firefox gate,
   release, or CI-equivalent validation.
+- A gameplay capability is incomplete until the player can reach it through the
+  intended screen, perform the natural interaction, see its progress/result and
+  blocked states, and complete the real-server flow in Playwright. Simulation,
+  protocol, or integration coverage alone cannot mark gameplay `done`.
+- Every task ID must expose its phase or cross-cutting track and stage, using
+  `P<phase>.<stage>[.<substage>]` or `<TRACK>.<stage>[.<substage>]`.
 
 ## Completion checklist
 
 - Behavior and regression coverage are verified.
+- Player-facing gameplay has screen, interaction, feedback, and E2E coverage.
 - Typecheck, lint, relevant tests, build, and architecture barriers pass.
 - No public API or forbidden dependency changed unintentionally.
 - No unrelated formatting/generated churn remains.

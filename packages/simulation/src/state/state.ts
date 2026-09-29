@@ -16,6 +16,7 @@ export interface PlayerState {
   defeated: boolean
   gold: number
   usedSupply: number
+  reservedSupply: number
   supplyCap: number
 }
 

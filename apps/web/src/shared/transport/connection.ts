@@ -21,6 +21,8 @@ export interface ConnectionHandlers {
   readonly onOpen?: () => void
   readonly onMatchConfig?: (config: MatchConfig) => void
   readonly onError?: (error: ErrorMessage) => void
+  readonly onTransportError?: (error: ErrorMessage) => void
+  readonly onClose?: () => void
 }
 
 export function connectMatch(url: string, request: MatchRequest, handlers: ConnectionHandlers): MatchConnection {
@@ -31,8 +33,9 @@ export function connectMatch(url: string, request: MatchRequest, handlers: Conne
     handlers.onOpen?.()
   })
   ws.addEventListener('error', () => {
-    handlers.onError?.({ type: 'error', message: `failed to connect to ${url}` })
+    handlers.onTransportError?.({ type: 'error', message: `failed to connect to ${url}` })
   })
+  ws.addEventListener('close', () => handlers.onClose?.())
   ws.addEventListener('message', (event) => {
     let parsed: unknown
     try {

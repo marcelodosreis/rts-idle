@@ -10,5 +10,6 @@
  * 0.7.0: Base, Barracks, and Construction were unified as Building.
  * 0.8.0: BUILD orders persist their deterministic construction work point.
  * 0.9.0: player supply and Supply Depot state joined canonical snapshots.
+ * 0.10.0: production queues and reserved supply joined canonical snapshots.
  */
-export const SIMULATION_VERSION = '0.9.0'
+export const SIMULATION_VERSION = '0.10.0'

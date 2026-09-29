@@ -63,16 +63,33 @@ describe('match session handlers', () => {
     expect(callbacks.setSelectedMineral).toHaveBeenLastCalledWith(null)
   })
 
-  it('guards open, error, and stale callbacks', () => {
+  it('logs command errors without changing the connected status', () => {
     const { runtime, callbacks, handlers } = harness()
     handlers.onOpen?.()
     handlers.onError?.({ type: 'error', message: 'bad', scenarios: [] })
     expect(callbacks.setStatus).toHaveBeenNthCalledWith(1, 'connected')
-    expect(callbacks.setStatus).toHaveBeenNthCalledWith(2, 'error')
+    expect(callbacks.setStatus).toHaveBeenCalledTimes(1)
+    expect(callbacks.appendLog).toHaveBeenCalledWith('error', 'bad')
     runtime.sessionActive = false
     handlers.onOpen?.()
     handlers.onError?.({ type: 'error', message: 'stale' })
-    expect(callbacks.setStatus).toHaveBeenCalledTimes(2)
+    expect(callbacks.setStatus).toHaveBeenCalledTimes(1)
+  })
+
+  it('changes status only for transport failures and closes', () => {
+    const { runtime, callbacks, handlers } = harness()
+    handlers.onOpen?.()
+    handlers.onTransportError?.({ type: 'error', message: 'network failed' })
+    expect(callbacks.setStatus).toHaveBeenNthCalledWith(1, 'connected')
+    expect(callbacks.setStatus).toHaveBeenNthCalledWith(2, 'error')
+    expect(callbacks.appendLog).toHaveBeenCalledWith('error', 'network failed')
+    handlers.onClose?.()
+    expect(callbacks.setStatus).toHaveBeenNthCalledWith(3, 'error')
+    expect(callbacks.appendLog).toHaveBeenCalledWith('error', 'Connection closed')
+    runtime.sessionActive = false
+    handlers.onTransportError?.({ type: 'error', message: 'stale' })
+    handlers.onClose?.()
+    expect(callbacks.setStatus).toHaveBeenCalledTimes(3)
   })
 
   it.each([

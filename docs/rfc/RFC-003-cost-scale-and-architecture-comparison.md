@@ -144,10 +144,10 @@ isolated sessions to shared rooms. This alone reduces cost 20×.
 
 | ID | Title | Depends on | Packages | Validation |
 |---|---|---|---|---|
-| SCALE-001 | Delta snapshots (protocol + server) | — | protocol, simulation, server | determinism, integration |
-| SCALE-002 | Shared room system (matchmaking + rooms) | — | server, protocol | integration, e2e |
-| SCALE-003 | Binary protocol (MessagePack) | SCALE-001 | protocol | unit, integration |
-| SCALE-004 | Fog of war (filtered snapshots) | SCALE-002 | simulation, protocol | unit, simulation |
+| SCL.01 | Delta snapshots (protocol + server) | — | protocol, simulation, server | determinism, integration |
+| SCL.02 | Shared room system (matchmaking + rooms) | — | server, protocol | integration, e2e |
+| SCL.03 | Binary protocol (MessagePack) | SCL.01 | protocol | unit, integration |
+| SCL.04 | Fog of war (filtered snapshots) | SCL.02 | simulation, protocol | unit, simulation |
 
 ## 9. Risks
 
