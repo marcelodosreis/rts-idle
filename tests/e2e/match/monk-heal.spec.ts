@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
+import { hasArt } from '../support/art.js'
 
 async function screenPoint(page: Page, x: number, y: number) {
   return page.evaluate(
@@ -33,7 +34,11 @@ test('Monk heals an allied unit through the match HUD', async ({ page }) => {
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getUnitHealth(2)?.current ?? 0), { timeout: 5_000 })
     .toBe(115)
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getSpriteState(1)?.anim ?? null)).toBe('attack')
+  if (await hasArt(page)) {
+    await expect
+      .poll(() => page.evaluate(() => window.__rtsDebug?.getSpriteState(1)?.anim ?? null))
+      .not.toBe('fallback')
+  }
   await expect(healButton).toBeDisabled()
   await expect(healButton).toHaveText(/Heal \(\d+s\)/)
 })

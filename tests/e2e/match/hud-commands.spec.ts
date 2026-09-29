@@ -42,7 +42,14 @@ test('STOP cancels auto-orders and an armed ATTACK re-engages the target', async
   await page.goto('/?scenario=8v8&aggression=offensive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
-  const blueIds = units.filter((unit) => unit.owner === 0).map((unit) => unit.id)
+  const blueIds = await page.evaluate(() => {
+    const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
+    return Object.entries(owners)
+      .filter(([id, owner]) => owner === 0 && kinds[id] !== 'monk')
+      .map(([id]) => Number(id))
+      .slice(0, 6)
+  })
   const redIds = units.filter((unit) => unit.owner === 1).map((unit) => unit.id)
   expect(blueIds.length).toBeGreaterThan(0)
   expect(redIds.length).toBeGreaterThan(0)

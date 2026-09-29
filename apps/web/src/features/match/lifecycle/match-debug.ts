@@ -1,10 +1,12 @@
 import type { ConstructionStatus, MatchConfig, SnapshotMessage } from '@rts/protocol'
 import type { GameRenderer } from '@rts/renderer'
+import type { UnitKind } from '@rts/shared'
 import type { SelectionUnitState } from '../selection/selection-projection'
 
 export interface RtsDebug {
   getPositions(): Record<string, { readonly x: number; readonly y: number }>
   getUnitOwners(): Record<string, number>
+  getUnitKinds(): Record<string, UnitKind>
   getConstructionStates(): Record<
     string,
     {
@@ -56,6 +58,7 @@ export function createRtsDebug(options: MatchDebugOptions): RtsDebug {
   return {
     getPositions: () => Object.fromEntries([...renderer.getUnitPositions()].map(([id, pos]) => [String(id), pos])),
     getUnitOwners: () => Object.fromEntries([...unitStates].map(([id, state]) => [String(id), state.owner])),
+    getUnitKinds: () => Object.fromEntries([...unitStates].map(([id, state]) => [String(id), state.kind])),
     getConstructionStates: () =>
       Object.fromEntries(
         buildings().map((building) => [
