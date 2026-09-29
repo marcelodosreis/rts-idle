@@ -14,6 +14,7 @@ import {
 import { ownerColor } from '../world/owner-color.js'
 import { drawEconomyBar } from './economy.js'
 import { type EconomyFrames, economyAnimation, FACTIONS, unitAssetKey } from './economy-animation.js'
+import { facingForState } from './facing.js'
 import { FALLBACK_GLYPH, type FallbackShape } from './fallback.js'
 
 /** Visual radius of a unit cell (one tile diameter). */
@@ -35,10 +36,12 @@ export function normalizedUnitScale(kind: UnitKind): number {
 export interface UnitFrameState {
   readonly moving: boolean
   readonly facingLeft: boolean
+  readonly lookAtX?: number
   readonly now: number
   readonly economy: RenderUnit['economy']
   readonly carrying?: boolean
   readonly building?: boolean
+  readonly repairing?: boolean
 }
 
 /**
@@ -79,7 +82,9 @@ function cloneUnitFrames(template: UnitFrames): UnitFrames {
     build: template.build === null ? null : cloneAnimation(template.build),
     gather: template.gather === null ? null : cloneAnimation(template.gather),
     carryIdle: template.carryIdle === null ? null : cloneAnimation(template.carryIdle),
-    carryRun: template.carryRun === null ? null : cloneAnimation(template.carryRun)
+    carryRun: template.carryRun === null ? null : cloneAnimation(template.carryRun),
+    repairRun: template.repairRun === null ? null : cloneAnimation(template.repairRun),
+    repairInteract: template.repairInteract === null ? null : cloneAnimation(template.repairInteract)
   }
 }
 
@@ -90,6 +95,8 @@ function installFrames(container: Container, frames: UnitFrames): void {
     frames.attack,
     frames.build,
     frames.gather,
+    frames.repairRun,
+    frames.repairInteract,
     frames.carryIdle,
     frames.carryRun
   ]
@@ -218,21 +225,24 @@ export class UnitSprite {
     this.body = this.frames.idle
   }
 
-  /** Shows idle, run, or attack by current state and flips by direction. */
   setState(state: UnitFrameState): void {
-    const { moving, now, economy, carrying = false, building = false } = state
+    const { moving, now, economy, carrying = false, building = false, repairing = false } = state
     if (this.frames === null) {
       return
     }
     // Only re-face while moving, so idle keeps looking the way the unit last
     // walked instead of snapping back to the right when it stops.
-    if (moving) {
-      this.facing = state.facingLeft ? -1 : 1
-    }
+    this.facing = facingForState(this.facing, this.container.position.x, state)
     const attacking = now < this.attackUntil && this.frames.attack !== null
     let next: AnimatedSprite
-    const economyFrame = economyAnimation(this.frames, economy?.phase, moving, carrying, building)
-    if (economyFrame !== null && (economyFrame === this.frames.gather || economyFrame === this.frames.build)) {
+    const economyFrame = economyAnimation(this.frames, { phase: economy?.phase, moving, carrying, building, repairing })
+    if (
+      economyFrame !== null &&
+      (economyFrame === this.frames.gather ||
+        economyFrame === this.frames.build ||
+        economyFrame === this.frames.repairRun ||
+        economyFrame === this.frames.repairInteract)
+    ) {
       // Work animations outrank combat; the carry pose does not (see below).
       next = economyFrame
     } else if (attacking) {
@@ -258,8 +268,6 @@ export class UnitSprite {
   setEconomyBar(economy: RenderUnit['economy']): void {
     drawEconomyBar(this.economyBar, economy)
   }
-
-  /** Starts the attack animation for `until` (wall clock, presentation only). */
   beginAttack(until: number): void {
     this.attackUntil = until
     // Restart the swing from the first frame so every attack plays a full
@@ -267,12 +275,7 @@ export class UnitSprite {
     this.frames?.attack?.gotoAndPlay(0)
   }
 
-  /**
-   * Flips the sprite to face an x position (world render pixels). Used when a
-   * unit fires so it never attacks from behind, even while standing.
-   */
   faceToward(targetRenderX: number): void {
-    // The fallback shapes have no facing and keep their normalized size.
     if (this.frames === null) {
       return
     }
@@ -291,12 +294,10 @@ export class UnitSprite {
     return attack === undefined || attack === null ? 0 : attack.totalFrames * 100
   }
 
-  /** Last reported health, or `null` when the unit is not combat-capable. */
   health(): { readonly current: number; readonly max: number } | null {
     return this.healthNow
   }
 
-  /** Updates the overhead health bar; hidden when full or health is unknown. */
   setHealth(current: number | undefined, max: number | undefined): void {
     if (current === undefined || max === undefined || max <= 0) {
       this.healthNow = null
@@ -307,10 +308,6 @@ export class UnitSprite {
     }
     this.healthNow = { current, max }
     const ratio = clampRatio(current, max)
-    if (current >= max) {
-      this.hpBar.visible = false
-      return
-    }
     this.hpBar.visible = true
     this.hpBar.clear()
     drawProgressBar(this.hpBar, {
@@ -364,6 +361,12 @@ export class UnitSprite {
     }
     if (this.body === this.frames.build) {
       return 'build'
+    }
+    if (this.body === this.frames.repairRun) {
+      return 'repair_run'
+    }
+    if (this.body === this.frames.repairInteract) {
+      return 'repair_interact'
     }
     if (this.body === this.frames.gather) {
       return 'gather'

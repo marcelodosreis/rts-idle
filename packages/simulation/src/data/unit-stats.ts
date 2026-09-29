@@ -11,12 +11,13 @@ export interface UnitCombatStats {
   readonly damage: number
   readonly rangeTiles: number
   readonly cooldownTicks: number
+  readonly mechanical: boolean
 }
 
 export const UNIT_STATS_BY_KIND: Readonly<Record<UnitKind, UnitCombatStats>> = {
-  pawn: { maxHp: 100, damage: 10, rangeTiles: 1, cooldownTicks: 20 },
-  warrior: { maxHp: 150, damage: 15, rangeTiles: 1, cooldownTicks: 20 },
-  archer: { maxHp: 60, damage: 8, rangeTiles: 3, cooldownTicks: 20 }
+  pawn: { maxHp: 100, damage: 10, rangeTiles: 1, cooldownTicks: 20, mechanical: true },
+  warrior: { maxHp: 150, damage: 15, rangeTiles: 1, cooldownTicks: 20, mechanical: true },
+  archer: { maxHp: 60, damage: 8, rangeTiles: 3, cooldownTicks: 20, mechanical: true }
 }
 
 /** Baseline stats; every kind resolves through {@link unitStatsFor}. */

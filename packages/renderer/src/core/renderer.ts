@@ -72,7 +72,7 @@ export class PixiRenderer implements GameRenderer {
     const app = new Application()
     await app.init({ resizeTo: host, background: WATER_BG, roundPixels: true, preference: 'webgl' })
     if (mountId !== this.mountId) {
-      this.destroyApplication(app)
+      this.destroyApplication(app, false)
       return null
     }
     host.appendChild(app.canvas)
@@ -119,7 +119,7 @@ export class PixiRenderer implements GameRenderer {
     }
     if (mountId !== this.mountId) {
       terrain.dispose()
-      this.destroyApplication(app)
+      this.destroyApplication(app, false)
       return null
     }
     const camera = this.camera as ReturnType<typeof createCameraController>
@@ -172,11 +172,8 @@ export class PixiRenderer implements GameRenderer {
     this.camera = wired.camera
   }
 
-  private destroyApplication(app: Application): void {
-    app.destroy(
-      { removeView: true, releaseGlobalResources: true },
-      { children: true, texture: false, textureSource: false }
-    )
+  private destroyApplication(app: Application, releaseGlobalResources: boolean): void {
+    app.destroy({ removeView: true, releaseGlobalResources }, { children: true, texture: false, textureSource: false })
   }
 
   present(frame: RenderFrame): void {

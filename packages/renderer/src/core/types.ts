@@ -15,8 +15,11 @@ export interface RenderUnit {
   /** Current/maximum health, present when the unit is combat-capable. */
   readonly hp?: number
   readonly maxHp?: number
+  readonly lookAtX?: number
   /** Authoritative behavior state from the simulation (drives idle/run). */
   readonly orderState?: OrderState
+  readonly repairProgressTicks?: number
+  readonly repairProgressMax?: number
   readonly economy?: SnapshotEconomy
   /** True while the worker holds cargo, independent of its current order. */
   readonly carrying?: boolean
@@ -25,7 +28,18 @@ export interface RenderUnit {
 export type RenderBuilding = SnapshotBuilding
 
 /** Closed set of sprite animation states reported by the renderer (debug/E2E). */
-export const SPRITE_ANIMS = ['idle', 'run', 'attack', 'build', 'gather', 'carry_idle', 'carry_run', 'fallback'] as const
+export const SPRITE_ANIMS = [
+  'idle',
+  'run',
+  'attack',
+  'build',
+  'repair_run',
+  'repair_interact',
+  'gather',
+  'carry_idle',
+  'carry_run',
+  'fallback'
+] as const
 export type SpriteAnim = (typeof SPRITE_ANIMS)[number]
 
 export const SPRITE_SHAPES = ['circle', 'square', 'triangle'] as const

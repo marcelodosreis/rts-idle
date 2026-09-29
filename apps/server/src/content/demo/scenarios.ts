@@ -13,6 +13,7 @@ export interface DemoBaseSpawn {
   readonly owner: PlayerId
   readonly x: Fixed
   readonly y: Fixed
+  readonly initialHp?: number
 }
 
 export interface DemoMineralNodeSpawn {
@@ -124,7 +125,7 @@ function regressionScenario(): DemoScenario {
       { owner: 0, kind: PAWN, worker: true, ...tile(11, 11) }
     ],
     buildings: [
-      { owner: 0, ...tile(PLAYER_BASE.x, PLAYER_BASE.y) },
+      { owner: 0, initialHp: 250, ...tile(PLAYER_BASE.x, PLAYER_BASE.y) },
       { owner: 1, ...tile(OPPONENT_BASE.x, OPPONENT_BASE.y) }
     ],
     mineralNodes: [{ remaining: 3000, ...tile(MINERAL_NODE.x, MINERAL_NODE.y) }],

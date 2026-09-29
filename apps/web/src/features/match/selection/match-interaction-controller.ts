@@ -14,6 +14,8 @@ export interface SelectedUnitState {
   readonly kind: string
   readonly owner: number
   readonly carrying?: boolean | undefined
+  readonly hp?: number
+  readonly maxHp?: number
 }
 
 export interface MatchInteractionContext {
@@ -132,6 +134,14 @@ export class MatchInteractionController {
     if (this.context.mode() === 'attack' || isEnemy) {
       this.context.sendCommand({ type: 'ATTACK', payload: { unitIds, targetId: id } })
       this.context.clearMode()
+      return
+    }
+    const target = this.context.unitStates.get(id)
+    if (target !== undefined && this.isDamaged(target.hp, target.maxHp)) {
+      const workers = this.selectedWorkers()
+      if (workers.length > 0) {
+        this.context.sendCommand({ type: 'REPAIR', payload: { unitIds: workers, targetId: id } })
+      }
     }
   }
 
@@ -148,6 +158,13 @@ export class MatchInteractionController {
       const carrying = ownedPawns.filter((unitId) => this.context.unitStates.get(unitId)?.carrying === true)
       if (building.owner === this.context.humanPlayer && carrying.length > 0) {
         this.context.sendCommand({ type: 'DEPOSIT', payload: { unitIds: carrying, buildingId: id } })
+        return
+      }
+      if (building.owner === this.context.humanPlayer && this.isDamaged(building.hp, building.maxHp)) {
+        if (ownedPawns.length > 0) {
+          this.context.sendCommand({ type: 'REPAIR', payload: { unitIds: ownedPawns, targetId: id } })
+        }
+        return
       }
       return
     }
@@ -186,6 +203,10 @@ export class MatchInteractionController {
       .selectedUnitIds()
       .filter((id) => this.context.unitStates.get(id)?.kind === 'pawn')
       .filter((id) => this.context.unitStates.get(id)?.owner === this.context.humanPlayer)
+  }
+
+  private isDamaged(current: number | undefined, max: number | undefined): boolean {
+    return current !== undefined && max !== undefined && current > 0 && current < max
   }
 
   private selectedRallyProducer(): SnapshotBuilding | undefined {

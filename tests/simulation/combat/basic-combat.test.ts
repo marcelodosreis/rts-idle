@@ -1,5 +1,15 @@
+import { BUILDING_DEFINITIONS } from '@rts/game-data'
 import { tilesToFixed } from '@rts/shared'
-import { createSimulation, Health, Movement, Orders, Position, type SimulationEvent } from '@rts/simulation'
+import {
+  Building,
+  createSimulation,
+  Health,
+  Movement,
+  Orders,
+  Owner,
+  Position,
+  type SimulationEvent
+} from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { SEEDS, TEST_IDENTITY, worldWithCombatUnits } from '../../fixtures/index.js'
 
@@ -144,6 +154,40 @@ describe('basic combat (P1.05)', () => {
     const died = events.filter((event) => event.type === 'unitDied' && event.entityId === target)
     expect(died).toHaveLength(1)
     expect(sim.inspectState().world.hasEntity(target)).toBe(false)
+  })
+
+  it('damages and destroys a completed building through the shared health system', () => {
+    const world = worldWithCombatUnits([0, 1])
+    const buildingId = 1002
+    world.createEntity(buildingId)
+    world.store(Position).set(buildingId, { x: tilesToFixed(1), y: 0 })
+    world.store(Owner).set(buildingId, { owner: 1 })
+    world.store(Building).set(buildingId, {
+      buildingType: 'BASE',
+      status: 'COMPLETED',
+      progressTicks: 100,
+      totalTicks: 100,
+      builderId: null,
+      footprint: { x: 1, y: 0, ...BUILDING_DEFINITIONS.BASE.footprint }
+    })
+    world.store(Health).set(buildingId, { current: 10, max: BUILDING_DEFINITIONS.BASE.maxHp })
+    const sim = createSimulation({ seed: SEEDS.simulation.fixedTick, identity: TEST_IDENTITY, initialWorld: world })
+    const attacker = world.aliveIds()[0]!
+
+    const result = sim.step([
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'ATTACK', payload: { unitIds: [attacker], targetId: buildingId } }
+      }
+    ])
+
+    expect(sim.inspectState().world.hasEntity(buildingId)).toBe(false)
+    expect(result.events).toEqual(
+      expect.arrayContaining([{ type: 'damageDealt', targetId: buildingId, amount: 10, targetHp: 0 }])
+    )
+    expect(result.events.some((event) => event.type === 'unitDied' && event.entityId === buildingId)).toBe(false)
   })
 
   it('clears an ATTACK order when the commanded target dies', () => {

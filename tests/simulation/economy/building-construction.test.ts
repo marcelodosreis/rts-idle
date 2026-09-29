@@ -3,6 +3,7 @@ import {
   Building,
   createSimulation,
   createWorld,
+  Health,
   Kind,
   Orders,
   Owner,
@@ -75,6 +76,7 @@ describe('BUILD simulation lifecycle', () => {
     expect(state.world.store(Building).get(buildingId)?.progressTicks).toBe(100)
     expect(state.world.store(Building).get(buildingId)?.status).toBe('COMPLETED')
     expect(state.world.store(Building).has(buildingId)).toBe(true)
+    expect(state.world.store(Health).get(buildingId)).toEqual({ current: 500, max: 500 })
     expect(state.world.store(Orders).get(START_ENTITY_ID + 1)).toBeUndefined()
     expect(state.world.store(Building).get(buildingId)?.progressTicks).toBeGreaterThanOrEqual(paused ?? 0)
   })

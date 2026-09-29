@@ -50,6 +50,9 @@
 | P2.02.05 | Carrying state without a gather order | done | P2.02.01, P2.02.04 | protocol, renderer, web | unit, integration, e2e |
 | P2.03.02 | Build menu | done | P2.03.01 | web | e2e |
 | P2.07.05 | Production panel: Pawn, Warrior, Archer | done | P2.07 | web | e2e |
+| P2.10.01 | Persistent unit health bars | done | P2.07 | renderer, web | unit, e2e |
+| P2.10.02 | Building health and shared damage | done | P2.10.01 | game-data, simulation, protocol, renderer, server, web | unit, simulation, contracts, integration, e2e |
+| P2.10 | Repair | done | P2.10.02 | shared, game-data, protocol, simulation, server, renderer, web | unit, simulation, contracts, integration, determinism, invariants, e2e |
 
 ## Phase 3 — Navigation and Combat
 

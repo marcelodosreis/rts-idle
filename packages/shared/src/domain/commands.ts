@@ -43,6 +43,11 @@ export interface DepositPayload {
   readonly buildingId: EntityId
 }
 
+export interface RepairPayload {
+  readonly unitIds: readonly EntityId[]
+  readonly targetId: EntityId
+}
+
 export const BUILDING_TYPES = ['BASE', 'BARRACKS', 'SUPPLY_DEPOT'] as const
 
 export type BuildingType = (typeof BUILDING_TYPES)[number]
@@ -62,6 +67,7 @@ export const COMMAND_TYPES = [
   'ATTACK_MOVE',
   'GATHER',
   'DEPOSIT',
+  'REPAIR',
   'BUILD',
   'CANCEL_CONSTRUCTION',
   'TRAIN',
@@ -118,6 +124,7 @@ export type CommandIntent =
   | { readonly type: 'ATTACK_MOVE'; readonly payload: AttackMovePayload }
   | { readonly type: 'GATHER'; readonly payload: GatherPayload }
   | { readonly type: 'DEPOSIT'; readonly payload: DepositPayload }
+  | { readonly type: 'REPAIR'; readonly payload: RepairPayload }
   | { readonly type: 'BUILD'; readonly payload: BuildPayload }
   | { readonly type: 'CANCEL_CONSTRUCTION'; readonly payload: CancelConstructionPayload }
   | { readonly type: 'TRAIN'; readonly payload: TrainPayload }

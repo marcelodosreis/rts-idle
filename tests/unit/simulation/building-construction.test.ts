@@ -12,7 +12,9 @@ describe('base construction data and persistence', () => {
       footprint: BUILDING_FOOTPRINTS.BASE,
       costMinerals: 100,
       constructionTicks: 100,
-      supplyProvided: 10
+      supplyProvided: 10,
+      maxHp: 500,
+      mechanical: true
     })
   })
 
@@ -23,7 +25,9 @@ describe('base construction data and persistence', () => {
       footprint: BUILDING_FOOTPRINTS.BARRACKS,
       costMinerals: 150,
       constructionTicks: 100,
-      supplyProvided: 0
+      supplyProvided: 0,
+      maxHp: 400,
+      mechanical: true
     })
   })
 
@@ -34,7 +38,9 @@ describe('base construction data and persistence', () => {
       footprint: BUILDING_FOOTPRINTS.SUPPLY_DEPOT,
       costMinerals: 100,
       constructionTicks: 100,
-      supplyProvided: 8
+      supplyProvided: 8,
+      maxHp: 250,
+      mechanical: true
     })
   })
 

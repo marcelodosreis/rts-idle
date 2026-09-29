@@ -126,6 +126,31 @@ describe('WorldObjectLayer construction anchors', () => {
 
     expect(layers.worldObjects.children[0]!.getLocalBounds().y).toBeLessThan(0)
   })
+
+  it('draws a health bar above a damaged building', () => {
+    const layers = layerContainers()
+    const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
+    layer.present(
+      [
+        {
+          id: 9,
+          buildingType: 'BASE',
+          x: 0,
+          y: 0,
+          owner: 0,
+          footprint: BASE_BUILDING.footprint,
+          status: 'COMPLETED',
+          progressTicks: 100,
+          totalTicks: 100,
+          hp: 250,
+          maxHp: 500
+        }
+      ],
+      []
+    )
+
+    expect(layers.worldObjects.children[0]!.getLocalBounds().y).toBeLessThan(-10)
+  })
 })
 
 describe('building presentation styles', () => {

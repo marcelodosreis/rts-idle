@@ -1,9 +1,10 @@
 import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import { RouteLoading } from '../app/loading'
+import { loadAssetBrowserPage } from './laboratory-route-loader'
 
 const MatchPage = lazy(() => import('../pages/match/MatchPage'))
-const AssetBrowserPage = lazy(() => import('../pages/laboratory/browser/AssetBrowserPage'))
+const AssetBrowserPage = lazy(loadAssetBrowserPage)
 const MapEditorPage = lazy(() => import('../pages/laboratory/editor/MapEditorPage'))
 const DiagnosticsPage = lazy(() => import('../pages/laboratory/diagnostics/DiagnosticsPage'))
 const AssetReportPage = lazy(() => import('../pages/laboratory/report/AssetReportPage'))

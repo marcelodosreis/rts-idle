@@ -71,6 +71,7 @@ function toHudConstruction(construction: SnapshotBuilding): HudConstruction {
     totalTicks: construction.totalTicks,
     builderId: construction.builderId ?? null,
     rallyPoint: construction.rallyPoint ?? null,
+    ...(construction.hp === undefined ? {} : { hp: construction.hp, maxHp: construction.maxHp }),
     ...(construction.production === undefined ? {} : { production: construction.production })
   }
 }

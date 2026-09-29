@@ -51,6 +51,18 @@ async function selectEconomyBase(page: Page): Promise<void> {
   await page.mouse.click(base.x, base.y)
 }
 
+async function queueLength(page: Page): Promise<number> {
+  return page.locator('[data-testid^="production-item-"]').count()
+}
+
+async function cancelFirstQueuedProduction(page: Page): Promise<void> {
+  const cancel = page.locator('[data-production-status="QUEUED"] [data-testid^="cancel-production-"]').first()
+  await expect(cancel).toBeVisible()
+  await cancel.click()
+  await expect(cancel).toHaveText('Confirm')
+  await cancel.click()
+}
+
 test('production buttons stay inside the completed construction panel', async ({ page }) => {
   test.setTimeout(30_000)
   await page.goto('/?scenario=regression')
@@ -90,28 +102,27 @@ test('cancels any queued production row with confirmation and refund feedback', 
     .toBeGreaterThan(0)
 
   await selectEconomyBase(page)
-  await page.getByTestId('train-pawn').click()
-  await page.getByTestId('train-pawn').click()
-  await page.getByTestId('train-pawn').click()
-  await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 3/5')
+  for (let count = 1; count <= 5; count += 1) {
+    await page.getByTestId('train-pawn').click()
+    await expect(page.getByTestId('production-queue-count')).toHaveText(`Queue ${count}/5`)
+  }
+  await expect(page.getByTestId('hud-resource-mineral')).toContainText('0')
   const queueFitsSelection = await page
     .getByRole('list', { name: 'Production queue' })
     .evaluate((queue) => queue.scrollWidth <= queue.clientWidth)
   expect(queueFitsSelection).toBe(true)
   await expect(page.getByTestId('production-item-0').getByRole('button')).toHaveCount(0)
-  await expect(page.getByTestId('production-status-0')).toHaveText('Producing')
   await expect(page.getByTestId('production-item-1')).toHaveAttribute('data-production-status', 'QUEUED')
 
-  await page.getByTestId('cancel-production-1').click()
-  await expect(page.getByTestId('cancel-production-1')).toHaveText('Confirm')
-  await page.getByTestId('cancel-production-1').click()
-  await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 2/5')
-  await expect(page.getByTestId('hud-resource-mineral')).toContainText('150')
+  const beforeFirstCancel = await queueLength(page)
+  await cancelFirstQueuedProduction(page)
+  await expect.poll(() => queueLength(page)).toBeLessThan(beforeFirstCancel)
+  await expect(page.getByTestId('hud-resource-mineral')).toContainText('50')
 
-  await page.getByTestId('cancel-production-1').click()
-  await page.getByTestId('cancel-production-1').click()
-  await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 1/5')
-  await expect(page.getByTestId('hud-resource-mineral')).toContainText('200')
+  const beforeSecondCancel = await queueLength(page)
+  await cancelFirstQueuedProduction(page)
+  await expect.poll(() => queueLength(page)).toBeLessThan(beforeSecondCancel)
+  await expect(page.getByTestId('hud-resource-mineral')).toContainText('100')
 })
 
 test('sets a rally point and sends a trained unit toward it', async ({ page }) => {

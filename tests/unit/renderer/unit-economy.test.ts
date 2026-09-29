@@ -8,6 +8,7 @@ import {
   economyFrameKey
 } from '../../../packages/renderer/src/units/economy-animation.js'
 import { economyBarColor, economyBarRatio } from '../../../packages/renderer/src/units/economy-helpers.js'
+import { facingForState } from '../../../packages/renderer/src/units/facing.js'
 
 // Regression coverage for the sprite-selection logic itself: E2E only
 // exercises the game's phase transitions (see economy-playable.spec.ts),
@@ -22,50 +23,78 @@ function fakeSprite(): AnimatedSprite {
 describe('economyAnimation', () => {
   const frames: EconomyFrames = {
     build: fakeSprite(),
+    repairRun: fakeSprite(),
+    repairInteract: fakeSprite(),
     gather: fakeSprite(),
     carryIdle: fakeSprite(),
     carryRun: fakeSprite()
   }
 
   it('shows the gather sprite while gathering, moving or not', () => {
-    expect(economyAnimation(frames, 'gathering', false)).toBe(frames.gather)
-    expect(economyAnimation(frames, 'gathering', true)).toBe(frames.gather)
+    expect(economyAnimation(frames, { phase: 'gathering', moving: false })).toBe(frames.gather)
+    expect(economyAnimation(frames, { phase: 'gathering', moving: true })).toBe(frames.gather)
   })
 
   it('shows the hammer sprite while building', () => {
-    expect(economyAnimation(frames, undefined, false, false, true)).toBe(frames.build)
-    expect(economyAnimation(frames, undefined, true, false, true)).toBe(frames.build)
+    expect(economyAnimation(frames, { phase: undefined, moving: false, building: true })).toBe(frames.build)
+    expect(economyAnimation(frames, { phase: undefined, moving: true, building: true })).toBe(frames.build)
+  })
+
+  it('shows run_hammer while moving to a repair target', () => {
+    expect(economyAnimation(frames, { phase: undefined, moving: true, repairing: true })).toBe(frames.repairRun)
+  })
+
+  it('shows interact_hammer while repairing at the target', () => {
+    expect(economyAnimation(frames, { phase: undefined, moving: false, repairing: true })).toBe(frames.repairInteract)
   })
 
   it('shows carry_run while moving back to base', () => {
-    expect(economyAnimation(frames, 'to_base', true)).toBe(frames.carryRun)
+    expect(economyAnimation(frames, { phase: 'to_base', moving: true })).toBe(frames.carryRun)
   })
 
   it('shows carry_idle when stopped while returning to base', () => {
-    expect(economyAnimation(frames, 'to_base', false)).toBe(frames.carryIdle)
+    expect(economyAnimation(frames, { phase: 'to_base', moving: false })).toBe(frames.carryIdle)
   })
 
   it('falls back to run/idle handling for to_node and waiting_for_base', () => {
-    expect(economyAnimation(frames, 'to_node', true)).toBeNull()
-    expect(economyAnimation(frames, 'waiting_for_base', false)).toBeNull()
+    expect(economyAnimation(frames, { phase: 'to_node', moving: true })).toBeNull()
+    expect(economyAnimation(frames, { phase: 'waiting_for_base', moving: false })).toBeNull()
   })
 
   it('falls back to run/idle handling when there is no economy phase', () => {
-    expect(economyAnimation(frames, undefined, true)).toBeNull()
+    expect(economyAnimation(frames, { phase: undefined, moving: true })).toBeNull()
   })
 
   it('shows carry_run while carrying cargo without an economy phase', () => {
-    expect(economyAnimation(frames, undefined, true, true)).toBe(frames.carryRun)
+    expect(economyAnimation(frames, { phase: undefined, moving: true, carrying: true })).toBe(frames.carryRun)
   })
 
   it('shows carry_idle while stopped and carrying cargo without an economy phase', () => {
-    expect(economyAnimation(frames, undefined, false, true)).toBe(frames.carryIdle)
+    expect(economyAnimation(frames, { phase: undefined, moving: false, carrying: true })).toBe(frames.carryIdle)
+  })
+})
+
+describe('facingForState', () => {
+  it('keeps movement direction while travelling even when the work target is opposite', () => {
+    expect(facingForState(1, 0, { moving: true, facingLeft: true, lookAtX: 10 })).toBe(-1)
+  })
+
+  it('faces the work target after movement stops', () => {
+    expect(facingForState(-1, 10, { moving: false, facingLeft: true, lookAtX: 20 })).toBe(1)
   })
 })
 
 describe('economyFrameKey', () => {
   it('maps build to the hammer interaction sprite', () => {
     expect(economyFrameKey(0, 'build')).toBe('units.blue.pawn.pawn_interact_hammer')
+  })
+
+  it('maps repair movement to the hammer run sprite', () => {
+    expect(economyFrameKey(0, 'repairRun')).toBe('units.blue.pawn.pawn_run_hammer')
+  })
+
+  it('maps repair work to the hammer interaction sprite', () => {
+    expect(economyFrameKey(0, 'repairInteract')).toBe('units.blue.pawn.pawn_interact_hammer')
   })
 
   it('maps gather to the pickaxe interaction sprite', () => {

@@ -1,5 +1,7 @@
+import { Building } from '../ecs/building-component.js'
 import { Health, Orders, Owner } from '../ecs/components.js'
 import { removeEntity } from '../ecs/remove-entity.js'
+import { clearMovement } from '../movement/destination.js'
 import { setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
 
@@ -21,6 +23,22 @@ function clearOrdersTargeting(state: GameState, deadId: number): void {
     } else if (remaining.length !== queue.length) {
       setOrders(state, id, remaining)
     }
+  }
+}
+
+function clearOrdersForBuilding(state: GameState, buildingId: number): void {
+  const orders = state.world.store(Orders)
+  for (const id of state.world.aliveIds()) {
+    const queue = orders.get(id)?.queue
+    if (queue === undefined) {
+      continue
+    }
+    const remaining = queue.filter((order) => !(order.type === 'BUILD' && order.buildingId === buildingId))
+    if (remaining.length === queue.length) {
+      continue
+    }
+    setOrders(state, id, remaining)
+    clearMovement(state, id)
   }
 }
 
@@ -46,9 +64,16 @@ export function deathSystem(state: GameState): void {
     state.events.push({ type: 'damageDealt', targetId, amount: damage.amount, targetHp: current })
     if (current <= 0) {
       const owner = owners.get(targetId)?.owner ?? 0
+      const isBuilding = state.world.store(Building).has(targetId)
+      const isUnit = !isBuilding
       removeEntity(state, targetId)
       clearOrdersTargeting(state, targetId)
-      state.events.push({ type: 'unitDied', entityId: targetId, owner, killerId: damage.attackerId })
+      if (isBuilding) {
+        clearOrdersForBuilding(state, targetId)
+      }
+      if (isUnit) {
+        state.events.push({ type: 'unitDied', entityId: targetId, owner, killerId: damage.attackerId })
+      }
     }
   }
   state.pendingDamage.clear()

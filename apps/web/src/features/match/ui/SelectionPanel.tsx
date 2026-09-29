@@ -107,6 +107,8 @@ function orderLabel(unit: HudSelectionUnit): string {
       return 'Patrolling'
     case 'attack_move':
       return 'Attack-moving'
+    case 'repairing':
+      return `Repairing ${unit.repairProgressTicks ?? 0}/${unit.repairProgressMax ?? 10}`
     default:
       return unit.moving ? 'Moving' : 'Idle'
   }
@@ -317,15 +319,18 @@ function ConstructionSelectionCard({
             <span className="truncate">
               {constructionLabel(construction)} · {constructionTitleStatus(construction.status)}
             </span>
-            {construction.status !== 'COMPLETED' && (
-              <span
-                className="shrink-0 font-medium"
-                style={{ color: PROGRESS_PALETTE.construction.text }}
-                data-testid="construction-status"
-              >
-                {constructionStatusLine(construction)}
-              </span>
-            )}
+            <span className="flex shrink-0 items-center gap-2 font-medium">
+              {construction.hp !== undefined && construction.maxHp !== undefined && (
+                <span aria-live="polite" data-testid="construction-health">
+                  HP: {construction.hp}/{construction.maxHp}
+                </span>
+              )}
+              {construction.status !== 'COMPLETED' && (
+                <span style={{ color: PROGRESS_PALETTE.construction.text }} data-testid="construction-status">
+                  {constructionStatusLine(construction)}
+                </span>
+              )}
+            </span>
           </span>
         </CardTitle>
       </CardHeader>

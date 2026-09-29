@@ -58,6 +58,8 @@ function logSnapshotEvents(
       appendLog('event', `attackFired: ${event.attackerId} → ${event.targetId}`)
     } else if (event.type === 'damageDealt') {
       appendLog('event', `damageDealt: ${event.targetId} -${event.amount} HP (${event.targetHp} left)`)
+    } else if (event.type === 'repairStopped') {
+      appendLog('event', `repairStopped: worker ${event.workerId} target ${event.targetId} (${event.reason})`)
     } else if (event.type === 'unitDied') {
       appendLog('event', `unitDied: ${event.entityId} (P${event.owner}) killed by ${event.killerId ?? 'unknown'}`)
     }

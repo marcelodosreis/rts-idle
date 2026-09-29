@@ -7,7 +7,13 @@ export interface RtsDebug {
   getUnitOwners(): Record<string, number>
   getConstructionStates(): Record<
     string,
-    { readonly x: number; readonly y: number; readonly status: ConstructionStatus }
+    {
+      readonly x: number
+      readonly y: number
+      readonly status: ConstructionStatus
+      readonly hp?: number
+      readonly maxHp?: number
+    }
   >
   getAnimationFrame(id: number): number | null
   getUnitHealth(id: number): { readonly current: number; readonly max: number } | null
@@ -52,7 +58,15 @@ export function createRtsDebug(options: MatchDebugOptions): RtsDebug {
     getUnitOwners: () => Object.fromEntries([...unitStates].map(([id, state]) => [String(id), state.owner])),
     getConstructionStates: () =>
       Object.fromEntries(
-        buildings().map((building) => [String(building.id), { x: building.x, y: building.y, status: building.status }])
+        buildings().map((building) => [
+          String(building.id),
+          {
+            x: building.x,
+            y: building.y,
+            status: building.status,
+            ...(building.hp === undefined ? {} : { hp: building.hp, maxHp: building.maxHp })
+          }
+        ])
       ),
     getAnimationFrame: (id) => renderer.getUnitAnimationFrame(id),
     getUnitHealth: (id) => renderer.getUnitHealth(id),

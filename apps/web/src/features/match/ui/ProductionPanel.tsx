@@ -11,6 +11,26 @@ function productionItemLabel(item: SnapshotProductionItem, index: number): strin
   return `${index + 1}. ${TRAINABLE_LABEL[item.unitKind]}`
 }
 
+function productionItemSignature(item: SnapshotProductionItem): string {
+  return [item.unitKind, item.costMinerals, item.reservedSupply, item.progressTicks, item.totalTicks, item.status].join(
+    ':'
+  )
+}
+
+function queueKeys(queue: readonly SnapshotProductionItem[]): readonly string[] {
+  return queue.reduce<{ readonly keys: readonly string[]; readonly counts: ReadonlyMap<string, number> }>(
+    (state, item) => {
+      const signature = productionItemSignature(item)
+      const occurrence = state.counts.get(signature) ?? 0
+      return {
+        keys: [...state.keys, `${signature}:${occurrence}`],
+        counts: new Map([...state.counts, [signature, occurrence + 1]])
+      }
+    },
+    { keys: [], counts: new Map() }
+  ).keys
+}
+
 function QueueItem({
   item,
   index,
@@ -118,11 +138,12 @@ function QueueList({
   if (queue.length === 0) {
     return <p className="text-[11px]">No units in production.</p>
   }
+  const keys = queueKeys(queue)
   return (
     <ul className="grid list-none grid-cols-5 gap-1" aria-label="Production queue" aria-live="polite">
       {queue.map((item, index) => (
         <QueueItem
-          key={`${item.unitKind}-${index}`}
+          key={keys[index]}
           item={item}
           index={index}
           confirming={confirmingIndex === index}
