@@ -1,7 +1,7 @@
 ---
 status: open
-classe: test
-barreira: functional-e2e
+classe: coverage
+barreira: QH.19
 regressao: tests/e2e/match/control-click-attack.spec.ts, tests/e2e/match/hud-commands.spec.ts, tests/e2e/match/monk-heal.spec.ts
 ---
 
