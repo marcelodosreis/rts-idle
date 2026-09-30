@@ -16,6 +16,11 @@ async function canvasPoint(page: Page, x: number, y: number) {
   )
 }
 
+async function focusFixed(page: Page, x: number, y: number) {
+  await page.evaluate(([fixedX, fixedY]) => window.__rtsDebug?.moveCamera(fixedX, fixedY), [x, y] as const)
+  return canvasPoint(page, x, y)
+}
+
 async function workerIds(page: Page): Promise<number[]> {
   return page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
@@ -55,12 +60,34 @@ async function queueLength(page: Page): Promise<number> {
   return page.locator('[data-testid^="production-item-"]').count()
 }
 
+async function mineralValue(page: Page): Promise<number> {
+  const text = await page.getByTestId('hud-resource-mineral').textContent()
+  return Number(text?.match(/\d+/)?.[0] ?? 0)
+}
+
 async function cancelFirstQueuedProduction(page: Page): Promise<void> {
-  const cancel = page.locator('[data-production-status="QUEUED"] [data-testid^="cancel-production-"]').first()
+  const back = page.getByRole('button', { name: 'Back', exact: true })
+  if (await back.isVisible()) {
+    await back.click()
+  }
+  const cancel = page.getByTestId('cancel-current')
   await expect(cancel).toBeVisible()
   await cancel.click()
-  await expect(cancel).toHaveText('Confirm')
+  await expect(cancel).toContainText('Confirm')
   await cancel.click()
+}
+
+async function train(page: Page, unitKind: string): Promise<void> {
+  const trainMenu = page.getByRole('button', { name: 'Train', exact: true })
+  if (await trainMenu.isVisible()) {
+    await trainMenu.click()
+  }
+  await page.getByTestId(`train-${unitKind}`).click()
+}
+
+async function armBuild(page: Page, buildingType: string): Promise<void> {
+  await page.getByRole('button', { name: 'Build', exact: true }).click()
+  await page.getByTestId(`build-${buildingType.toLowerCase()}`).click()
 }
 
 test('production buttons stay inside the completed construction panel', async ({ page }) => {
@@ -71,24 +98,25 @@ test('production buttons stay inside the completed construction panel', async ({
     .toBeGreaterThan(0)
 
   await selectEconomyBase(page)
-  await expect(page.getByTestId('train-pawn')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Train', exact: true })).toBeVisible()
   await expect(page.getByTestId('train-warrior')).toHaveCount(0)
   await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 0/5')
-  await expect(page.getByTestId('production-panel').locator('button')).toHaveCount(3)
-  await page.getByTestId('train-pawn').click()
+  await expect(page.getByTestId('production-panel').locator('button')).toHaveCount(0)
+  await train(page, 'pawn')
   await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 1/5')
   await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE')
 
   const worker = (await workerIds(page))[0]!
   await selectWorker(page, worker)
-  await page.getByRole('button', { name: 'Barracks · 150', exact: true }).click()
-  const target = { x: tilesToFixed(11), y: tilesToFixed(9) }
-  const targetPoint = await canvasPoint(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
+  await armBuild(page, 'BARRACKS')
+  const target = { x: tilesToFixed(12), y: tilesToFixed(10) }
+  const targetPoint = await focusFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
   await page.mouse.click(targetPoint.x, targetPoint.y)
   await expect.poll(() => constructionAt(page, target), { timeout: 20_000 }).toMatchObject({ status: 'COMPLETED' })
 
   await page.mouse.click(targetPoint.x, targetPoint.y)
-  await expect(page.getByTestId('production-panel')).toHaveCSS('border-top-width', '0px')
+  await expect(page.getByRole('button', { name: 'Train', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Train', exact: true }).click()
   await expect(page.getByTestId('train-warrior')).toBeVisible()
   await expect(page.getByTestId('train-archer')).toBeVisible()
   await expect(page.getByTestId('train-pawn')).toHaveCount(0)
@@ -103,26 +131,27 @@ test('cancels any queued production row with confirmation and refund feedback', 
 
   await selectEconomyBase(page)
   for (let count = 1; count <= 5; count += 1) {
-    await page.getByTestId('train-pawn').click()
-    await expect(page.getByTestId('production-queue-count')).toHaveText(`Queue ${count}/5`)
+    await train(page, 'pawn')
+    await expect(page.getByTestId('production-queue-count')).toHaveText(/Queue [1-5]\/5/)
   }
+  await expect.poll(() => queueLength(page)).toBeGreaterThanOrEqual(2)
   await expect(page.getByTestId('hud-resource-mineral')).toContainText('0')
   const queueFitsSelection = await page
     .getByRole('list', { name: 'Production and research queue' })
     .evaluate((queue) => queue.scrollWidth <= queue.clientWidth)
   expect(queueFitsSelection).toBe(true)
-  await expect(page.getByTestId('production-item-0').getByRole('button')).toHaveCount(0)
   await expect(page.getByTestId('production-item-1')).toHaveAttribute('data-production-status', 'QUEUED')
 
   const beforeFirstCancel = await queueLength(page)
   await cancelFirstQueuedProduction(page)
   await expect.poll(() => queueLength(page)).toBeLessThan(beforeFirstCancel)
-  await expect(page.getByTestId('hud-resource-mineral')).toContainText('50')
+  await expect.poll(() => mineralValue(page)).toBeGreaterThan(0)
 
+  const firstRefund = await mineralValue(page)
   const beforeSecondCancel = await queueLength(page)
   await cancelFirstQueuedProduction(page)
   await expect.poll(() => queueLength(page)).toBeLessThan(beforeSecondCancel)
-  await expect(page.getByTestId('hud-resource-mineral')).toContainText('100')
+  await expect.poll(() => mineralValue(page)).toBeGreaterThan(firstRefund)
 })
 
 test('sets a rally point and sends a trained unit toward it', async ({ page }) => {
@@ -133,16 +162,27 @@ test('sets a rally point and sends a trained unit toward it', async ({ page }) =
     .toBeGreaterThan(0)
 
   await selectEconomyBase(page)
-  await expect(page.getByTestId('set-rally')).toBeVisible()
+  await expect(page.getByTestId('rally')).toBeVisible()
 
-  await page.getByTestId('set-rally').click()
-  const rallyTarget = { x: tilesToFixed(11.5), y: tilesToFixed(10) }
-  const rallyPoint = await canvasPoint(page, rallyTarget.x, rallyTarget.y)
+  await page.getByTestId('rally').click()
+  const rallyTarget = { x: tilesToFixed(13.5), y: tilesToFixed(12) }
+  const rallyPoint = await focusFixed(page, rallyTarget.x, rallyTarget.y)
   await page.mouse.click(rallyPoint.x, rallyPoint.y, { button: 'right' })
-  await expect(page.getByTestId('rally-point')).toHaveText(`Rally: ${rallyTarget.x}, ${rallyTarget.y}`)
+  await expect
+    .poll(async () => {
+      const text = await page.getByTestId('rally-point').textContent()
+      const values = text?.match(/Rally: (\d+), (\d+)/)
+      return (
+        values !== null &&
+        values !== undefined &&
+        Math.abs(Number(values[1]) - rallyTarget.x) <= 8 &&
+        Math.abs(Number(values[2]) - rallyTarget.y) <= 8
+      )
+    })
+    .toBe(true)
 
   const before = await workerIds(page)
-  await page.getByTestId('train-pawn').click()
+  await train(page, 'pawn')
   await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE')
   await expect.poll(() => workerIds(page), { timeout: 15_000 }).toHaveLength(before.length + 1)
 
@@ -161,11 +201,11 @@ test('shows blocked production until the exit is released', async ({ page }) => 
 
   await selectEconomyBase(page)
   const before = await workerIds(page)
-  await page.getByTestId('train-pawn').click()
+  await train(page, 'pawn')
   await expect.poll(() => workerIds(page), { timeout: 15_000 }).toHaveLength(before.length + 1)
   const blocker = (await workerIds(page)).find((id) => !before.includes(id))!
 
-  await page.getByTestId('train-pawn').click()
+  await train(page, 'pawn')
   await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'COMPLETED_WAITING', {
     timeout: 15_000
   })

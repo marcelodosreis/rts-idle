@@ -122,3 +122,29 @@ test('level editor fits at 1278px and 910px', async ({ page }) => {
   doc = await documentOverflow(page)
   expect(doc.scrollWidth).toBeLessThanOrEqual(doc.clientWidth + 1)
 })
+
+test('level editor canvas remains bounded at the requested HUD resolution', async ({ page }) => {
+  await page.setViewportSize({ width: 958, height: 910 })
+  await page.goto('/laboratory/editor')
+  await page.locator('[data-testid="terrain-canvas-host"][data-controller-ready="true"]').waitFor()
+
+  const dimensions = await page.getByTestId('terrain-canvas-host').evaluate((host) => {
+    const canvas = host.querySelector('canvas')
+    const hostRect = host.getBoundingClientRect()
+    const canvasRect = canvas?.getBoundingClientRect()
+    return {
+      hostWidth: hostRect.width,
+      hostHeight: hostRect.height,
+      canvasWidth: canvasRect?.width ?? 0,
+      canvasHeight: canvasRect?.height ?? 0,
+      canvasCount: host.querySelectorAll('canvas').length
+    }
+  })
+
+  expect(dimensions.canvasCount).toBe(1)
+  expect(dimensions.hostWidth).toBeGreaterThan(0)
+  expect(dimensions.hostHeight).toBeGreaterThan(0)
+  expect(dimensions.hostWidth).toBeGreaterThan(dimensions.hostHeight)
+  expect(dimensions.canvasWidth).toBeLessThanOrEqual(dimensions.hostWidth + 1)
+  expect(dimensions.canvasHeight).toBeLessThanOrEqual(dimensions.hostHeight + 1)
+})

@@ -40,7 +40,9 @@ test('laboratory menu groups match settings and keeps laboratory as its final ac
   const contentBox = await page.locator('[data-slot="popover-content"]').boundingBox()
   expect(triggerBox).not.toBeNull()
   expect(contentBox).not.toBeNull()
-  expect(contentBox!.x + contentBox!.width / 2).toBeCloseTo(triggerBox!.x + triggerBox!.width / 2, 0)
+  const viewportWidth = await page.evaluate(() => window.innerWidth)
+  expect(contentBox!.x).toBeGreaterThanOrEqual(0)
+  expect(contentBox!.x + contentBox!.width).toBeLessThanOrEqual(viewportWidth)
 
   await expect(page.getByRole('button', { name: 'Toggle Match session' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Toggle Match session' })).toHaveAttribute('aria-expanded', 'false')

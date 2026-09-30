@@ -28,25 +28,33 @@ function DevToolsTrigger({ status }: { readonly status: string }) {
       <button
         type="button"
         aria-label="Open DevTools menu"
-        className="flex min-w-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-xs transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
+        title={`DevTools: ${status}`}
+        className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-md border border-border/60 bg-muted/40 transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
       >
-        <span className={`size-1.5 shrink-0 rounded-full ${statusDot(status)}`} />
-        <span className="truncate">status: {status}</span>
-        <Settings2 className="size-3 opacity-60" aria-hidden={true} />
+        <span className="relative grid size-4 place-items-center">
+          <span className={`absolute top-0 right-0 size-1.5 rounded-full ${statusDot(status)}`} />
+          <Settings2 className="size-3.5 opacity-75" aria-hidden={true} />
+        </span>
       </button>
     </PopoverTrigger>
   )
 }
 
-function DevToolsHeader() {
+function DevToolsHeader({ status }: { readonly status: string }) {
   return (
     <div className="border-b px-4 py-3">
-      <div className="flex items-center gap-2">
-        <FlaskConical className="size-4 text-primary" aria-hidden={true} />
-        <div>
-          <p className="text-sm font-semibold">DevTools</p>
-          <p className="text-xs text-muted-foreground">Match session and development tools</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <FlaskConical className="size-4 text-primary" aria-hidden={true} />
+          <div>
+            <p className="text-sm font-semibold">DevTools</p>
+            <p className="text-xs text-muted-foreground">Match session and development tools</p>
+          </div>
         </div>
+        <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+          <span className={`size-1.5 rounded-full ${statusDot(status)}`} aria-hidden={true} />
+          <span>status: {status}</span>
+        </span>
       </div>
     </div>
   )
@@ -73,13 +81,13 @@ export function LaboratoryMenu(props: LaboratoryMenuProps) {
     <Popover>
       <DevToolsTrigger status={props.status} />
       <PopoverContent
-        align="center"
+        align="end"
         sideOffset={8}
-        className="w-[min(22rem,calc(100vw-1rem))] p-0"
+        className="mr-2 w-[min(22rem,calc(100vw-1rem))] p-0"
         onInteractOutside={(event) => event.preventDefault()}
       >
         <div>
-          <DevToolsHeader />
+          <DevToolsHeader status={props.status} />
           <div className="space-y-4 p-4">
             <ServerLogSection messageLog={props.messageLog} tick={props.tick} />
             <Separator />

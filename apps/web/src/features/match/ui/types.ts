@@ -62,6 +62,7 @@ export interface HudMineral {
 export interface HudResources {
   readonly mineral: number
   readonly supply: number
+  readonly reservedSupply: number
   readonly supplyCap: number
   readonly castleTier: number
   readonly completedResearch: readonly ResearchType[]

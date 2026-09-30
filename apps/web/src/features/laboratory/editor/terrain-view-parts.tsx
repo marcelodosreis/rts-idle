@@ -53,8 +53,10 @@ export function BrushButton({
   const content = (
     <button
       type="button"
-      className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 text-[11px] transition-all ${
-        active ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+      className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg border px-2 py-1.5 text-[11px] transition-all ${
+        active
+          ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+          : 'border-border/50 bg-muted/50 text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground'
       }`}
       onClick={onClick}
     >
@@ -184,11 +186,12 @@ export function HistoryButtons({
   }, [controller, onStateChange])
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="grid w-full grid-cols-2 gap-1.5">
       <Tooltip>
         <TooltipTrigger asChild={true}>
-          <Button variant="outline" size="sm" className="h-7 w-7 p-0 text-xs" onClick={handleUndo}>
-            ↶
+          <Button variant="outline" size="sm" className="h-8 w-full text-[10px]" onClick={handleUndo}>
+            <span aria-hidden="true">↶</span>
+            Undo
           </Button>
         </TooltipTrigger>
         <TooltipContent>
@@ -197,8 +200,9 @@ export function HistoryButtons({
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild={true}>
-          <Button variant="outline" size="sm" className="h-7 w-7 p-0 text-xs" onClick={handleRedo}>
-            ↷
+          <Button variant="outline" size="sm" className="h-8 w-full text-[10px]" onClick={handleRedo}>
+            <span aria-hidden="true">↷</span>
+            Redo
           </Button>
         </TooltipTrigger>
         <TooltipContent>

@@ -18,6 +18,11 @@ async function canvasPoint(page: Page, x: number, y: number) {
   )
 }
 
+async function focusFixed(page: Page, x: number, y: number) {
+  await page.evaluate(([fixedX, fixedY]) => window.__rtsDebug?.moveCamera(fixedX, fixedY), [x, y] as const)
+  return canvasPoint(page, x, y)
+}
+
 async function startResearchScenario(page: Page): Promise<void> {
   await page.goto('/?scenario=research')
   await expect
@@ -48,14 +53,15 @@ async function selectEconomyBase(page: Page): Promise<void> {
   })
   const point = await canvasPoint(page, origin.x + tilesToFixed(2.5), origin.y + tilesToFixed(2))
   await page.mouse.click(point.x, point.y)
-  await expect(page.getByTestId('construction-panel')).toContainText('Castle II · Ready')
+  await expect(page.getByTestId('construction-panel')).toContainText('Castle II')
+  await expect(page.getByTestId('construction-panel').getByText('Ready', { exact: true }).first()).toBeVisible()
 }
 
 async function selectMonastery(page: Page): Promise<void> {
-  const monasteryPoint = await canvasPoint(
+  const monasteryPoint = await focusFixed(
     page,
-    MONASTERY_TARGET.x + tilesToFixed(0.5),
-    MONASTERY_TARGET.y + tilesToFixed(0.5)
+    MONASTERY_TARGET.x + tilesToFixed(1.5),
+    MONASTERY_TARGET.y + tilesToFixed(2.5)
   )
   await page.mouse.click(monasteryPoint.x, monasteryPoint.y)
   await expect(page.getByTestId('production-panel')).toBeVisible()
@@ -65,23 +71,40 @@ async function prepareResearch(page: Page): Promise<void> {
   await startResearchScenario(page)
   await selectEconomyBase(page)
   await selectMonastery(page)
-  const productionButtons = page.getByTestId('production-panel').locator('button')
-  await expect(productionButtons.nth(0)).toHaveAttribute('data-testid', 'train-monk')
-  await expect(productionButtons.nth(1)).toHaveAttribute('data-testid', 'research-attack')
+  await expect(page.getByRole('button', { name: 'Train', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Research', exact: true })).toBeVisible()
+}
+
+async function openRoot(page: Page): Promise<void> {
+  const back = page.getByRole('button', { name: 'Back', exact: true })
+  if (await back.isVisible()) {
+    await back.click()
+  }
+}
+
+async function startResearch(page: Page, researchType: string): Promise<void> {
+  await openRoot(page)
+  await page.getByRole('button', { name: 'Research', exact: true }).click()
+  await page.getByTestId(`research-${researchType}`).click()
+}
+
+async function train(page: Page, unitKind: string): Promise<void> {
+  await openRoot(page)
+  await page.getByRole('button', { name: 'Train', exact: true }).click()
+  await page.getByTestId(`train-${unitKind}`).click()
 }
 
 test('starts with Castle II and Monastery research, then cancels a queued topic', async ({ page }) => {
   test.setTimeout(60_000)
   await prepareResearch(page)
 
-  const research = page.getByTestId('research-economy')
-  await expect(research).toBeEnabled()
-  await research.click()
+  await startResearch(page, 'economy')
   await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE')
   const beforeCancel = Number((await page.getByTestId('hud-resource-mineral').textContent())?.match(/\d+/)?.[0] ?? 0)
-  const cancel = page.getByTestId('cancel-research-0')
+  await openRoot(page)
+  const cancel = page.getByTestId('cancel-current')
   await cancel.click()
-  await expect(cancel).toHaveText('Confirm')
+  await expect(cancel).toContainText('Confirm')
   await cancel.click()
   await expect(page.getByTestId('production-queue-empty')).toContainText('No units or research in queue.')
   await expect
@@ -93,8 +116,8 @@ test('uses the same queue card dimensions for research and units', async ({ page
   test.setTimeout(60_000)
   await prepareResearch(page)
 
-  await page.getByTestId('research-economy').click()
-  await page.getByTestId('train-monk').click()
+  await startResearch(page, 'economy')
+  await train(page, 'monk')
   await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE')
   await expect(page.getByTestId('production-item-1')).toHaveAttribute('data-production-status', 'QUEUED')
   const researchCard = await page.getByTestId('production-item-0').boundingBox()
@@ -110,21 +133,23 @@ test('completed Economy research changes the selected Pawn tooltip', async ({ pa
   test.setTimeout(100_000)
   await prepareResearch(page)
 
-  await page.getByTestId('research-economy').click()
+  await startResearch(page, 'economy')
   await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE')
   await expect(page.getByTestId('production-queue-empty')).toContainText('No units or research in queue.', {
     timeout: 70_000
   })
+  await openRoot(page)
+  await page.getByRole('button', { name: 'Research', exact: true }).click()
   const lockedResearch = page.getByTestId('research-economy')
-  await expect(lockedResearch).toBeDisabled()
-  await lockedResearch.locator('..').hover()
-  await expect(page.getByRole('tooltip')).toContainText('Already completed.')
+  await expect(lockedResearch).toHaveAttribute('aria-disabled', 'true')
+  await lockedResearch.hover()
+  await expect(page.getByText('Already completed.', { exact: true })).toBeVisible()
 
   const worker = (await workerIds(page)).at(-1)
   if (worker === undefined) {
     throw new Error('research scenario has no worker')
   }
   await selectWorker(page, worker)
-  await page.getByRole('button', { name: new RegExp(`Worker #${worker}`) }).hover()
-  await expect(page.getByRole('tooltip')).toContainText('Cargo capacity: 12')
+  await page.getByRole('button', { name: `Details for Worker #${worker}` }).click()
+  await expect(page.getByText('Cargo capacity: 12', { exact: true })).toBeVisible()
 })

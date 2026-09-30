@@ -96,14 +96,14 @@ test('STOP cancels auto-orders and an armed ATTACK re-engages the target', async
 })
 
 test('left-clicking empty ground cancels an armed attack-move mode', async ({ page }) => {
-  await page.goto('/?scenario=8v8&aggression=offensive')
+  await page.goto('/?scenario=8v8&aggression=passive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
   const worker = units.find((unit) => unit.owner === 0)
   expect(worker).toBeDefined()
   await page.evaluate((id) => window.__rtsDebug!.setSelection([id]), worker!.id)
 
-  const attackMove = page.getByRole('button', { name: 'Attack-move', exact: true })
+  const attackMove = page.getByRole('button', { name: 'Attack Move', exact: true })
   await attackMove.click()
   await expect(attackMove).toHaveAttribute('aria-pressed', 'true')
 
@@ -111,13 +111,23 @@ test('left-clicking empty ground cancels an armed attack-move mode', async ({ pa
   await page.mouse.click(ground.x, ground.y)
 
   await expect(attackMove).toHaveAttribute('aria-pressed', 'false')
-  await expect(page.getByText('Pick a target: attack_move.')).toHaveCount(0)
+  await expect(page.getByText('Choose an attack-move destination.')).toHaveCount(0)
 })
 
-test('SURRENDER ends the match with a defeat overlay', async ({ page }) => {
+test('SURRENDER requires confirmation before ending the match', async ({ page }) => {
   await page.goto('/?scenario=8v8&aggression=offensive')
   await settleUnits(page)
   await page.getByRole('button', { name: 'Surrender' }).click()
+
+  const confirmation = page.getByRole('alertdialog', { name: 'Surrender the match?' })
+  await expect(confirmation).toBeVisible()
+  await confirmation.getByRole('button', { name: 'Cancel' }).click()
+  await expect(confirmation).toHaveCount(0)
+  await page.getByRole('button', { name: 'Surrender' }).click()
+  await page
+    .getByRole('alertdialog', { name: 'Surrender the match?' })
+    .getByRole('button', { name: 'Surrender' })
+    .click()
 
   await expect(page.getByRole('dialog')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('dialog').getByText('Defeat')).toBeVisible()

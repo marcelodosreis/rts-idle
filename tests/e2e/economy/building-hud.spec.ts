@@ -59,6 +59,14 @@ async function mineralValue(page: import('@playwright/test').Page): Promise<numb
   return value
 }
 
+async function armBuild(page: import('@playwright/test').Page, buildingType: string): Promise<void> {
+  const build = page.getByRole('button', { name: 'Build', exact: true })
+  if (await build.isVisible()) {
+    await build.click()
+  }
+  await page.getByTestId(`build-${buildingType.toLowerCase()}`).click()
+}
+
 test('construction HUD uses the concise building labels and preserves costs', async ({ page }) => {
   await startMatch(page)
 
@@ -69,19 +77,15 @@ test('construction HUD uses the concise building labels and preserves costs', as
     .toEqual({ x: tilesToFixed(8), y: tilesToFixed(11) })
   await selectWorker(page, workerId)
 
-  await expect(page.getByRole('button', { name: 'Castle · 100', exact: true })).toBeEnabled()
-  await expect(page.getByRole('button', { name: 'Barracks · 150', exact: true })).toBeEnabled()
-  await expect(page.getByRole('button', { name: 'House · 100', exact: true })).toBeEnabled()
-  await expect(page.getByRole('button', { name: 'Archery · 150', exact: true })).toHaveCount(1)
-  await expect(page.getByRole('button', { name: 'Monastery · 150', exact: true })).toHaveCount(1)
-  await expect(page.getByRole('button', { name: 'Tower · 125', exact: true })).toHaveCount(1)
-  const constructionScroll = page
-    .getByTestId('construction-command-scroll')
-    .locator('[data-slot="scroll-area-viewport"]')
-  await expect(constructionScroll).toBeVisible()
-  expect(await constructionScroll.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true)
-  await expect(page.getByRole('button', { name: 'Build Castle · 100', exact: true })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Build Barracks · 150', exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Build', exact: true }).click()
+  await expect(page.getByTestId('build-castle')).toHaveAttribute('aria-disabled', 'false')
+  await expect(page.getByTestId('build-barracks')).toHaveAttribute('aria-disabled', 'false')
+  await expect(page.getByTestId('build-house')).toHaveAttribute('aria-disabled', 'false')
+  await expect(page.getByTestId('build-archery')).toHaveCount(1)
+  await expect(page.getByTestId('build-monastery')).toHaveCount(1)
+  await expect(page.getByTestId('build-tower')).toHaveCount(1)
+  await expect(page.locator('[data-testid^="command-slot-"]')).toHaveCount(9)
+  await expect(page.getByRole('button', { name: 'Back', exact: true })).toBeVisible()
 })
 
 test('House capacity activates only after construction completes', async ({ page }) => {
@@ -90,8 +94,8 @@ test('House capacity activates only after construction completes', async ({ page
   const workerId = (await workerIds(page))[0]!
   await selectWorker(page, workerId)
   await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 10')
-  await page.getByRole('button', { name: 'House · 100', exact: true }).click()
-  await expect(page.getByRole('button', { name: 'House · 100', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await armBuild(page, 'HOUSE')
+  await expect(page.getByTestId('build')).toHaveAttribute('aria-pressed', 'true')
 
   const target = { x: tilesToFixed(10), y: tilesToFixed(10) }
   const point = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
@@ -109,7 +113,7 @@ test('construction stays at the clicked location while the worker travels', asyn
   const workerId = (await workerIds(page))[0]!
   expect(workerId).toBeGreaterThan(0)
   await selectWorker(page, workerId)
-  await page.getByRole('button', { name: 'Castle · 100', exact: true }).click()
+  await armBuild(page, 'CASTLE')
 
   const target = { x: tilesToFixed(10), y: tilesToFixed(10) }
   const clickTarget = { x: target.x + FIXED_SCALE / 2, y: target.y + FIXED_SCALE / 2 }
@@ -142,10 +146,12 @@ test('construction stays at the clicked location while the worker travels', asyn
     .toEqual({ x: tilesToFixed(10), y: tilesToFixed(12) })
 
   await page.mouse.click(point.x, point.y)
-  await expect(page.getByTestId('construction-panel')).toContainText('Castle I · Ready')
+  await expect(page.getByTestId('construction-panel')).toContainText('Castle I')
+  await expect(page.getByTestId('construction-panel').getByText('Ready', { exact: true }).first()).toBeVisible({
+    timeout: 15_000
+  })
   await expect(page.getByTestId('construction-panel')).not.toContainText('100/100')
   await expect(page.getByTestId('construction-panel')).not.toContainText('No worker assigned')
-  await expect(page.getByTestId('construction-panel')).toContainText('Castle I · Ready')
 })
 
 test('construction preview explains an occupied location before sending a command', async ({ page }) => {
@@ -153,7 +159,7 @@ test('construction preview explains an occupied location before sending a comman
   await startMatch(page)
   const workers = await workerIds(page)
   await selectWorker(page, workers[0]!)
-  await page.getByRole('button', { name: 'Castle · 100', exact: true }).click()
+  await armBuild(page, 'CASTLE')
 
   const target = { x: tilesToFixed(10), y: tilesToFixed(10) }
   const targetPoint = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
@@ -161,7 +167,7 @@ test('construction preview explains an occupied location before sending a comman
   await expect.poll(() => constructionAt(page, target), { timeout: 15_000 }).toMatchObject({ status: 'COMPLETED' })
 
   await selectWorker(page, workers[1]!)
-  await page.getByRole('button', { name: 'Barracks · 150', exact: true }).click()
+  await armBuild(page, 'BARRACKS')
   await page.mouse.move(targetPoint.x, targetPoint.y)
   await expect(page.getByText('Location is occupied.', { exact: true })).toBeVisible()
 })
@@ -174,29 +180,43 @@ test('a construction can pause and resume with another worker through the HUD', 
   const builder = workers[0]!
   const replacement = workers[1]!
   await selectWorker(page, builder)
-  await page.getByRole('button', { name: 'Castle · 100', exact: true }).click()
+  await armBuild(page, 'CASTLE')
 
   const target = { x: tilesToFixed(10), y: tilesToFixed(10) }
   const targetPoint = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
+  const constructionPoint = await canvasPointForFixed(page, target.x + FIXED_SCALE, target.y + FIXED_SCALE / 2)
   await page.mouse.click(targetPoint.x, targetPoint.y)
 
-  await expect.poll(() => constructionAt(page, target)).toMatchObject({ status: 'FOUNDATION' })
+  await expect.poll(() => constructionAt(page, target), { timeout: 15_000 }).toMatchObject({ status: 'FOUNDATION' })
 
   await page.getByRole('button', { name: 'Stop', exact: true }).click()
+  await page.waitForTimeout(250)
   await page.mouse.click(targetPoint.x, targetPoint.y)
   await expect(page.getByTestId('construction-panel')).toContainText('Paused')
-  await expect(page.getByTestId('construction-status')).toContainText('No worker assigned')
+  await expect(page.getByTestId('construction-panel')).toContainText('No worker assigned')
   await expect(page.getByTestId('construction-progress-bar')).toBeVisible()
   const pausedProgress = await page.getByTestId('construction-status').textContent()
 
   await selectWorker(page, replacement)
-  await page.mouse.click(targetPoint.x, targetPoint.y, { button: 'right' })
-  await page.mouse.click(targetPoint.x, targetPoint.y)
+  await page.mouse.click(constructionPoint.x, constructionPoint.y, { button: 'right' })
+  await page.waitForTimeout(100)
+  if (!(await page.getByTestId('current-context-card').textContent())?.includes('Building')) {
+    await page.mouse.click(targetPoint.x, targetPoint.y, { button: 'right' })
+  }
+  await expect(page.getByTestId('current-context-card')).toContainText('Building')
+  await page.mouse.click(constructionPoint.x, constructionPoint.y)
+  await page.waitForTimeout(100)
+  if ((await page.getByTestId('construction-panel').count()) === 0) {
+    await page.mouse.click(targetPoint.x, targetPoint.y)
+  }
   await expect(page.getByTestId('construction-panel')).toContainText(`Worker #${replacement}`)
   await expect(page.getByTestId('construction-panel')).not.toContainText('Paused')
 
   await expect.poll(() => page.getByTestId('construction-status').textContent()).not.toBe(pausedProgress)
-  await expect(page.getByTestId('construction-panel')).toContainText('Castle I · Ready', { timeout: 15_000 })
+  await expect(page.getByTestId('construction-panel')).toContainText('Castle I', { timeout: 15_000 })
+  await expect(page.getByTestId('construction-panel').getByText('Ready', { exact: true }).first()).toBeVisible({
+    timeout: 15_000
+  })
   await expect(page.getByTestId('cancel-construction')).toHaveCount(0)
 })
 
@@ -206,14 +226,16 @@ test('an in-progress construction can be cancelled through the HUD with a partia
 
   const workerId = (await workerIds(page))[0]!
   await selectWorker(page, workerId)
-  await page.getByRole('button', { name: 'Castle · 100', exact: true }).click()
+  await armBuild(page, 'CASTLE')
 
   const target = { x: tilesToFixed(10), y: tilesToFixed(10) }
   const targetPoint = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
   await page.mouse.click(targetPoint.x, targetPoint.y)
-  await expect.poll(() => constructionAt(page, target)).toMatchObject({ status: 'FOUNDATION' })
+  await expect.poll(() => constructionAt(page, target), { timeout: 15_000 }).toMatchObject({ status: 'FOUNDATION' })
 
   const mineralBefore = await mineralValue(page)
+  await page.getByRole('button', { name: 'Stop', exact: true }).click()
+  await page.waitForTimeout(250)
   await page.mouse.click(targetPoint.x, targetPoint.y)
   const cancel = page.getByTestId('cancel-construction')
   await expect(cancel).toBeVisible()

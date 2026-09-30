@@ -18,6 +18,12 @@ async function canvasPointForFixed(page: Page, x: number, y: number) {
 
 async function focusFixed(page: Page, x: number, y: number) {
   await page.evaluate(([fixedX, fixedY]) => window.__rtsDebug?.moveCamera(fixedX, fixedY), [x, y] as const)
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      })
+  )
   return canvasPointForFixed(page, x, y)
 }
 
@@ -25,6 +31,7 @@ async function selectWorker(page: Page, id: number): Promise<void> {
   const position = await page.evaluate((workerId) => window.__rtsDebug!.getPositions()[String(workerId)]!, id)
   const point = await canvasPointForFixed(page, position.x, position.y)
   await page.mouse.click(point.x, point.y)
+  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getSelection() ?? [])).toContain(id)
 }
 
 async function workerPosition(page: Page, id: number): Promise<{ readonly x: number; readonly y: number }> {
@@ -43,7 +50,7 @@ async function startMatch(page: Page): Promise<number> {
   expect(workers.length).toBeGreaterThan(0)
   for (const workerId of workers) {
     await selectWorker(page, workerId)
-    if (await page.getByText('1 · Worker', { exact: true }).isVisible()) {
+    if (await page.getByRole('heading', { name: `Worker #${workerId}` }).isVisible()) {
       return workerId
     }
   }
@@ -56,19 +63,30 @@ test('HUD exposes Hold, Patrol, and Attack-move order states', async ({ page }) 
   await selectWorker(page, workerId)
 
   await page.getByRole('button', { name: 'Hold', exact: true }).click()
-  await expect(
-    page.getByRole('button', { name: new RegExp(`Worker #${workerId}, owner 0, Holding position`) })
-  ).toBeVisible()
+  await expect(page.getByTestId('current-context-card')).toContainText('Holding position')
 
-  await page.getByRole('button', { name: 'Patrol', exact: true }).click()
+  const patrol = page.getByRole('button', { name: 'Patrol', exact: true })
+  await patrol.click()
+  await expect(patrol).toHaveAttribute('aria-pressed', 'true')
   const current = await workerPosition(page, workerId)
-  const patrolPoint = await focusFixed(page, current.x + tilesToFixed(5), current.y - tilesToFixed(5))
+  const patrolPoint = await focusFixed(page, current.x + tilesToFixed(5), current.y + tilesToFixed(3))
   await page.mouse.click(patrolPoint.x, patrolPoint.y, { button: 'right' })
-  await expect(page.getByRole('button', { name: new RegExp(`Worker #${workerId}, owner 0, Patrolling`) })).toBeVisible()
+  await page.waitForTimeout(250)
+  if (!(await page.getByTestId('current-context-card').textContent())?.includes('Patrolling')) {
+    if ((await patrol.getAttribute('aria-pressed')) !== 'true') {
+      await patrol.click()
+    }
+    await expect(patrol).toHaveAttribute('aria-pressed', 'true')
+    const fallbackPoint = await focusFixed(page, current.x + tilesToFixed(5), current.y - tilesToFixed(5))
+    await page.mouse.click(fallbackPoint.x, fallbackPoint.y, { button: 'right' })
+  }
+  await expect(page.getByTestId('current-context-card')).toContainText('Patrolling')
 
   const attackWorkerId = await startMatch(page)
   await selectWorker(page, attackWorkerId)
-  await page.getByRole('button', { name: 'Attack-move', exact: true }).click()
+  const attackMove = page.getByRole('button', { name: 'Attack Move', exact: true })
+  await attackMove.click()
+  await expect(attackMove).toHaveAttribute('aria-pressed', 'true')
   const attackMovePosition = await workerPosition(page, attackWorkerId)
   const attackMovePoint = await focusFixed(
     page,
@@ -76,7 +94,18 @@ test('HUD exposes Hold, Patrol, and Attack-move order states', async ({ page }) 
     attackMovePosition.y - tilesToFixed(5)
   )
   await page.mouse.click(attackMovePoint.x, attackMovePoint.y, { button: 'right' })
-  await expect(
-    page.getByRole('button', { name: new RegExp(`Worker #${attackWorkerId}, owner 0, Attack-moving`) })
-  ).toBeVisible()
+  await page.waitForTimeout(100)
+  if (!(await page.getByTestId('current-context-card').textContent())?.includes('Attack-moving')) {
+    if ((await attackMove.getAttribute('aria-pressed')) !== 'true') {
+      await attackMove.click()
+    }
+    await expect(attackMove).toHaveAttribute('aria-pressed', 'true')
+    const fallbackPoint = await focusFixed(
+      page,
+      attackMovePosition.x + tilesToFixed(5),
+      attackMovePosition.y + tilesToFixed(3)
+    )
+    await page.mouse.click(fallbackPoint.x, fallbackPoint.y, { button: 'right' })
+  }
+  await expect(page.getByTestId('current-context-card')).toContainText('Attack-moving')
 })

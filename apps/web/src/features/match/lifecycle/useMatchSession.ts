@@ -39,6 +39,7 @@ export interface MatchSessionState {
   readonly spritesEnabled: boolean
   readonly inputProfile: InputProfile
   readonly buildHint: string | null
+  readonly hudFeedback: string | null
   readonly buildings: readonly BuildCatalogEntry[]
   readonly production: MatchConfig['production']
   readonly researchCatalog: MatchConfig['research']
@@ -68,6 +69,7 @@ function useSessionState(): {
     readonly selectedConstruction: HudConstruction | null
     readonly selectedMineral: HudMineral | null
     readonly buildHint: string | null
+    readonly hudFeedback: string | null
     readonly resources: SessionResources | null
     readonly matchResult: MatchResult | null
     readonly inputProfile: InputProfile
@@ -85,6 +87,7 @@ function useSessionState(): {
   const [selectedConstruction, setSelectedConstruction] = useState<HudConstruction | null>(null)
   const [selectedMineral, setSelectedMineral] = useState<HudMineral | null>(null)
   const [buildHint, setBuildHint] = useState<string | null>(null)
+  const [hudFeedback, setHudFeedback] = useState<string | null>(null)
   const [resources, setResources] = useState<SessionResources | null>(null)
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null)
   const [matchConfig, setMatchConfig] = useState<MatchConfig | null>(null)
@@ -102,6 +105,7 @@ function useSessionState(): {
       selectedConstruction,
       selectedMineral,
       buildHint,
+      hudFeedback,
       resources,
       matchResult,
       inputProfile,
@@ -116,6 +120,7 @@ function useSessionState(): {
       setSelectedConstruction,
       setSelectedMineral,
       setBuildHint,
+      setHudFeedback,
       setResources,
       setMatchResult,
       setMatchConfig,
@@ -238,11 +243,22 @@ function useSessionActions(
   }
 }
 
+function useHudFeedbackTimeout(message: string | null, setMessage: (message: string | null) => void): void {
+  useEffect(() => {
+    if (message === null) {
+      return
+    }
+    const timeout = window.setTimeout(() => setMessage(null), 2500)
+    return () => window.clearTimeout(timeout)
+  }, [message, setMessage])
+}
+
 export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): MatchSessionState {
   const commandModes = useCommandModes()
   const state = useSessionState()
   const { refs, setInputProfileState } = useSessionConnection(hostRef, commandModes, state)
   const actions = useSessionActions(refs, setInputProfileState)
+  useHudFeedbackTimeout(state.values.hudFeedback, state.setters.setHudFeedback)
   return {
     ...state.values,
     commandMode: commandModes.mode,

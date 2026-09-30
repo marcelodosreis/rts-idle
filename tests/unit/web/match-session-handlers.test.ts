@@ -29,6 +29,7 @@ function harness() {
     setTick: vi.fn(),
     setUnitCount: vi.fn(),
     setResources: vi.fn(),
+    setHudFeedback: vi.fn(),
     setSelectedMineral: vi.fn(),
     setMatchResult: vi.fn(),
     present: vi.fn(),
@@ -48,6 +49,7 @@ describe('match session handlers', () => {
     expect(callbacks.setResources).toHaveBeenCalledWith({
       mineral: 12,
       supply: 1,
+      reservedSupply: 0,
       supplyCap: 5,
       castleTier: 1,
       completedResearch: [],
@@ -93,6 +95,7 @@ describe('match session handlers', () => {
     expect(callbacks.setResources).toHaveBeenCalledWith({
       mineral: 40,
       supply: 2,
+      reservedSupply: 0,
       supplyCap: 8,
       castleTier: 2,
       completedResearch: ['ATTACK'],
@@ -119,6 +122,7 @@ describe('match session handlers', () => {
     expect(callbacks.setResources).toHaveBeenCalledWith({
       mineral: 40,
       supply: 2,
+      reservedSupply: 0,
       supplyCap: 8,
       castleTier: 1,
       completedResearch: [],
@@ -146,6 +150,7 @@ describe('match session handlers', () => {
     expect(callbacks.setStatus).toHaveBeenNthCalledWith(1, 'connected')
     expect(callbacks.setStatus).toHaveBeenCalledTimes(1)
     expect(callbacks.appendLog).toHaveBeenCalledWith('error', 'bad')
+    expect(callbacks.setHudFeedback).toHaveBeenCalledWith('bad')
     runtime.sessionActive = false
     handlers.onOpen?.()
     handlers.onError?.({ type: 'error', message: 'stale' })
@@ -159,9 +164,11 @@ describe('match session handlers', () => {
     expect(callbacks.setStatus).toHaveBeenNthCalledWith(1, 'connected')
     expect(callbacks.setStatus).toHaveBeenNthCalledWith(2, 'error')
     expect(callbacks.appendLog).toHaveBeenCalledWith('error', 'network failed')
+    expect(callbacks.setHudFeedback).toHaveBeenCalledWith('Connection to the match was lost.')
     handlers.onClose?.()
     expect(callbacks.setStatus).toHaveBeenNthCalledWith(3, 'error')
     expect(callbacks.appendLog).toHaveBeenCalledWith('error', 'Connection closed')
+    expect(callbacks.setHudFeedback).toHaveBeenCalledWith('Connection to the match was closed.')
     runtime.sessionActive = false
     handlers.onTransportError?.({ type: 'error', message: 'stale' })
     handlers.onClose?.()

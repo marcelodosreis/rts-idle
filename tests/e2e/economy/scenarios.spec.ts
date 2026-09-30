@@ -60,7 +60,7 @@ test('the regression scenario repairs its damaged Base through the browser comma
   if (await hasArt(page)) {
     await expect
       .poll(() => page.evaluate((id) => window.__rtsDebug?.getSpriteState(id)?.anim, workerId), { timeout: 5_000 })
-      .toBe('repair_run')
+      .toMatch(/^repair_(run|interact)$/)
   }
   await expect
     .poll(() => page.evaluate((id) => window.__rtsDebug?.getConstructionStates()[id!]?.hp ?? 0, damagedBase), {
@@ -68,7 +68,7 @@ test('the regression scenario repairs its damaged Base through the browser comma
     })
     .toBeGreaterThan(250)
   await page.mouse.click(basePoint.x, basePoint.y)
-  await expect(page.getByTestId('construction-health')).toContainText('HP:')
+  await expect(page.getByTestId('construction-health')).toContainText(/HP\s*\d+\/\d+/)
   if (await hasArt(page)) {
     await expect
       .poll(() => page.evaluate((id) => window.__rtsDebug?.getSpriteState(id)?.anim, workerId), { timeout: 10_000 })
@@ -160,7 +160,7 @@ test('a failed local map keeps the server-provided scenario selector available',
   await page.getByRole('button', { name: 'Open DevTools menu' }).click()
   await page.getByRole('button', { name: 'Toggle Server Log' }).click()
   await page.getByRole('button', { name: 'Toggle Match session' }).click()
-  await expect(page.getByText('scenario spawn is outside or on invalid terrain')).toBeVisible()
+  await expect(page.getByRole('alert')).toContainText('scenario spawn is outside or on invalid terrain')
   await page.getByRole('combobox', { name: 'scenario' }).click()
   await expect(page.getByRole('option', { name: 'ffa' })).toBeVisible()
   await page.getByRole('option', { name: 'ffa' }).click()

@@ -53,11 +53,6 @@ function AssetKeyButton({ assetKey, isSelected, isFocused, onSelect, onFocus }: 
       type="button"
       role="option"
       aria-selected={isSelected}
-      ref={(element) => {
-        if (isSelected && element) {
-          element.scrollIntoView({ block: 'nearest' })
-        }
-      }}
       className={cn(
         'flex w-full items-center gap-1.5 rounded-md px-2 py-1 text-left transition-all',
         isSelected
