@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint_typecheck:
-    name: Lint & Typecheck
+  static_gate:
+    name: Lint, Build & Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -28,41 +28,41 @@ jobs:
             tools/*/dist
           if-no-files-found: warn
 
-  unit_integration:
-    name: Unit & Integration Tests
-    needs: lint_typecheck
+  code_tests:
+    name: Code Tests
+    needs: static_gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/ci-setup
-      - run: pnpm run test:unit
-      - run: pnpm run test:integration
-
-  simulation:
-    name: Simulation, Contracts, Orders & Invariants Tests
-    needs: lint_typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/ci-setup
-      - run: pnpm run test:simulation
-      - run: pnpm run test:contracts
-      - run: pnpm run test:orders
-      - run: pnpm run test:invariants
-
-  determinism_architecture:
-    name: Determinism & Architecture Tests
-    needs: lint_typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/ci-setup
-      - run: pnpm run test:determinism
-      - run: pnpm run test:architecture
+      - name: Unit tests
+        run: pnpm run test:unit
+      - name: Integration tests
+        if: ${{ success() || github.event_name == 'push' }}
+        run: pnpm run test:integration
+      - name: Simulation tests
+        if: ${{ success() || github.event_name == 'push' }}
+        run: pnpm run test:simulation
+      - name: Contract tests
+        if: ${{ success() || github.event_name == 'push' }}
+        run: pnpm run test:contracts
+      - name: Orders tests
+        if: ${{ success() || github.event_name == 'push' }}
+        run: pnpm run test:orders
+      - name: Determinism tests
+        if: ${{ success() || github.event_name == 'push' }}
+        run: pnpm run test:determinism
+      - name: Architecture tests
+        if: ${{ success() || github.event_name == 'push' }}
+        run: pnpm run test:architecture
+      - name: Invariants tests
+        if: ${{ success() || github.event_name == 'push' }}
+        run: pnpm run test:invariants
 
   e2e_functional:
     name: Functional End-to-End Tests
-    needs: lint_typecheck
+    needs: [static_gate, code_tests]
+    if: ${{ always() && needs.static_gate.result == 'success' && (needs.code_tests.result == 'success' || github.event_name == 'push') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -83,7 +83,8 @@ jobs:
 
   e2e_performance:
     name: Performance End-to-End Tests
-    needs: lint_typecheck
+    needs: [static_gate, code_tests, e2e_functional]
+    if: ${{ always() && needs.static_gate.result == 'success' && (github.event_name == 'push' || (needs.code_tests.result == 'success' && needs.e2e_functional.result == 'success')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -105,7 +106,7 @@ jobs:
   release:
     name: Release
     if: github.event_name == 'push' && !contains(github.event.head_commit.message, '[skip ci]')
-    needs: [lint_typecheck, unit_integration, simulation, determinism_architecture, e2e_functional, e2e_performance]
+    needs: [static_gate, code_tests, e2e_functional, e2e_performance]
     runs-on: ubuntu-latest
     permissions:
       contents: write
