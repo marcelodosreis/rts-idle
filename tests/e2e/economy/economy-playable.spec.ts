@@ -51,16 +51,12 @@ async function workerPosition(page: Page, id: number): Promise<{ readonly x: num
 }
 
 async function mineralValue(page: Page): Promise<number> {
-  return page
-    .getByText('Mineral', { exact: true })
-    .locator('..')
-    .evaluate((chip) => {
-      const value = Number(chip.textContent?.match(/\d+/)?.[0])
-      if (!Number.isFinite(value)) {
-        throw new Error('Mineral HUD value is missing')
-      }
-      return value
-    })
+  const text = await page.getByTestId('hud-resource-mineral').textContent()
+  const value = Number(text?.match(/\d+/)?.[0])
+  if (!Number.isFinite(value)) {
+    throw new Error('Mineral HUD value is missing')
+  }
+  return value
 }
 
 test('economy HUD shows authoritative starting supply', async ({ page }) => {
@@ -81,7 +77,7 @@ test('a pawn remains selectable while standing on a mineral node', async ({ page
   const start = await workerPosition(page, id)
   const workerPoint = await canvasPointForFixed(page, start.x, start.y)
   await page.mouse.click(workerPoint.x, workerPoint.y)
-  await expect(page.getByText('1 · Worker')).toBeVisible()
+  await expect(page.getByRole('heading', { name: `Worker #${id}` })).toBeVisible()
 
   const nodePoint = await focusFixed(page, tilesToFixed(ECONOMY_NODE_TILE.x), tilesToFixed(ECONOMY_NODE_TILE.y))
   await page.mouse.click(nodePoint.x, nodePoint.y, { button: 'right' })
@@ -90,7 +86,7 @@ test('a pawn remains selectable while standing on a mineral node', async ({ page
     .toBe(tilesToFixed(ECONOMY_NODE_TILE.x))
 
   await page.mouse.click(nodePoint.x, nodePoint.y)
-  await expect(page.getByText('1 · Worker')).toBeVisible()
+  await expect(page.getByRole('heading', { name: `Worker #${id}` })).toBeVisible()
   await expect(page.getByTestId('mineral-panel')).toHaveCount(0)
 })
 
@@ -127,7 +123,7 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
   const start = await workerPosition(page, id)
   const workerPoint = await canvasPointForFixed(page, start.x, start.y)
   await page.mouse.click(workerPoint.x, workerPoint.y)
-  await expect(page.getByText('1 · Worker')).toBeVisible()
+  await expect(page.getByRole('heading', { name: `Worker #${id}` })).toBeVisible()
 
   const nodePoint = await focusFixed(page, tilesToFixed(ECONOMY_NODE_TILE.x), tilesToFixed(ECONOMY_NODE_TILE.y))
   await page.mouse.click(nodePoint.x, nodePoint.y, { button: 'right' })
@@ -179,7 +175,7 @@ test('an interrupted carrying worker shows cargo and deposits by right-clicking 
   const start = await workerPosition(page, id)
   const workerPoint = await canvasPointForFixed(page, start.x, start.y)
   await page.mouse.click(workerPoint.x, workerPoint.y)
-  await expect(page.getByText('1 · Worker')).toBeVisible()
+  await expect(page.getByRole('heading', { name: `Worker #${id}` })).toBeVisible()
 
   const nodePoint = await focusFixed(page, tilesToFixed(ECONOMY_NODE_TILE.x), tilesToFixed(ECONOMY_NODE_TILE.y))
   await page.mouse.click(nodePoint.x, nodePoint.y, { button: 'right' })
@@ -219,6 +215,8 @@ test('a primary click selects a mineral node without selecting a worker', async 
   await expect(page.getByTestId('mineral-remaining')).toHaveText('3000 remaining')
   await expect(page.getByTestId('economy-status')).toHaveCount(0)
   await expect(page.getByTestId('mineral-panel')).toBeVisible()
+  await expect(page.locator('[data-command-id]')).toHaveCount(0)
+  await expect(page.locator('[data-testid^="command-slot-"]')).toHaveCount(9)
 })
 
 test('a group mines the same node concurrently through the browser command path', async ({ page }) => {
@@ -244,7 +242,7 @@ test('a group mines the same node concurrently through the browser command path'
     ])
 
   const economyLabels = () =>
-    group.map((id) => page.getByRole('button', { name: new RegExp(`Worker #${id}, owner 0, Mining \\d+/200`) }))
+    group.map((id) => page.getByRole('button', { name: new RegExp(`Worker #${id}.*Mining \\d+/200`) }))
   await expect.poll(async () => Promise.all((await economyLabels()).map((label) => label.count()))).toEqual([1, 1])
   await expect
     .poll(
@@ -262,7 +260,7 @@ test('a group mines the same node concurrently through the browser command path'
       { timeout: 15_000 }
     )
     .toBe(true)
-  await expect(page.getByTestId('economy-status')).toContainText('Mining')
+  await expect(page.getByRole('button', { name: /Mining/ }).first()).toBeVisible()
 
   if (await hasArt(page)) {
     for (const id of group) {

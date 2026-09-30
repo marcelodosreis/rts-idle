@@ -52,6 +52,24 @@ test('browse: selecting an asset renders the canvas and inspector', async ({ pag
   await expect(page.getByRole('complementary', { name: 'Asset inspector' })).toContainText('units.blue.pawn.pawn_idle')
 })
 
+test('browse: selecting a scrolled asset preserves the asset list position', async ({ page }) => {
+  await openAssetBrowser(page)
+  const viewport = page
+    .locator('[aria-label="Asset browser"] [data-slot="scroll-area"]')
+    .last()
+    .locator('[data-radix-scroll-area-viewport]')
+  await viewport.evaluate((element) => {
+    element.scrollTop = element.scrollHeight
+  })
+  const before = await viewport.evaluate((element) => element.scrollTop)
+  const target = page.getByRole('option').last()
+  await target.click()
+  const after = await viewport.evaluate((element) => element.scrollTop)
+
+  expect(before).toBeGreaterThan(0)
+  expect(after).toBeGreaterThanOrEqual(before - 2)
+})
+
 test('browse: sidebar search filters and selects a unique asset', async ({ page }) => {
   await openAssetBrowser(page)
   await page.getByPlaceholder('Search…').fill('rubber_duck')

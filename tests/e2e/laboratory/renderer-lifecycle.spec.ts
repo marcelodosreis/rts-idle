@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 
 test('renderer mounts, renders a frame, and disposes cleanly', async ({ page }) => {
   await page.goto('/')
+  await page.getByRole('button', { name: 'Open DevTools menu' }).click()
   await expect(page.getByText(/status:/)).toBeVisible()
 
   // Initial snapshot arrives and units are rendered.
