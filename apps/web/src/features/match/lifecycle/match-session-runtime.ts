@@ -98,7 +98,7 @@ function selectConstruction(runtime: MatchSessionRuntime, id: number): MatchSele
   }
   emptySelection(runtime)
   const construction = runtime.buildings.find((candidate) => candidate.id === id)
-  if (construction === undefined || construction.owner !== 0) {
+  if (construction === undefined) {
     return project(runtime)
   }
   runtime.selectedConstructionId = id

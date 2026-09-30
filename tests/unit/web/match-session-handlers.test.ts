@@ -29,7 +29,8 @@ function harness() {
     setTick: vi.fn(),
     setUnitCount: vi.fn(),
     setResources: vi.fn(),
-    setHudFeedback: vi.fn(),
+    appendCompletedConstructions: vi.fn(),
+    setHudNotification: vi.fn(),
     setSelectedMineral: vi.fn(),
     setMatchResult: vi.fn(),
     present: vi.fn(),
@@ -57,6 +58,26 @@ describe('match session handlers', () => {
     })
     expect(callbacks.appendLog).toHaveBeenCalledWith('event', 'damageDealt: 1 -3 HP (7 left)')
     expect(callbacks.present).toHaveBeenCalledOnce()
+  })
+
+  it('reports only a human construction that transitions to completed', () => {
+    const { callbacks, handlers } = harness()
+    const foundation: SnapshotMessage['buildings'][number] = {
+      id: 9,
+      buildingType: 'HOUSE',
+      x: 0,
+      y: 0,
+      owner: 0,
+      footprint: { width: 2, height: 2 },
+      status: 'FOUNDATION',
+      progressTicks: 0,
+      totalTicks: 100,
+      builderId: 1
+    }
+    handlers.onSnapshot(snapshot({ buildings: [foundation] }))
+    handlers.onSnapshot(snapshot({ tick: 5, buildings: [{ ...foundation, status: 'COMPLETED', builderId: null }] }))
+    expect(callbacks.appendCompletedConstructions).toHaveBeenNthCalledWith(1, [])
+    expect(callbacks.appendCompletedConstructions).toHaveBeenNthCalledWith(2, [expect.objectContaining({ id: 9 })])
   })
 
   it('projects Castle tier and research progress for the human player', () => {
@@ -150,7 +171,7 @@ describe('match session handlers', () => {
     expect(callbacks.setStatus).toHaveBeenNthCalledWith(1, 'connected')
     expect(callbacks.setStatus).toHaveBeenCalledTimes(1)
     expect(callbacks.appendLog).toHaveBeenCalledWith('error', 'bad')
-    expect(callbacks.setHudFeedback).toHaveBeenCalledWith('bad')
+    expect(callbacks.setHudNotification).toHaveBeenCalledWith({ kind: 'MATCH_ERROR', message: 'bad' })
     runtime.sessionActive = false
     handlers.onOpen?.()
     handlers.onError?.({ type: 'error', message: 'stale' })
@@ -164,11 +185,11 @@ describe('match session handlers', () => {
     expect(callbacks.setStatus).toHaveBeenNthCalledWith(1, 'connected')
     expect(callbacks.setStatus).toHaveBeenNthCalledWith(2, 'error')
     expect(callbacks.appendLog).toHaveBeenCalledWith('error', 'network failed')
-    expect(callbacks.setHudFeedback).toHaveBeenCalledWith('Connection to the match was lost.')
+    expect(callbacks.setHudNotification).toHaveBeenCalledWith({ kind: 'CONNECTION_LOST' })
     handlers.onClose?.()
     expect(callbacks.setStatus).toHaveBeenNthCalledWith(3, 'error')
     expect(callbacks.appendLog).toHaveBeenCalledWith('error', 'Connection closed')
-    expect(callbacks.setHudFeedback).toHaveBeenCalledWith('Connection to the match was closed.')
+    expect(callbacks.setHudNotification).toHaveBeenCalledWith({ kind: 'CONNECTION_CLOSED' })
     runtime.sessionActive = false
     handlers.onTransportError?.({ type: 'error', message: 'stale' })
     handlers.onClose?.()

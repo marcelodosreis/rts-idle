@@ -1,4 +1,4 @@
-import type { MatchConfig, ScenarioSummary } from '@rts/protocol'
+import type { MatchConfig, ScenarioSummary, SnapshotBuilding } from '@rts/protocol'
 import { type GameRenderer, type InputProfile, PixiRenderer } from '@rts/renderer'
 import type { CommandIntent, MapDefinition, MatchResult, ResearchType } from '@rts/shared'
 import { FIXED_SCALE, fixedToRenderPixels, renderPixelsToFixed, TILE_PIXELS } from '@rts/shared'
@@ -9,6 +9,7 @@ import { type MatchPlacement, placementFor } from '../construction/match-session
 import { createWorldInteractionHandler } from '../selection/create-world-interaction-handler'
 import { MatchInteractionController } from '../selection/match-interaction-controller'
 import { selectUnitsInBox } from '../selection/select-units-in-box'
+import type { HudNotification } from '../ui/hud-notifications'
 import type { HudConstruction, HudMineral, HudSelectionUnit } from '../ui/types'
 import { createRtsDebug } from './match-debug'
 import type { MatchSessionConnectionOwner } from './match-session-connection'
@@ -34,11 +35,12 @@ export interface MatchSessionSetters {
   readonly setSelectedConstruction: (value: HudConstruction | null) => void
   readonly setSelectedMineral: (value: HudMineral | null) => void
   readonly setBuildHint: (value: string | null) => void
-  readonly setHudFeedback: (value: string | null) => void
+  readonly setHudNotification: (value: HudNotification | null) => void
   readonly setStatus: (value: string) => void
   readonly setTick: (value: number) => void
   readonly setUnitCount: (value: number) => void
   readonly setResources: (value: SessionResources | null) => void
+  readonly appendCompletedConstructions: (value: readonly SnapshotBuilding[]) => void
   readonly setMatchResult: (value: MatchResult | null) => void
   readonly setMatchConfig: (value: MatchConfig | null) => void
   readonly setScenarios: (value: readonly ScenarioSummary[]) => void
@@ -289,7 +291,8 @@ function createSessionHandlers(
     setTick: setters.setTick,
     setUnitCount: setters.setUnitCount,
     setResources: setters.setResources,
-    setHudFeedback: setters.setHudFeedback,
+    appendCompletedConstructions: setters.appendCompletedConstructions,
+    setHudNotification: setters.setHudNotification,
     setSelectedMineral: setters.setSelectedMineral,
     setMatchResult: (result) => {
       refs.matchEndedRef.current = true

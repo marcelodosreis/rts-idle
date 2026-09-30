@@ -4,6 +4,7 @@ import type { ConnectionHandlers } from '../../../shared/transport/connection'
 import { snapshotToFrame } from '../projections/snapshot-to-frame'
 import { projectSnapshotUnit } from '../projections/snapshot-unit'
 import type { SelectionUnitState } from '../selection/selection-projection'
+import { type HudNotification, matchErrorNotification } from '../ui/hud-notifications'
 import type { HudMineral } from '../ui/types'
 import type { MatchSessionRuntime } from './match-session-runtime'
 
@@ -50,7 +51,8 @@ export interface MatchSessionHandlerOptions {
   readonly setTick: (tick: number) => void
   readonly setUnitCount: (count: number) => void
   readonly setResources: (resources: ReturnType<typeof resourcesForHuman>) => void
-  readonly setHudFeedback: (message: string | null) => void
+  readonly appendCompletedConstructions: (buildings: readonly SnapshotMessage['buildings'][number][]) => void
+  readonly setHudNotification: (notification: HudNotification | null) => void
   readonly setSelectedMineral: (mineral: HudMineral | null) => void
   readonly setMatchResult: (result: MatchResult) => void
   readonly present: (frame: ReturnType<typeof snapshotToFrame>) => void
@@ -71,9 +73,27 @@ function applySnapshotRuntime(runtime: MatchSessionRuntime, message: SnapshotMes
   }
 }
 
+function completedHumanConstructions(
+  previous: SnapshotMessage['buildings'],
+  current: SnapshotMessage['buildings']
+): readonly SnapshotMessage['buildings'][number][] {
+  const previousById = new Map(previous.map((building) => [building.id, building]))
+  return current.filter((building) => {
+    const previousBuilding = previousById.get(building.id)
+    return (
+      building.owner === HUMAN_PLAYER &&
+      building.status === 'COMPLETED' &&
+      previousBuilding !== undefined &&
+      previousBuilding.status !== 'COMPLETED'
+    )
+  })
+}
+
 function logSnapshotEvents(
   events: SnapshotMessage['events'],
-  appendLog: MatchSessionHandlerOptions['appendLog']
+  appendLog: MatchSessionHandlerOptions['appendLog'],
+  setHudNotification: MatchSessionHandlerOptions['setHudNotification'],
+  runtime: MatchSessionRuntime
 ): void {
   for (const event of events) {
     if (event.type === 'attackFired') {
@@ -82,6 +102,9 @@ function logSnapshotEvents(
       appendLog('event', `damageDealt: ${event.targetId} -${event.amount} HP (${event.targetHp} left)`)
     } else if (event.type === 'repairStopped') {
       appendLog('event', `repairStopped: worker ${event.workerId} target ${event.targetId} (${event.reason})`)
+      if (event.reason === 'NO_MINERALS' && runtime.unitStates.get(event.workerId)?.owner === HUMAN_PLAYER) {
+        setHudNotification({ kind: 'REPAIR_STOPPED_NO_MINERALS' })
+      }
     } else if (event.type === 'unitDied') {
       appendLog('event', `unitDied: ${event.entityId} (P${event.owner}) killed by ${event.killerId ?? 'unknown'}`)
     }
@@ -107,6 +130,7 @@ function completeMatch(message: SnapshotMessage, options: MatchSessionHandlerOpt
 
 function handleSnapshot(message: SnapshotMessage, options: MatchSessionHandlerOptions): void {
   const { runtime } = options
+  const completedConstructions = completedHumanConstructions(runtime.buildings, message.buildings)
   applySnapshotRuntime(runtime, message)
   if (runtime.selectedConstructionId !== null) {
     options.updateConstructionSelection(runtime.selectedConstructionId)
@@ -123,7 +147,8 @@ function handleSnapshot(message: SnapshotMessage, options: MatchSessionHandlerOp
   options.setTick(message.tick)
   options.setUnitCount(message.units.length)
   options.setResources(resourcesForHuman(message))
-  logSnapshotEvents(message.events, options.appendLog)
+  options.appendCompletedConstructions(completedConstructions)
+  logSnapshotEvents(message.events, options.appendLog, options.setHudNotification, runtime)
   completeMatch(message, options)
   options.present(snapshotToFrame(message))
   if (runtime.selectedIds.length > 0) {
@@ -152,7 +177,7 @@ export function createMatchSessionHandlers(options: MatchSessionHandlerOptions):
         return
       }
       options.appendLog('error', error.message)
-      options.setHudFeedback(error.message.replace(/^[A-Z_]+:\s*/, ''))
+      options.setHudNotification(matchErrorNotification(error.message))
       if (error.scenarios !== undefined) {
         options.setScenarios(error.scenarios)
       }
@@ -163,7 +188,7 @@ export function createMatchSessionHandlers(options: MatchSessionHandlerOptions):
       }
       options.setStatus('error')
       options.appendLog('error', error.message)
-      options.setHudFeedback('Connection to the match was lost.')
+      options.setHudNotification({ kind: 'CONNECTION_LOST' })
     },
     onClose: () => {
       if (!runtime.sessionActive) {
@@ -171,7 +196,7 @@ export function createMatchSessionHandlers(options: MatchSessionHandlerOptions):
       }
       options.setStatus('error')
       options.appendLog('error', 'Connection closed')
-      options.setHudFeedback('Connection to the match was closed.')
+      options.setHudNotification({ kind: 'CONNECTION_CLOSED' })
     }
   }
 }
