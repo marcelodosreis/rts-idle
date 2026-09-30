@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 56 |
+| open | 57 |
 | closed | 14 |
-| **total** | **70** |
+| **total** | **71** |
 
 ## Details
 
@@ -85,6 +85,7 @@
 | 2026-09-29-hud-command-regressions | open | presentation | QH.25 | 2 test(s) |
 | 2026-09-29-terrain-editor-narrow-canvas | open | presentation | QH.17 | 1 test(s) |
 | 2026-09-29-topbar-reference-resolution | open | presentation | QH.02 | 2 test(s) |
+| 2026-09-30-laboratory-navigation-lazy-route | open | presentation | QH.13 | 1 test(s) |
 
 ## Legend
 
