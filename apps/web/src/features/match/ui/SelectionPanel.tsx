@@ -1,11 +1,14 @@
 import { Gem, Hammer } from 'lucide-react'
+import { useEffect, useRef } from 'react'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Progress } from '@/shared/ui/progress'
 import { constructionStatusLine, mineralRemainingLine } from '../selection/selection-panel-logic'
+import type { HudFeedbackTarget } from './HudContextFeedback'
 import { ProductionPanel } from './ProductionPanel'
 import type { HudConstruction, HudMineral, HudSelectionUnit } from './types'
 import { UnitSelectionCard } from './UnitSelectionCard'
+import { useTimedValue } from './useTimedValue'
 
 export { constructionStatusLine, mineralRemainingLine } from '../selection/selection-panel-logic'
 
@@ -14,6 +17,7 @@ interface SelectionPanelProps {
   readonly construction: HudConstruction | null
   readonly mineral: HudMineral | null
   readonly humanPlayer: number
+  readonly feedbackTarget: HudFeedbackTarget | null
 }
 
 function percentage(value: number, maximum: number): number {
@@ -104,14 +108,31 @@ function ConstructionProgress({ construction }: { readonly construction: HudCons
 
 function ConstructionContext({
   construction,
-  humanPlayer
+  humanPlayer,
+  queueAttention = false
 }: {
   readonly construction: HudConstruction
   readonly humanPlayer: number
+  readonly queueAttention?: boolean
 }) {
   const completed = construction.status === 'COMPLETED'
+  const previousStatus = useRef(construction.status)
+  const completedFeedback = useTimedValue<boolean>(260)
+  const showCompletedFeedback = completedFeedback.show
+  useEffect(() => {
+    if (previousStatus.current !== 'COMPLETED' && construction.status === 'COMPLETED') {
+      showCompletedFeedback(true)
+    }
+    previousStatus.current = construction.status
+  }, [construction.status, showCompletedFeedback])
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden" data-testid="construction-panel">
+    <div
+      className={`flex min-h-0 flex-1 flex-col gap-1 overflow-hidden ${
+        completedFeedback.value === true ? 'motion-safe:animate-[hud-production-confirm_260ms_ease-out]' : ''
+      }`}
+      data-testid="construction-panel"
+      data-construction-feedback={completedFeedback.value === true ? 'completed' : 'idle'}
+    >
       <div className="flex min-w-0 items-center gap-2">
         <span className="grid size-7 shrink-0 place-items-center rounded-md border bg-muted/40">
           <Hammer className="size-4" aria-hidden="true" />
@@ -133,7 +154,7 @@ function ConstructionContext({
         <HealthStatus current={construction.hp} maximum={construction.maxHp} label="HP" />
       )}
       <ConstructionProgress construction={construction} />
-      {completed && <ProductionPanel construction={construction} />}
+      {completed && <ProductionPanel construction={construction} queueAttention={queueAttention} />}
     </div>
   )
 }
@@ -164,10 +185,16 @@ function EmptyContext() {
   )
 }
 
-export function SelectionPanel({ selection, construction, mineral, humanPlayer }: SelectionPanelProps) {
+export function SelectionPanel({ selection, construction, mineral, humanPlayer, feedbackTarget }: SelectionPanelProps) {
   let content = <EmptyContext />
   if (construction !== null) {
-    content = <ConstructionContext construction={construction} humanPlayer={humanPlayer} />
+    content = (
+      <ConstructionContext
+        construction={construction}
+        humanPlayer={humanPlayer}
+        queueAttention={feedbackTarget === 'queue'}
+      />
+    )
   } else if (mineral !== null) {
     content = <MineralContext mineral={mineral} />
   } else if (selection.length > 0) {
@@ -183,9 +210,30 @@ export function SelectionPanel({ selection, construction, mineral, humanPlayer }
           CURRENT CONTEXT
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex min-h-0 flex-1 overflow-hidden px-3" aria-live="polite">
-        {content}
+      <CardContent className="flex min-h-0 flex-1 overflow-hidden px-3">
+        <div
+          key={selectionContextKey(selection, construction, mineral)}
+          data-testid="selection-context-content"
+          data-selection-context={selectionContextKey(selection, construction, mineral)}
+          className="flex min-h-0 w-full motion-safe:animate-[hud-context-enter_180ms_ease-out]"
+        >
+          {content}
+        </div>
       </CardContent>
     </Card>
   )
+}
+
+function selectionContextKey(
+  selection: readonly HudSelectionUnit[],
+  construction: HudConstruction | null,
+  mineral: HudMineral | null
+): string {
+  if (construction !== null) {
+    return `building:${construction.id}`
+  }
+  if (mineral !== null) {
+    return `mineral:${mineral.id}`
+  }
+  return selection.length === 0 ? 'none' : `units:${selection.map((unit) => unit.id).join(',')}`
 }
