@@ -1,24 +1,19 @@
 import type { BuildCatalogEntry, ProductionCatalogEntry, ResearchCatalogEntry } from '@rts/protocol'
 import type { InputProfile } from '@rts/renderer'
 import type { MatchResult, ResearchType } from '@rts/shared'
-import type { RefObject } from 'react'
+import { type CSSProperties, type RefObject, useEffect, useRef } from 'react'
+import { toast } from '@/shared/ui/toast'
 import type { CommandMode } from '../commands/useCommandModes'
 import type { MessageLogEntry } from '../lifecycle/useMessageLog'
 import { CommandBar } from './CommandBar'
 import { MatchOverlay } from './MatchOverlay'
+import { OverviewPanel } from './OverviewPanel'
 import { SelectionPanel } from './SelectionPanel'
 import { TopBar } from './TopBar'
 import type { HudConstruction, HudMineral, HudResources, HudSelectionUnit } from './types'
+import { useHudScale } from './useHudScale'
 
 export type { HudResources, HudSelectionUnit }
-
-function selectionCanAttack(selection: readonly HudSelectionUnit[]): boolean {
-  return selection.length > 0 && selection.every((unit) => unit.kind !== 'monk')
-}
-
-function selectionCanHeal(selection: readonly HudSelectionUnit[]): boolean {
-  return selection.length === 1 && selection[0]?.kind === 'monk' && (selection[0].healCooldownRemaining ?? 0) === 0
-}
 
 export interface MatchHudProps {
   readonly status: string
@@ -29,7 +24,6 @@ export interface MatchHudProps {
   readonly construction: HudConstruction | null
   readonly mineral: HudMineral | null
   readonly resources: HudResources | null
-  /** Renderer host mount point, owned by the match session. */
   readonly hostRef: RefObject<HTMLDivElement | null>
   readonly commandMode: CommandMode
   readonly matchResult: MatchResult | null
@@ -38,6 +32,11 @@ export interface MatchHudProps {
   readonly aggression: 'offensive' | 'passive'
   readonly spritesEnabled: boolean
   readonly inputProfile: InputProfile
+  readonly hudFeedback: string | null
+  readonly buildHint: string | null
+  readonly buildings: readonly BuildCatalogEntry[]
+  readonly production: readonly ProductionCatalogEntry[]
+  readonly research: readonly ResearchCatalogEntry[]
   readonly onStop: () => void
   readonly onHold: () => void
   readonly onSurrender: () => void
@@ -49,11 +48,6 @@ export interface MatchHudProps {
   readonly onCancelResearch: (monasteryId: number, queueIndex: number) => void
   readonly onTrain: (unitKind: ProductionCatalogEntry['unitKind']) => void
   readonly onSetRally: (producerId: number) => void
-  readonly workerSelected: boolean
-  readonly buildings: readonly BuildCatalogEntry[]
-  readonly production: readonly ProductionCatalogEntry[]
-  readonly research: readonly ResearchCatalogEntry[]
-  readonly buildHint: string | null
   readonly onNewMatch: () => void
   readonly onChangeScenario: (id: string) => void
   readonly onToggleAggression: () => void
@@ -61,183 +55,163 @@ export interface MatchHudProps {
   readonly onInputProfileChange: (profile: InputProfile) => void
 }
 
-type MatchHudFooterProps = Pick<
-  MatchHudProps,
-  | 'selection'
-  | 'construction'
-  | 'mineral'
-  | 'buildings'
-  | 'onCancelConstruction'
-  | 'onCancelProduction'
-  | 'onUpgradeCastle'
-  | 'onResearch'
-  | 'onCancelResearch'
-  | 'onTrain'
-  | 'onSetRally'
-  | 'production'
-  | 'research'
-  | 'resources'
-  | 'commandMode'
-  | 'onStop'
-  | 'onHold'
-  | 'onSurrender'
-  | 'onArm'
-  | 'workerSelected'
-  | 'buildHint'
->
+type HudScaleStyle = CSSProperties & { readonly '--hud-scale': number }
 
-function MatchHudFooter({
-  selection,
-  construction,
-  mineral,
-  buildings,
-  onCancelConstruction,
-  onCancelProduction,
-  onUpgradeCastle,
-  onResearch,
-  onCancelResearch,
-  onTrain,
-  onSetRally,
-  production,
-  research,
-  resources,
-  commandMode,
-  onStop,
-  onHold,
-  onSurrender,
-  onArm,
-  workerSelected,
-  buildHint
-}: MatchHudFooterProps) {
+function commandHint(mode: CommandMode, buildHint: string | null): string | null {
+  if (mode === 'idle') {
+    return null
+  }
+  if (typeof mode === 'object') {
+    return mode.kind === 'build' ? (buildHint ?? 'Choose a valid building location.') : 'Choose a rally point.'
+  }
+  if (mode === 'attack') {
+    return 'Choose an enemy target.'
+  }
+  if (mode === 'attack_move') {
+    return 'Choose an attack-move destination.'
+  }
+  if (mode === 'patrol') {
+    return 'Choose a patrol destination.'
+  }
+  if (mode === 'heal') {
+    return 'Choose a damaged allied unit.'
+  }
+  if (mode === 'gather') {
+    return 'Right-click a resource to gather.'
+  }
+  if (mode === 'repair') {
+    return 'Right-click a damaged allied target.'
+  }
+  return 'Right-click an allied building to deposit resources.'
+}
+
+function addHudToast(type: 'error' | 'info', title: string, description: string): string | number {
+  let id: string | number
+  id = toast.add({
+    type,
+    title,
+    description,
+    actionProps: {
+      children: 'Dismiss',
+      onClick: () => toast.close(id)
+    }
+  })
+  return id
+}
+
+function useInstructionToast(instruction: string | null): void {
+  const instructionToastId = useRef<string | number | null>(null)
+  const hadInstruction = useRef(false)
+  useEffect(() => {
+    if (instructionToastId.current !== null) {
+      toast.close(instructionToastId.current)
+      instructionToastId.current = null
+    }
+    if (instruction !== null) {
+      instructionToastId.current = addHudToast('info', 'Order ready', instruction)
+      hadInstruction.current = true
+    } else if (hadInstruction.current) {
+      toast.closeAll()
+      hadInstruction.current = false
+    }
+    return () => {
+      if (instructionToastId.current !== null) {
+        toast.close(instructionToastId.current)
+        instructionToastId.current = null
+      }
+    }
+  }, [instruction])
+}
+
+function BottomHud(props: MatchHudProps & { readonly onFeedback: (message: string) => void }) {
   return (
-    <footer className="flex h-44 max-h-44 min-h-44 shrink-0 flex-nowrap items-stretch justify-center gap-2 overflow-x-auto overflow-y-hidden border-t bg-card/70 px-3 pt-3 pb-5 backdrop-blur sm:gap-3 sm:px-4 sm:pt-4 sm:pb-6">
-      <SelectionPanel
-        selection={selection}
-        construction={construction}
-        mineral={mineral}
-        buildings={buildings}
-        humanPlayer={0}
-        onCancelConstruction={onCancelConstruction}
-        onCancelProduction={onCancelProduction}
-        onUpgradeCastle={onUpgradeCastle}
-        onResearch={onResearch}
-        onCancelResearch={onCancelResearch}
-        onTrain={onTrain}
-        onSetRally={onSetRally}
-        production={production}
-        research={research}
-        resources={resources}
-      />
-      <CommandBar
-        disabled={selection.length === 0}
-        mode={commandMode}
-        onStop={onStop}
-        onHold={onHold}
-        onSurrender={onSurrender}
-        {...{ workerSelected, attackCapableSelected: selectionCanAttack(selection) }}
-        monkSelected={selection.length === 1 && selection[0]?.kind === 'monk'}
-        healReady={selectionCanHeal(selection)}
-        healCooldownRemaining={selection[0]?.healCooldownRemaining ?? 0}
-        minerals={resources?.mineral ?? 0}
-        castleTier={resources?.castleTier ?? 1}
-        buildHint={buildHint}
-        buildings={buildings}
-        onArm={onArm}
-      />
+    <footer
+      className="grid w-full min-w-0 shrink-0 overflow-visible border-t bg-card/65 p-[calc(12px*var(--hud-scale))] backdrop-blur"
+      style={{ height: '240px' }}
+    >
+      <div className="mx-auto grid min-h-0 w-full max-w-[958px] min-w-0 grid-cols-[minmax(0,0.5fr)_minmax(0,1fr)_minmax(0,0.7fr)] gap-[calc(12px*var(--hud-scale))]">
+        <OverviewPanel />
+        <SelectionPanel
+          selection={props.selection}
+          construction={props.construction}
+          mineral={props.mineral}
+          humanPlayer={0}
+        />
+        <CommandBar
+          key={`${props.construction?.id ?? 'none'}:${props.mineral?.id ?? 'none'}:${props.selection.map((unit) => unit.id).join(',')}`}
+          selection={props.selection}
+          construction={props.construction}
+          mineral={props.mineral}
+          mode={props.commandMode}
+          resources={props.resources}
+          buildings={props.buildings}
+          production={props.production}
+          research={props.research}
+          onStop={props.onStop}
+          onHold={props.onHold}
+          onArm={props.onArm}
+          onCancelConstruction={props.onCancelConstruction}
+          onCancelProduction={props.onCancelProduction}
+          onCancelResearch={props.onCancelResearch}
+          onUpgradeCastle={props.onUpgradeCastle}
+          onResearch={props.onResearch}
+          onTrain={props.onTrain}
+          onSetRally={props.onSetRally}
+          onFeedback={props.onFeedback}
+        />
+      </div>
     </footer>
   )
 }
 
-export function MatchHud({
-  status,
-  messageLog,
-  unitCount,
-  tick,
-  selection,
-  construction,
-  mineral,
-  resources,
-  hostRef,
-  commandMode,
-  matchResult,
-  scenario,
-  scenarios,
-  aggression,
-  spritesEnabled,
-  inputProfile,
-  onStop,
-  onHold,
-  onSurrender,
-  onArm,
-  onCancelConstruction,
-  onCancelProduction,
-  onUpgradeCastle,
-  onResearch,
-  onCancelResearch,
-  onTrain,
-  onSetRally,
-  workerSelected,
-  buildings,
-  production,
-  research,
-  buildHint,
-  onNewMatch,
-  onChangeScenario,
-  onToggleAggression,
-  onToggleSprites,
-  onInputProfileChange
-}: MatchHudProps) {
+export function MatchHud(props: MatchHudProps) {
+  const scale = useHudScale()
+  const showFeedback = (message: string): void => {
+    addHudToast('error', 'Command unavailable', message)
+  }
+  const style: HudScaleStyle = { '--hud-scale': scale }
+  const instruction = commandHint(props.commandMode, props.buildHint)
+  useInstructionToast(instruction)
+  useEffect(() => {
+    if (props.hudFeedback !== null) {
+      addHudToast('error', 'Match error', props.hudFeedback)
+    }
+  }, [props.hudFeedback])
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-background text-foreground">
-      <TopBar
-        status={status}
-        messageLog={messageLog}
-        unitCount={unitCount}
-        selectedCount={selection.length}
-        tick={tick}
-        resources={resources}
-        scenario={scenario}
-        scenarios={scenarios}
-        aggression={aggression}
-        spritesEnabled={spritesEnabled}
-        onChangeScenario={onChangeScenario}
-        onToggleAggression={onToggleAggression}
-        onToggleSprites={onToggleSprites}
-        inputProfile={inputProfile}
-        onInputProfileChange={onInputProfileChange}
-      />
-      <main className="grid min-h-0 flex-1 place-items-center p-4">
+    <div
+      data-testid="hud-root"
+      className="relative flex h-screen w-full flex-col overflow-hidden bg-background text-foreground"
+      style={style}
+    >
+      <div className="h-[calc(48px*var(--hud-scale))] shrink-0 max-[639px]:h-[calc(96px*var(--hud-scale))]">
+        <TopBar
+          status={props.status}
+          messageLog={props.messageLog}
+          unitCount={props.unitCount}
+          selectedCount={props.selection.length}
+          tick={props.tick}
+          resources={props.resources}
+          scenario={props.scenario}
+          scenarios={props.scenarios}
+          aggression={props.aggression}
+          spritesEnabled={props.spritesEnabled}
+          inputProfile={props.inputProfile}
+          onSurrender={props.onSurrender}
+          onChangeScenario={props.onChangeScenario}
+          onToggleAggression={props.onToggleAggression}
+          onToggleSprites={props.onToggleSprites}
+          onInputProfileChange={props.onInputProfileChange}
+        />
+      </div>
+      <main className="grid min-h-0 flex-1 place-items-center p-[calc(8px*var(--hud-scale))]">
         <div
-          ref={hostRef}
-          className="aspect-square h-full max-h-full max-w-full min-h-0 min-w-0 overflow-hidden rounded-xl border border-border/50 shadow-2xl"
+          ref={props.hostRef}
+          data-testid="match-host"
+          className="aspect-square h-full max-h-[910px] max-w-[958px] min-h-0 min-w-0 overflow-hidden rounded-xl border border-border/50 shadow-2xl"
         />
       </main>
-      <MatchHudFooter
-        {...{
-          selection,
-          construction,
-          mineral,
-          buildings,
-          onCancelConstruction,
-          onCancelProduction,
-          onUpgradeCastle,
-          onResearch,
-          onCancelResearch,
-          onTrain,
-          onSetRally,
-          production,
-          research,
-          resources,
-          commandMode,
-          onStop,
-          onHold,
-          onSurrender,
-          onArm,
-          workerSelected,
-          buildHint
-        }}
-      />
-      {matchResult !== null ? <MatchOverlay result={matchResult} onNewMatch={onNewMatch} /> : null}
+      <BottomHud {...props} onFeedback={showFeedback} />
+      {props.matchResult !== null ? <MatchOverlay result={props.matchResult} onNewMatch={props.onNewMatch} /> : null}
     </div>
   )
 }

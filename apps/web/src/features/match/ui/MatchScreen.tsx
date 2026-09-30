@@ -3,7 +3,7 @@ import { type MatchSessionState, useMatchSession } from '../lifecycle/useMatchSe
 import { MatchHud, type MatchHudProps } from './MatchHud'
 
 function buildHudProps(session: MatchSessionState, hostRef: RefObject<HTMLDivElement | null>): MatchHudProps {
-  const { selectionUnits, aggression } = session
+  const { aggression } = session
   return {
     status: session.status,
     messageLog: session.messageLog,
@@ -13,6 +13,7 @@ function buildHudProps(session: MatchSessionState, hostRef: RefObject<HTMLDivEle
     construction: session.selectedConstruction,
     mineral: session.selectedMineral,
     resources: session.resources,
+    hudFeedback: session.hudFeedback,
     hostRef,
     commandMode: session.commandMode,
     matchResult: session.matchResult,
@@ -32,7 +33,6 @@ function buildHudProps(session: MatchSessionState, hostRef: RefObject<HTMLDivEle
     onCancelResearch: session.cancelResearch,
     onTrain: session.train,
     onSetRally: (producerId) => session.arm({ kind: 'rally', producerId }),
-    workerSelected: selectionUnits.length === 1 && selectionUnits[0]?.kind === 'pawn' && selectionUnits[0]?.owner === 0,
     buildings: session.buildings,
     production: session.production,
     research: session.researchCatalog,
