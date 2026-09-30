@@ -1,6 +1,8 @@
 import type { BuildCatalogEntry, ProductionCatalogEntry, ResearchCatalogEntry } from '@rts/protocol'
 import type { ResearchType, TrainableUnitKind } from '@rts/shared'
 import type { CommandMode } from '../commands/useCommandModes'
+import type { HudContextFeedback } from './HudContextFeedback'
+import type { HudNotification } from './hud-notifications'
 import type { HudConstruction, HudMineral, HudResources, HudSelectionUnit } from './types'
 
 export type SubmenuKind = 'build' | 'train' | 'research' | 'upgrade'
@@ -27,5 +29,7 @@ export interface CommandBarProps {
   readonly onResearch: (monasteryId: number, researchType: ResearchType) => void
   readonly onTrain: (unitKind: TrainableUnitKind) => void
   readonly onSetRally: (producerId: number) => void
-  readonly onFeedback: (message: string) => void
+  readonly contextFeedback: HudContextFeedback | null
+  readonly modeInstruction: string | null
+  readonly onNotify: (notification: HudNotification) => void
 }
