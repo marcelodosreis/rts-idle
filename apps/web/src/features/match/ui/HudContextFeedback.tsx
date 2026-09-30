@@ -14,7 +14,7 @@ interface HudContextFeedbackProps {
 
 /** A fixed overlay keeps actionable HUD feedback close to the command source. */
 export function HudContextFeedback({ feedback, instruction }: HudContextFeedbackProps) {
-  const message = feedback?.message ?? instruction
+  const message = instruction ?? feedback?.message
   if (message === null) {
     return null
   }

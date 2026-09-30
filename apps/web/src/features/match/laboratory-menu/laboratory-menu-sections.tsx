@@ -54,7 +54,11 @@ export function ServerLogSection({
         ) : (
           <ul className="divide-y">
             {messageLog.map((entry) => (
-              <li key={`${entry.timestamp}-${entry.message}`} className="flex gap-2 px-3 py-1.5">
+              <li
+                key={`${entry.timestamp}-${entry.message}`}
+                className="flex gap-2 px-3 py-1.5"
+                role={entry.type === 'error' ? 'alert' : undefined}
+              >
                 <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                   {formatTimestamp(entry.timestamp)}
                 </span>

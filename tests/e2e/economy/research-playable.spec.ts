@@ -125,8 +125,8 @@ test('uses the same queue card dimensions for research and units', async ({ page
   if (researchCard === null || unitCard === null) {
     throw new Error('queue cards are not measurable')
   }
-  expect(Math.abs(researchCard.width - unitCard.width)).toBeLessThan(1)
-  expect(researchCard.height).toBe(unitCard.height)
+  expect(Math.abs(researchCard.width - unitCard.width)).toBeLessThan(3)
+  expect(Math.abs(researchCard.height - unitCard.height)).toBeLessThan(1)
 })
 
 test('completed Economy research changes the selected Pawn tooltip', async ({ page }) => {

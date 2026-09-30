@@ -68,7 +68,7 @@ function commandHint(mode: CommandMode, buildHint: string | null): string | null
   }
   if (typeof mode === 'object') {
     return mode.kind === 'build'
-      ? `${buildHint ?? 'Choose a valid building location'} · Esc to cancel`
+      ? (buildHint ?? 'Choose a valid building location')
       : 'Choose a rally point · Esc to cancel'
   }
   if (mode === 'attack') {

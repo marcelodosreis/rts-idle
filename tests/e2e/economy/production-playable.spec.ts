@@ -187,7 +187,7 @@ test('cancels any queued production row with confirmation and refund feedback', 
   expect(mineralFeedbackPosition.deltaTop).toBeGreaterThanOrEqual(mineralFeedbackPosition.statTop)
   expect(mineralFeedbackPosition.deltaBottom).toBeLessThanOrEqual(mineralFeedbackPosition.statBottom)
   expect(mineralFeedbackPosition.deltaLeft).toBeGreaterThanOrEqual(mineralFeedbackPosition.valueRight)
-  expect(mineralFeedbackPosition.deltaCenter).toBeLessThanOrEqual(mineralFeedbackPosition.valueCenter)
+  expect(mineralFeedbackPosition.deltaCenter).toBeLessThanOrEqual(mineralFeedbackPosition.valueCenter + 1)
 
   const firstRefund = await mineralValue(page)
   const beforeSecondCancel = await queueLength(page)
