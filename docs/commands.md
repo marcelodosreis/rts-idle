@@ -4,6 +4,32 @@ Authoritative command contract (master plan P1.01). A `ScheduledCommand` is
 `{ tick, playerId, sequence, intent }`; the engine collects `CommandRejectedError`
 for invalid commands without mutating state (atomicity, P1.02).
 
+## Local development instances
+
+Run one isolated web/server pair per agent. Instance 1 uses the normal command;
+additional instances use the generic launcher:
+
+| Instance | Command | Web | Server |
+|---|---|---:|---:|
+| 1 | `pnpm dev` | `5173` | `8080` |
+| 2 | `pnpm dev:instance -- 2` | `5174` | `8081` |
+| 3 | `pnpm dev:instance -- 3` | `5175` | `8082` |
+| 4 | `pnpm dev:instance -- 4` | `5176` | `8083` |
+
+The general mapping is `web = 5172 + N` and `server = 8079 + N`. The instance
+launcher uses the same recursive parallel workspace command as `pnpm dev`, so
+server and web logs appear together with `apps/server dev$` and `apps/web dev$`
+prefixes. Use a different `N` for every concurrent agent, open the web URL
+printed for that instance, and press `Ctrl+C` to stop both processes. The old
+`dev:2` alias is intentionally removed.
+
+If startup reports an occupied port, inspect listeners before stopping anything:
+
+```bash
+ss -ltnp
+kill <PID>
+```
+
 All unit-list commands validate the full selection before applying to any unit:
 every unit must exist, be ownable, and belong to the issuing player, and the
 selection must be within `MAX_UNITS_PER_COMMAND` (256). Positional targets must

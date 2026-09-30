@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 57 |
+| open | 59 |
 | closed | 14 |
-| **total** | **71** |
+| **total** | **73** |
 
 ## Details
 
@@ -85,7 +85,13 @@
 | 2026-09-29-hud-command-regressions | open | presentation | QH.25 | 2 test(s) |
 | 2026-09-29-terrain-editor-narrow-canvas | open | presentation | QH.17 | 1 test(s) |
 | 2026-09-29-topbar-reference-resolution | open | presentation | QH.02 | 2 test(s) |
+<<<<<<< HEAD
 | 2026-09-30-laboratory-navigation-lazy-route | open | presentation | QH.13 | 1 test(s) |
+=======
+| 2026-09-30-compact-resource-delta-alignment | open | presentation | — | 1 test(s) |
+| 2026-09-30-enemy-building-selection-attack | open | coverage | QH.02 | 2 test(s) |
+| 2026-09-30-supply-delta-reservation | open | presentation | — | 1 test(s) |
+>>>>>>> 84f6554 (docs: update workflow and postmortem status)
 
 ## Legend
 
