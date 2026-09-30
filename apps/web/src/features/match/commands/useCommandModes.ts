@@ -9,6 +9,9 @@ export type CommandMode =
   | 'attack'
   | 'attack_move'
   | 'heal'
+  | 'gather'
+  | 'repair'
+  | 'deposit'
   | { readonly kind: 'build'; readonly buildingType: BuildingType }
   | { readonly kind: 'rally'; readonly producerId: number }
 

@@ -31,6 +31,7 @@ function resourcesForHuman(message: SnapshotMessage) {
     : {
         mineral: player.gold,
         supply: player.usedSupply,
+        reservedSupply: player.reservedSupply ?? 0,
         supplyCap: player.supplyCap,
         castleTier: currentCastleTier(message, HUMAN_PLAYER),
         completedResearch: [...(player.completedResearch ?? [])],
@@ -49,6 +50,7 @@ export interface MatchSessionHandlerOptions {
   readonly setTick: (tick: number) => void
   readonly setUnitCount: (count: number) => void
   readonly setResources: (resources: ReturnType<typeof resourcesForHuman>) => void
+  readonly setHudFeedback: (message: string | null) => void
   readonly setSelectedMineral: (mineral: HudMineral | null) => void
   readonly setMatchResult: (result: MatchResult) => void
   readonly present: (frame: ReturnType<typeof snapshotToFrame>) => void
@@ -150,6 +152,7 @@ export function createMatchSessionHandlers(options: MatchSessionHandlerOptions):
         return
       }
       options.appendLog('error', error.message)
+      options.setHudFeedback(error.message.replace(/^[A-Z_]+:\s*/, ''))
       if (error.scenarios !== undefined) {
         options.setScenarios(error.scenarios)
       }
@@ -160,6 +163,7 @@ export function createMatchSessionHandlers(options: MatchSessionHandlerOptions):
       }
       options.setStatus('error')
       options.appendLog('error', error.message)
+      options.setHudFeedback('Connection to the match was lost.')
     },
     onClose: () => {
       if (!runtime.sessionActive) {
@@ -167,6 +171,7 @@ export function createMatchSessionHandlers(options: MatchSessionHandlerOptions):
       }
       options.setStatus('error')
       options.appendLog('error', 'Connection closed')
+      options.setHudFeedback('Connection to the match was closed.')
     }
   }
 }

@@ -79,6 +79,10 @@ export class MatchInteractionController {
       this.context.clearMode()
       return
     }
+    if (this.isWorkerTargetMode()) {
+      this.context.clearMode()
+      return
+    }
     const point = this.context.toCommandPoint(worldX, worldY)
     const target = { unitIds, x: point.x, y: point.y }
     const mode = this.context.mode()
@@ -147,6 +151,11 @@ export class MatchInteractionController {
       this.context.clearMode()
       return
     }
+    if (this.isWorkerTargetMode()) {
+      this.repairUnitTarget(id, target)
+      this.context.clearMode()
+      return
+    }
     if (this.context.mode() === 'attack' || isEnemy) {
       this.context.sendCommand({ type: 'ATTACK', payload: { unitIds, targetId: id } })
       this.context.clearMode()
@@ -189,6 +198,15 @@ export class MatchInteractionController {
       return
     }
     const ownedPawns = this.selectedWorkers()
+    if (this.context.mode() === 'gather') {
+      this.context.clearMode()
+      return
+    }
+    if (this.context.mode() === 'deposit' || this.context.mode() === 'repair') {
+      this.workerBuildingCommand(building, ownedPawns)
+      this.context.clearMode()
+      return
+    }
     if (building.status === 'COMPLETED') {
       const carrying = ownedPawns.filter((unitId) => this.context.unitStates.get(unitId)?.carrying === true)
       if (building.owner === this.context.humanPlayer && carrying.length > 0) {
@@ -229,6 +247,10 @@ export class MatchInteractionController {
     if (unitIds.length === 0) {
       return
     }
+    if (this.context.mode() === 'repair' || this.context.mode() === 'deposit') {
+      this.context.clearMode()
+      return
+    }
     this.context.sendCommand({ type: 'GATHER', payload: { unitIds, nodeId } })
     this.context.clearMode()
   }
@@ -238,6 +260,37 @@ export class MatchInteractionController {
       .selectedUnitIds()
       .filter((id) => this.context.unitStates.get(id)?.kind === 'pawn')
       .filter((id) => this.context.unitStates.get(id)?.owner === this.context.humanPlayer)
+  }
+
+  private isWorkerTargetMode(): boolean {
+    const mode = this.context.mode()
+    return mode === 'gather' || mode === 'repair' || mode === 'deposit'
+  }
+
+  private repairUnitTarget(id: number, target: SelectedUnitState | undefined): void {
+    if (this.context.mode() !== 'repair' || target === undefined || !this.isDamaged(target.hp, target.maxHp)) {
+      return
+    }
+    const workers = this.selectedWorkers()
+    if (workers.length > 0) {
+      this.context.sendCommand({ type: 'REPAIR', payload: { unitIds: workers, targetId: id } })
+    }
+  }
+
+  private workerBuildingCommand(building: SnapshotBuilding, workers: readonly number[]): void {
+    if (building.status !== 'COMPLETED' || building.owner !== this.context.humanPlayer) {
+      return
+    }
+    if (this.context.mode() === 'deposit') {
+      const carrying = workers.filter((unitId) => this.context.unitStates.get(unitId)?.carrying === true)
+      if (carrying.length > 0) {
+        this.context.sendCommand({ type: 'DEPOSIT', payload: { unitIds: carrying, buildingId: building.id } })
+      }
+      return
+    }
+    if (this.context.mode() === 'repair' && workers.length > 0 && this.isDamaged(building.hp, building.maxHp)) {
+      this.context.sendCommand({ type: 'REPAIR', payload: { unitIds: workers, targetId: building.id } })
+    }
   }
 
   private selectedMonks(): number[] {

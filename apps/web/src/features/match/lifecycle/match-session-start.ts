@@ -19,6 +19,7 @@ import { createMatchSessionRuntime, type MatchSessionRuntime } from './match-ses
 export interface SessionResources {
   readonly mineral: number
   readonly supply: number
+  readonly reservedSupply: number
   readonly supplyCap: number
   readonly castleTier: number
   readonly completedResearch: readonly ResearchType[]
@@ -33,6 +34,7 @@ export interface MatchSessionSetters {
   readonly setSelectedConstruction: (value: HudConstruction | null) => void
   readonly setSelectedMineral: (value: HudMineral | null) => void
   readonly setBuildHint: (value: string | null) => void
+  readonly setHudFeedback: (value: string | null) => void
   readonly setStatus: (value: string) => void
   readonly setTick: (value: number) => void
   readonly setUnitCount: (value: number) => void
@@ -287,6 +289,7 @@ function createSessionHandlers(
     setTick: setters.setTick,
     setUnitCount: setters.setUnitCount,
     setResources: setters.setResources,
+    setHudFeedback: setters.setHudFeedback,
     setSelectedMineral: setters.setSelectedMineral,
     setMatchResult: (result) => {
       refs.matchEndedRef.current = true
