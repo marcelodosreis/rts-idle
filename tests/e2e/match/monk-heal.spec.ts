@@ -40,5 +40,7 @@ test('Monk heals an allied unit through the match HUD', async ({ page }) => {
       .not.toBe('fallback')
   }
   await expect(healButton).toBeDisabled()
-  await expect(healButton).toHaveText(/Heal \(\d+s\)/)
+  await expect(healButton).toHaveAttribute('aria-disabled', 'true')
+  await healButton.hover()
+  await expect(page.getByText(/Heal ready in/)).toBeVisible()
 })

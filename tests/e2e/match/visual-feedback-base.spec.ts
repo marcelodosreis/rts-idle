@@ -29,7 +29,7 @@ test('visual base: HUD reacts to selection and units animate without teleporting
   // Selecting an owned unit updates the HUD selection panel. The squads cluster
   // tightly once engaged, so select by id rather than by mouse click.
   const selectedId = await selectFirstByOwner(page, 0)
-  await expect(page.getByText(/1 ·/)).toBeVisible()
+  await expect(page.getByText('1 unit selected', { exact: true })).toBeVisible()
   const selectedStart = (await page.evaluate(
     (id) => window.__rtsDebug?.getPositions()[String(id)] ?? null,
     selectedId
@@ -79,5 +79,5 @@ test('visual base: HUD reacts to selection and units animate without teleporting
   }
 
   // The selection panel persists and reflects the unit state through the move.
-  await expect(page.getByText(/1 ·/)).toBeVisible()
+  await expect(page.getByText('1 unit selected', { exact: true })).toBeVisible()
 })

@@ -33,7 +33,7 @@ test('clicking a unit selects it and shows selection feedback', async ({ page })
   // nondeterministic; what matters is that exactly one unit was selected and
   // the HUD reflects it.
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getSelection() ?? [])).toHaveLength(1)
-  await expect(page.getByText(/1 ·/)).toBeVisible()
+  await expect(page.getByText('1 unit selected', { exact: true })).toBeVisible()
 })
 
 test('right-clicking with a selection issues a command and shows a ping', async ({ page }) => {
