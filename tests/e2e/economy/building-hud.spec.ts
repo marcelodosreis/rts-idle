@@ -27,7 +27,13 @@ async function workerIds(page: import('@playwright/test').Page): Promise<number[
 }
 
 async function selectWorker(page: import('@playwright/test').Page, id: number): Promise<void> {
-  const position = await page.evaluate((workerId) => window.__rtsDebug!.getPositions()[String(workerId)]!, id)
+  await expect
+    .poll(() => page.evaluate((workerId) => window.__rtsDebug!.getPositions()[String(workerId)] ?? null, id))
+    .not.toBeNull()
+  const position = await page.evaluate((workerId) => window.__rtsDebug!.getPositions()[String(workerId)] ?? null, id)
+  if (position === null) {
+    throw new Error(`worker ${id} position is missing`)
+  }
   const point = await canvasPointForFixed(page, position.x, position.y)
   await page.mouse.click(point.x, point.y)
 }
@@ -104,6 +110,26 @@ test('House capacity activates only after construction completes', async ({ page
   await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 10')
   await expect.poll(() => constructionAt(page, target), { timeout: 20_000 }).toMatchObject({ status: 'COMPLETED' })
   await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 18')
+  const completionToast = page.getByRole('status').filter({ hasText: 'Construction complete' })
+  await expect(completionToast).toContainText('House')
+  await expect(completionToast).toHaveClass(/border-zinc-600/)
+  await expect(completionToast).not.toHaveClass(/border-emerald/)
+  const toastPosition = await page.evaluate(() => {
+    const toast = document.querySelector('[role="status"]')
+    const topbar = document.querySelector('[data-testid="hud-topbar"]')
+    if (toast === null || topbar === null) {
+      throw new Error('toast or top bar is missing')
+    }
+    const toastBox = toast.getBoundingClientRect()
+    return {
+      toastTop: toastBox.top,
+      toastRight: toastBox.right,
+      topbarBottom: topbar.getBoundingClientRect().bottom,
+      viewportWidth: window.innerWidth
+    }
+  })
+  expect(toastPosition.toastTop).toBeGreaterThanOrEqual(toastPosition.topbarBottom)
+  expect(toastPosition.viewportWidth - toastPosition.toastRight).toBeCloseTo(12, 0)
 })
 
 test('construction stays at the clicked location while the worker travels', async ({ page }) => {

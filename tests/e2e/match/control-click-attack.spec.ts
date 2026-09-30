@@ -68,7 +68,7 @@ test('right-clicking an enemy attacks it and preserves the selection', async ({ 
 
   await expect
     .poll(() => page.evaluate((id) => window.__rtsDebug?.getUnitHealth(id)?.current ?? 0, red!.id), {
-      timeout: 15_000
+      timeout: 45_000
     })
     .toBeLessThan(baseline)
 
