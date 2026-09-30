@@ -2,6 +2,7 @@ import type { InputProfile } from '@rts/renderer'
 import { useState } from 'react'
 import { CollapsibleSection } from '@/shared/ui/collapsible-section'
 import { Label } from '@/shared/ui/label'
+import { ScrollArea } from '@/shared/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Switch } from '@/shared/ui/switch'
 import type { MessageLogEntry } from '../lifecycle/useMessageLog'
@@ -45,9 +46,9 @@ export function ServerLogSection({
       label="Server Log"
       open={open}
       onToggle={() => setOpen((value) => !value)}
-      trailing={<span className="text-xs tabular-nums text-muted-foreground">Tick: {tick}</span>}
+      trailing={<span className="ml-auto text-xs tabular-nums text-muted-foreground">Tick: {tick}</span>}
     >
-      <div className="max-h-44 overflow-y-auto rounded-md border border-border/60 bg-muted/20">
+      <ScrollArea className="h-44 rounded-md border border-border/60 bg-muted/20">
         {messageLog.length === 0 ? (
           <p className="px-3 py-2 text-xs text-muted-foreground">No messages yet.</p>
         ) : (
@@ -62,7 +63,7 @@ export function ServerLogSection({
             ))}
           </ul>
         )}
-      </div>
+      </ScrollArea>
     </CollapsibleSection>
   )
 }

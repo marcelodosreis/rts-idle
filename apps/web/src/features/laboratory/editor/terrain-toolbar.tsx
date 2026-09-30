@@ -27,7 +27,7 @@ function TerrainTabContent({ state, onPatch }: Pick<TerrainToolbarProps, 'state'
   return (
     <TabsContent value="terrain" className="mt-0 flex-1">
       <ScrollArea className="h-full">
-        <div className="grid grid-cols-3 gap-1 pr-2 sm:grid-cols-6 lg:grid-cols-3">
+        <div className="grid grid-cols-3 gap-1 pr-2">
           {TERRAIN_BRUSHES.map((brush) => (
             <BrushButton
               key={brush.value}
@@ -84,23 +84,23 @@ function ToolbarFooter({
         <HistoryButtons controller={controller} onStateChange={onPatch} />
       </div>
       <div className="h-px bg-border/50" />
-      <div className="grid grid-cols-2 gap-1 sm:grid-cols-4 lg:grid-cols-2">
-        <Button variant="outline" size="sm" onClick={onExport} className="text-[11px]">
+      <div className="grid grid-cols-2 gap-1.5">
+        <Button variant="outline" size="sm" onClick={onExport} className="h-8 text-[10px]">
           Export
         </Button>
-        <Button variant="outline" size="sm" onClick={onImport} className="text-[11px]">
+        <Button variant="outline" size="sm" onClick={onImport} className="h-8 text-[10px]">
           Import
         </Button>
-        <Button variant="outline" size="sm" onClick={onDownload} className="text-[11px]">
+        <Button variant="outline" size="sm" onClick={onDownload} className="h-8 text-[10px]">
           Download
         </Button>
-        <Button variant="outline" size="sm" onClick={onUploadClick} className="text-[11px]">
+        <Button variant="outline" size="sm" onClick={onUploadClick} className="h-8 text-[10px]">
           Upload
         </Button>
-        <Button variant="outline" size="sm" onClick={onPlaytest} className="text-[11px]">
+        <Button variant="default" size="sm" onClick={onPlaytest} className="h-8 text-[10px]">
           Playtest
         </Button>
-        <Button variant="ghost" size="sm" onClick={onClearSaved} className="text-[11px]">
+        <Button variant="ghost" size="sm" onClick={onClearSaved} className="h-8 text-[10px]">
           Clear saved
         </Button>
         <input
@@ -111,10 +111,10 @@ function ToolbarFooter({
           className="hidden"
           onChange={onFileChange}
         />
-        <Button variant="outline" size="sm" onClick={() => controller?.resetCamera()} className="text-[11px]">
+        <Button variant="outline" size="sm" onClick={() => controller?.resetCamera()} className="h-8 text-[10px]">
           Fit
         </Button>
-        <Button variant="destructive" size="sm" onClick={onReset} className="text-[11px]">
+        <Button variant="destructive" size="sm" onClick={onReset} className="h-8 text-[10px]">
           Reset
         </Button>
       </div>
@@ -124,7 +124,7 @@ function ToolbarFooter({
 
 export function TerrainToolbar(props: TerrainToolbarProps) {
   return (
-    <div className="flex w-full shrink-0 flex-col gap-2 rounded-xl border border-border/50 bg-card p-2 lg:w-[200px]">
+    <div className="flex w-full shrink-0 flex-col gap-2 rounded-xl border border-border/50 bg-card p-2 md:w-[200px]">
       <Tabs
         value={props.state.editorTab}
         onValueChange={(value) => props.onPatch({ editorTab: value as EditorTab })}

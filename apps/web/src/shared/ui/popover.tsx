@@ -10,6 +10,22 @@ function PopoverTrigger({ ...props }: React.ComponentProps<typeof PopoverPrimiti
   return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
 }
 
+function PopoverAnchor({ ...props }: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
+  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />
+}
+
+function PopoverHeader({ className, ...props }: React.ComponentProps<'div'>) {
+  return <div data-slot="popover-header" className={cn('space-y-1', className)} {...props} />
+}
+
+function PopoverTitle({ className, ...props }: React.ComponentProps<'h3'>) {
+  return <h3 data-slot="popover-title" className={cn('font-semibold', className)} {...props} />
+}
+
+function PopoverDescription({ className, ...props }: React.ComponentProps<'p'>) {
+  return <p data-slot="popover-description" className={cn('text-muted-foreground text-sm', className)} {...props} />
+}
+
 function PopoverContent({
   className,
   align = 'center',
@@ -35,4 +51,4 @@ function PopoverContent({
   )
 }
 
-export { Popover, PopoverContent, PopoverTrigger }
+export { Popover, PopoverAnchor, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger }
