@@ -39,7 +39,7 @@ async function unitsByOwner(page: Page): Promise<UnitInfo[]> {
 }
 
 test('right-clicking an enemy attacks it and preserves the selection', async ({ page }) => {
-  await page.goto('/?scenario=8v8&aggression=offensive')
+  await page.goto('/?scenario=8v8&aggression=passive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
   const blueIds = await page.evaluate(() => {
@@ -56,9 +56,8 @@ test('right-clicking an enemy attacks it and preserves the selection', async ({ 
 
   await selectByIds(page, blueIds)
 
-  // Freeze the red health first: STOP cancels the standing auto-orders so the
-  // only damage afterwards is the one we issue. Wait for the health read to
-  // settle instead of sleeping for in-flight shots.
+  // Keep the selected units idle so the only damage afterwards is the one we
+  // issue. Wait for the health read to settle instead of sleeping for shots.
   await page.getByRole('button', { name: 'Stop' }).click()
   const baseline = await waitForStableRead(() =>
     page.evaluate((id) => window.__rtsDebug?.getUnitHealth(id)?.current ?? 0, red!.id)

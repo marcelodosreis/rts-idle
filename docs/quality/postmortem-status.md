@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 75 |
+| open | 76 |
 | closed | 17 |
-| **total** | **92** |
+| **total** | **93** |
 
 ## Details
 
@@ -99,6 +99,7 @@
 | 2026-09-30-toast-scope-window-binding | open | presentation | QH.25 | 1 test(s) |
 | 2026-09-30-tree-overlapped-production-build-site | open | presentation | QH.25 | 2 test(s) |
 | 2026-09-30-wood-hud-compact-layout | open | layout | QH.25 | 1 test(s) |
+| 2026-10-01-control-click-auto-battle-race | open | coverage | — | 1 test(s) |
 | 2026-10-01-e2e-wall-clock-and-animation-measurement | open | completion-gate | QH.27.01 | 1 test(s) |
 | 2026-10-01-e2e-worker-contention | open | environment | QH.26.01 | 1 test(s) |
 | 2026-10-01-enemy-building-command-panel-empty | closed | presentation | — | 2 test(s) |
