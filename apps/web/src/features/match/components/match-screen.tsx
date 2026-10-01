@@ -11,7 +11,7 @@ function buildHudProps(session: MatchSessionState, hostRef: RefObject<HTMLDivEle
     tick: session.tick,
     selection: session.selectionUnits,
     construction: session.selectedConstruction,
-    mineral: session.selectedMineral,
+    resource: session.selectedResource,
     resources: session.resources,
     hudNotification: session.hudNotification,
     completedConstructions: session.completedConstructions,

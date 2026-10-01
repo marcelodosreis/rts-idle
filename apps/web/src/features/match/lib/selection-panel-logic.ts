@@ -1,6 +1,6 @@
 import type { SnapshotProductionItem } from '@rts/protocol'
 import { constructionRefund, productionRefund } from '@rts/shared'
-import type { HudConstruction, HudMineral } from '../types/hud-types'
+import type { HudConstruction, HudResource } from '../types/hud-types'
 
 export function constructionStatusLine(construction: HudConstruction): string {
   if (construction.tierUpgrade !== undefined && construction.tierUpgrade !== null) {
@@ -19,15 +19,15 @@ export function canCancelConstruction(construction: HudConstruction, humanPlayer
 }
 
 /** Display-only estimate; the authoritative refund is credited by the simulation. */
-export function cancelRefundEstimate(construction: HudConstruction, costMinerals: number): number {
-  return constructionRefund(costMinerals, construction.progressTicks, construction.totalTicks)
+export function cancelRefundEstimate(construction: HudConstruction, costGold: number): number {
+  return constructionRefund({ GOLD: costGold }, construction.progressTicks, construction.totalTicks).GOLD ?? 0
 }
 
 /** Display-only production refund; the simulation remains authoritative. */
 export function productionRefundEstimate(item: SnapshotProductionItem): number {
-  return productionRefund(item.status, item.costMinerals, item.progressTicks, item.totalTicks)
+  return productionRefund(item.status, item.cost, item.progressTicks, item.totalTicks).GOLD ?? 0
 }
 
-export function mineralRemainingLine(mineral: HudMineral): string {
-  return `${mineral.remaining} remaining`
+export function resourceRemainingLine(resource: HudResource): string {
+  return `${resource.remaining} remaining`
 }

@@ -5,11 +5,11 @@ import { type CSSProperties, type RefObject, useCallback, useEffect, useRef } fr
 import { Toaster } from 'sonner'
 import { createMatchToastScope, type ToastScope } from '@/shared/ui/toast'
 import type { CommandMode } from '../hooks/use-command-modes'
-import { useHudScale } from '../hooks/use-hud-scale'
 import type { MessageLogEntry } from '../hooks/use-message-log'
-import { useTimedValue } from '../hooks/use-timed-value'
 import { type HudNotification, notificationPresentation } from '../lib/hud-notifications'
-import type { HudConstruction, HudMineral, HudResources, HudSelectionUnit } from '../types/hud-types'
+import type { HudConstruction, HudResource, HudResources, HudSelectionUnit } from '../types/hud-types'
+import { useHudScale } from '../hooks/use-hud-scale'
+import { useTimedValue } from '../hooks/use-timed-value'
 import { CommandBar } from './command-bar'
 import type { HudContextFeedback } from './hud-context-feedback'
 import { MatchOverlay } from './match-overlay'
@@ -26,7 +26,7 @@ export interface MatchHudProps {
   readonly tick: number
   readonly selection: readonly HudSelectionUnit[]
   readonly construction: HudConstruction | null
-  readonly mineral: HudMineral | null
+  readonly resource: HudResource | null
   readonly resources: HudResources | null
   readonly hostRef: RefObject<HTMLDivElement | null>
   readonly commandMode: CommandMode
@@ -164,14 +164,16 @@ function BottomHud(
         <SelectionPanel
           selection={props.selection}
           construction={props.construction}
-          mineral={props.mineral}
+          resource={props.resource}
           humanPlayer={0}
           feedbackTarget={props.contextFeedback?.target ?? null}
         />
         <CommandBar
+          key={`${props.construction?.id ?? 'none'}:${props.resource?.id ?? 'none'}:${props.selection.map((unit) => unit.id).join(',')}`}
           selection={props.selection}
           construction={props.construction}
-          mineral={props.mineral}
+          resource={props.resource}
+          humanPlayer={0}
           mode={props.commandMode}
           resources={props.resources}
           buildings={props.buildings}
@@ -198,7 +200,7 @@ function BottomHud(
 
 function MatchToaster() {
   return (
-    <div className="[--match-toast-top:calc(48px*var(--hud-scale)+12px)] max-[850px]:[--match-toast-top:calc(96px*var(--hud-scale)+12px)]">
+    <div className="[--match-toast-top:calc(48px*var(--hud-scale)+12px)] max-[1024px]:[--match-toast-top:calc(96px*var(--hud-scale)+12px)]">
       <Toaster
         closeButton={true}
         position="top-right"
@@ -268,7 +270,7 @@ export function MatchHud(props: MatchHudProps) {
       className="relative flex h-screen w-full flex-col overflow-hidden bg-background text-foreground"
       style={style}
     >
-      <div className="h-[calc(48px*var(--hud-scale))] shrink-0 max-[850px]:h-[calc(96px*var(--hud-scale))]">
+      <div className="h-[calc(48px*var(--hud-scale))] shrink-0 max-[1024px]:h-[calc(96px*var(--hud-scale))]">
         <TopBar
           status={props.status}
           messageLog={props.messageLog}
