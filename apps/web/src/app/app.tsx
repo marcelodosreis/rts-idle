@@ -3,7 +3,7 @@ import { AppRouter } from '../routes/router'
 
 export function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter useTransitions={false}>
       <AppRouter />
     </BrowserRouter>
   )

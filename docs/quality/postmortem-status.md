@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 72 |
+| open | 73 |
 | closed | 17 |
-| **total** | **89** |
+| **total** | **90** |
 
 ## Details
 
@@ -104,6 +104,7 @@
 | 2026-10-01-main-e2e-navigation-flake | closed | completion-gate | QH.26.01 | 1 test(s) |
 | 2026-10-01-monk-primary-click-heals | closed | input-cross-platform | — | 2 test(s) |
 | 2026-10-01-web-rebase-component-export | open | convention | QH.24 | 1 test(s) |
+| 2026-10-01-web-route-transition-starvation | open | completion-gate | QH.26.01 | 1 test(s) |
 
 ## Legend
 
