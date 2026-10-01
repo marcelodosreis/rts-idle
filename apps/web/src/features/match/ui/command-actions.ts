@@ -301,8 +301,8 @@ function buildActions(props: CommandBarProps): readonly HudCommandAction[] {
     description: `Build ${entry.label} at a valid location.`,
     icon: BUILDING_ICONS[entry.type],
     blockedReason: buildBlockReason(entry, props.resources),
-    blockedTarget: blockedFeedbackTarget(buildBlockReason(entry, props.resources)),
-    cost: `${entry.costMinerals} minerals`,
+      blockedTarget: blockedFeedbackTarget(buildBlockReason(entry, props.resources)),
+      cost: `${entry.cost.GOLD ?? 0} gold`,
     time: `${Math.ceil(entry.constructionTicks / 20)}s`,
     active: buildingTypeForMode(props.mode) === entry.type,
     feedbackKind: 'arm',
@@ -325,7 +325,7 @@ function trainingActions(props: CommandBarProps): readonly HudCommandAction[] {
       icon: UNIT_ICONS[entry.unitKind],
       blockedReason: trainingBlockReason(entry, props.resources, queueLength),
       blockedTarget: blockedFeedbackTarget(trainingBlockReason(entry, props.resources, queueLength)),
-      cost: `${entry.costMinerals} minerals · ${entry.supply} supply`,
+      cost: `${entry.cost.GOLD ?? 0} gold · ${entry.supply} supply`,
       time: `${Math.ceil(entry.trainingTicks / 20)}s`,
       feedbackKind: 'submit',
       onActivate: () => props.onTrain(entry.unitKind)
@@ -344,8 +344,8 @@ function researchActions(props: CommandBarProps): readonly HudCommandAction[] {
     description: `Research ${RESEARCH_LABELS[entry.researchType]}.`,
     icon: BookOpen,
     blockedReason: researchBlockReason(entry, props.resources, queueLength),
-    blockedTarget: blockedFeedbackTarget(researchBlockReason(entry, props.resources, queueLength)),
-    cost: `${entry.costMinerals} minerals`,
+      blockedTarget: blockedFeedbackTarget(researchBlockReason(entry, props.resources, queueLength)),
+      cost: `${entry.cost.GOLD ?? 0} gold`,
     time: `${Math.ceil(entry.researchTicks / 20)}s`,
     feedbackKind: 'submit',
     onActivate: () => props.onResearch(building.id, entry.researchType)
@@ -357,7 +357,7 @@ function upgradeActions(props: CommandBarProps): readonly HudCommandAction[] {
   if (building === null) {
     return []
   }
-  const cost = props.buildings.find((entry) => entry.type === 'CASTLE')?.costMinerals ?? 0
+  const cost = props.buildings.find((entry) => entry.type === 'CASTLE')?.cost.GOLD ?? 0
   return [
     {
       id: 'upgrade-castle',
@@ -366,7 +366,7 @@ function upgradeActions(props: CommandBarProps): readonly HudCommandAction[] {
       icon: ArrowUpCircle,
       blockedReason: upgradeBlockReason(building, cost, props.resources),
       blockedTarget: blockedFeedbackTarget(upgradeBlockReason(building, cost, props.resources)),
-      cost: `${cost} minerals`,
+      cost: `${cost} gold`,
       feedbackKind: 'submit',
       onActivate: () => props.onUpgradeCastle(building.id)
     }

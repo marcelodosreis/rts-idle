@@ -13,7 +13,7 @@ import { MatchOverlay } from './MatchOverlay'
 import { OverviewPanel } from './OverviewPanel'
 import { SelectionPanel } from './SelectionPanel'
 import { TopBar } from './TopBar'
-import type { HudConstruction, HudMineral, HudResources, HudSelectionUnit } from './types'
+import type { HudConstruction, HudResource, HudResources, HudSelectionUnit } from './types'
 import { useHudScale } from './useHudScale'
 import { useTimedValue } from './useTimedValue'
 
@@ -26,7 +26,7 @@ export interface MatchHudProps {
   readonly tick: number
   readonly selection: readonly HudSelectionUnit[]
   readonly construction: HudConstruction | null
-  readonly mineral: HudMineral | null
+  readonly resource: HudResource | null
   readonly resources: HudResources | null
   readonly hostRef: RefObject<HTMLDivElement | null>
   readonly commandMode: CommandMode
@@ -164,14 +164,16 @@ function BottomHud(
         <SelectionPanel
           selection={props.selection}
           construction={props.construction}
-          mineral={props.mineral}
+          resource={props.resource}
           humanPlayer={0}
           feedbackTarget={props.contextFeedback?.target ?? null}
         />
         <CommandBar
+          key={`${props.construction?.id ?? 'none'}:${props.resource?.id ?? 'none'}:${props.selection.map((unit) => unit.id).join(',')}`}
           selection={props.selection}
           construction={props.construction}
-          mineral={props.mineral}
+          resource={props.resource}
+          humanPlayer={0}
           mode={props.commandMode}
           resources={props.resources}
           buildings={props.buildings}
@@ -268,7 +270,7 @@ export function MatchHud(props: MatchHudProps) {
       className="relative flex h-screen w-full flex-col overflow-hidden bg-background text-foreground"
       style={style}
     >
-      <div className="h-[calc(48px*var(--hud-scale))] shrink-0 max-[850px]:h-[calc(96px*var(--hud-scale))]">
+      <div className="h-[calc(48px*var(--hud-scale))] shrink-0 max-[899px]:h-[calc(96px*var(--hud-scale))]">
         <TopBar
           status={props.status}
           messageLog={props.messageLog}

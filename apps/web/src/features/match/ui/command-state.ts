@@ -25,8 +25,8 @@ export function buildBlockReason(entry: BuildCatalogEntry, resources: HudResourc
   if (entry.type === 'MONASTERY' && resources.castleTier < 2) {
     return 'Requires Castle II.'
   }
-  if (resources.mineral < entry.costMinerals) {
-    return `Requires ${entry.costMinerals} minerals. You have ${resources.mineral}.`
+  if (resources.resources.GOLD < (entry.cost.GOLD ?? 0)) {
+    return `Requires ${entry.cost.GOLD ?? 0} gold. You have ${resources.resources.GOLD}.`
   }
   return undefined
 }
@@ -45,8 +45,8 @@ export function trainingBlockReason(
   if ((entry.unitKind === 'lancer' || entry.unitKind === 'monk') && resources.castleTier < 2) {
     return 'Requires Castle II.'
   }
-  if (resources.mineral < entry.costMinerals) {
-    return `Requires ${entry.costMinerals} minerals. You have ${resources.mineral}.`
+  if (resources.resources.GOLD < (entry.cost.GOLD ?? 0)) {
+    return `Requires ${entry.cost.GOLD ?? 0} gold. You have ${resources.resources.GOLD}.`
   }
   const availableSupply = resources.supplyCap - resources.supply - resources.reservedSupply
   if (availableSupply < entry.supply) {
@@ -75,8 +75,8 @@ export function researchBlockReason(
   if (queueLength >= MAX_PRODUCTION_QUEUE) {
     return 'The Monastery queue is full.'
   }
-  if (resources.mineral < entry.costMinerals) {
-    return `Requires ${entry.costMinerals} minerals. You have ${resources.mineral}.`
+  if (resources.resources.GOLD < (entry.cost.GOLD ?? 0)) {
+    return `Requires ${entry.cost.GOLD ?? 0} gold. You have ${resources.resources.GOLD}.`
   }
   return undefined
 }
@@ -92,8 +92,8 @@ export function upgradeBlockReason(
   if (resources === null) {
     return 'Match resources are still loading.'
   }
-  if (resources.mineral < cost) {
-    return `Requires ${cost} minerals. You have ${resources.mineral}.`
+  if (resources.resources.GOLD < cost) {
+    return `Requires ${cost} gold. You have ${resources.resources.GOLD}.`
   }
   return undefined
 }
@@ -112,6 +112,11 @@ export function blockedFeedbackTarget(reason: string | undefined): HudFeedbackTa
     return 'queue'
   }
   return 'command'
+}
+
+/** Enemy constructions are selectable for inspection, never commandable. */
+export function canCommandConstruction(construction: HudConstruction, humanPlayer: number): boolean {
+  return construction.owner === humanPlayer
 }
 
 export function isResearchItem(

@@ -12,7 +12,7 @@ import {
   workerActions
 } from './command-actions'
 import { COMMAND_LAYOUTS, type CommandLayout, createSubmenuLayout } from './command-layout'
-import { isResearchItem, unitSelectionBlockReason } from './command-state'
+import { canCommandConstruction, isResearchItem, unitSelectionBlockReason } from './command-state'
 import type { CommandBarProps, MenuState } from './command-types'
 import { type HudCommandAction, HudCommandButton, type HudCommandTransientState } from './HudCommandButton'
 import { HudContextFeedback } from './HudContextFeedback'
@@ -216,11 +216,14 @@ function commandSlots(
   confirming: boolean,
   setConfirming: (value: boolean) => void
 ): readonly (HudCommandAction | null)[] {
+  if (props.construction !== null && !canCommandConstruction(props.construction, props.humanPlayer)) {
+    return mapLayout(COMMAND_LAYOUTS.empty, [])
+  }
+  if (props.resource !== null || (props.selection.length === 0 && props.construction === null)) {
+    return mapLayout(COMMAND_LAYOUTS.empty, [])
+  }
   if (menu.kind !== 'root') {
     return submenuSlots(props, menu, setMenu)
-  }
-  if (props.mineral !== null || (props.selection.length === 0 && props.construction === null)) {
-    return mapLayout(COMMAND_LAYOUTS.empty, [])
   }
   if (props.construction !== null) {
     return buildingSlots(props, setMenu, confirming, setConfirming)

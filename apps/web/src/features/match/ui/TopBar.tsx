@@ -1,5 +1,5 @@
 import type { InputProfile } from '@rts/renderer'
-import { Flag, Gem, MousePointer2, Users } from 'lucide-react'
+import { Flag, Gem, MousePointer2, Trees, Users } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -122,20 +122,27 @@ function TopBarStats({
   return (
     <div
       data-testid="hud-topbar-stats"
-      className="flex min-w-0 items-center gap-2 max-[850px]:col-start-2 max-[850px]:row-start-1 max-[850px]:gap-1"
+      className="flex min-w-0 items-center gap-2 max-[899px]:col-start-2 max-[899px]:row-start-1 max-[899px]:gap-1"
     >
       <div
         data-testid="hud-topbar-economy"
         className="flex items-center gap-1 rounded-lg border border-border/70 bg-background/30 p-1 max-[850px]:col-start-2 max-[850px]:row-start-1"
       >
         <Stat
-          label="Minerals"
-          value={resources === null ? '—' : String(resources.mineral)}
+          label="Gold"
+          value={resources === null ? '—' : String(resources.resources.GOLD)}
           icon={Gem}
-          testId="hud-resource-mineral"
+          testId="hud-resource-gold"
           accentClassName="text-amber-400"
           delta={mineralDelta}
           highlighted={feedbackTarget === 'minerals'}
+        />
+        <Stat
+          label="Wood"
+          value={resources === null ? '—' : String(resources.resources.WOOD)}
+          icon={Trees}
+          testId="hud-resource-wood"
+          accentClassName="text-emerald-400"
         />
         <Stat
           label="Supply"
@@ -174,9 +181,9 @@ function TopBarControls(props: TopBarProps) {
   return (
     <div
       data-testid="hud-topbar-controls"
-      className="flex items-center gap-[calc(12px*var(--hud-scale))] opacity-80 max-[850px]:col-start-2 max-[850px]:row-start-2 max-[850px]:justify-self-end max-[850px]:gap-1"
+      className="flex items-center gap-[calc(12px*var(--hud-scale))] opacity-80 max-[899px]:col-start-2 max-[899px]:row-start-2 max-[899px]:justify-self-end max-[899px]:gap-1"
     >
-      <Separator orientation="vertical" className="h-5 max-[850px]:hidden" />
+      <Separator orientation="vertical" className="h-5 max-[899px]:hidden" />
       <SurrenderAction onSurrender={props.onSurrender} />
       <LaboratoryMenu
         status={props.status}
@@ -200,11 +207,11 @@ export function TopBar(props: TopBarProps) {
   return (
     <header
       data-testid="hud-topbar"
-      className="relative grid h-full min-h-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center border-b bg-card/80 px-[calc(12px*var(--hud-scale))] backdrop-blur max-[850px]:grid-cols-[minmax(0,1fr)_minmax(0,auto)] max-[850px]:grid-rows-2 max-[850px]:gap-x-2"
+      className="relative grid h-full min-h-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center border-b bg-card/80 px-[calc(12px*var(--hud-scale))] backdrop-blur max-[899px]:grid-cols-[minmax(0,1fr)_minmax(0,auto)] max-[899px]:grid-rows-2 max-[899px]:gap-x-2"
     >
       <div
         data-testid="hud-topbar-brand"
-        className="flex min-w-0 items-center gap-3 max-[850px]:col-start-1 max-[850px]:row-start-1 max-[850px]:gap-2"
+        className="flex min-w-0 items-center gap-3 max-[899px]:col-start-1 max-[899px]:row-start-1 max-[899px]:gap-2"
       >
         <span aria-hidden={true} className="text-sm text-primary">
           ◆
@@ -222,11 +229,18 @@ export function TopBar(props: TopBarProps) {
       </div>
       <time
         data-testid="hud-topbar-time"
-        className="absolute top-[calc(50%+4px)] left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-border/70 bg-background/45 px-2.5 py-1 text-sm font-semibold tabular-nums tracking-[0.14em] text-foreground shadow-sm max-[850px]:top-3/4"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-border/70 bg-background/45 px-2.5 py-1 text-sm font-semibold tabular-nums tracking-[0.14em] text-foreground shadow-sm max-[899px]:static max-[899px]:col-start-1 max-[899px]:row-start-2 max-[899px]:justify-self-start max-[899px]:translate-x-0 max-[899px]:translate-y-0"
       >
         {formatMatchTime(props.tick)}
       </time>
       <div className="flex min-w-max items-center justify-self-end gap-[calc(12px*var(--hud-scale))] max-[850px]:contents">
+        <TopBarStats
+          resources={props.resources}
+          unitCount={props.unitCount}
+          selectedCount={props.selectedCount}
+          feedbackTarget={props.feedbackTarget}
+        />
+      <div className="flex min-w-max items-center justify-self-end gap-[calc(12px*var(--hud-scale))] max-[899px]:contents">
         <TopBarStats
           resources={props.resources}
           unitCount={props.unitCount}
