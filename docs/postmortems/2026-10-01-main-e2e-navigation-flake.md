@@ -1,5 +1,5 @@
 ---
-status: open
+status: closed
 classe: completion-gate
 barreira: QH.26.01
 regressao:
@@ -72,5 +72,9 @@ Local QH.26.01 validation:
 
 The browser lanes must run sequentially on one machine; running both lanes
 concurrently starves CPU and makes the readiness predicate time out. CI runs
-each browser in a separate matrix runner, so the lanes do not contend. Final CI
-result is recorded once the pipeline completes.
+each browser in a separate matrix runner, so the lanes do not contend.
+
+CI result (run `36822886466`, PR #42): all checks pass — functional Chromium
+`12m38s`, functional Firefox `8m12s`, performance Chromium `2m54s`, performance
+Firefox `1m21s`, plus static and all eight code-test suites. No retry-only pass
+was reported.

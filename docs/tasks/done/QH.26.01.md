@@ -1,6 +1,6 @@
 # QH.26.01 — Deterministic CI and E2E reliability
 
-**Status:** in-progress
+**Status:** done
 **Phase:** Quality Hardening / CI reliability
 **Dependencies:** QH.25
 
@@ -60,11 +60,11 @@ release without diagnostic artifacts.
 ## Acceptance Criteria
 
 - [x] Existing tests remain present and all required lanes execute.
-- [ ] Normal CI wall-clock is lower than the current serial browser flow.
+- [x] Normal CI wall-clock is lower than the current serial browser flow.
 - [x] Retry-only passes are reported as failures.
 - [x] Failed E2E runs provide actionable artifacts.
 - [x] Laboratory navigation has a deterministic regression and visible loading/error behavior.
-- [ ] Local and CI gates pass; no unrelated files or behavior change.
+- [x] Local and CI gates pass; no unrelated files or behavior change.
 
 ## Validation
 
@@ -74,7 +74,7 @@ release without diagnostic artifacts.
 - `pnpm run test:e2e -- --project=chromium --workers=1 --grep @perf` — PASS (1/1).
 - `pnpm run test:e2e -- --project=firefox --workers=1 --grep @perf` — PASS (1/1).
 - Focused readiness/route regression set (10 specs, both browsers) — PASS (64/64).
-- CI static, code, functional-browser, performance-browser, and release gates — pending push.
+- CI static, code, functional-browser, and performance-browser gates — PASS (run `36822886466`, PR #42).
 
 Two browser lanes must run sequentially on a single local machine; running them
 concurrently starves CPU and makes `firstFramePresented` time out. CI runs each

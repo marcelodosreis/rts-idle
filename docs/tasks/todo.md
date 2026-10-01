@@ -244,7 +244,7 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
 - [x] QH.22 Public API and docs sync
 - [x] QH.23 Session projections and tools coverage
 - [x] QH.24 Mandatory enforcement (git, CI, governance)
-- [ ] QH.26.01 Deterministic CI and E2E reliability (deps: QH.25)
+- [x] QH.26.01 Deterministic CI and E2E reliability (deps: QH.25)
 - [x] QH.17 Front-matter + guard + summary (postmortem tracking)
 - [x] QH.18 Board + tracking guard + protocol
 - [x] QH.16 Output hygiene (test output)
