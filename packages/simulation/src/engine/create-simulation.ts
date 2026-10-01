@@ -1,7 +1,8 @@
-import { createRng, PLAYER_IDS, START_ENTITY_ID } from '@rts/shared'
+import { createPlayerResources, createRng, PLAYER_IDS, START_ENTITY_ID } from '@rts/shared'
 import type { SimulationOptions } from '../contracts/simulation.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
+import { createResourceState } from '../resources/resource-state.js'
 import type { GameState, PlayerState } from '../state/state.js'
 import { updateSupply } from '../systems/supply-system.js'
 import { Simulation } from './simulation.js'
@@ -12,7 +13,7 @@ function createPlayers(): PlayerState[] {
   return PLAYER_IDS.map((id) => ({
     id,
     defeated: false,
-    gold: 0,
+    resources: createPlayerResources(),
     usedSupply: 0,
     reservedSupply: 0,
     supplyCap: 0,
@@ -58,6 +59,7 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
             highestCastleTierReached: player.highestCastleTierReached ?? 1
           })),
     mapBounds: options.mapBounds ?? DEFAULT_MAP_BOUNDS,
+    resources: createResourceState(options.resources),
     world,
     events: [],
     pendingDamage: new Map()

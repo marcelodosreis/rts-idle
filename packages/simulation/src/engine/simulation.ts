@@ -2,9 +2,11 @@ import { applyCommand } from '../commands/apply-command.js'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { CommandRejectedError } from '../contracts/commands.js'
 import type { RulesIdentity, TickResult } from '../contracts/simulation.js'
+import type { ResourceAmount } from '../resources/resource-state.js'
 import { hashBytes, hashState } from '../snapshot/hash.js'
-import { deserializeState, serializeState } from '../snapshot/serialize.js'
-import type { GameState } from '../state/state.js'
+import { serializeState } from '../snapshot/serialize.js'
+import { cloneGameState } from '../state/clone-state.js'
+import type { GameState, Phase } from '../state/state.js'
 import { runSystems } from '../systems/pipeline.js'
 import type { SimulationHost, SimulationSnapshot } from './simulation-host.js'
 
@@ -27,6 +29,7 @@ export class Simulation implements SimulationHost {
       events: [],
       pendingDamage: new Map()
     }
+    this.state.resources.beginTick()
     const rejected: CommandRejectedError[] = []
     for (const command of commands) {
       try {
@@ -53,7 +56,7 @@ export class Simulation implements SimulationHost {
   }
 
   inspectState(): GameState {
-    return deserializeState(serializeState(this.state))
+    return cloneGameState(this.state)
   }
 
   hashState(): string {
@@ -62,5 +65,17 @@ export class Simulation implements SimulationHost {
 
   rulesIdentity(): RulesIdentity {
     return this.state.identity
+  }
+
+  tick(): number {
+    return this.state.tick
+  }
+
+  phase(): Phase {
+    return this.state.phase
+  }
+
+  resources(complete: boolean): readonly ResourceAmount[] {
+    return complete ? this.state.resources.all() : this.state.resources.changed()
   }
 }

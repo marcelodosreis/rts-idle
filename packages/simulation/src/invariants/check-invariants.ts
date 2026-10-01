@@ -1,6 +1,6 @@
 import { RESEARCH_DEFINITIONS, UNIT_PRODUCTION_DEFINITIONS } from '@rts/game-data'
 import type { ProductionItemStatus } from '@rts/shared'
-import { GATHER_TICKS_PER_BATCH, MINERAL_CARGO_CAPACITY } from '../data/economy-rules.js'
+import { RESOURCE_CARGO_CAPACITY } from '../data/economy-rules.js'
 import { MAX_PRODUCTION_QUEUE } from '../data/production-rules.js'
 import { MAX_SUPPLY_CAPACITY } from '../data/supply-rules.js'
 import { effectiveCargoCapacity } from '../domain/research-effects.js'
@@ -11,7 +11,6 @@ import {
   Health,
   isResearchProductionItem,
   Kind,
-  MineralNode,
   Orders,
   Owner,
   Position,
@@ -47,6 +46,10 @@ export function checkBuildingFootprints(mapBounds: PlacementMapBounds, footprint
 
 function fail(invariant: string): never {
   throw new InvariantError(`check-invariants: ${invariant}`)
+}
+
+function costsEqual(first: { readonly GOLD?: number; readonly WOOD?: number }, second: typeof first): boolean {
+  return (first.GOLD ?? 0) === (second.GOLD ?? 0) && (first.WOOD ?? 0) === (second.WOOD ?? 0)
 }
 
 function checkConstruction(state: GameState, id: number): void {
@@ -95,13 +98,9 @@ function checkConstruction(state: GameState, id: number): void {
 function checkEconomyEntity(state: GameState, id: number): void {
   const owners = state.world.store(Owner)
   const kinds = state.world.store(Kind)
-  const node = state.world.store(MineralNode).get(id)
-  if (node !== undefined && (!Number.isInteger(node.remaining) || node.remaining < 0)) {
-    fail(`entity ${id} has negative mineral amount ${node.remaining}`)
-  }
   checkConstruction(state, id)
   const cargo = state.world.store(Cargo).get(id)
-  const expectedCapacity = effectiveCargoCapacity(state, id, MINERAL_CARGO_CAPACITY)
+  const expectedCapacity = effectiveCargoCapacity(state, id, RESOURCE_CARGO_CAPACITY)
   if (
     cargo !== undefined &&
     (!Number.isInteger(cargo.amount) ||
@@ -113,6 +112,9 @@ function checkEconomyEntity(state: GameState, id: number): void {
   }
   if (cargo !== undefined && (kinds.get(id) !== 'pawn' || owners.get(id) === undefined)) {
     fail(`entity ${id} has cargo without being an owned worker`)
+  }
+  if (cargo !== undefined && (cargo.amount === 0) !== (cargo.resourceType === null)) {
+    fail(`entity ${id} has cargo type inconsistent with amount`)
   }
   const frontOrder = state.world.store(Orders).get(id)?.queue[0]
   if (
@@ -131,13 +133,14 @@ function checkEconomyEntity(state: GameState, id: number): void {
     fail(`entity ${id} has build order referencing missing construction ${frontOrder.buildingId}`)
   }
   const gatherOrder = frontOrder
-  if (
-    gatherOrder?.type === 'GATHER' &&
-    (!Number.isInteger(gatherOrder.progressTicks) ||
-      gatherOrder.progressTicks < 0 ||
-      gatherOrder.progressTicks >= GATHER_TICKS_PER_BATCH)
-  ) {
-    fail(`entity ${id} has invalid gather progress ${gatherOrder.progressTicks}`)
+  if (gatherOrder?.type === 'GATHER') {
+    const resource = state.resources.catalog.entry(gatherOrder.resourceId)
+    if (resource === undefined) {
+      fail(`entity ${id} gathers missing resource ${gatherOrder.resourceId}`)
+    }
+    if (gatherOrder.progressTicks < 0 || gatherOrder.progressTicks >= resource.harvestTicks) {
+      fail(`entity ${id} has invalid gather progress ${gatherOrder.progressTicks}`)
+    }
   }
 }
 
@@ -152,7 +155,7 @@ function checkQueueItemStatus(id: number, index: number, status: ProductionItemS
 
 function checkResearchItem(id: number, index: number, item: ResearchProductionItem): void {
   const definition = RESEARCH_DEFINITIONS[item.researchType]
-  if (item.costMinerals !== definition.costMinerals || item.totalTicks !== definition.researchTicks) {
+  if (!costsEqual(item.cost, definition.cost) || item.totalTicks !== definition.researchTicks) {
     fail(`production ${id} has stale Research definition for ${item.researchType}`)
   }
   if (item.status === 'COMPLETED_WAITING') {
@@ -163,7 +166,7 @@ function checkResearchItem(id: number, index: number, item: ResearchProductionIt
 
 function checkUnitItem(id: number, index: number, item: UnitProductionItem): number {
   const definition = UNIT_PRODUCTION_DEFINITIONS[item.unitKind]
-  if (item.costMinerals !== definition.costMinerals || item.reservedSupply !== definition.supply) {
+  if (!costsEqual(item.cost, definition.cost) || item.reservedSupply !== definition.supply) {
     fail(`production ${id} has stale definition for ${item.unitKind}`)
   }
   if (!Number.isInteger(item.progressTicks) || item.progressTicks < 0 || item.progressTicks > item.totalTicks) {
@@ -260,8 +263,11 @@ function checkPlayers(state: GameState): void {
     }
   }
   for (const player of state.players) {
-    if (!Number.isInteger(player.gold) || player.gold < 0) {
-      fail(`player ${player.id} has invalid mineral balance ${player.gold}`)
+    if (!Number.isInteger(player.resources.GOLD) || player.resources.GOLD < 0) {
+      fail(`player ${player.id} has invalid gold balance ${player.resources.GOLD}`)
+    }
+    if (!Number.isInteger(player.resources.WOOD) || player.resources.WOOD < 0) {
+      fail(`player ${player.id} has invalid wood balance ${player.resources.WOOD}`)
     }
     if (!Number.isInteger(player.usedSupply) || player.usedSupply < 0) {
       fail(`player ${player.id} has invalid used supply ${player.usedSupply}`)
@@ -284,6 +290,14 @@ function checkPlayers(state: GameState): void {
  * state; a violation means a system produced an illegal state.
  */
 export function checkInvariants(state: GameState): void {
+  // Only changed resources are validated each tick: definitions are validated
+  // at construction and `harvest` is the single guarded writer, so a full
+  // catalog scan would cost O(total resources) per tick for no added safety.
+  for (const resource of state.resources.changed()) {
+    if (!Number.isInteger(resource.remaining) || resource.remaining < 0) {
+      fail(`resource ${resource.resourceId} has invalid amount ${resource.remaining}`)
+    }
+  }
   const reserved = new Map<number, number>()
   for (const id of state.world.aliveIds()) {
     checkEntity(state, id)
