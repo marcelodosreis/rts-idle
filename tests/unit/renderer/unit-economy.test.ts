@@ -27,12 +27,70 @@ describe('economyAnimation', () => {
     repairInteract: fakeSprite(),
     gather: fakeSprite(),
     carryIdle: fakeSprite(),
-    carryRun: fakeSprite()
+    carryRun: fakeSprite(),
+    gatherAxe: fakeSprite(),
+    carryWoodIdle: fakeSprite(),
+    carryWoodRun: fakeSprite(),
+    travelAxeIdle: fakeSprite(),
+    travelAxeRun: fakeSprite(),
+    travelPickaxeIdle: fakeSprite(),
+    travelPickaxeRun: fakeSprite()
+  }
+  const noWoodFrames: EconomyFrames = {
+    ...frames,
+    gatherAxe: null,
+    carryWoodIdle: null,
+    carryWoodRun: null,
+    travelAxeIdle: null,
+    travelAxeRun: null
   }
 
-  it('shows the gather sprite while gathering, moving or not', () => {
-    expect(economyAnimation(frames, { phase: 'gathering', moving: false })).toBe(frames.gather)
-    expect(economyAnimation(frames, { phase: 'gathering', moving: true })).toBe(frames.gather)
+  it('shows the gather sprite while harvesting, moving or not', () => {
+    expect(economyAnimation(frames, { phase: 'harvesting', moving: false })).toBe(frames.gather)
+    expect(economyAnimation(frames, { phase: 'harvesting', moving: true })).toBe(frames.gather)
+  })
+
+  it('shows the axe sprite while harvesting a tree', () => {
+    expect(economyAnimation(frames, { phase: 'harvesting', moving: false, material: 'WOOD' })).toBe(frames.gatherAxe)
+  })
+
+  it('shows wood carry frames while returning from a tree', () => {
+    expect(economyAnimation(frames, { phase: 'to_base', moving: true, material: 'WOOD' })).toBe(frames.carryWoodRun)
+    expect(economyAnimation(frames, { phase: 'to_base', moving: false, material: 'WOOD' })).toBe(frames.carryWoodIdle)
+  })
+
+  it('shows wood carry frames while carrying without an order', () => {
+    expect(economyAnimation(frames, { phase: undefined, moving: true, carrying: true, material: 'WOOD' })).toBe(
+      frames.carryWoodRun
+    )
+    expect(economyAnimation(frames, { phase: undefined, moving: false, carrying: true, material: 'WOOD' })).toBe(
+      frames.carryWoodIdle
+    )
+  })
+
+  it('shows the matching tool while walking to a resource', () => {
+    expect(economyAnimation(frames, { phase: 'to_resource', moving: true, material: 'WOOD' })).toBe(frames.travelAxeRun)
+    expect(economyAnimation(frames, { phase: 'to_resource', moving: false, material: 'WOOD' })).toBe(
+      frames.travelAxeIdle
+    )
+    expect(economyAnimation(frames, { phase: 'to_resource', moving: true, material: 'GOLD' })).toBe(
+      frames.travelPickaxeRun
+    )
+    expect(economyAnimation(frames, { phase: 'to_resource', moving: false, material: 'GOLD' })).toBe(
+      frames.travelPickaxeIdle
+    )
+  })
+
+  it('falls back to the gold frames when wood art is missing', () => {
+    expect(economyAnimation(noWoodFrames, { phase: 'harvesting', moving: false, material: 'WOOD' })).toBe(
+      noWoodFrames.gather
+    )
+    expect(economyAnimation(noWoodFrames, { phase: 'to_base', moving: true, material: 'WOOD' })).toBe(
+      noWoodFrames.carryRun
+    )
+    expect(economyAnimation(noWoodFrames, { phase: 'to_base', moving: false, material: 'WOOD' })).toBe(
+      noWoodFrames.carryIdle
+    )
   })
 
   it('shows the hammer sprite while building', () => {
@@ -56,8 +114,10 @@ describe('economyAnimation', () => {
     expect(economyAnimation(frames, { phase: 'to_base', moving: false })).toBe(frames.carryIdle)
   })
 
-  it('falls back to run/idle handling for to_node and waiting_for_base', () => {
-    expect(economyAnimation(frames, { phase: 'to_node', moving: true })).toBeNull()
+  it('shows the pickaxe travel frames for an unspecified resource, or null when unavailable', () => {
+    expect(economyAnimation(frames, { phase: 'to_resource', moving: true })).toBe(frames.travelPickaxeRun)
+    expect(economyAnimation(frames, { phase: 'to_resource', moving: false })).toBe(frames.travelPickaxeIdle)
+    expect(economyAnimation({ ...frames, travelPickaxeRun: null }, { phase: 'to_resource', moving: true })).toBeNull()
     expect(economyAnimation(frames, { phase: 'waiting_for_base', moving: false })).toBeNull()
   })
 
@@ -109,6 +169,19 @@ describe('economyFrameKey', () => {
     expect(economyFrameKey(0, 'carryRun')).toBe('units.blue.pawn.pawn_run_gold')
   })
 
+  it('maps tree gathering and travel to the axe sprites', () => {
+    expect(economyFrameKey(0, 'gatherAxe')).toBe('units.blue.pawn.pawn_interact_axe')
+    expect(economyFrameKey(0, 'travelAxeRun')).toBe('units.blue.pawn.pawn_run_axe')
+    expect(economyFrameKey(0, 'travelAxeIdle')).toBe('units.blue.pawn.pawn_idle_axe')
+    expect(economyFrameKey(0, 'travelPickaxeRun')).toBe('units.blue.pawn.pawn_run_pickaxe')
+    expect(economyFrameKey(0, 'travelPickaxeIdle')).toBe('units.blue.pawn.pawn_idle_pickaxe')
+  })
+
+  it('maps wood carrying to the wood sprites', () => {
+    expect(economyFrameKey(0, 'carryWoodRun')).toBe('units.blue.pawn.pawn_run_wood')
+    expect(economyFrameKey(0, 'carryWoodIdle')).toBe('units.blue.pawn.pawn_idle_wood')
+  })
+
   it('keys by owner faction', () => {
     expect(economyFrameKey(1, 'gather')).toBe('units.red.pawn.pawn_interact_pickaxe')
     expect(economyFrameKey(2, 'gather')).toBe('units.purple.pawn.pawn_interact_pickaxe')
@@ -121,15 +194,15 @@ describe('economyBarRatio', () => {
     expect(economyBarRatio(undefined)).toBe(0)
   })
 
-  it('uses progressTicks/progressMax when gathering', () => {
+  it('uses progressTicks/progressMax when harvesting', () => {
     expect(
       economyBarRatio({
-        phase: 'gathering',
+        phase: 'harvesting',
         progressTicks: 5,
         progressMax: 10,
         cargoAmount: 0,
         cargoCapacity: 10,
-        nodeId: 1
+        resourceId: 1
       })
     ).toBe(0.5)
   })
@@ -142,20 +215,20 @@ describe('economyBarRatio', () => {
         progressMax: 10,
         cargoAmount: 3,
         cargoCapacity: 10,
-        nodeId: 1
+        resourceId: 1
       })
     ).toBe(0.3)
   })
 
-  it('uses cargoAmount/cargoCapacity when to_node', () => {
+  it('uses cargoAmount/cargoCapacity when to_resource', () => {
     expect(
       economyBarRatio({
-        phase: 'to_node',
+        phase: 'to_resource',
         progressTicks: 0,
         progressMax: 10,
         cargoAmount: 7,
         cargoCapacity: 10,
-        nodeId: 1
+        resourceId: 1
       })
     ).toBe(0.7)
   })
@@ -163,29 +236,29 @@ describe('economyBarRatio', () => {
   it('clamps ratio to 0..1', () => {
     expect(
       economyBarRatio({
-        phase: 'gathering',
+        phase: 'harvesting',
         progressTicks: 15,
         progressMax: 10,
         cargoAmount: 0,
         cargoCapacity: 10,
-        nodeId: 1
+        resourceId: 1
       })
     ).toBe(1)
   })
 })
 
 describe('economyBarColor', () => {
-  it('returns purple when gathering', () => {
+  it('returns yellow when harvesting', () => {
     expect(
       economyBarColor({
-        phase: 'gathering',
+        phase: 'harvesting',
         progressTicks: 5,
         progressMax: 10,
         cargoAmount: 0,
         cargoCapacity: 10,
-        nodeId: 1
+        resourceId: 1
       })
-    ).toBe(progressFillColor('mining'))
+    ).toBe(progressFillColor('harvesting'))
   })
 
   it('returns green when to_base', () => {
@@ -196,22 +269,22 @@ describe('economyBarColor', () => {
         progressMax: 10,
         cargoAmount: 3,
         cargoCapacity: 10,
-        nodeId: 1
+        resourceId: 1
       })
     ).toBe(progressFillColor('delivery'))
   })
 
-  it('returns purple when going to a mineral node', () => {
+  it('returns yellow when going to a resource', () => {
     expect(
       economyBarColor({
-        phase: 'to_node',
+        phase: 'to_resource',
         progressTicks: 0,
         progressMax: 10,
         cargoAmount: 3,
         cargoCapacity: 10,
-        nodeId: 1
+        resourceId: 1
       })
-    ).toBe(progressFillColor('mining'))
+    ).toBe(progressFillColor('harvesting'))
   })
 
   it('returns green when waiting_for_base', () => {
@@ -222,7 +295,7 @@ describe('economyBarColor', () => {
         progressMax: 10,
         cargoAmount: 3,
         cargoCapacity: 10,
-        nodeId: 1
+        resourceId: 1
       })
     ).toBe(progressFillColor('delivery'))
   })
@@ -253,12 +326,12 @@ describe('drawEconomyBar', () => {
 
     expect(() =>
       drawEconomyBar(graphics as never, {
-        phase: 'gathering',
+        phase: 'harvesting',
         progressTicks: 5,
         progressMax: 10,
         cargoAmount: 0,
         cargoCapacity: 10,
-        nodeId: 1
+        resourceId: 1
       })
     ).not.toThrow()
 

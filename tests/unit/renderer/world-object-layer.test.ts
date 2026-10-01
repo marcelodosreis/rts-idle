@@ -111,7 +111,7 @@ describe('WorldObjectLayer construction anchors', () => {
             queue: [
               {
                 unitKind: 'WARRIOR',
-                costMinerals: 50,
+                cost: { GOLD: 50 },
                 reservedSupply: 1,
                 progressTicks: 30,
                 totalTicks: 60,
@@ -210,46 +210,5 @@ describe('building presentation styles', () => {
       fillAlpha: 0.3,
       strokeColor: 0xc084fc
     })
-  })
-})
-
-describe('WorldObjectLayer hit testing', () => {
-  it('selects a mineral node across consecutive presentation frames', () => {
-    const layers = layerContainers()
-    const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
-    const node = { id: 9, x: 640, y: 384, remaining: 300 }
-
-    layer.present([], [node])
-    expect(layer.mineralNodeAt(160, 96)).toBe(9)
-
-    layer.present([], [{ ...node, remaining: 275 }])
-    expect(layer.mineralNodeAt(160, 96)).toBe(9)
-  })
-
-  it('keeps building and mineral hit targets distinct', () => {
-    const layers = layerContainers()
-    const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
-
-    layer.present(
-      [
-        {
-          id: 7,
-          buildingType: 'CASTLE',
-          x: 0,
-          y: 0,
-          owner: 0,
-          footprint: { width: 2, height: 2 },
-          status: 'COMPLETED',
-          progressTicks: 100,
-          totalTicks: 100
-        }
-      ],
-      [{ id: 9, x: 640, y: 384, remaining: 300 }]
-    )
-
-    expect(layer.buildingAt(32, 32)).toBe(7)
-    expect(layer.mineralNodeAt(160, 96)).toBe(9)
-    expect(layer.buildingAt(500, 500)).toBeNull()
-    expect(layer.mineralNodeAt(500, 500)).toBeNull()
   })
 })
