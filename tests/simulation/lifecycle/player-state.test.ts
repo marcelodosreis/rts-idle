@@ -14,7 +14,8 @@ describe('player state (P1.04)', () => {
     expect(players.map((player) => player.id)).toEqual([0, 1, 2, 3])
     for (const player of players) {
       expect(player.defeated).toBe(false)
-      expect(player.gold).toBe(0)
+      expect(player.resources.GOLD).toBe(0)
+      expect(player.resources.WOOD).toBe(0)
     }
   })
 

@@ -5,6 +5,7 @@ const VALID = {
   width: 2,
   height: 2,
   tiles: ['water', 'water', 'water', 'land'],
+  resources: [],
   stairs: [{ x: 1, y: 1, direction: 'left' as const }],
   palette: 'color2',
   decorationSeed: 9,
@@ -54,8 +55,8 @@ describe('validateMapDefinition', () => {
   })
 
   it('omits optional fields that are absent', () => {
-    const result = validateMapDefinition({ width: 1, height: 1, tiles: ['land'] })
+    const result = validateMapDefinition({ width: 1, height: 1, tiles: ['land'], resources: [] })
     expect(result.ok).toBe(true)
-    expect(result.map).toEqual({ width: 1, height: 1, tiles: ['land'] })
+    expect(result.map).toEqual({ width: 1, height: 1, tiles: ['land'], resources: [] })
   })
 })

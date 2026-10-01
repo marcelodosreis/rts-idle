@@ -58,10 +58,10 @@ function researchScenario(withSecondMonastery = false, gold = 500) {
     identity: TEST_IDENTITY,
     initialWorld: world,
     initialPlayers: [
-      { id: 0, defeated: false, gold, highestCastleTierReached: 2 },
-      { id: 1, defeated: false, gold: 0 },
-      { id: 2, defeated: false, gold: 0 },
-      { id: 3, defeated: false, gold: 0 }
+      { id: 0, defeated: false, resources: { GOLD: gold, WOOD: 0 }, highestCastleTierReached: 2 },
+      { id: 1, defeated: false, resources: { GOLD: 0, WOOD: 0 } },
+      { id: 2, defeated: false, resources: { GOLD: 0, WOOD: 0 } },
+      { id: 3, defeated: false, resources: { GOLD: 0, WOOD: 0 } }
     ]
   })
 }
@@ -137,7 +137,7 @@ describe('research queue', () => {
     expect(simulation.inspectState().world.store(Production).get(START_ENTITY_ID)?.queue).toHaveLength(5)
   })
 
-  it('reserves minerals and completes Attack after its authored duration', () => {
+  it('reserves gold and completes Attack after its authored duration', () => {
     const simulation = researchScenario()
     simulation.step([
       {
@@ -148,7 +148,7 @@ describe('research queue', () => {
       }
     ])
 
-    expect(simulation.inspectState().players[0]).toMatchObject({ gold: 350 })
+    expect(simulation.inspectState().players[0]).toMatchObject({ resources: { GOLD: 350 } })
     for (let tick = 0; tick < 598; tick += 1) {
       simulation.step()
     }
@@ -175,7 +175,7 @@ describe('research queue', () => {
     ])
 
     expect(result.rejected).toEqual([])
-    expect(simulation.inspectState().players[0]?.gold).toBe(462)
+    expect(simulation.inspectState().players[0]?.resources.GOLD).toBe(462)
     expect(simulation.inspectState().world.store(Production).get(START_ENTITY_ID)?.queue).toEqual([])
   })
 

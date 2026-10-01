@@ -6,7 +6,6 @@ import {
   createWorld,
   deserializeState,
   Kind,
-  MineralNode,
   Orders,
   Owner,
   Position,
@@ -78,27 +77,37 @@ describe('state serialization roundtrip', () => {
       world.store(Position).set(worker, { x: 0, y: 0 })
       world.store(Owner).set(worker, { owner: 0 })
       world.store(Kind).set(worker, 'pawn')
-      world.store(Cargo).set(worker, { amount: 0, capacity: 10 })
-      world.createEntity(node)
-      world.store(Position).set(node, { x: tilesToFixed(1), y: 0 })
-      world.store(MineralNode).set(node, { remaining: 3_000 })
+      world.store(Cargo).set(worker, { amount: 0, capacity: 10, resourceType: null })
       const simulation = createSimulation({
         seed: SEEDS.simulation.snapshotContinue,
         identity: TEST_IDENTITY,
-        initialWorld: world
+        initialWorld: world,
+        resources: [
+          {
+            resourceId: node,
+            kind: 'GOLD_MINE',
+            x: tilesToFixed(1),
+            y: 0,
+            variant: 0,
+            initialAmount: 3_000,
+            harvestAmount: 10,
+            harvestTicks: 200,
+            blocksNavigation: false
+          }
+        ]
       })
       simulation.step([
         {
           tick: 1,
           playerId: 0,
           sequence: 1,
-          intent: { type: 'GATHER', payload: { unitIds: [worker], nodeId: node } }
+          intent: { type: 'GATHER', payload: { unitIds: [worker], resourceId: node } }
         }
       ])
       return { simulation, worker }
     }
 
-    for (const phase of ['TO_NODE', 'GATHERING', 'TO_BASE'] as const) {
+    for (const phase of ['TO_RESOURCE', 'HARVESTING', 'TO_BASE'] as const) {
       const { simulation, worker } = buildEconomySimulation()
       for (let tick = 0; tick < 300; tick += 1) {
         if (simulation.inspectState().world.store(Orders).get(worker)?.queue[0]?.type === 'GATHER') {

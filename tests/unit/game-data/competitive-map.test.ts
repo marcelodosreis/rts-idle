@@ -1,7 +1,7 @@
 import {
   BUILDING_DEFINITIONS,
   competitiveBaseLocations,
-  competitiveMineralLocation,
+  competitiveGoldMineLocation,
   createCompetitiveMap,
   tileAtPosition
 } from '@rts/game-data'
@@ -74,19 +74,40 @@ describe('competitive map', () => {
     }
   })
 
-  it('places the mineral node right of the channel at equal distance from both base centers', () => {
+  it('places the gold mine right of the channel at equal distance from both base centers', () => {
     const [first, second] = competitiveBaseLocations()
-    const mineral = competitiveMineralLocation()
+    const goldMine = competitiveGoldMineLocation()
     const footprint = BUILDING_DEFINITIONS.CASTLE.footprint
     const firstCenter = { x: first.x + footprint.width / 2, y: first.y + footprint.height / 2 }
     const secondCenter = { x: second.x + footprint.width / 2, y: second.y + footprint.height / 2 }
-    const firstDistance = (mineral.x - firstCenter.x) ** 2 + (mineral.y - firstCenter.y) ** 2
-    const secondDistance = (mineral.x - secondCenter.x) ** 2 + (mineral.y - secondCenter.y) ** 2
+    const firstDistance = (goldMine.x - firstCenter.x) ** 2 + (goldMine.y - firstCenter.y) ** 2
+    const secondDistance = (goldMine.x - secondCenter.x) ** 2 + (goldMine.y - secondCenter.y) ** 2
 
-    expect(mineral).toEqual({ x: 24, y: 8.5 })
-    expect(mineral.x).toBeGreaterThan(23)
-    expect(tileAtPosition(map, Math.floor(mineral.x), Math.floor(mineral.y))).toBe('land')
+    expect(goldMine).toEqual({ x: 24, y: 8.5 })
+    expect(goldMine.x).toBeGreaterThan(23)
+    expect(tileAtPosition(map, Math.floor(goldMine.x), Math.floor(goldMine.y))).toBe('land')
     expect(firstDistance).toBeCloseTo(secondDistance)
+  })
+
+  it('places trees in the lower-left corner and the gold mine at the contestable bisector tile', () => {
+    expect(map.resources).toHaveLength(41)
+    const trees = map.resources.filter((resource) => resource.kind === 'TREE')
+    expect(trees).toHaveLength(40)
+    for (const resource of trees) {
+      const tileX = resource.x / 256
+      const tileY = resource.y / 256
+      expect(tileX).toBeGreaterThanOrEqual(5)
+      expect(tileX).toBeLessThanOrEqual(12)
+      expect(tileY).toBeGreaterThanOrEqual(23)
+      expect(tileY).toBeLessThanOrEqual(27)
+      expect(tileAtPosition(map, tileX, tileY)).toBe('land')
+    }
+    const goldMine = competitiveGoldMineLocation()
+    expect(map.resources.find((resource) => resource.kind === 'GOLD_MINE')).toMatchObject({
+      resourceId: 41,
+      x: goldMine.x * 256,
+      y: goldMine.y * 256
+    })
   })
 
   it('uses tile-aligned visual canvases for every building footprint', () => {
