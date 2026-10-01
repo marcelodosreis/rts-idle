@@ -30,6 +30,7 @@
     "test:e2e:all": "corepack pnpm run test:e2e -- --project=chromium --project=firefox --workers=1",
     "test:e2e:fast": "corepack pnpm run test:e2e -- --project=chromium --project=firefox --grep-invert @perf",
     "test:e2e:perf": "corepack pnpm run test:e2e -- --project=chromium --project=firefox --workers=1 --grep @perf",
+    "test:e2e:flaky": "corepack pnpm run test:e2e -- tests/e2e/web-routes.spec.ts tests/e2e/economy/production-playable.spec.ts tests/e2e/economy/scenarios.spec.ts tests/e2e/economy/building-hud.spec.ts tests/e2e/economy/research-playable.spec.ts tests/e2e/match/control-click-attack.spec.ts tests/e2e/match/hud-commands.spec.ts tests/e2e/match/selection-box.spec.ts tests/e2e/match/hud-order-states.spec.ts tests/e2e/match/hud-topbar.spec.ts tests/e2e/laboratory/editor/terrain-editor.spec.ts tests/e2e/laboratory/diagnostics/stress.spec.ts --project=chromium --project=firefox",
     "test:e2e:focused": "playwright test",
     "build": "corepack pnpm -r build",
     "balance": "tsx tools/balance/src/cli.ts",

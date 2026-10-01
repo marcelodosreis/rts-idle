@@ -106,7 +106,24 @@ test('terrain: autosave restores the map after reload', async ({ page }) => {
     throw new Error('terrain canvas host has no bounding box')
   }
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
-  await page.waitForTimeout(700)
+  // The editor autosaves on a debounce; poll the persisted map instead of
+  // sleeping for the debounce window.
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const raw = window.localStorage.getItem('rts.editorLevel')
+        if (raw === null) {
+          return 0
+        }
+        try {
+          const map = JSON.parse(raw) as { decorations?: readonly unknown[] }
+          return map.decorations?.length ?? 0
+        } catch {
+          return 0
+        }
+      })
+    )
+    .toBeGreaterThan(0)
   await openLaboratory(page)
   await openEditor(page)
   await expect(page.getByText('Restored your saved map.')).toBeVisible()

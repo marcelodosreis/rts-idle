@@ -114,6 +114,15 @@ guards file length and the typed-domain policy (see `typed-domain.test.ts`).
   intended screen, perform the natural interaction, see its progress/result and
   blocked states, and complete the real-server flow in Playwright. Simulation,
   protocol, or integration coverage alone cannot mark gameplay `done`.
+- E2E must be deterministic by construction: never wait on wall-clock time
+  (`waitForTimeout`), never measure an element while it animates, and never
+  assert exact rendered positions or "nothing changed" over time. Poll an
+  observable state, wait for authoritative ticks (`waitForTicks`), wait for a
+  value to settle (`waitForStableRead`), and let `use.reducedMotion: 'reduce'`
+  remove animation geometry. Use `waitForMatchReady`, never `getTick() > 0`.
+- The browser gate runs with CI `retries: 0` so a retry pass cannot hide a
+  flake. Prove stability by repeating only the curated subset with
+  `pnpm run test:e2e:flaky`, not the whole suite.
 - Every task ID must expose its phase or cross-cutting track and stage, using
   `P<phase>.<stage>[.<substage>]` or `<TRACK>.<stage>[.<substage>]`.
 

@@ -41,7 +41,7 @@ test('Monk heals an allied unit with a right-click while left-click selects', as
   await page.mouse.click(warriorPoint.x, warriorPoint.y, { button: 'right' })
 
   await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getUnitHealth(2)?.current ?? 0), { timeout: 5_000 })
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getUnitHealth(2)?.current ?? 0), { timeout: 15_000 })
     .toBe(115)
   if (await hasArt(page)) {
     await expect

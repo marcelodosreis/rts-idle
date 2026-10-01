@@ -103,6 +103,13 @@ function ≤50 bar with no suppressed violations; one refactor regression was
 caught by E2E and documented in
 `docs/postmortems/2026-09-24-devtools-menu-content-ids.md`.
 
+QH.27.01 makes browser validation deterministic: E2E waits on observable state
+and authoritative ticks (`waitForTicks`, `waitForStableRead`, `waitForMatchReady`)
+instead of wall-clock time, runs with `use.reducedMotion: 'reduce'`, and uses CI
+`retries: 0` so a retry cannot hide a flake. `pnpm run test:e2e:flaky` repeats
+only the curated flaky subset; it passed twice consecutively on Chromium and
+Firefox. Rules are documented in `docs/engineering-standard.md`.
+
 P2.07 Production Queue and Unit Training is complete for the target roster:
 Base trains Pawn and Barracks trains Warrior/Archer. P2.08 Blocked Spawn and
 Rally is complete: producer rally points are authoritative, blocked exits retain

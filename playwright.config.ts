@@ -20,13 +20,16 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: process.env.CI === 'true',
   failOnFlakyTests: process.env.CI === 'true',
-  retries: process.env.CI ? 1 : 0,
+  retries: 0,
   workers: e2eWorkerCount(process.env.E2E_WORKERS),
   reporter: 'dot',
   use: {
     baseURL: `http://localhost:${WEB_PORT}`,
+    // E2E asserts layout and state, never animation geometry. Reduced motion
+    // collapses every motion-safe animation so measurements are deterministic.
+    reducedMotion: 'reduce',
     screenshot: process.env.CI === 'true' ? 'only-on-failure' : 'off',
-    trace: process.env.CI === 'true' ? 'on-first-retry' : 'off'
+    trace: process.env.CI === 'true' ? 'retain-on-failure' : 'off'
   },
   projects: [
     {

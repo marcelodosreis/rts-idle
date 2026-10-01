@@ -48,7 +48,11 @@ test('right-clicking with a selection issues a command and shows a ping', async 
   }
   await page.mouse.click(targetScreen.x, targetScreen.y, { button: 'right' })
 
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getPing() ?? null)).not.toBeNull()
+  // The renderer ping is transient (800 ms); sample fast and early so the
+  // assertion cannot miss it between polls.
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getPing() ?? null), { timeout: 10_000, intervals: [50, 100] })
+    .not.toBeNull()
 })
 
 test('right-clicking without a selection shows a neutral pointer', async ({ page }) => {
@@ -61,7 +65,9 @@ test('right-clicking without a selection shows a neutral pointer', async ({ page
   }
   await page.mouse.click(targetScreen.x, targetScreen.y, { button: 'right' })
 
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getPing() ?? null)).not.toBeNull()
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getPing() ?? null), { timeout: 10_000, intervals: [50, 100] })
+    .not.toBeNull()
 })
 
 test('dragging shows the selection rectangle until release', async ({ page }) => {

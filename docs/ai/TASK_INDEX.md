@@ -234,5 +234,6 @@ RFC: `docs/rfc/RFC-003-cost-scale-and-architecture-comparison.md` (Proposed).
 | QH.21 | Typed-domain completion (registries + branded AssetKey) | done | QH.19 | shared, protocol, renderer, server, web | typecheck, lint, architecture |
 | QH.22 | Public API and docs sync | done | QH.19, QH.21 | docs, tests | architecture, lint |
 | QH.23 | Session projections and tools coverage | done | QH.19 | server, tools, tests | integration, lint, architecture |
+| QH.27.01 | Deterministic E2E and faster pipeline | in progress | QH.26.01 | quality, e2e, CI, web | verify, e2e |
 | QH.26.01 | Deterministic CI and E2E reliability | done | QH.25 | quality, CI, web | verify, e2e, CI |
 | QH.24 | Mandatory enforcement (git, CI, governance) | done | QH.19 | root, docs, rules, skills, tests | lint, architecture, verify |
