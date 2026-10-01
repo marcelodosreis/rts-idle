@@ -18,7 +18,7 @@ function QueueSlot({
   if (item === undefined) {
     return (
       <li
-        className="grid h-7 min-w-0 place-items-center rounded border border-dashed border-border/60 bg-muted/20"
+        className="grid h-14 min-w-0 place-items-center rounded border border-dashed border-border/60 bg-muted/20"
         data-testid={`production-slot-${index}`}
         aria-label={`Empty queue slot ${index + 1}`}
       >
@@ -27,18 +27,19 @@ function QueueSlot({
     )
   }
   return (
-    <li className="h-7 min-w-0" data-testid={`production-slot-${index}`}>
+    <li className="h-14 min-w-0" data-testid={`production-slot-${index}`}>
       <div
-        className={`flex h-full min-w-0 items-center gap-1 rounded border border-border/70 bg-muted/40 px-1 ${
+        className={`flex h-full min-w-0 flex-col items-center justify-center gap-1 rounded border border-border/70 bg-muted/40 px-1 py-1 data-[production-status=ACTIVE]:border-primary/70 data-[production-status=ACTIVE]:bg-primary/10 data-[production-status=COMPLETED_WAITING]:border-amber-400/70 data-[production-status=COMPLETED_WAITING]:bg-amber-400/10 ${
           inserted ? 'border-primary/70 bg-primary/10 motion-safe:animate-[hud-queue-insert_220ms_ease-out]' : ''
         }`}
         data-testid={`production-item-${index}`}
         data-production-status={item.status}
         title={productionItemLabel(item)}
       >
-        <ProductionItemIcon item={item} className="size-3 shrink-0" />
-        <span className="min-w-0 flex-1 truncate text-[9px] font-medium">{productionItemLabel(item)}</span>
-        <span className="size-1.5 shrink-0 rounded-full bg-muted-foreground" aria-hidden="true" />
+        <ProductionItemIcon item={item} className="size-5 shrink-0" />
+        <span className="w-full truncate text-center text-[9px] font-medium leading-tight">
+          {productionItemLabel(item)}
+        </span>
         <span className="sr-only" data-testid={`production-status-${index}`}>
           {item.status === 'COMPLETED_WAITING' ? 'Waiting for exit' : item.status}
         </span>

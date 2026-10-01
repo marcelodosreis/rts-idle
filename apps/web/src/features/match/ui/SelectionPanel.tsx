@@ -116,6 +116,7 @@ function ConstructionContext({
   readonly queueAttention?: boolean
 }) {
   const completed = construction.status === 'COMPLETED'
+  const upgrading = construction.tierUpgrade !== undefined && construction.tierUpgrade !== null
   const previousStatus = useRef(construction.status)
   const completedFeedback = useTimedValue<boolean>(260)
   const showCompletedFeedback = completedFeedback.show
@@ -154,7 +155,7 @@ function ConstructionContext({
         <HealthStatus current={construction.hp} maximum={construction.maxHp} label="HP" />
       )}
       <ConstructionProgress construction={construction} />
-      {completed && <ProductionPanel construction={construction} queueAttention={queueAttention} />}
+      {completed && !upgrading && <ProductionPanel construction={construction} queueAttention={queueAttention} />}
     </div>
   )
 }

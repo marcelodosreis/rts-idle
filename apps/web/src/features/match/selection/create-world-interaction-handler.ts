@@ -6,7 +6,6 @@ interface BuildPlacementController {
   readonly handleBuildPlacementClick: (worldX: number, worldY: number) => boolean
   readonly groundCommand: (worldX: number, worldY: number) => void
   readonly unitCommand: (id: number) => void
-  readonly autoHealTarget: (id: number) => boolean
   readonly buildingCommand: (id: number) => void
   readonly mode: () => CommandMode
   readonly resourceCommand: (id: number) => void
@@ -30,9 +29,6 @@ function handlePrimary(
   const target = interaction.target
   switch (target.kind) {
     case 'unit':
-      if (options.controller.autoHealTarget(target.id)) {
-        return
-      }
       options.clearMode()
       options.updateSelection([target.id])
       return

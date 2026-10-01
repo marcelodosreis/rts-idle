@@ -54,6 +54,21 @@ test('box-selecting a construction shows it in the current context', async ({ pa
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getSelection() ?? [])).toEqual([])
 })
 
+test('selecting an enemy construction shows its commands as locked', async ({ page }) => {
+  await ready(page)
+  await focusFixed(page, tilesToFixed(24), tilesToFixed(24))
+  const from = await fixedToPage(page, tilesToFixed(22), tilesToFixed(22))
+  const to = await fixedToPage(page, tilesToFixed(26), tilesToFixed(26))
+  await dragBox(page, from, to)
+
+  await expect(page.getByTestId('construction-panel')).toContainText('Castle')
+  for (const command of ['train', 'upgrade', 'rally']) {
+    await expect(page.getByTestId(command)).toHaveAttribute('aria-disabled', 'true')
+  }
+  await page.getByTestId('train').hover()
+  await expect(page.getByText('Enemy constructions cannot receive your commands.', { exact: true })).toBeVisible()
+})
+
 test('box-selecting a tree shows it in the current context', async ({ page }) => {
   await ready(page)
   await focusFixed(page, tilesToFixed(5), tilesToFixed(23))

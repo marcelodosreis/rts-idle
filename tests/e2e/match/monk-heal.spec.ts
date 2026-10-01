@@ -18,7 +18,7 @@ async function screenPoint(page: Page, x: number, y: number) {
   )
 }
 
-test('Monk heals an allied unit through the match HUD', async ({ page }) => {
+test('Monk heals an allied unit with a right-click while left-click selects', async ({ page }) => {
   test.setTimeout(60_000)
   await page.goto('/?scenario=monk-heal')
   await waitForMatchReady(page)
@@ -30,7 +30,15 @@ test('Monk heals an allied unit through the match HUD', async ({ page }) => {
   const healButton = page.getByRole('button', { name: /^Heal/ })
   await expect(healButton).toBeEnabled()
 
+  // A primary (left) click selects the ally instead of healing it.
   await page.mouse.click(warriorPoint.x, warriorPoint.y)
+  await expect(page.getByRole('button', { name: /Soldier #2/ })).toBeVisible()
+  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getUnitHealth(2)?.current ?? 0)).toBe(90)
+
+  // A secondary (right) click on the damaged ally heals it.
+  await page.mouse.click(monkPoint.x, monkPoint.y)
+  await expect(page.getByRole('button', { name: /Monk #1/ })).toBeVisible()
+  await page.mouse.click(warriorPoint.x, warriorPoint.y, { button: 'right' })
 
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getUnitHealth(2)?.current ?? 0), { timeout: 5_000 })

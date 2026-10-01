@@ -212,7 +212,7 @@ export function buildingRootActions(
       onActivate: () => open('research')
     })
   }
-  if (building.buildingType === 'CASTLE' && (building.tier ?? 1) < 2 && building.tierUpgrade == null) {
+  if (building.buildingType === 'CASTLE') {
     actions.push({
       id: 'upgrade',
       label: 'Upgrade',
@@ -358,14 +358,20 @@ function upgradeActions(props: CommandBarProps): readonly HudCommandAction[] {
     return []
   }
   const cost = props.buildings.find((entry) => entry.type === 'CASTLE')?.cost.GOLD ?? 0
+  const castleIiiUnavailable = building.tier === 2
+  const upgradeInProgress = building.tierUpgrade != null
+  const actionBlockReason =
+    (upgradeInProgress ? 'Castle upgrade in progress.' : undefined) ??
+    (castleIiiUnavailable ? 'Castle III content is unavailable.' : undefined) ??
+    upgradeBlockReason(building, cost, props.resources)
   return [
     {
       id: 'upgrade-castle',
-      label: 'Castle II',
-      description: 'Upgrade this Castle to tier II.',
+      label: castleIiiUnavailable ? 'Castle III' : 'Castle II',
+      description: castleIiiUnavailable ? 'Castle III content is unavailable.' : 'Upgrade this Castle to tier II.',
       icon: ArrowUpCircle,
-      blockedReason: upgradeBlockReason(building, cost, props.resources),
-      blockedTarget: blockedFeedbackTarget(upgradeBlockReason(building, cost, props.resources)),
+      blockedReason: actionBlockReason,
+      blockedTarget: castleIiiUnavailable || upgradeInProgress ? 'command' : blockedFeedbackTarget(actionBlockReason),
       cost: `${cost} gold`,
       feedbackKind: 'submit',
       onActivate: () => props.onUpgradeCastle(building.id)

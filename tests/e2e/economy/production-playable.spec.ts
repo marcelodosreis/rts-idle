@@ -150,7 +150,7 @@ test('cancels any queued production row with confirmation and refund feedback', 
   if (blockTarget === 'queue') {
     await expect(page.getByTestId('production-panel')).toHaveAttribute('data-queue-attention', 'true')
   } else {
-    await expect(page.getByTestId('hud-resource-mineral')).toHaveAttribute('data-feedback-highlight', 'true')
+    await expect(page.getByTestId('hud-resource-gold')).toHaveAttribute('data-feedback-highlight', 'true')
   }
   await expect(page.getByRole('alert')).toHaveCount(0)
 

@@ -173,22 +173,6 @@ export class MatchInteractionController {
     }
   }
 
-  autoHealTarget(id: number): boolean {
-    if (this.context.isMatchEnded() || this.context.mode() !== 'idle') {
-      return false
-    }
-    const monks = this.selectedMonks()
-    const target = this.context.unitStates.get(id)
-    if (monks.length !== 1 || target === undefined || target.owner !== this.context.humanPlayer) {
-      return false
-    }
-    if (!this.isDamaged(target.hp, target.maxHp)) {
-      return false
-    }
-    this.context.sendCommand({ type: 'HEAL', payload: { unitIds: monks, targetId: id } })
-    return true
-  }
-
   buildingCommand(id: number): void {
     if (this.context.isMatchEnded()) {
       return
@@ -303,6 +287,22 @@ export class MatchInteractionController {
       .selectedUnitIds()
       .filter((id) => this.context.unitStates.get(id)?.kind === 'monk')
       .filter((id) => this.context.unitStates.get(id)?.owner === this.context.humanPlayer)
+  }
+
+  private autoHealTarget(id: number): boolean {
+    if (this.context.isMatchEnded() || this.context.mode() !== 'idle') {
+      return false
+    }
+    const monks = this.selectedMonks()
+    const target = this.context.unitStates.get(id)
+    if (monks.length !== 1 || target === undefined || target.owner !== this.context.humanPlayer) {
+      return false
+    }
+    if (!this.isDamaged(target.hp, target.maxHp)) {
+      return false
+    }
+    this.context.sendCommand({ type: 'HEAL', payload: { unitIds: monks, targetId: id } })
+    return true
   }
 
   private isDamaged(current: number | undefined, max: number | undefined): boolean {

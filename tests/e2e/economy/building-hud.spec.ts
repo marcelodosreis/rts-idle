@@ -94,6 +94,31 @@ test('construction HUD uses the concise building labels and preserves costs', as
   await expect(page.getByRole('button', { name: 'Back', exact: true })).toBeVisible()
 })
 
+test('locks every building command while a Castle upgrade is running', async ({ page }) => {
+  test.setTimeout(30_000)
+  await startMatch(page)
+  const origin = await page.evaluate(() => {
+    const buildings = Object.values(window.__rtsDebug?.getConstructionStates() ?? {})
+    return buildings.sort((left, right) => left.x - right.x)[0]!
+  })
+  const point = await canvasPointForFixed(page, origin.x + tilesToFixed(2.5), origin.y + tilesToFixed(2))
+  await page.mouse.click(point.x, point.y)
+  await expect(page.getByTestId('construction-panel')).toContainText('Castle')
+
+  await page.getByRole('button', { name: 'Upgrade', exact: true }).click()
+  await page.getByTestId('upgrade-castle').click()
+
+  for (const command of ['train', 'rally', 'upgrade']) {
+    await expect(page.getByTestId(command)).toHaveAttribute('aria-disabled', 'true')
+  }
+  await page.getByTestId('upgrade').hover()
+  await expect(page.getByText('Castle upgrade in progress.', { exact: true })).toBeVisible()
+  await expect(page.getByTestId('production-panel')).toHaveCount(0)
+  await expect(page.getByTestId('command-card')).toContainText('COMMANDS')
+  await expect(page.getByTestId('command-card')).not.toContainText('UPGRADE')
+  await expect(page.getByTestId('cancel-construction')).toHaveCount(0)
+})
+
 test('House capacity activates only after construction completes', async ({ page }) => {
   test.setTimeout(30_000)
   await startMatch(page)

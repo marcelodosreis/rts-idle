@@ -1,6 +1,10 @@
 import type { ProductionCatalogEntry } from '@rts/protocol'
 import { describe, expect, it } from 'vitest'
-import { canCommandConstruction, trainingBlockReason } from '../../../apps/web/src/features/match/ui/command-state'
+import {
+  constructionCommandBlockReason,
+  constructionUpgradeBlockReason,
+  trainingBlockReason
+} from '../../../apps/web/src/features/match/ui/command-state'
 import type { HudConstruction } from '../../../apps/web/src/features/match/ui/types'
 
 const PAWN: ProductionCatalogEntry = {
@@ -60,8 +64,17 @@ describe('construction command gating', () => {
     builderId: null
   }
 
-  it('allows commands only for the human player construction', () => {
-    expect(canCommandConstruction(CASTLE, 0)).toBe(true)
-    expect(canCommandConstruction({ ...CASTLE, owner: 1 }, 0)).toBe(false)
+  it('blocks enemy construction commands while leaving owned construction available', () => {
+    expect(constructionCommandBlockReason(CASTLE, 0)).toBeUndefined()
+    expect(constructionCommandBlockReason({ ...CASTLE, owner: 1 }, 0)).toBe(
+      'Enemy constructions cannot receive your commands.'
+    )
+  })
+
+  it('locks every building command only while a tier upgrade is running', () => {
+    expect(constructionUpgradeBlockReason(CASTLE)).toBeUndefined()
+    expect(constructionUpgradeBlockReason({ ...CASTLE, tierUpgrade: { progressTicks: 10, totalTicks: 100 } })).toBe(
+      'Castle upgrade in progress.'
+    )
   })
 })

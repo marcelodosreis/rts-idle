@@ -114,9 +114,14 @@ export function blockedFeedbackTarget(reason: string | undefined): HudFeedbackTa
   return 'command'
 }
 
-/** Enemy constructions are selectable for inspection, never commandable. */
-export function canCommandConstruction(construction: HudConstruction, humanPlayer: number): boolean {
-  return construction.owner === humanPlayer
+/** Enemy constructions are inspectable, but their available commands remain locked. */
+export function constructionCommandBlockReason(construction: HudConstruction, humanPlayer: number): string | undefined {
+  return construction.owner === humanPlayer ? undefined : 'Enemy constructions cannot receive your commands.'
+}
+
+/** A running Castle tier upgrade locks every command of that building. */
+export function constructionUpgradeBlockReason(construction: HudConstruction): string | undefined {
+  return construction.tierUpgrade == null ? undefined : 'Castle upgrade in progress.'
 }
 
 export function isResearchItem(

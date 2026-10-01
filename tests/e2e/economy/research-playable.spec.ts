@@ -111,6 +111,18 @@ test('starts with Castle II and Monastery research, then cancels a queued topic'
     .not.toBe(String(beforeCancel))
 })
 
+test('shows the unavailable Castle III upgrade after reaching Castle II', async ({ page }) => {
+  await startResearchScenario(page)
+  await selectEconomyBase(page)
+
+  await page.getByRole('button', { name: 'Upgrade', exact: true }).click()
+  const castleIii = page.getByTestId('upgrade-castle')
+  await expect(castleIii).toHaveText('Castle III')
+  await expect(castleIii).toHaveAttribute('aria-disabled', 'true')
+  await castleIii.hover()
+  await expect(page.getByText('Castle III content is unavailable.', { exact: true }).first()).toBeVisible()
+})
+
 test('uses the same queue card dimensions for research and units', async ({ page }) => {
   test.setTimeout(60_000)
   await prepareResearch(page)
@@ -126,6 +138,9 @@ test('uses the same queue card dimensions for research and units', async ({ page
   }
   expect(Math.abs(researchCard.width - unitCard.width)).toBeLessThan(3)
   expect(Math.abs(researchCard.height - unitCard.height)).toBeLessThan(1)
+  expect(researchCard.height).toBeGreaterThanOrEqual(48)
+  const emptySlot = await page.getByTestId('production-slot-2').boundingBox()
+  expect(emptySlot?.height).toBeGreaterThanOrEqual(48)
 })
 
 test('completed Economy research changes the selected Pawn tooltip', async ({ page }) => {
