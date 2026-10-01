@@ -5,7 +5,6 @@ import { snapshotToFrame } from '../projections/snapshot-to-frame'
 import { projectSnapshotUnit } from '../projections/snapshot-unit'
 import type { SelectionUnitState } from '../selection/selection-projection'
 import { type HudNotification, matchErrorNotification } from '../ui/hud-notifications'
-import type { HudMineral } from '../ui/types'
 import type { HudResource } from '../ui/types'
 import { hudResourceFor, type MatchSessionRuntime } from './match-session-runtime'
 
@@ -54,8 +53,6 @@ export interface MatchSessionHandlerOptions {
   readonly setResources: (resources: ReturnType<typeof resourcesForHuman>) => void
   readonly appendCompletedConstructions: (buildings: readonly SnapshotMessage['buildings'][number][]) => void
   readonly setHudNotification: (notification: HudNotification | null) => void
-  readonly setSelectedMineral: (mineral: HudMineral | null) => void
-  readonly setHudFeedback: (message: string | null) => void
   readonly setSelectedResource: (resource: HudResource | null) => void
   readonly setMatchResult: (result: MatchResult) => void
   readonly present: (frame: ReturnType<typeof snapshotToFrame>) => void

@@ -1,4 +1,4 @@
-import type { BuildCatalogEntry, SnapshotBuilding, SnapshotMessage } from '@rts/protocol'
+import type { BuildCatalogEntry, SnapshotBuilding, SnapshotResource } from '@rts/protocol'
 import type { GameRenderer, RenderFrame } from '@rts/renderer'
 import type { MapDefinition } from '@rts/shared'
 import {
@@ -6,7 +6,7 @@ import {
   type RenderedPosition,
   type SelectionUnitState
 } from '../selection/selection-projection'
-import type { HudConstruction, HudMineral, HudSelectionUnit } from '../ui/types'
+import type { HudConstruction, HudResource, HudSelectionUnit } from '../ui/types'
 
 export interface MatchSessionRuntime {
   map: MapDefinition | null
@@ -25,30 +25,31 @@ export interface MatchSessionRuntime {
   readonly unitPositions: Map<number, RenderedPosition>
   selectedIds: readonly number[]
   prevFramePositions: Map<number, RenderedPosition>
-  buildings: SnapshotMessage['buildings']
-  mineralNodes: SnapshotMessage['mineralNodes']
+  buildings: readonly SnapshotBuilding[]
+  resources: readonly SnapshotResource[]
+  readonly resourceAmounts: Map<number, number>
   selectedConstructionId: number | null
-  selectedMineralId: number | null
+  selectedResourceId: number | null
   selectUnits(ids: readonly number[]): MatchSelection
   selectConstruction(id: number): MatchSelection
-  selectMineral(id: number): MatchSelection
+  selectResource(id: number): MatchSelection
 }
 
 export interface MatchSelection {
   readonly ids: readonly number[]
   readonly units: readonly HudSelectionUnit[]
   readonly construction: HudConstruction | null
-  readonly mineral: HudMineral | null
+  readonly resource: HudResource | null
 }
 
 function emptySelection(runtime: MatchSessionRuntime): MatchSelection {
   runtime.selectedIds = []
   runtime.selectedConstructionId = null
-  runtime.selectedMineralId = null
+  runtime.selectedResourceId = null
   runtime.renderer?.setSelection([])
   runtime.renderer?.setSelectedRallyProducer(null)
   runtime.renderer?.setSelectedRallyPoint(null)
-  return { ids: [], units: [], construction: null, mineral: null }
+  return { ids: [], units: [], construction: null, resource: null }
 }
 
 function project(runtime: MatchSessionRuntime): MatchSelection {
@@ -61,7 +62,7 @@ function project(runtime: MatchSessionRuntime): MatchSelection {
       runtime.selectedIds
     ),
     construction: null,
-    mineral: null
+    resource: null
   }
 }
 
@@ -89,7 +90,7 @@ function selectUnits(runtime: MatchSessionRuntime, ids: readonly number[]): Matc
   const normalizedIds = [...new Set(ids)]
   runtime.selectedIds = normalizedIds
   runtime.selectedConstructionId = null
-  runtime.selectedMineralId = null
+  runtime.selectedResourceId = null
   runtime.renderer?.setSelection(normalizedIds)
   runtime.renderer?.setSelectedRallyProducer(null)
   runtime.renderer?.setSelectedRallyPoint(null)
@@ -106,20 +107,34 @@ function selectConstruction(runtime: MatchSessionRuntime, id: number): MatchSele
     return project(runtime)
   }
   runtime.selectedConstructionId = id
-  return { ids: [], units: [], construction: toHudConstruction(construction), mineral: null }
+  return { ids: [], units: [], construction: toHudConstruction(construction), resource: null }
 }
 
-function selectMineral(runtime: MatchSessionRuntime, id: number): MatchSelection {
+/**
+ * Projects a selected resource for the HUD. The map carries the resource
+ * definition, so the kind is resolved here; selecting a resource must never
+ * render a frame without it (that flashed Gold Mine before Tree).
+ */
+export function hudResourceFor(runtime: MatchSessionRuntime, id: number): HudResource | null {
+  const remaining = runtime.resourceAmounts.get(id)
+  if (remaining === undefined) {
+    return null
+  }
+  const definition = runtime.map?.resources.find((resource) => resource.resourceId === id)
+  return { id, remaining, ...(definition === undefined ? {} : { kind: definition.kind }) }
+}
+
+function selectResource(runtime: MatchSessionRuntime, id: number): MatchSelection {
   if (runtime.matchEnded) {
     return project(runtime)
   }
-  const node = runtime.mineralNodes.find((candidate) => candidate.id === id)
-  if (node === undefined) {
+  const resource = hudResourceFor(runtime, id)
+  if (resource === null) {
     return emptySelection(runtime)
   }
   emptySelection(runtime)
-  runtime.selectedMineralId = id
-  return { ids: [], units: [], construction: null, mineral: { id: node.id, remaining: node.remaining } }
+  runtime.selectedResourceId = id
+  return { ids: [], units: [], construction: null, resource }
 }
 
 export function createMatchSessionRuntime(): MatchSessionRuntime {
@@ -141,17 +156,18 @@ export function createMatchSessionRuntime(): MatchSessionRuntime {
     selectedIds: [],
     prevFramePositions: new Map(),
     buildings: [],
-    mineralNodes: [],
+    resources: [],
+    resourceAmounts: new Map(),
     selectedConstructionId: null,
-    selectedMineralId: null,
+    selectedResourceId: null,
     selectUnits(ids) {
       return selectUnits(runtime, ids)
     },
     selectConstruction(id) {
       return selectConstruction(runtime, id)
     },
-    selectMineral(id) {
-      return selectMineral(runtime, id)
+    selectResource(id) {
+      return selectResource(runtime, id)
     }
   }
   return runtime

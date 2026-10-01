@@ -10,6 +10,7 @@ export type ProjectedSnapshotUnit = Pick<
   | 'orderState'
   | 'economy'
   | 'carrying'
+  | 'cargoType'
   | 'hp'
   | 'maxHp'
   | 'damage'
@@ -30,6 +31,7 @@ export function projectSnapshotUnit(unit: SnapshotUnit): ProjectedSnapshotUnit {
     ...(unit.orderState === undefined ? {} : { orderState: unit.orderState }),
     ...(unit.economy === undefined ? {} : { economy: unit.economy }),
     ...(unit.carrying === undefined ? {} : { carrying: unit.carrying }),
+    ...(unit.cargoType === undefined ? {} : { cargoType: unit.cargoType }),
     ...(unit.hp === undefined ? {} : { hp: unit.hp, maxHp: unit.maxHp }),
     ...(unit.damage === undefined ? {} : { damage: unit.damage }),
     ...(unit.armor === undefined ? {} : { armor: unit.armor }),

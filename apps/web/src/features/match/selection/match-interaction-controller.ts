@@ -244,23 +244,19 @@ export class MatchInteractionController {
     })
   }
 
-  mineralCommand(nodeId: number): void {
-    if (this.context.isMatchEnded()) {
-      return
-    }
-    if (isBuildMode(this.context.mode())) {
-      this.context.cancelPlacement()
+  resourceCommand(resourceId: number): void {
+    if (this.context.isMatchEnded() || isBuildMode(this.context.mode())) {
       return
     }
     const unitIds = this.context.selectedUnitIds()
-    if (unitIds.length === 0) {
-      return
-    }
-    if (this.context.mode() === 'repair' || this.context.mode() === 'deposit') {
+    if (unitIds.length === 0 || this.context.mode() === 'repair' || this.context.mode() === 'deposit') {
       this.context.clearMode()
       return
     }
-    this.context.sendCommand({ type: 'GATHER', payload: { unitIds, nodeId } })
+    this.context.sendCommand({
+      type: 'GATHER',
+      payload: { unitIds, resourceId }
+    })
     this.context.clearMode()
   }
 

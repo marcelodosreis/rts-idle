@@ -5,7 +5,7 @@ import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 import { readPlaytestMap } from '../../../shared/config/playtest-map'
 import { type CommandMode, useCommandModes } from '../commands/useCommandModes'
 import type { HudNotification } from '../ui/hud-notifications'
-import type { HudConstruction, HudMineral, HudSelectionUnit } from '../ui/types'
+import type { HudConstruction, HudResource, HudSelectionUnit } from '../ui/types'
 import { parseMatchQuery, updateMatchQuery } from '../url-state/match-query'
 import { readInputPreferences, writeInputPreferences } from './input-preferences'
 import { createMatchSessionConnectionOwner } from './match-session-connection'
@@ -30,7 +30,7 @@ export interface MatchSessionState {
   readonly tick: number
   readonly selectionUnits: readonly HudSelectionUnit[]
   readonly selectedConstruction: HudConstruction | null
-  readonly selectedMineral: HudMineral | null
+  readonly selectedResource: HudResource | null
   readonly resources: SessionResources | null
   readonly commandMode: CommandMode
   readonly matchResult: MatchResult | null
@@ -82,7 +82,7 @@ function useSessionState(): {
     readonly tick: number
     readonly selectionUnits: readonly HudSelectionUnit[]
     readonly selectedConstruction: HudConstruction | null
-    readonly selectedMineral: HudMineral | null
+    readonly selectedResource: HudResource | null
     readonly buildHint: string | null
     readonly hudNotification: HudNotification | null
     readonly completedConstructions: readonly SnapshotBuilding[]
@@ -101,7 +101,7 @@ function useSessionState(): {
   const [tick, setTick] = useState(0)
   const [selectionUnits, setSelectionUnits] = useState<readonly HudSelectionUnit[]>([])
   const [selectedConstruction, setSelectedConstruction] = useState<HudConstruction | null>(null)
-  const [selectedMineral, setSelectedMineral] = useState<HudMineral | null>(null)
+  const [selectedResource, setSelectedResource] = useState<HudResource | null>(null)
   const [buildHint, setBuildHint] = useState<string | null>(null)
   const [hudNotification, setHudNotification] = useState<HudNotification | null>(null)
   const completedConstructions = useCompletedConstructionHistory()
@@ -120,7 +120,7 @@ function useSessionState(): {
       tick,
       selectionUnits,
       selectedConstruction,
-      selectedMineral,
+      selectedResource,
       buildHint,
       hudNotification,
       completedConstructions: completedConstructions.value,
@@ -136,7 +136,7 @@ function useSessionState(): {
       setTick,
       setSelectionUnits,
       setSelectedConstruction,
-      setSelectedMineral,
+      setSelectedResource,
       setBuildHint,
       setHudNotification,
       appendCompletedConstructions: completedConstructions.append,
