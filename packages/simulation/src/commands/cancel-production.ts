@@ -1,5 +1,5 @@
 import { isProductionBuilding } from '@rts/game-data'
-import { productionRefund } from '@rts/shared'
+import { applyResourceCost, productionRefund } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { Building } from '../ecs/building-component.js'
 import { isResearchProductionItem, Owner, Production } from '../ecs/components.js'
@@ -59,10 +59,10 @@ export function applyCancelProduction(state: GameState, command: ScheduledComman
   if (item === undefined) {
     throw new Error('applyCancelProduction: validated item is missing')
   }
-  const refund = productionRefund(item.status, item.costMinerals, item.progressTicks, item.totalTicks)
+  const refund = productionRefund(item.status, item.cost, item.progressTicks, item.totalTicks)
   const remaining = queue.filter((_, index) => index !== queueIndex)
   const nextQueue = remaining.map((entry, index) => (index === 0 ? { ...entry, status: 'ACTIVE' as const } : entry))
-  player.gold += refund
+  applyResourceCost(player.resources, refund, 1)
   if (isResearchProductionItem(item)) {
     throw new Error('applyCancelProduction: validated item is Research')
   }

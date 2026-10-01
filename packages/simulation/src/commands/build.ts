@@ -1,5 +1,5 @@
 import { BUILDING_DEFINITIONS, type BuildingDefinition } from '@rts/game-data'
-import { BUILDING_GEOMETRY, BUILDING_TYPES, tilesToFixed } from '@rts/shared'
+import { applyResourceCost, BUILDING_GEOMETRY, BUILDING_TYPES, canAfford, tilesToFixed } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { hasCurrentCastleTier } from '../domain/tier-access.js'
 import { Building, type BuildingData } from '../ecs/building-component.js'
@@ -81,8 +81,8 @@ function validateBuild(state: GameState, command: ScheduledCommand): BuildContex
     if (!placement.ok) {
       reject(command, 'INVALID_PLACEMENT', `BUILD: placement is ${placement.reason}`)
     }
-    if (player.gold < definition.costMinerals) {
-      reject(command, 'INSUFFICIENT_RESOURCES', 'BUILD: insufficient minerals')
+    if (!canAfford(player.resources, definition.cost)) {
+      reject(command, 'INSUFFICIENT_RESOURCES', 'BUILD: insufficient resources')
     }
   }
 
@@ -107,7 +107,7 @@ export function applyBuild(state: GameState, command: ScheduledCommand): void {
   if (state.world.hasEntity(buildingId)) {
     reject(command, 'ENTITY_UNAVAILABLE', `BUILD: entity id ${buildingId} is unavailable`)
   }
-  context.player.gold -= definition.costMinerals
+  applyResourceCost(context.player.resources, definition.cost, -1)
   state.nextEntityId += 1
   state.world.createEntity(buildingId)
   state.world.store(Position).set(buildingId, { x: tilesToFixed(footprint.x), y: tilesToFixed(footprint.y) })

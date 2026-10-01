@@ -1,3 +1,4 @@
+import { FIXED_SCALE } from '../primitives/fixed.js'
 import { type MapDefinition, type MapTileKind, type TileCoordinate, tileIndex, tileKey } from './map.js'
 
 export type { TileCoordinate }
@@ -17,11 +18,21 @@ export function isBuildableTile(tile: MapTileKind): boolean {
 }
 export function placementBoundsFromMap(map: MapDefinition): PlacementMapBounds {
   const invalidTiles: TileCoordinate[] = []
+  const invalidKeys = new Set<string>()
   for (let y = 0; y < map.height; y += 1) {
     for (let x = 0; x < map.width; x += 1) {
       if (!isBuildableTile(map.tiles[tileIndex(map.width, x, y)]!)) {
         invalidTiles.push({ x, y })
+        invalidKeys.add(tileKey(x, y))
       }
+    }
+  }
+  for (const resource of map.resources) {
+    const x = Math.floor(resource.x / FIXED_SCALE)
+    const y = Math.floor(resource.y / FIXED_SCALE)
+    if (!invalidKeys.has(tileKey(x, y))) {
+      invalidTiles.push({ x, y })
+      invalidKeys.add(tileKey(x, y))
     }
   }
   return { width: map.width, height: map.height, ...(invalidTiles.length > 0 ? { invalidTiles } : {}) }

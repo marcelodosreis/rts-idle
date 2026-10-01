@@ -1,5 +1,5 @@
 import { BUILDING_DEFINITIONS } from '@rts/game-data'
-import { constructionRefund } from '@rts/shared'
+import { applyResourceCost, constructionRefund } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { Building } from '../ecs/building-component.js'
 import { Orders, Owner } from '../ecs/components.js'
@@ -66,8 +66,8 @@ export function applyCancelConstruction(state: GameState, command: ScheduledComm
   }
 
   const definition = BUILDING_DEFINITIONS[construction.buildingType]
-  const refund = constructionRefund(definition.costMinerals, construction.progressTicks, construction.totalTicks)
-  player.gold += refund
+  const refund = constructionRefund(definition.cost, construction.progressTicks, construction.totalTicks)
+  applyResourceCost(player.resources, refund, 1)
   detachBuilder(state, buildingId)
   removeEntity(state, buildingId)
 }
