@@ -1,7 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
+import { e2eWorkerCount } from './tools/e2e/worker-count'
 
-const configuredWorkers = process.env.E2E_WORKERS
-const defaultWorkers = process.env.CI ? 1 : undefined
 const WEB_PORT = parsePort(process.env.E2E_WEB_PORT, 5173)
 const SERVER_PORT = parsePort(process.env.E2E_SERVER_PORT, 8080)
 
@@ -22,7 +21,7 @@ export default defineConfig({
   forbidOnly: process.env.CI === 'true',
   failOnFlakyTests: process.env.CI === 'true',
   retries: process.env.CI ? 1 : 0,
-  workers: configuredWorkers === undefined ? defaultWorkers : Number(configuredWorkers),
+  workers: e2eWorkerCount(process.env.E2E_WORKERS),
   reporter: 'dot',
   use: {
     baseURL: `http://localhost:${WEB_PORT}`,

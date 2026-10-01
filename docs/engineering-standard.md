@@ -36,6 +36,17 @@ before changing code; do not load the entire document for a small task.
 - Do not add speculative factories, generic utility dumping grounds, or new
   dependencies without justification.
 
+### Web UI structure
+
+`apps/web/src` uses kebab-case source filenames. React components use named
+PascalCase exports, and each non-generated `.tsx` file exports one component.
+Feature slices expose an explicit `index.ts` public API and use only the
+segments they need: `components/` (React UI), `hooks/` (`use-*` hooks),
+`services/` (stateful orchestration, controllers, I/O), `types/` (types and
+typed registries), and `lib/` (pure helpers). Cross-slice imports use `@/` and
+the target public API; relative imports are local to a slice. Generated
+`apps/web/src/shared/ui/**` is exempt.
+
 ## Clean Code & SOLID
 
 This section is the canonical source for code quality expectations. It applies

@@ -75,8 +75,9 @@ Test conventions:
 - `tests/e2e/laboratory/` splits feature flows into `browser/`, `diagnostics/`,
   and `editor/`; its cross-cutting laboratory specs remain at that suite root.
 
-`apps/web` keeps its existing feature-first layout and is intentionally outside
-the physical reorganization described above.
+`apps/web` uses a feature-first layout with cohesive React segments. Its source
+files use kebab-case names, features expose explicit public APIs, and
+non-generated React files contain one component each.
 
 ## Simulation core layout
 
@@ -138,10 +139,17 @@ interaction, and debug.
 ```text
 web/src/
   app/          Bootstrap, providers, typed router, route errors
-  pages/        Route composition (`match/` and `laboratory/`)
-  features/     Match and Laboratory domain behaviour, state, and UI
+  pages/        Named route composition (`match/` and `laboratory/`)
+  features/     Domain slices with `components/`, `hooks/`, `services/`,
+                `types/`, `lib/`, and an explicit `index.ts` public API
   shared/       Transport, config, reusable components, and UI primitives
 ```
+
+Within `features/`, cross-slice imports go through a slice public API using the
+`@/` alias; local implementation imports stay relative. `services/` owns
+stateful orchestration, runtime objects, controllers, and I/O; `types/` owns
+types and closed registries; `lib/` owns pure helpers. Generated
+`shared/ui/**` is exempt from these conventions.
 
 ## Shared reusable modules
 
