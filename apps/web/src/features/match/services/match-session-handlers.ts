@@ -1,12 +1,12 @@
 import type { ErrorMessage, MatchConfig, SnapshotMessage } from '@rts/protocol'
 import type { MatchResult } from '@rts/shared'
 import type { ConnectionHandlers } from '../../../shared/transport/connection'
-import { type HudNotification, matchErrorNotification } from '../lib/hud-notifications'
-import type { SelectionUnitState } from '../lib/selection-projection'
 import { snapshotToFrame } from '../lib/snapshot-to-frame'
 import { projectSnapshotUnit } from '../lib/snapshot-unit'
-import type { HudMineral } from '../types/hud-types'
-import type { MatchSessionRuntime } from './match-session-runtime'
+import type { SelectionUnitState } from '../lib/selection-projection'
+import { type HudNotification, matchErrorNotification } from '../lib/hud-notifications'
+import type { HudResource } from '../types/hud-types'
+import { hudResourceFor, type MatchSessionRuntime } from './match-session-runtime'
 
 const HUMAN_PLAYER = 0
 
@@ -30,7 +30,7 @@ function resourcesForHuman(message: SnapshotMessage) {
   return player === undefined
     ? null
     : {
-        mineral: player.gold,
+        resources: { GOLD: player.resources.GOLD, WOOD: player.resources.WOOD },
         supply: player.usedSupply,
         reservedSupply: player.reservedSupply ?? 0,
         supplyCap: player.supplyCap,
@@ -53,7 +53,7 @@ export interface MatchSessionHandlerOptions {
   readonly setResources: (resources: ReturnType<typeof resourcesForHuman>) => void
   readonly appendCompletedConstructions: (buildings: readonly SnapshotMessage['buildings'][number][]) => void
   readonly setHudNotification: (notification: HudNotification | null) => void
-  readonly setSelectedMineral: (mineral: HudMineral | null) => void
+  readonly setSelectedResource: (resource: HudResource | null) => void
   readonly setMatchResult: (result: MatchResult) => void
   readonly present: (frame: ReturnType<typeof snapshotToFrame>) => void
   readonly onMatchConfig: (config: MatchConfig) => void
@@ -63,7 +63,13 @@ export interface MatchSessionHandlerOptions {
 function applySnapshotRuntime(runtime: MatchSessionRuntime, message: SnapshotMessage): void {
   runtime.lastTick = message.tick
   runtime.buildings = message.buildings
-  runtime.mineralNodes = message.mineralNodes
+  runtime.resources = message.resources
+  if (message.resourcesComplete) {
+    runtime.resourceAmounts.clear()
+  }
+  for (const resource of message.resources) {
+    runtime.resourceAmounts.set(resource.resourceId, resource.remaining)
+  }
   runtime.prevFramePositions = new Map(runtime.unitPositions)
   runtime.unitPositions.clear()
   runtime.unitStates.clear()
@@ -102,8 +108,8 @@ function logSnapshotEvents(
       appendLog('event', `damageDealt: ${event.targetId} -${event.amount} HP (${event.targetHp} left)`)
     } else if (event.type === 'repairStopped') {
       appendLog('event', `repairStopped: worker ${event.workerId} target ${event.targetId} (${event.reason})`)
-      if (event.reason === 'NO_MINERALS' && runtime.unitStates.get(event.workerId)?.owner === HUMAN_PLAYER) {
-        setHudNotification({ kind: 'REPAIR_STOPPED_NO_MINERALS' })
+      if (event.reason === 'NO_GOLD' && runtime.unitStates.get(event.workerId)?.owner === HUMAN_PLAYER) {
+        setHudNotification({ kind: 'REPAIR_STOPPED_NO_GOLD' })
       }
     } else if (event.type === 'unitDied') {
       appendLog('event', `unitDied: ${event.entityId} (P${event.owner}) killed by ${event.killerId ?? 'unknown'}`)
@@ -136,13 +142,13 @@ function handleSnapshot(message: SnapshotMessage, options: MatchSessionHandlerOp
   if (runtime.selectedConstructionId !== null) {
     options.updateConstructionSelection(runtime.selectedConstructionId)
   }
-  if (runtime.selectedMineralId !== null) {
-    const node = runtime.mineralNodes.find((candidate) => candidate.id === runtime.selectedMineralId)
-    if (node === undefined) {
-      runtime.selectedMineralId = null
-      options.setSelectedMineral(null)
+  if (runtime.selectedResourceId !== null) {
+    const resource = hudResourceFor(runtime, runtime.selectedResourceId)
+    if (resource === null) {
+      runtime.selectedResourceId = null
+      options.setSelectedResource(null)
     } else {
-      options.setSelectedMineral({ id: node.id, remaining: node.remaining })
+      options.setSelectedResource(resource)
     }
   }
   options.setTick(message.tick)

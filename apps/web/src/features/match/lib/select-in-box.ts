@@ -1,5 +1,5 @@
-import type { SelectionPoint } from './select-units-in-box.js'
-import { selectUnitsInBox } from './select-units-in-box.js'
+import type { SelectionPoint } from './select-units-in-box'
+import { selectUnitsInBox } from './select-units-in-box'
 
 export interface BoxPoint {
   readonly x: number

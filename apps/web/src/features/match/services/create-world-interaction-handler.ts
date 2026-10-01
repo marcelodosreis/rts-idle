@@ -6,10 +6,9 @@ interface BuildPlacementController {
   readonly handleBuildPlacementClick: (worldX: number, worldY: number) => boolean
   readonly groundCommand: (worldX: number, worldY: number) => void
   readonly unitCommand: (id: number) => void
-  readonly autoHealTarget: (id: number) => boolean
   readonly buildingCommand: (id: number) => void
-  readonly mineralCommand: (id: number) => void
   readonly mode: () => CommandMode
+  readonly resourceCommand: (id: number) => void
 }
 
 export interface WorldInteractionHandlerOptions {
@@ -17,7 +16,7 @@ export interface WorldInteractionHandlerOptions {
   readonly updateSelection: (ids: readonly number[]) => void
   readonly selectAtWorldPoint: (x: number, y: number) => void
   readonly selectBuilding: (id: number) => void
-  readonly selectMineral: (id: number) => void
+  readonly selectResource: (id: number) => void
   readonly selectBox: (from: WorldInteraction & { type: 'selection-end' }) => void
   readonly clearMode: () => void
   readonly updatePreview: (x: number, y: number) => void
@@ -30,9 +29,6 @@ function handlePrimary(
   const target = interaction.target
   switch (target.kind) {
     case 'unit':
-      if (options.controller.autoHealTarget(target.id)) {
-        return
-      }
       options.clearMode()
       options.updateSelection([target.id])
       return
@@ -44,9 +40,9 @@ function handlePrimary(
       options.clearMode()
       options.selectBuilding(target.id)
       return
-    case 'mineral':
+    case 'resource':
       options.clearMode()
-      options.selectMineral(target.id)
+      options.selectResource(target.id)
       return
     case 'ground':
       if (!options.controller.handleBuildPlacementClick(target.position.x, target.position.y)) {
@@ -74,8 +70,8 @@ function handleSecondary(
     case 'building':
       options.controller.buildingCommand(target.id)
       return
-    case 'mineral':
-      options.controller.mineralCommand(target.id)
+    case 'resource':
+      options.controller.resourceCommand(target.id)
       return
     default:
       assertNever(target, 'handleSecondary')

@@ -23,11 +23,9 @@ export function snapshotToFrame(message: SnapshotMessage): RenderFrame {
       ...(construction.hp === undefined ? {} : { hp: construction.hp, maxHp: construction.maxHp }),
       ...(construction.production === undefined ? {} : { production: construction.production })
     })),
-    mineralNodes: message.mineralNodes.map((node) => ({
-      id: node.id,
-      x: node.x,
-      y: node.y,
-      remaining: node.remaining
+    resources: message.resources.map((resource) => ({
+      resourceId: resource.resourceId,
+      remaining: resource.remaining
     })),
     events: message.events
   }
