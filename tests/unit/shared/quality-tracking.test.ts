@@ -23,7 +23,7 @@ function getQualityPackets(): readonly TaskPacket[] {
 
 function getBoardTasks(): string[] {
   const content = readFileSync(join(TASKS_DIR, 'todo.md'), 'utf-8')
-  const matches = content.matchAll(/- \[[ x]\] (QH\.\d+)/g)
+  const matches = content.matchAll(/- \[[ x]\] (QH\.\d+(?:\.\d+)*)/g)
   const ids: string[] = []
   for (const m of matches) {
     ids.push(m[1])
@@ -33,7 +33,7 @@ function getBoardTasks(): string[] {
 
 function getTaskIndexTasks(): string[] {
   const content = readFileSync(join(WORKSPACE_ROOT, 'docs', 'ai', 'TASK_INDEX.md'), 'utf-8')
-  const matches = content.matchAll(/^\| (QH\.\d+) \|/gm)
+  const matches = content.matchAll(/^\| (QH\.\d+(?:\.\d+)*) \|/gm)
   const ids: string[] = []
   for (const m of matches) {
     ids.push(m[1])
