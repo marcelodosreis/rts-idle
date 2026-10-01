@@ -1,4 +1,4 @@
-import { Cargo, createSimulation, Kind, MineralNode, type ScheduledCommand } from '@rts/simulation'
+import { Cargo, createSimulation, Kind, type ScheduledCommand } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { buildMoveCommand, SEEDS, TEST_IDENTITY, worldWithOwners } from '../fixtures/index.js'
 
@@ -10,12 +10,24 @@ describe('command schema (P1.01)', () => {
   const world = worldWithOwners([0, 1])
   const [own, enemy] = world.aliveIds()
   world.store(Kind).set(own!, 'pawn')
-  world.store(Cargo).set(own!, { amount: 0, capacity: 10 })
-  world.store(MineralNode).set(enemy!, { remaining: 3_000 })
+  world.store(Cargo).set(own!, { amount: 0, capacity: 10, resourceType: null })
   const sim = createSimulation({
     seed: SEEDS.integration.moveOwn,
     identity: TEST_IDENTITY,
-    initialWorld: world
+    initialWorld: world,
+    resources: [
+      {
+        resourceId: 1,
+        kind: 'GOLD_MINE',
+        x: 0,
+        y: 0,
+        variant: 0,
+        initialAmount: 3_000,
+        harvestAmount: 10,
+        harvestTicks: 200,
+        blocksNavigation: false
+      }
+    ]
   })
 
   it('accepts every command intent in the union', () => {
@@ -25,7 +37,7 @@ describe('command schema (P1.01)', () => {
       unitCommand({ type: 'PATROL', payload: { unitIds: [own!], x: 100, y: 100 } }),
       unitCommand({ type: 'ATTACK', payload: { unitIds: [own!], targetId: enemy! } }),
       unitCommand({ type: 'ATTACK_MOVE', payload: { unitIds: [own!], x: 100, y: 100 } }),
-      unitCommand({ type: 'GATHER', payload: { unitIds: [own!], nodeId: enemy! } }),
+      unitCommand({ type: 'GATHER', payload: { unitIds: [own!], resourceId: 1 } }),
       buildMoveCommand([own!], 100, 100)
     ]
     for (const command of commands) {
@@ -41,7 +53,7 @@ describe('command schema (P1.01)', () => {
       { type: 'PATROL', payload: { unitIds: [], x: 0, y: 0 } },
       { type: 'ATTACK', payload: { unitIds: [], targetId: 1 } },
       { type: 'ATTACK_MOVE', payload: { unitIds: [], x: 0, y: 0 } },
-      { type: 'GATHER', payload: { unitIds: [], nodeId: 1 } },
+      { type: 'GATHER', payload: { unitIds: [], resourceId: 1 } },
       { type: 'DEPOSIT', payload: { unitIds: [], buildingId: 1 } },
       { type: 'BUILD', payload: { unitId: 1, buildingType: 'CASTLE', x: 0, y: 0 } },
       { type: 'CANCEL_CONSTRUCTION', payload: { buildingId: 1 } }

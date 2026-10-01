@@ -26,7 +26,7 @@ test.describe('top HUD', () => {
     await waitForMatchReady(page)
 
     await expect(page.getByTestId('hud-topbar-time')).toHaveText(/\d{2}:\d{2}/)
-    await expect(page.getByTestId('hud-resource-mineral').locator('svg')).toHaveClass(/text-amber-400/)
+    await expect(page.getByTestId('hud-resource-gold').locator('svg')).toHaveClass(/text-amber-400/)
     await expect(page.getByTestId('hud-resource-supply').locator('svg')).toHaveClass(/text-sky-400/)
     await expect(page.getByTestId('hud-resource-units').locator('svg')).toHaveClass(/text-emerald-400/)
     await expect(page.getByTestId('hud-resource-selected').locator('svg')).toHaveClass(/text-violet-400/)

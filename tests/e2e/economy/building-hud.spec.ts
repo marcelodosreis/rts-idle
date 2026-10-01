@@ -56,11 +56,11 @@ async function constructionAt(
   }, target)
 }
 
-async function mineralValue(page: import('@playwright/test').Page): Promise<number> {
-  const text = await page.getByTestId('hud-resource-mineral').textContent()
+async function goldValue(page: import('@playwright/test').Page): Promise<number> {
+  const text = await page.getByTestId('hud-resource-gold').textContent()
   const value = Number(text?.match(/\d+/)?.[0])
   if (!Number.isFinite(value)) {
-    throw new Error('Mineral HUD value is missing')
+    throw new Error('Gold HUD value is missing')
   }
   return value
 }
@@ -270,7 +270,7 @@ test('an in-progress construction can be cancelled through the HUD with a partia
   await page.mouse.click(targetPoint.x, targetPoint.y)
   await expect.poll(() => constructionAt(page, target), { timeout: 15_000 }).toMatchObject({ status: 'FOUNDATION' })
 
-  const mineralBefore = await mineralValue(page)
+  const goldBefore = await goldValue(page)
   await page.getByRole('button', { name: 'Stop', exact: true }).click()
   await page.waitForTimeout(250)
   await page.mouse.click(targetPoint.x, targetPoint.y)
@@ -281,6 +281,6 @@ test('an in-progress construction can be cancelled through the HUD with a partia
   await cancel.click()
 
   await expect.poll(() => constructionAt(page, target)).toBeNull()
-  await expect.poll(() => mineralValue(page)).toBeGreaterThan(mineralBefore)
+  await expect.poll(() => goldValue(page)).toBeGreaterThan(goldBefore)
   await expect(page.getByTestId('construction-panel')).toHaveCount(0)
 })

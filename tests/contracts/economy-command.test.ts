@@ -6,7 +6,6 @@ import {
   createSimulation,
   createWorld,
   Kind,
-  MineralNode,
   Movement,
   Orders,
   Owner,
@@ -29,13 +28,23 @@ function economyWorld(secondWorkerKind: 'pawn' | 'warrior' = 'pawn') {
     world.store(Owner).set(id, { owner: 0 })
     world.store(Kind).set(id, kind)
     if (kind === 'pawn') {
-      world.store(Cargo).set(id, { amount: 0, capacity: 10 })
+      world.store(Cargo).set(id, { amount: 0, capacity: 10, resourceType: null })
     }
   }
-  world.createEntity(node)
-  world.store(Position).set(node, { x: tilesToFixed(2), y: 0 })
-  world.store(MineralNode).set(node, { remaining: 3_000 })
-  return { world, firstWorker, secondWorker, node }
+  const resources = [
+    {
+      resourceId: node,
+      kind: 'GOLD_MINE' as const,
+      x: tilesToFixed(2),
+      y: 0,
+      variant: 0,
+      initialAmount: 3_000,
+      harvestAmount: 10,
+      harvestTicks: 200,
+      blocksNavigation: false
+    }
+  ]
+  return { world, firstWorker, secondWorker, node, resources }
 }
 
 describe('GATHER command contract', () => {
@@ -43,23 +52,24 @@ describe('GATHER command contract', () => {
     expect(
       isCommandMessage({
         type: 'command',
-        intent: { type: 'GATHER', payload: { unitIds: [1, 2], nodeId: 3 } }
+        intent: { type: 'GATHER', payload: { unitIds: [1, 2], resourceId: 3 } }
       })
     ).toBe(true)
     expect(
       isCommandMessage({
         type: 'command',
-        intent: { type: 'GATHER', payload: { unitIds: [1], nodeId: 3.5 } }
+        intent: { type: 'GATHER', payload: { unitIds: [1], resourceId: 3.5 } }
       })
     ).toBe(false)
   })
 
-  it('atomically starts owned workers toward a mineral node', () => {
+  it('atomically starts owned workers toward a resource', () => {
     const { world, firstWorker, secondWorker, node } = economyWorld()
     const simulation = createSimulation({
       seed: SEEDS.integration.moveOwn,
       identity: TEST_IDENTITY,
-      initialWorld: world
+      initialWorld: world,
+      resources: economyWorld().resources
     })
 
     const result = simulation.step([
@@ -67,7 +77,7 @@ describe('GATHER command contract', () => {
         tick: 1,
         playerId: 0,
         sequence: 1,
-        intent: { type: 'GATHER', payload: { unitIds: [secondWorker, firstWorker], nodeId: node } }
+        intent: { type: 'GATHER', payload: { unitIds: [secondWorker, firstWorker], resourceId: node } }
       }
     ])
     const state = simulation.inspectState().world
@@ -75,19 +85,19 @@ describe('GATHER command contract', () => {
     expect(result.rejected).toEqual([])
     for (const worker of [firstWorker, secondWorker]) {
       expect(state.store(Orders).get(worker)?.queue).toEqual([
-        { type: 'GATHER', nodeId: node, baseId: null, phase: 'TO_NODE', progressTicks: 0 }
+        { type: 'GATHER', resourceId: node, baseId: null, phase: 'TO_RESOURCE', progressTicks: 0 }
       ])
       expect(state.store(Movement).get(worker)).toMatchObject({ destX: tilesToFixed(2), destY: 0 })
     }
   })
 
-  it('rejects a mineral node without a complete ten-mineral batch', () => {
+  it('rejects an unknown resource without mutating state', () => {
     const scenario = economyWorld()
-    scenario.world.store(MineralNode).set(scenario.node, { remaining: 9 })
     const simulation = createSimulation({
       seed: SEEDS.integration.moveOwn,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
 
     const result = simulation.step([
@@ -95,13 +105,13 @@ describe('GATHER command contract', () => {
         tick: 1,
         playerId: 0,
         sequence: 1,
-        intent: { type: 'GATHER', payload: { unitIds: [scenario.firstWorker], nodeId: scenario.node } }
+        intent: { type: 'GATHER', payload: { unitIds: [scenario.firstWorker], resourceId: 999 } }
       }
     ])
 
     expect(result.rejected[0]?.code).toBe('ENTITY_UNAVAILABLE')
     expect(simulation.inspectState().world.store(Orders).get(scenario.firstWorker)).toBeUndefined()
-    expect(simulation.inspectState().world.store(MineralNode).get(scenario.node)?.remaining).toBe(9)
+    expect(simulation.inspectState().resources.amount(scenario.node)).toBe(3_000)
   })
 
   it('rejects a mixed worker selection without mutating any entity', () => {
@@ -110,12 +120,14 @@ describe('GATHER command contract', () => {
     const simulation = createSimulation({
       seed: SEEDS.integration.moveNonOwner,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
     const control = createSimulation({
       seed: SEEDS.integration.moveNonOwner,
       identity: TEST_IDENTITY,
-      initialWorld: controlScenario.world
+      initialWorld: controlScenario.world,
+      resources: controlScenario.resources
     })
 
     const result = simulation.step([
@@ -125,7 +137,7 @@ describe('GATHER command contract', () => {
         sequence: 1,
         intent: {
           type: 'GATHER',
-          payload: { unitIds: [scenario.firstWorker, scenario.secondWorker], nodeId: scenario.node }
+          payload: { unitIds: [scenario.firstWorker, scenario.secondWorker], resourceId: scenario.node }
         }
       }
     ])
@@ -141,12 +153,14 @@ describe('GATHER command contract', () => {
     const simulation = createSimulation({
       seed: SEEDS.integration.moveMissing,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
     const control = createSimulation({
       seed: SEEDS.integration.moveMissing,
       identity: TEST_IDENTITY,
-      initialWorld: controlScenario.world
+      initialWorld: controlScenario.world,
+      resources: controlScenario.resources
     })
 
     const result = simulation.step([
@@ -156,7 +170,7 @@ describe('GATHER command contract', () => {
         sequence: 1,
         intent: {
           type: 'GATHER',
-          payload: { unitIds: [scenario.firstWorker], nodeId: scenario.secondWorker }
+          payload: { unitIds: [scenario.firstWorker], resourceId: scenario.secondWorker }
         }
       }
     ])

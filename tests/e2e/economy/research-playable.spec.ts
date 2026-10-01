@@ -99,7 +99,7 @@ test('starts with Castle II and Monastery research, then cancels a queued topic'
 
   await startResearch(page, 'economy')
   await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE')
-  const beforeCancel = Number((await page.getByTestId('hud-resource-mineral').textContent())?.match(/\d+/)?.[0] ?? 0)
+  const beforeCancel = Number((await page.getByTestId('hud-resource-gold').textContent())?.match(/\d+/)?.[0] ?? 0)
   await openRoot(page)
   const cancel = page.getByTestId('cancel-current')
   await cancel.click()
@@ -107,7 +107,7 @@ test('starts with Castle II and Monastery research, then cancels a queued topic'
   await cancel.click()
   await expect(page.getByTestId('production-queue-empty')).toContainText('No units or research in queue.')
   await expect
-    .poll(() => page.getByTestId('hud-resource-mineral').textContent(), { timeout: 5_000 })
+    .poll(() => page.getByTestId('hud-resource-gold').textContent(), { timeout: 5_000 })
     .not.toBe(String(beforeCancel))
 })
 
