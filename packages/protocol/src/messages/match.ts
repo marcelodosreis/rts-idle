@@ -2,12 +2,14 @@ import {
   BUILDING_TYPES,
   type BuildingType,
   field,
+  isNonNegativeInteger,
   isOneOf,
   isRecord,
   type MapDefinition,
   normalizeMapDefinition,
   RESEARCH_TYPES,
   type ResearchType,
+  type ResourceCost,
   TRAINABLE_UNIT_KINDS,
   type TrainableUnitKind
 } from '@rts/shared'
@@ -25,7 +27,7 @@ export interface BuildCatalogEntry {
   readonly type: BuildingType
   readonly label: string
   readonly footprint: { readonly width: number; readonly height: number }
-  readonly costMinerals: number
+  readonly cost: ResourceCost
   readonly constructionTicks: number
   readonly supplyProvided?: number
 }
@@ -33,14 +35,14 @@ export interface BuildCatalogEntry {
 export interface ProductionCatalogEntry {
   readonly unitKind: TrainableUnitKind
   readonly producer: Extract<BuildingType, 'CASTLE' | 'BARRACKS' | 'ARCHERY' | 'MONASTERY'>
-  readonly costMinerals: number
+  readonly cost: ResourceCost
   readonly trainingTicks: number
   readonly supply: number
 }
 
 export interface ResearchCatalogEntry {
   readonly researchType: ResearchType
-  readonly costMinerals: number
+  readonly cost: ResourceCost
   readonly researchTicks: number
 }
 
@@ -67,6 +69,15 @@ function isPositiveInteger(value: unknown): value is number {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
+}
+
+function isResourceCost(value: unknown): value is ResourceCost {
+  if (!isRecord(value)) {
+    return false
+  }
+  const gold = field(value, 'GOLD')
+  const wood = field(value, 'WOOD')
+  return isNonNegativeInteger(gold) && (wood === undefined || isNonNegativeInteger(wood)) && gold + (wood ?? 0) > 0
 }
 
 export function isMatchRequest(value: unknown): value is MatchRequest {
@@ -101,7 +112,7 @@ function isBuildCatalogEntry(value: unknown): value is BuildCatalogEntry {
   if (
     !isOneOf(BUILDING_TYPES, field(value, 'type')) ||
     typeof field(value, 'label') !== 'string' ||
-    !isPositiveInteger(field(value, 'costMinerals')) ||
+    !isResourceCost(field(value, 'cost')) ||
     !isPositiveInteger(field(value, 'constructionTicks')) ||
     !isRecord(footprint)
   ) {
@@ -118,7 +129,7 @@ function isProductionCatalogEntry(value: unknown): value is ProductionCatalogEnt
       field(value, 'producer') === 'BARRACKS' ||
       field(value, 'producer') === 'ARCHERY' ||
       field(value, 'producer') === 'MONASTERY') &&
-    isPositiveInteger(field(value, 'costMinerals')) &&
+    isResourceCost(field(value, 'cost')) &&
     isPositiveInteger(field(value, 'trainingTicks')) &&
     isPositiveInteger(field(value, 'supply'))
   )
@@ -128,7 +139,7 @@ function isResearchCatalogEntry(value: unknown): value is ResearchCatalogEntry {
   return (
     isRecord(value) &&
     isOneOf(RESEARCH_TYPES, field(value, 'researchType')) &&
-    isPositiveInteger(field(value, 'costMinerals')) &&
+    isResourceCost(field(value, 'cost')) &&
     isPositiveInteger(field(value, 'researchTicks'))
   )
 }

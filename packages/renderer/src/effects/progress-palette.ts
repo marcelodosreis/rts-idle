@@ -7,7 +7,7 @@ export interface ProgressPaletteEntry {
 
 /** Canonical colors consumed by both the HUD and PixiJS progress bars. */
 export const PROGRESS_PALETTE = {
-  mining: { text: '#facc15', fill: '#facc15' },
+  harvesting: { text: '#facc15', fill: '#facc15' },
   construction: { text: '#c084fc', fill: '#c084fc' },
   training: { text: '#22d3ee', fill: '#22d3ee' },
   delivery: { text: '#22c55e', fill: '#22c55e' }

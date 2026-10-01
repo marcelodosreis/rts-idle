@@ -18,7 +18,11 @@ import {
   type ProductionItemStatus,
   REPAIR_STOP_REASONS,
   RESEARCH_TYPES,
+  RESOURCE_TYPES,
   type ResearchType,
+  type ResourceCost,
+  type ResourceId,
+  type ResourceType,
   SIMULATION_EVENT_TYPES,
   type SimulationEvent,
   TRAINABLE_UNIT_KINDS,
@@ -50,7 +54,7 @@ export interface SnapshotEconomy {
   readonly cargoCapacity: number
   readonly progressTicks: number
   readonly progressMax: number
-  readonly nodeId: EntityId
+  readonly resourceId: ResourceId
 }
 
 export interface SnapshotUnit {
@@ -72,12 +76,14 @@ export interface SnapshotUnit {
   readonly healCooldownRemaining?: number
   readonly economy?: SnapshotEconomy
   readonly carrying?: boolean
+  /** Carried resource type, so the renderer can show wood vs gold after the order is gone. */
+  readonly cargoType?: ResourceType
 }
 
 export interface SnapshotPlayer {
   readonly id: PlayerId
   readonly defeated: boolean
-  readonly gold: number
+  readonly resources: { readonly GOLD: number; readonly WOOD: number }
   readonly usedSupply: number
   readonly reservedSupply?: number
   readonly supplyCap: number
@@ -113,7 +119,7 @@ export interface SnapshotBuilding {
 
 export interface SnapshotUnitProductionItem {
   readonly unitKind: (typeof TRAINABLE_UNIT_KINDS)[number]
-  readonly costMinerals: number
+  readonly cost: ResourceCost
   readonly reservedSupply: number
   readonly progressTicks: number
   readonly totalTicks: number
@@ -122,7 +128,7 @@ export interface SnapshotUnitProductionItem {
 
 export interface SnapshotResearchProductionItem {
   readonly researchType: ResearchType
-  readonly costMinerals: number
+  readonly cost: ResourceCost
   readonly progressTicks: number
   readonly totalTicks: number
   readonly status: ProductionItemStatus
@@ -134,10 +140,9 @@ export interface SnapshotProduction {
   readonly queue: readonly SnapshotProductionItem[]
 }
 
-export interface SnapshotMineralNode {
-  readonly id: EntityId
-  readonly x: Fixed
-  readonly y: Fixed
+/** Mutable resource state; static definitions are delivered in MatchConfig.map. */
+export interface SnapshotResource {
+  readonly resourceId: ResourceId
   readonly remaining: number
 }
 
@@ -147,7 +152,8 @@ export interface SnapshotMessage {
   readonly phase: MatchPhase
   readonly units: readonly SnapshotUnit[]
   readonly buildings: readonly SnapshotBuilding[]
-  readonly mineralNodes: readonly SnapshotMineralNode[]
+  readonly resources: readonly SnapshotResource[]
+  readonly resourcesComplete: boolean
   readonly players: readonly SnapshotPlayer[]
   readonly events: readonly SimulationEvent[]
 }
@@ -232,7 +238,7 @@ function isSnapshotProduction(value: unknown): value is SnapshotProduction {
     if (researchType !== undefined) {
       return (
         isOneOf(RESEARCH_TYPES, researchType) &&
-        isNonNegativeInteger(field(item, 'costMinerals')) &&
+        isSnapshotResourceCost(field(item, 'cost')) &&
         isOneOf(PRODUCTION_ITEM_STATUSES, field(item, 'status')) &&
         isNonNegativeInteger(progressTicks) &&
         isInteger(totalTicks) &&
@@ -242,7 +248,7 @@ function isSnapshotProduction(value: unknown): value is SnapshotProduction {
     }
     return (
       isOneOf(TRAINABLE_UNIT_KINDS, field(item, 'unitKind')) &&
-      isNonNegativeInteger(field(item, 'costMinerals')) &&
+      isSnapshotResourceCost(field(item, 'cost')) &&
       isNonNegativeInteger(field(item, 'reservedSupply')) &&
       isOneOf(PRODUCTION_ITEM_STATUSES, field(item, 'status')) &&
       isNonNegativeInteger(progressTicks) &&
@@ -252,8 +258,20 @@ function isSnapshotProduction(value: unknown): value is SnapshotProduction {
     )
   })
 }
-function isSnapshotMineralNode(value: unknown): boolean {
-  return isPositionedEntity(value) && isRecord(value) && isNonNegativeInteger(field(value, 'remaining'))
+function isSnapshotResource(value: unknown): boolean {
+  return (
+    isRecord(value) &&
+    isNonNegativeInteger(field(value, 'resourceId')) &&
+    isNonNegativeInteger(field(value, 'remaining'))
+  )
+}
+function isSnapshotResourceCost(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false
+  }
+  const gold = field(value, 'GOLD')
+  const wood = field(value, 'WOOD')
+  return isNonNegativeInteger(gold) && (wood === undefined || isNonNegativeInteger(wood))
 }
 function isSnapshotEconomy(value: unknown): boolean {
   if (!isRecord(value)) {
@@ -269,7 +287,7 @@ function isSnapshotEconomy(value: unknown): boolean {
     isOptionalNonNegativeInteger(cargoCapacity) &&
     isOptionalNonNegativeInteger(progressTicks) &&
     isOptionalNonNegativeInteger(progressMax) &&
-    isInteger(field(value, 'nodeId')) &&
+    isNonNegativeInteger(field(value, 'resourceId')) &&
     isInteger(cargoAmount) &&
     isInteger(cargoCapacity) &&
     isInteger(progressTicks) &&
@@ -288,6 +306,7 @@ function isSnapshotUnit(value: unknown): boolean {
   const orderState = field(value, 'orderState')
   const economy = field(value, 'economy')
   const carrying = field(value, 'carrying')
+  const cargoType = field(value, 'cargoType')
   return (
     isInteger(field(value, 'id')) &&
     isInteger(field(value, 'x')) &&
@@ -306,7 +325,8 @@ function isSnapshotUnit(value: unknown): boolean {
     (field(value, 'lookAtX') === undefined || isInteger(field(value, 'lookAtX'))) &&
     (orderState === undefined || isOneOf(ORDER_STATES, orderState)) &&
     (economy === undefined || isSnapshotEconomy(economy)) &&
-    (carrying === undefined || typeof carrying === 'boolean')
+    (carrying === undefined || typeof carrying === 'boolean') &&
+    (cargoType === undefined || isOneOf(RESOURCE_TYPES, cargoType))
   )
 }
 function isSimulationEvent(value: unknown): boolean {
@@ -357,9 +377,10 @@ export function isSnapshotMessage(value: unknown): value is SnapshotMessage {
   }
   const units = field(value, 'units')
   const buildings = field(value, 'buildings')
-  const mineralNodes = field(value, 'mineralNodes')
+  const resources = field(value, 'resources')
   const players = field(value, 'players')
   const events = field(value, 'events')
+  const resourcesComplete = field(value, 'resourcesComplete')
   return (
     field(value, 'type') === 'snapshot' &&
     isInteger(field(value, 'tick')) &&
@@ -368,8 +389,9 @@ export function isSnapshotMessage(value: unknown): value is SnapshotMessage {
     units.every(isSnapshotUnit) &&
     Array.isArray(buildings) &&
     buildings.every(isSnapshotBuilding) &&
-    Array.isArray(mineralNodes) &&
-    mineralNodes.every(isSnapshotMineralNode) &&
+    Array.isArray(resources) &&
+    resources.every(isSnapshotResource) &&
+    typeof resourcesComplete === 'boolean' &&
     Array.isArray(players) &&
     players.every(isSnapshotPlayer) &&
     Array.isArray(events) &&
