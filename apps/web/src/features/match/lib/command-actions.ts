@@ -24,10 +24,7 @@ import {
   Wrench,
   XCircle
 } from 'lucide-react'
-import type { HudCommandAction } from '../components/hud-command-button'
 import { buildingTypeForMode, isRallyMode } from '../hooks/use-command-modes'
-import type { CommandBarProps, MenuState, SubmenuKind } from '../types/command-types'
-import { TRAINABLE_LABEL } from '../types/hud-types'
 import {
   blockedFeedbackTarget,
   buildBlockReason,
@@ -36,6 +33,9 @@ import {
   trainingBlockReason,
   upgradeBlockReason
 } from './command-state'
+import type { CommandBarProps, MenuState, SubmenuKind } from '../types/command-types'
+import type { HudCommandAction } from '../components/hud-command-button'
+import { TRAINABLE_LABEL } from '../types/hud-types'
 
 const BUILDING_ICONS: Readonly<Record<BuildingType, LucideIcon>> = {
   CASTLE: Castle,
@@ -212,7 +212,7 @@ export function buildingRootActions(
       onActivate: () => open('research')
     })
   }
-  if (building.buildingType === 'CASTLE' && (building.tier ?? 1) < 2 && building.tierUpgrade == null) {
+  if (building.buildingType === 'CASTLE') {
     actions.push({
       id: 'upgrade',
       label: 'Upgrade',
@@ -302,7 +302,7 @@ function buildActions(props: CommandBarProps): readonly HudCommandAction[] {
     icon: BUILDING_ICONS[entry.type],
     blockedReason: buildBlockReason(entry, props.resources),
     blockedTarget: blockedFeedbackTarget(buildBlockReason(entry, props.resources)),
-    cost: `${entry.costMinerals} minerals`,
+    cost: `${entry.cost.GOLD ?? 0} gold`,
     time: `${Math.ceil(entry.constructionTicks / 20)}s`,
     active: buildingTypeForMode(props.mode) === entry.type,
     feedbackKind: 'arm',
@@ -325,7 +325,7 @@ function trainingActions(props: CommandBarProps): readonly HudCommandAction[] {
       icon: UNIT_ICONS[entry.unitKind],
       blockedReason: trainingBlockReason(entry, props.resources, queueLength),
       blockedTarget: blockedFeedbackTarget(trainingBlockReason(entry, props.resources, queueLength)),
-      cost: `${entry.costMinerals} minerals · ${entry.supply} supply`,
+      cost: `${entry.cost.GOLD ?? 0} gold · ${entry.supply} supply`,
       time: `${Math.ceil(entry.trainingTicks / 20)}s`,
       feedbackKind: 'submit',
       onActivate: () => props.onTrain(entry.unitKind)
@@ -345,7 +345,7 @@ function researchActions(props: CommandBarProps): readonly HudCommandAction[] {
     icon: BookOpen,
     blockedReason: researchBlockReason(entry, props.resources, queueLength),
     blockedTarget: blockedFeedbackTarget(researchBlockReason(entry, props.resources, queueLength)),
-    cost: `${entry.costMinerals} minerals`,
+    cost: `${entry.cost.GOLD ?? 0} gold`,
     time: `${Math.ceil(entry.researchTicks / 20)}s`,
     feedbackKind: 'submit',
     onActivate: () => props.onResearch(building.id, entry.researchType)
@@ -357,16 +357,22 @@ function upgradeActions(props: CommandBarProps): readonly HudCommandAction[] {
   if (building === null) {
     return []
   }
-  const cost = props.buildings.find((entry) => entry.type === 'CASTLE')?.costMinerals ?? 0
+  const cost = props.buildings.find((entry) => entry.type === 'CASTLE')?.cost.GOLD ?? 0
+  const castleIiiUnavailable = building.tier === 2
+  const upgradeInProgress = building.tierUpgrade != null
+  const actionBlockReason =
+    (upgradeInProgress ? 'Castle upgrade in progress.' : undefined) ??
+    (castleIiiUnavailable ? 'Castle III content is unavailable.' : undefined) ??
+    upgradeBlockReason(building, cost, props.resources)
   return [
     {
       id: 'upgrade-castle',
-      label: 'Castle II',
-      description: 'Upgrade this Castle to tier II.',
+      label: castleIiiUnavailable ? 'Castle III' : 'Castle II',
+      description: castleIiiUnavailable ? 'Castle III content is unavailable.' : 'Upgrade this Castle to tier II.',
       icon: ArrowUpCircle,
-      blockedReason: upgradeBlockReason(building, cost, props.resources),
-      blockedTarget: blockedFeedbackTarget(upgradeBlockReason(building, cost, props.resources)),
-      cost: `${cost} minerals`,
+      blockedReason: actionBlockReason,
+      blockedTarget: castleIiiUnavailable || upgradeInProgress ? 'command' : blockedFeedbackTarget(actionBlockReason),
+      cost: `${cost} gold`,
       feedbackKind: 'submit',
       onActivate: () => props.onUpgradeCastle(building.id)
     }

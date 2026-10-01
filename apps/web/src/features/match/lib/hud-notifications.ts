@@ -6,10 +6,10 @@ export const HUD_NOTIFICATION_KINDS = [
   'RESEARCH_COMPLETED',
   'CONSTRUCTION_COMPLETED',
   'COMMAND_BLOCKED',
-  'COMMAND_BLOCKED_MINERALS',
+  'COMMAND_BLOCKED_GOLD',
   'COMMAND_BLOCKED_SUPPLY',
   'COMMAND_BLOCKED_QUEUE',
-  'REPAIR_STOPPED_NO_MINERALS',
+  'REPAIR_STOPPED_NO_GOLD',
   'CONNECTION_LOST',
   'CONNECTION_CLOSED',
   'MATCH_CONFIG_ERROR',
@@ -21,10 +21,10 @@ export type HudNotification =
   | { readonly kind: 'RESEARCH_COMPLETED'; readonly research: ResearchType }
   | { readonly kind: 'CONSTRUCTION_COMPLETED'; readonly building: SnapshotBuilding }
   | { readonly kind: 'COMMAND_BLOCKED'; readonly message: string }
-  | { readonly kind: 'COMMAND_BLOCKED_MINERALS' }
+  | { readonly kind: 'COMMAND_BLOCKED_GOLD' }
   | { readonly kind: 'COMMAND_BLOCKED_SUPPLY' }
   | { readonly kind: 'COMMAND_BLOCKED_QUEUE' }
-  | { readonly kind: 'REPAIR_STOPPED_NO_MINERALS' }
+  | { readonly kind: 'REPAIR_STOPPED_NO_GOLD' }
   | { readonly kind: 'CONNECTION_LOST'; readonly message?: string }
   | { readonly kind: 'CONNECTION_CLOSED' }
   | { readonly kind: 'MATCH_CONFIG_ERROR'; readonly message: string }
@@ -77,8 +77,8 @@ function researchLabel(research: ResearchType): string {
 
 function feedbackTargetForMessage(message: string): HudFeedbackTarget {
   const normalized = message.toLowerCase()
-  if (normalized.includes('mineral')) {
-    return 'minerals'
+  if (normalized.includes('gold')) {
+    return 'gold'
   }
   if (normalized.includes('supply')) {
     return 'supply'
@@ -105,8 +105,8 @@ function globalError(message: string): HudNotificationPresentation {
 }
 
 export function blockedCommandNotification(message: string, target: HudFeedbackTarget): HudNotification {
-  if (target === 'minerals') {
-    return { kind: 'COMMAND_BLOCKED_MINERALS' }
+  if (target === 'gold') {
+    return { kind: 'COMMAND_BLOCKED_GOLD' }
   }
   if (target === 'supply') {
     return { kind: 'COMMAND_BLOCKED_SUPPLY' }
@@ -153,8 +153,8 @@ export function notificationPresentation(notification: HudNotification): HudNoti
       }
     }
   }
-  if (notification.kind === 'COMMAND_BLOCKED_MINERALS') {
-    return contextual('Insufficient minerals', 'minerals')
+  if (notification.kind === 'COMMAND_BLOCKED_GOLD') {
+    return contextual('Insufficient gold', 'gold')
   }
   if (notification.kind === 'COMMAND_BLOCKED_SUPPLY') {
     return contextual('Insufficient supply', 'supply')
@@ -162,8 +162,8 @@ export function notificationPresentation(notification: HudNotification): HudNoti
   if (notification.kind === 'COMMAND_BLOCKED_QUEUE') {
     return contextual('Queue is full', 'queue')
   }
-  if (notification.kind === 'REPAIR_STOPPED_NO_MINERALS') {
-    return contextual('Repair stopped: insufficient minerals', 'minerals')
+  if (notification.kind === 'REPAIR_STOPPED_NO_GOLD') {
+    return contextual('Repair stopped: insufficient gold', 'gold')
   }
   if (notification.kind === 'CONNECTION_LOST') {
     return globalError(notification.message ?? 'Connection to the match was lost.')

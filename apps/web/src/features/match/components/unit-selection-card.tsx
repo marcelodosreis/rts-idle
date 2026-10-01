@@ -30,19 +30,20 @@ function economyLabel(unit: HudSelectionUnit): string | null {
   if (unit.economy === undefined) {
     return null
   }
-  if (unit.economy.phase === 'gathering') {
-    return `Mining ${unit.economy.progressTicks}/${unit.economy.progressMax}`
+  const targetLabel = 'resource'
+  if (unit.economy.phase === 'harvesting') {
+    return `Harvesting ${unit.economy.progressTicks}/${unit.economy.progressMax}`
   }
   if (unit.economy.phase === 'to_base') {
     return `Returning ${unit.economy.cargoAmount}/${unit.economy.cargoCapacity}`
   }
-  if (unit.economy.phase === 'to_node') {
-    return 'Going to mineral'
+  if (unit.economy.phase === 'to_resource') {
+    return `Going to ${targetLabel}`
   }
   return `Waiting for Base ${unit.economy.cargoAmount}/${unit.economy.cargoCapacity}`
 }
 
-function economyStatus(unit: HudSelectionUnit): { readonly label: string; readonly color: string } | null {
+export function economyStatus(unit: HudSelectionUnit): { readonly label: string; readonly color: string } | null {
   if (unit.economy !== undefined) {
     const label = economyLabel(unit)
     if (label === null) {
@@ -262,7 +263,7 @@ function SingleUnit({ unit, humanPlayer }: { readonly unit: HudSelectionUnit; re
   )
 }
 
-function UnitChip({
+export function UnitChip({
   unit,
   humanPlayer,
   onOpen
