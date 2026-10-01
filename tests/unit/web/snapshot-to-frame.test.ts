@@ -7,13 +7,15 @@ describe('snapshot to frame mapping', () => {
       type: 'snapshot',
       tick: 1,
       phase: 'RUNNING',
-      units: [{ id: 1, x: 0, y: 0, owner: 0, carrying: true }],
+      units: [{ id: 1, x: 0, y: 0, owner: 0, carrying: true, cargoType: 'WOOD' }],
       buildings: [],
-      mineralNodes: [],
+      resources: [],
+      resourcesComplete: true,
       players: [],
       events: []
     })
     expect(frame.units[0]!.carrying).toBe(true)
+    expect(frame.units[0]!.cargoType).toBe('WOOD')
   })
 
   it('maps a snapshot message to a render frame', () => {
@@ -32,12 +34,12 @@ describe('snapshot to frame mapping', () => {
           maxHp: 100,
           orderState: 'attacking',
           economy: {
-            phase: 'gathering',
+            phase: 'harvesting',
             cargoAmount: 3,
             cargoCapacity: 10,
             progressTicks: 12,
             progressMax: 200,
-            nodeId: 4
+            resourceId: 4
           }
         },
         { id: 2, x: 300, y: 400, owner: 1 }
@@ -57,7 +59,7 @@ describe('snapshot to frame mapping', () => {
             queue: [
               {
                 unitKind: 'WARRIOR',
-                costMinerals: 50,
+                cost: { GOLD: 50 },
                 reservedSupply: 1,
                 progressTicks: 12,
                 totalTicks: 60,
@@ -67,10 +69,11 @@ describe('snapshot to frame mapping', () => {
           }
         }
       ],
-      mineralNodes: [{ id: 4, x: 700, y: 800, remaining: 25 }],
+      resources: [{ resourceId: 4, remaining: 25 }],
+      resourcesComplete: true,
       players: [
-        { id: 0, defeated: false, gold: 0, usedSupply: 2, supplyCap: 10 },
-        { id: 1, defeated: true, gold: 5, usedSupply: 0, supplyCap: 0 }
+        { id: 0, defeated: false, resources: { GOLD: 0, WOOD: 0 }, usedSupply: 2, supplyCap: 10 },
+        { id: 1, defeated: true, resources: { GOLD: 5, WOOD: 0 }, usedSupply: 0, supplyCap: 0 }
       ],
       events: [{ type: 'damageDealt', targetId: 1, amount: 10, targetHp: 90 }]
     })
@@ -85,12 +88,12 @@ describe('snapshot to frame mapping', () => {
         maxHp: 100,
         orderState: 'attacking',
         economy: {
-          phase: 'gathering',
+          phase: 'harvesting',
           cargoAmount: 3,
           cargoCapacity: 10,
           progressTicks: 12,
           progressMax: 200,
-          nodeId: 4
+          resourceId: 4
         }
       },
       { id: 2, x: 300, y: 400, owner: 1, kind: 'pawn', hp: undefined, maxHp: undefined, orderState: undefined }
@@ -110,7 +113,7 @@ describe('snapshot to frame mapping', () => {
           queue: [
             {
               unitKind: 'WARRIOR',
-              costMinerals: 50,
+              cost: { GOLD: 50 },
               reservedSupply: 1,
               progressTicks: 12,
               totalTicks: 60,
@@ -120,7 +123,7 @@ describe('snapshot to frame mapping', () => {
         }
       }
     ])
-    expect(frame.mineralNodes).toEqual([{ id: 4, x: 700, y: 800, remaining: 25 }])
+    expect(frame.resources).toEqual([{ resourceId: 4, remaining: 25 }])
     expect(frame.events).toEqual([{ type: 'damageDealt', targetId: 1, amount: 10, targetHp: 90 }])
   })
 
@@ -145,7 +148,8 @@ describe('snapshot to frame mapping', () => {
           totalTicks: 100
         }
       ],
-      mineralNodes: [],
+      resources: [],
+      resourcesComplete: true,
       players: [],
       events: []
     })
@@ -164,7 +168,8 @@ describe('snapshot to frame mapping', () => {
         phase: 'FINISHED',
         units: [],
         buildings: [],
-        mineralNodes: [],
+        resources: [],
+        resourcesComplete: true,
         players: [],
         events: []
       })
@@ -172,7 +177,7 @@ describe('snapshot to frame mapping', () => {
       tick: 0,
       units: [],
       buildings: [],
-      mineralNodes: [],
+      resources: [],
       events: []
     })
   })
