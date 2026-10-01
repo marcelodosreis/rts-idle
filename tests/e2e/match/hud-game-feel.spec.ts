@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
+import { waitForMatchReady } from '../support/settle.js'
 
 async function canvasPoint(page: Page, x: number, y: number) {
   return page.evaluate(
@@ -29,9 +30,7 @@ async function selectWorker(page: Page): Promise<number> {
 
 async function startMatch(page: Page): Promise<number> {
   await page.goto('/?scenario=default')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
   return selectWorker(page)
 }
 
@@ -42,12 +41,14 @@ test('armed commands use contextual instruction instead of an order-ready toast'
   await attack.click()
 
   await expect(attack).toHaveAttribute('data-command-state', 'armed')
-  await expect(page.getByTestId('hud-context-feedback')).toHaveText('Select an enemy target · Esc to cancel')
+  const modeFeedback = page.locator('[data-testid="hud-context-feedback"][data-feedback-source="mode"]')
+  await expect(page.getByTestId('hud-context-feedback')).toHaveAttribute('data-feedback-source', 'mode')
+  await expect(modeFeedback).toHaveText('Select an enemy target · Esc to cancel')
   await expect(page.getByText('Order ready', { exact: true })).toHaveCount(0)
 
   await page.keyboard.press('Escape')
   await expect(attack).toHaveAttribute('data-command-state', 'idle')
-  await expect(page.getByTestId('hud-context-feedback')).toHaveCount(0)
+  await expect(page.getByTestId('hud-context-feedback[data-feedback-source="mode"]')).toHaveCount(0)
 })
 
 test('command feedback remains informative with reduced motion', async ({ page }) => {
