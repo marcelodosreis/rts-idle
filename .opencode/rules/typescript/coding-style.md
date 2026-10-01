@@ -107,6 +107,14 @@ function getErrorMessage(error: unknown): string {
 }
 ```
 
+### Web Feature Structure
+
+In `apps/web/src`, use kebab-case filenames and named PascalCase component
+exports. A non-generated `.tsx` module owns one React component. Feature slices
+use `components/`, `hooks/`, `services/`, `types/`, and `lib/` only when each
+segment has a cohesive responsibility. Cross-slice imports use the `@/` alias
+and the slice `index.ts` public API; use relative imports only inside a slice.
+
 ### React Props
 
 - Define component props with a named `interface` or `type`

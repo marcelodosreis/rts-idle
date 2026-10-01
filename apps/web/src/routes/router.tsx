@@ -1,13 +1,19 @@
 import { lazy, Suspense } from 'react'
 import { Route, Routes } from 'react-router-dom'
+import { AssetBrowserPage } from '@/pages/laboratory/browser/asset-browser-page'
 import { RouteLoading } from '../app/loading'
-import AssetBrowserPage from '../pages/laboratory/browser/AssetBrowserPage'
 
-const MatchPage = lazy(() => import('../pages/match/MatchPage'))
-const MapEditorPage = lazy(() => import('../pages/laboratory/editor/MapEditorPage'))
-const DiagnosticsPage = lazy(() => import('../pages/laboratory/diagnostics/DiagnosticsPage'))
-const AssetReportPage = lazy(() => import('../pages/laboratory/report/AssetReportPage'))
-const NotFoundPage = lazy(() => import('../pages/NotFoundPage'))
+const MatchPage = lazy(() => import('@/pages/match/match-page').then((module) => ({ default: module.MatchPage })))
+const MapEditorPage = lazy(() =>
+  import('@/pages/laboratory/editor/map-editor-page').then((module) => ({ default: module.MapEditorPage }))
+)
+const DiagnosticsPage = lazy(() =>
+  import('@/pages/laboratory/diagnostics/diagnostics-page').then((module) => ({ default: module.DiagnosticsPage }))
+)
+const AssetReportPage = lazy(() =>
+  import('@/pages/laboratory/report/asset-report-page').then((module) => ({ default: module.AssetReportPage }))
+)
+const NotFoundPage = lazy(() => import('@/pages/not-found-page').then((module) => ({ default: module.NotFoundPage })))
 
 export function AppRouter() {
   return (

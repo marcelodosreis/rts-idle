@@ -1,5 +1,7 @@
 export function loadAssetBrowserPage() {
-  return import('../pages/laboratory/browser/AssetBrowserPage')
+  return import('../pages/laboratory/browser/asset-browser-page').then((module) => ({
+    default: module.AssetBrowserPage
+  }))
 }
 
 export function preloadLaboratoryPage(): void {

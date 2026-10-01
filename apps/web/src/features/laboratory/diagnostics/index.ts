@@ -1,3 +1,3 @@
-export { DeterminismFeature } from './DeterminismFeature'
-export { RendererPerformanceFeature } from './RendererPerformanceFeature'
-export { RendererStressFeature } from './RendererStressFeature'
+export { DeterminismFeature } from './components/determinism-feature'
+export { RendererPerformanceFeature } from './components/renderer-performance-feature'
+export { RendererStressFeature } from './components/renderer-stress-feature'

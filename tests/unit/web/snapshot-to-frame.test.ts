@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { snapshotToFrame } from '../../../apps/web/src/features/match/projections/snapshot-to-frame.js'
+import { snapshotToFrame } from '../../../apps/web/src/features/match/lib/snapshot-to-frame'
 
 describe('snapshot to frame mapping', () => {
   it('forwards the carrying flag to the render unit', () => {

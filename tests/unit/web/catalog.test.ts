@@ -4,7 +4,7 @@ import {
   buildCatalog,
   groupKeysByDepth,
   searchKeys
-} from '../../../apps/web/src/features/laboratory/browser/catalog.js'
+} from '../../../apps/web/src/features/laboratory/browser/lib/catalog'
 
 function entry(partial: Partial<AssetEntry>): AssetEntry {
   return {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseMatchQuery, updateMatchQuery } from '../../../apps/web/src/features/match/url-state/match-query'
+import { parseMatchQuery, updateMatchQuery } from '../../../apps/web/src/features/match/lib/match-query'
 
 describe('match query state', () => {
   it('normalizes missing and invalid values to safe defaults', () => {

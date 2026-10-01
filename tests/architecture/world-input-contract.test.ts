@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 const rendererTypes = readFileSync(new URL('../../packages/renderer/src/core/types.ts', import.meta.url), 'utf8')
 const renderer = readFileSync(new URL('../../packages/renderer/src/core/renderer.ts', import.meta.url), 'utf8')
 const session = readFileSync(
-  new URL('../../apps/web/src/features/match/lifecycle/useMatchSession.ts', import.meta.url),
+  new URL('../../apps/web/src/features/match/hooks/use-match-session.ts', import.meta.url),
   'utf8'
 )
 

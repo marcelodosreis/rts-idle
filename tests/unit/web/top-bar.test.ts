@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatMatchTime } from '../../../apps/web/src/features/match/ui/top-bar-display'
+import { formatMatchTime } from '../../../apps/web/src/features/match/lib/top-bar-display'
 
 describe('formatMatchTime', () => {
   it('formats zero ticks as the start of the match', () => {

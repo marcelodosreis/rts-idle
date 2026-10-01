@@ -4,7 +4,7 @@ import {
   cancelRefundEstimate,
   constructionStatusLine,
   resourceRemainingLine
-} from '../../../apps/web/src/features/match/selection/selection-panel-logic'
+} from '../../../apps/web/src/features/match/lib/selection-panel-logic'
 
 describe('selection panel labels', () => {
   it('shows completed buildings as ready instead of unassigned', () => {

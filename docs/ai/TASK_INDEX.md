@@ -26,6 +26,18 @@
 | ARCH.03.14 | Legacy authority removal | done | ARCH.03.10 | protocol, simulation | contracts, simulation, architecture |
 | ARCH.03.15 | Authority closure audit | done | ARCH.03.01–14 | docs, quality | verify, browser |
 
+## Architecture Track 04 - Web feature organization
+
+| ID | Title | Status | Dependencies | Packages | Validation |
+|----|-------|--------|--------------|----------|------------|
+| ARCH.04.01 | Web feature architecture decision | done | — | docs, web | lint |
+| ARCH.04.02 | Web layer naming and page public APIs | done | ARCH.04.01 | web | verify:fast |
+| ARCH.04.03 | Match slice organization | done | ARCH.04.02 | web | verify:fast |
+| ARCH.04.04 | Laboratory shared and browser organization | done | ARCH.04.03 | web | verify:fast |
+| ARCH.04.05 | Laboratory editor organization | done | ARCH.04.04 | web | verify:fast |
+| ARCH.04.06 | Laboratory diagnostics and report organization | done | ARCH.04.05 | web | verify:fast |
+| ARCH.04.07 | Web convention enforcement | done | ARCH.04.06 | web, tests | verify, browser |
+
 | ID | Title | Status | Dependencies | Packages | Validation |
 |----|-------|--------|-------------|----------|------------|
 | P2.01.01 | Resource node component | done | — | simulation | unit, simulation |

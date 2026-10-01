@@ -3,7 +3,7 @@ import {
   inputPreferencesStorageKey,
   readInputPreferences,
   writeInputPreferences
-} from '../../../apps/web/src/features/match/lifecycle/input-preferences.js'
+} from '../../../apps/web/src/features/match/services/input-preferences'
 
 function storage(initial: string | null = null) {
   let value = initial

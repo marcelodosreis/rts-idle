@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { observedDelta } from '../../../apps/web/src/features/match/ui/useObservedDelta'
+import { observedDelta } from '../../../apps/web/src/features/match/hooks/use-observed-delta'
 
 describe('observedDelta', () => {
   it('reports positive and negative changes within one session', () => {

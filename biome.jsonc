@@ -83,6 +83,10 @@
         "noAwaitInLoops": "off"
       },
       "style": {
+        "useFilenamingConvention": {
+          "level": "error",
+          "options": { "filenameCases": ["kebab-case"] }
+        },
         "noNonNullAssertion": "off",
         "noExcessiveClassesPerFile": "off",
         "noExcessiveLinesPerFile": {

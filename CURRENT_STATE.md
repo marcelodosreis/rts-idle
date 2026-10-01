@@ -47,8 +47,10 @@ See `docs/tasks/todo.md` for full phase list.
   buildings, with centralized cadence/cost/healing rules and browser coverage
 - WebSocket server (isolated per-connection sessions)
 - React SPA with BrowserRouter, lazy match/Laboratory routes, and not-found handling
-- Feature-first web layout with independent Laboratory browser, editor, stress,
-  report, determinism, and performance features
+- Feature-first web layout with explicit slice public APIs and cohesive
+  `components`, `hooks`, `services`, `types`, and `lib` segments; independent
+  Laboratory browser, editor, stress, report, determinism, and performance
+  features
 - Match HUD Laboratory menu and enforced web import boundaries
 - Automated suites and architecture barriers green
 - Strong-typing baseline: single-source domain registries, boundary parsers,

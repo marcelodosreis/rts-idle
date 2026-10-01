@@ -23,8 +23,8 @@ const RECORD_STRING_ALLOWLIST = new Set([
   'packages/shared/src/assets/asset-manifest.ts',
   'packages/protocol/src/messages/command.ts',
   'packages/renderer/src/terrain/autotile.ts',
-  'apps/web/src/features/laboratory/browser/asset-key-tree.tsx',
-  'apps/web/src/features/match/lifecycle/match-debug.ts',
+  'apps/web/src/features/laboratory/browser/components/asset-key-tree.tsx',
+  'apps/web/src/features/match/services/match-debug.ts',
   'tools/assets/src/pipeline/prepare-assets.ts',
   // Test boundaries that mirror runtime JSON/debug shapes.
   'tests/architecture/public-api.test.ts',

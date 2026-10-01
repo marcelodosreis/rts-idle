@@ -1,1 +1,1 @@
-export { AssetReportFeature } from './AssetReportFeature'
+export { AssetReportFeature } from './components/asset-report-feature'

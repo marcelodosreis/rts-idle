@@ -33,6 +33,18 @@ test('the match exposes laboratory navigation in the top bar', async ({ page }) 
   await expect(page.getByTestId('route-loading')).toHaveCount(0)
 })
 
+test('laboratory navigation commits while the match is updating under load', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'CPU throttling uses the Chromium DevTools protocol')
+  test.setTimeout(120000)
+  const client = await page.context().newCDPSession(page)
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Open DevTools menu' }).click()
+  await client.send('Emulation.setCPUThrottlingRate', { rate: 20 })
+  await page.getByRole('link', { name: 'Open Laboratory' }).click()
+  await expect(page).toHaveURL(/\/laboratory$/)
+  await expect(page.getByTestId('laboratory-page-title')).toHaveText('Asset Browser', { timeout: 30000 })
+})
+
 test('laboratory menu groups match settings and keeps laboratory as its final action', async ({ page }) => {
   await page.goto('/')
   const devTools = page.getByRole('button', { name: 'Open DevTools menu' })
