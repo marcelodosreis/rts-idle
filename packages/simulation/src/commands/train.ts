@@ -1,5 +1,5 @@
 import { UNIT_PRODUCTION_DEFINITIONS } from '@rts/game-data'
-import type { TrainableUnitKind } from '@rts/shared'
+import { applyResourceCost, canAfford, type TrainableUnitKind } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { MAX_PRODUCTION_QUEUE } from '../data/production-rules.js'
 import { hasCurrentCastleTier } from '../domain/tier-access.js'
@@ -48,8 +48,8 @@ function validateTrain(
   if (queue.length >= MAX_PRODUCTION_QUEUE) {
     reject(command, 'INVALID_STATE', `TRAIN: producer ${producerId} queue is full`)
   }
-  if (player.gold < definition.costMinerals) {
-    reject(command, 'INSUFFICIENT_RESOURCES', `TRAIN: insufficient minerals for ${unitKind}`)
+  if (!canAfford(player.resources, definition.cost)) {
+    reject(command, 'INSUFFICIENT_RESOURCES', `TRAIN: insufficient resources for ${unitKind}`)
   }
   if (player.usedSupply + player.reservedSupply + definition.supply > player.supplyCap) {
     reject(command, 'INSUFFICIENT_RESOURCES', `TRAIN: insufficient supply for ${unitKind}`)
@@ -65,14 +65,14 @@ export function applyTrain(state: GameState, command: ScheduledCommand): void {
   const producerId = command.intent.payload.producerId
   const production = state.world.store(Production)
   const queue = production.get(producerId)?.queue ?? []
-  player.gold -= definition.costMinerals
+  applyResourceCost(player.resources, definition.cost, -1)
   player.reservedSupply += definition.supply
   production.set(producerId, {
     queue: [
       ...queue,
       {
         unitKind: definition.unitKind,
-        costMinerals: definition.costMinerals,
+        cost: definition.cost,
         reservedSupply: definition.supply,
         progressTicks: 0,
         totalTicks: definition.trainingTicks,

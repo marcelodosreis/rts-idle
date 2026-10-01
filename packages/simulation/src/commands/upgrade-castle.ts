@@ -1,4 +1,5 @@
 import { BUILDING_DEFINITIONS } from '@rts/game-data'
+import { applyResourceCost, canAfford } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { Building } from '../ecs/building-component.js'
 import { Owner, Production } from '../ecs/components.js'
@@ -28,10 +29,10 @@ export function applyUpgradeCastle(state: GameState, command: ScheduledCommand):
     reject(command, 'INVALID_STATE', 'UPGRADE_CASTLE: Castle Pawn queue must be empty')
   }
   const definition = BUILDING_DEFINITIONS.CASTLE
-  if (player.gold < definition.costMinerals) {
-    reject(command, 'INSUFFICIENT_RESOURCES', 'UPGRADE_CASTLE: insufficient Minerals')
+  if (!canAfford(player.resources, definition.cost)) {
+    reject(command, 'INSUFFICIENT_RESOURCES', 'UPGRADE_CASTLE: insufficient resources')
   }
-  player.gold -= definition.costMinerals
+  applyResourceCost(player.resources, definition.cost, -1)
   state.world.store(Building).set(castleId, {
     ...building,
     tier: 1,

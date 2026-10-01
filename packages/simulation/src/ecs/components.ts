@@ -1,4 +1,4 @@
-import type { Fixed, PlayerId, UnitKind } from '@rts/shared'
+import { type Fixed, type PlayerId, RESOURCE_TYPES, type ResourceType, type UnitKind } from '@rts/shared'
 import type { CanonicalReader } from '../canonical/reader.js'
 import type { CanonicalWriter } from '../canonical/writer.js'
 import type { Order } from '../contracts/orders.js'
@@ -95,12 +95,11 @@ const ORDER_TAG_REPAIR = 8
 const ORDER_TAG_HEAL = 9
 
 const GATHER_PHASE_TAGS = {
-  TO_NODE: 0,
-  GATHERING: 1,
+  TO_RESOURCE: 0,
+  HARVESTING: 1,
   TO_BASE: 2,
   WAITING_FOR_BASE: 3
 } as const
-
 function writeGatherPhase(writer: CanonicalWriter, phase: Extract<Order, { type: 'GATHER' }>['phase']): void {
   writer.writeU8(GATHER_PHASE_TAGS[phase])
 }
@@ -108,10 +107,10 @@ function writeGatherPhase(writer: CanonicalWriter, phase: Extract<Order, { type:
 function readGatherPhase(reader: CanonicalReader): Extract<Order, { type: 'GATHER' }>['phase'] {
   const tag = reader.readU8()
   switch (tag) {
-    case GATHER_PHASE_TAGS.TO_NODE:
-      return 'TO_NODE'
-    case GATHER_PHASE_TAGS.GATHERING:
-      return 'GATHERING'
+    case GATHER_PHASE_TAGS.TO_RESOURCE:
+      return 'TO_RESOURCE'
+    case GATHER_PHASE_TAGS.HARVESTING:
+      return 'HARVESTING'
     case GATHER_PHASE_TAGS.TO_BASE:
       return 'TO_BASE'
     case GATHER_PHASE_TAGS.WAITING_FOR_BASE:
@@ -144,14 +143,7 @@ function writeOrder(writer: CanonicalWriter, order: Order): void {
       writer.writeI32(order.y)
       return
     case 'GATHER':
-      writer.writeU8(ORDER_TAG_GATHER)
-      writer.writeU32(order.nodeId)
-      writer.writeU8(order.baseId === null ? 0 : 1)
-      if (order.baseId !== null) {
-        writer.writeU32(order.baseId)
-      }
-      writeGatherPhase(writer, order.phase)
-      writer.writeI32(order.progressTicks)
+      writeGatherOrder(writer, order)
       return
     case 'BUILD':
       writer.writeU8(ORDER_TAG_BUILD)
@@ -176,6 +168,17 @@ function writeOrder(writer: CanonicalWriter, order: Order): void {
   }
 }
 
+function writeGatherOrder(writer: CanonicalWriter, order: Extract<Order, { type: 'GATHER' }>): void {
+  writer.writeU8(ORDER_TAG_GATHER)
+  writer.writeU32(order.resourceId)
+  writer.writeU8(order.baseId === null ? 0 : 1)
+  if (order.baseId !== null) {
+    writer.writeU32(order.baseId)
+  }
+  writeGatherPhase(writer, order.phase)
+  writer.writeI32(order.progressTicks)
+}
+
 function readOrder(reader: CanonicalReader): Order {
   const tag = reader.readU8()
   switch (tag) {
@@ -190,19 +193,15 @@ function readOrder(reader: CanonicalReader): Order {
     case ORDER_TAG_ATTACK_MOVE:
       return { type: 'ATTACK_MOVE', x: reader.readI32(), y: reader.readI32() }
     case ORDER_TAG_GATHER: {
-      const nodeId = reader.readU32()
+      const resourceId = reader.readU32()
       const basePresent = reader.readU8()
       if (basePresent !== 0 && basePresent !== 1) {
         throw new Error(`Orders: invalid gather base presence ${basePresent}`)
       }
       const baseId = basePresent === 1 ? reader.readU32() : null
-      return {
-        type: 'GATHER',
-        nodeId,
-        baseId,
-        phase: readGatherPhase(reader),
-        progressTicks: reader.readI32()
-      }
+      const phase = readGatherPhase(reader)
+      const progressTicks = reader.readI32()
+      return { type: 'GATHER', resourceId, baseId, phase, progressTicks }
     }
     case ORDER_TAG_BUILD: {
       const buildingId = reader.readU32()
@@ -319,23 +318,10 @@ export const Kind: ComponentType<KindData> = {
   }
 }
 
-export interface MineralNodeData {
-  readonly remaining: number
-}
-
-export const MineralNode: ComponentType<MineralNodeData> = {
-  name: 'mineralNode',
-  encode(writer, value) {
-    writer.writeI32(value.remaining)
-  },
-  decode(reader) {
-    return { remaining: reader.readI32() }
-  }
-}
-
 export interface CargoData {
   readonly amount: number
   readonly capacity: number
+  readonly resourceType: ResourceType | null
 }
 
 export const Cargo: ComponentType<CargoData> = {
@@ -343,9 +329,20 @@ export const Cargo: ComponentType<CargoData> = {
   encode(writer, value) {
     writer.writeI32(value.amount)
     writer.writeI32(value.capacity)
+    writer.writeU8(value.resourceType === null ? 0 : RESOURCE_TYPES.indexOf(value.resourceType) + 1)
   },
   decode(reader) {
-    return { amount: reader.readI32(), capacity: reader.readI32() }
+    const amount = reader.readI32()
+    const capacity = reader.readI32()
+    const tag = reader.readU8()
+    if (tag === 0) {
+      return { amount, capacity, resourceType: null }
+    }
+    const resourceType = RESOURCE_TYPES[tag - 1]
+    if (resourceType === undefined) {
+      throw new Error(`Cargo: invalid resource type tag ${tag}`)
+    }
+    return { amount, capacity, resourceType }
   }
 }
 
