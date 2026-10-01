@@ -125,6 +125,7 @@ test('shows the unavailable Castle III upgrade after reaching Castle II', async 
 
 test('uses the same queue card dimensions for research and units', async ({ page }) => {
   test.setTimeout(60_000)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await prepareResearch(page)
 
   await startResearch(page, 'economy')
