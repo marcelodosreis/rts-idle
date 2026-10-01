@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
+import { waitForMatchReady } from '../support/settle.js'
 
 const MONASTERY_TARGET = { x: tilesToFixed(11), y: tilesToFixed(9) }
 
@@ -25,9 +26,7 @@ async function focusFixed(page: Page, x: number, y: number) {
 
 async function startResearchScenario(page: Page): Promise<void> {
   await page.goto('/?scenario=research')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 }
 
 async function workerIds(page: Page): Promise<number[]> {

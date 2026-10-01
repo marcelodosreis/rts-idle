@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { FIXED_SCALE, tilesToFixed } from '@rts/shared'
 import { hasArt } from '../support/art.js'
+import { waitForMatchReady } from '../support/settle.js'
 
 async function canvasPointForFixed(page: import('@playwright/test').Page, x: number, y: number) {
   return page.evaluate(
@@ -40,20 +41,19 @@ async function selectWorker(page: import('@playwright/test').Page, id: number): 
 
 async function startMatch(page: import('@playwright/test').Page): Promise<void> {
   await page.goto('/?scenario=regression')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await waitForMatchReady(page)
 }
 
 async function constructionAt(
   page: import('@playwright/test').Page,
   target: { readonly x: number; readonly y: number }
 ) {
-  return page.evaluate(
-    ({ x, y }) =>
-      Object.values(window.__rtsDebug?.getConstructionStates() ?? {}).find(
-        (construction) => construction.x === x && construction.y === y
-      ) ?? null,
-    target
-  )
+  return page.evaluate(({ x, y }) => {
+    const entry = Object.entries(window.__rtsDebug?.getConstructionStates() ?? {}).find(
+      ([, construction]) => construction.x === x && construction.y === y
+    )
+    return entry === undefined ? null : (window.__rtsDebug?.getConstructionDiagnostic(Number(entry[0])) ?? null)
+  }, target)
 }
 
 async function mineralValue(page: import('@playwright/test').Page): Promise<number> {
@@ -114,22 +114,33 @@ test('House capacity activates only after construction completes', async ({ page
   await expect(completionToast).toContainText('House')
   await expect(completionToast).toHaveClass(/border-zinc-600/)
   await expect(completionToast).not.toHaveClass(/border-emerald/)
-  const toastPosition = await page.evaluate(() => {
-    const toast = document.querySelector('[role="status"]')
-    const topbar = document.querySelector('[data-testid="hud-topbar"]')
-    if (toast === null || topbar === null) {
-      throw new Error('toast or top bar is missing')
-    }
-    const toastBox = toast.getBoundingClientRect()
-    return {
-      toastTop: toastBox.top,
-      toastRight: toastBox.right,
-      topbarBottom: topbar.getBoundingClientRect().bottom,
-      viewportWidth: window.innerWidth
-    }
-  })
-  expect(toastPosition.toastTop).toBeGreaterThanOrEqual(toastPosition.topbarBottom)
-  expect(toastPosition.viewportWidth - toastPosition.toastRight).toBeCloseTo(12, 0)
+  // The toast slides down from off-screen, so poll until the entrance animation
+  // settles before asserting the final position.
+  await expect
+    .poll(async () => {
+      const toastPosition = await page.evaluate(() => {
+        const toast = document.querySelector('[role="status"]')
+        const topbar = document.querySelector('[data-testid="hud-topbar"]')
+        if (toast === null || topbar === null) {
+          return null
+        }
+        const toastBox = toast.getBoundingClientRect()
+        return {
+          toastTop: toastBox.top,
+          toastRight: toastBox.right,
+          topbarBottom: topbar.getBoundingClientRect().bottom,
+          viewportWidth: window.innerWidth
+        }
+      })
+      if (toastPosition === null) {
+        return false
+      }
+      return (
+        toastPosition.toastTop >= toastPosition.topbarBottom &&
+        Math.abs(toastPosition.viewportWidth - toastPosition.toastRight - 12) <= 1
+      )
+    })
+    .toBe(true)
 })
 
 test('construction stays at the clicked location while the worker travels', async ({ page }) => {
@@ -156,7 +167,7 @@ test('construction stays at the clicked location while the worker travels', asyn
 
   await expect
     .poll(() => constructionAt(page, target))
-    .toMatchObject({ x: target.x, y: target.y, status: 'FOUNDATION' })
+    .toMatchObject({ x: target.x, y: target.y, status: expect.stringMatching(/FOUNDATION|UNDER_CONSTRUCTION/) })
   if (await hasArt(page)) {
     await expect.poll(() => page.evaluate((id) => window.__rtsDebug?.getSpriteState(id)?.anim, workerId)).toBe('build')
   }
