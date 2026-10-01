@@ -4,6 +4,7 @@ import type { WebSocket } from 'ws'
 import type { GameSession } from '../sessions/session.js'
 
 export class SnapshotSender {
+  private sentResourceState = false
   constructor(private readonly ws: WebSocket) {}
 
   sendError(message: string): void {
@@ -22,15 +23,17 @@ export class SnapshotSender {
     }
     const message: SnapshotMessage = {
       type: 'snapshot',
-      tick: session.snapshot().tick,
+      tick: session.tick(),
       phase: session.phase(),
       units: session.projectUnits(),
       buildings: session.projectBuildings(),
-      mineralNodes: session.projectMineralNodes(),
+      resources: session.projectResources(!this.sentResourceState),
+      resourcesComplete: !this.sentResourceState,
       players: session.projectPlayers(),
       events
     }
     this.ws.send(JSON.stringify(message))
+    this.sentResourceState = true
   }
 
   sendMatchConfig(config: object): void {

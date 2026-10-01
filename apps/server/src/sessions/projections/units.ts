@@ -1,5 +1,5 @@
 import type { SnapshotUnit } from '@rts/protocol'
-import { FIXED_SCALE, MOVEMENT_SPEED_SCALE } from '@rts/shared'
+import { FIXED_SCALE, MOVEMENT_SPEED_SCALE, type ResourceType } from '@rts/shared'
 import type { PlayerState } from '@rts/simulation'
 import {
   AbilityCooldown,
@@ -14,11 +14,26 @@ import {
   Owner,
   Position,
   REPAIR_TICKS_PER_STEP,
+  type ResourceCatalog,
   unitStatsFor,
   type World
 } from '@rts/simulation'
 import { projectEconomy } from './economy.js'
 import { deriveOrderState } from './order-state.js'
+
+interface CarryProjection {
+  readonly carrying?: boolean
+  readonly cargoType?: ResourceType
+}
+
+function carryProjection(
+  cargo: { readonly amount: number; readonly resourceType: ResourceType | null } | undefined
+): CarryProjection {
+  if (cargo === undefined || cargo.amount === 0) {
+    return {}
+  }
+  return cargo.resourceType === null ? { carrying: true } : { carrying: true, cargoType: cargo.resourceType }
+}
 
 function targetCenterX(world: World, targetId: number): number | undefined {
   const position = world.store(Position).get(targetId)
@@ -80,7 +95,11 @@ function projectHealCooldown(world: World, id: number): number | undefined {
   return cooldown === undefined || cooldown === 0 ? undefined : cooldown
 }
 
-export function projectUnits(world: World, players: readonly PlayerState[] = []): readonly SnapshotUnit[] {
+export function projectUnits(
+  world: World,
+  players: readonly PlayerState[] = [],
+  resources: ResourceCatalog
+): readonly SnapshotUnit[] {
   const positions = world.store(Position)
   const owners = world.store(Owner)
   const healths = world.store(Health)
@@ -103,7 +122,7 @@ export function projectUnits(world: World, players: readonly PlayerState[] = [])
       const movementSpeedFixed = projectMovementSpeed(world, id, players)
       const front = orders.get(id)?.queue[0]
       const cargo = cargos.get(id)
-      const economy = projectEconomy(front, cargo)
+      const economy = projectEconomy(front, cargo, resources)
       const healCooldownRemaining = projectHealCooldown(world, id)
       const targetX = lookAtX(world, front)
       return {
@@ -118,7 +137,7 @@ export function projectUnits(world: World, players: readonly PlayerState[] = [])
           ? { repairProgressTicks: front.progressTicks, repairProgressMax: REPAIR_TICKS_PER_STEP }
           : {}),
         ...(economy === undefined ? {} : { economy }),
-        ...(cargo === undefined || cargo.amount === 0 ? {} : { carrying: true }),
+        ...carryProjection(cargo),
         ...(health === undefined ? {} : { hp: health.current, maxHp: health.max }),
         ...(armor === undefined ? {} : { armor }),
         ...(damage === undefined ? {} : { damage }),
