@@ -1,1 +1,1 @@
-export { MapEditorFeature } from './MapEditorFeature'
+export { MapEditorFeature } from './components/map-editor-feature'
