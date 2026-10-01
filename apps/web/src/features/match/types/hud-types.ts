@@ -1,5 +1,12 @@
 import type { ConstructionStatus, EconomyPhase, OrderState, SnapshotProduction } from '@rts/protocol'
-import type { BuildingType, ResearchType, TrainableUnitKind, UnitKind } from '@rts/shared'
+import type {
+  BuildingType,
+  PlayerResources,
+  ResearchType,
+  ResourceKind,
+  TrainableUnitKind,
+  UnitKind
+} from '@rts/shared'
 
 /** HUD-only construction status: authoritative statuses plus a derived paused state. */
 export const HUD_CONSTRUCTION_STATUSES = [
@@ -33,6 +40,7 @@ export interface HudSelectionUnit {
     readonly cargoCapacity: number
     readonly progressTicks: number
     readonly progressMax: number
+    readonly resourceId: number
   }
   /** True while the worker holds cargo, independent of its current order. */
   readonly carrying?: boolean
@@ -54,13 +62,14 @@ export interface HudConstruction {
   readonly production?: SnapshotProduction
 }
 
-export interface HudMineral {
+export interface HudResource {
   readonly id: number
   readonly remaining: number
+  readonly kind?: ResourceKind
 }
 
 export interface HudResources {
-  readonly mineral: number
+  readonly resources: PlayerResources
   readonly supply: number
   readonly reservedSupply: number
   readonly supplyCap: number

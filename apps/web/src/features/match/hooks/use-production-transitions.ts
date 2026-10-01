@@ -9,8 +9,8 @@ interface ProductionSnapshot {
 
 function itemIdentity(item: SnapshotProductionItem): string {
   return 'researchType' in item
-    ? `research:${item.researchType}:${item.costMinerals}:${item.totalTicks}`
-    : `unit:${item.unitKind}:${item.costMinerals}:${item.reservedSupply}:${item.totalTicks}`
+    ? `research:${item.researchType}:${item.cost.GOLD ?? 0}:${item.totalTicks}`
+    : `unit:${item.unitKind}:${item.cost.GOLD ?? 0}:${item.reservedSupply}:${item.totalTicks}`
 }
 
 function activeItem(queue: readonly SnapshotProductionItem[]): SnapshotProductionItem | undefined {
