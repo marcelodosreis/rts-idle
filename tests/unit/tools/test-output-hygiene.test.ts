@@ -8,7 +8,7 @@ function readFile(path: string): string {
   return readFileSync(join(WORKSPACE_ROOT, path), 'utf-8')
 }
 
-describe('test output hygiene (QUAL-016)', () => {
+describe('test output hygiene (QH.26.01)', () => {
   describe('playwright config', () => {
     const config = readFile('playwright.config.ts')
 
@@ -16,12 +16,16 @@ describe('test output hygiene (QUAL-016)', () => {
       expect(config).not.toMatch(/reporter.*html/)
     })
 
-    it('does not use trace on-first-retry', () => {
-      expect(config).not.toMatch(/trace.*on-first-retry/)
+    it('captures trace on first retry only in CI', () => {
+      expect(config).toMatch(/trace: process\.env\.CI === 'true' \? 'on-first-retry' : 'off'/)
     })
 
-    it('does not use screenshot on failure', () => {
-      expect(config).not.toMatch(/screenshot.*only-on-failure/)
+    it('captures screenshots only on failure in CI', () => {
+      expect(config).toMatch(/screenshot: process\.env\.CI === 'true' \? 'only-on-failure' : 'off'/)
+    })
+
+    it('fails CI when a test passes only after retry', () => {
+      expect(config).toMatch(/failOnFlakyTests: process\.env\.CI === 'true'/)
     })
 
     it('does not use video on first-retry', () => {
