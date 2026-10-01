@@ -21,7 +21,6 @@ export class WorldInputAdapter {
   private selectionStart: WorldPoint | null = null
   private selectionStartScreen: ScreenPoint | null = null
   private selectionStarted = false
-  private lastSecondaryPointerAt = 0
 
   constructor(options: WorldInputAdapterOptions) {
     this.canvas = options.canvas
@@ -30,7 +29,6 @@ export class WorldInputAdapter {
     this.onInteraction = options.onInteraction
     this.dragThreshold = options.dragThresholdPx ?? 6
     this.canvas.addEventListener('contextmenu', this.onContextMenu)
-    this.canvas.addEventListener('mousedown', this.onMouseDown)
     this.canvas.addEventListener('pointerdown', this.onDomPointerDown)
     this.canvas.addEventListener('pointermove', this.onDomPointerMove)
     this.canvas.addEventListener('pointerup', this.onDomPointerUp)
@@ -42,7 +40,6 @@ export class WorldInputAdapter {
   dispose(): void {
     this.cancel('dispose')
     this.canvas.removeEventListener('contextmenu', this.onContextMenu)
-    this.canvas.removeEventListener('mousedown', this.onMouseDown)
     this.canvas.removeEventListener('pointerdown', this.onDomPointerDown)
     this.canvas.removeEventListener('pointermove', this.onDomPointerMove)
     this.canvas.removeEventListener('pointerup', this.onDomPointerUp)
@@ -59,29 +56,13 @@ export class WorldInputAdapter {
     this.onInteraction({ type: 'cancel', reason })
   }
 
+  /** Secondary commands are emitted once per pointerdown; this only blocks the native menu. */
   private readonly onContextMenu = (event: MouseEvent): void => {
     event.preventDefault()
-    if (performance.now() - this.lastSecondaryPointerAt < 500) {
-      return
-    }
-    this.lastSecondaryPointerAt = performance.now()
-    this.emitSecondary(event.clientX, event.clientY)
-  }
-
-  private readonly onMouseDown = (event: MouseEvent): void => {
-    if (event.button !== 2 || performance.now() - this.lastSecondaryPointerAt < 50) {
-      return
-    }
-    this.lastSecondaryPointerAt = performance.now()
-    this.emitSecondary(event.clientX, event.clientY)
   }
 
   private readonly onDomPointerDown = (event: PointerEvent): void => {
     if (event.button === 2) {
-      if (performance.now() - this.lastSecondaryPointerAt < 50) {
-        return
-      }
-      this.lastSecondaryPointerAt = performance.now()
       this.emitSecondary(event.clientX, event.clientY)
       return
     }
