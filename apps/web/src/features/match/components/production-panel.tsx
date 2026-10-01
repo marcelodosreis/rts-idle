@@ -1,10 +1,10 @@
 import type { SnapshotProductionItem } from '@rts/protocol'
 import { MAX_PRODUCTION_QUEUE } from '@rts/shared'
 import { useEffect, useRef } from 'react'
-import { productionItemLabel } from '../lib/production-label'
-import type { HudConstruction } from '../types/hud-types'
 import { useProductionTransitions } from '../hooks/use-production-transitions'
 import { useTimedValue } from '../hooks/use-timed-value'
+import { productionItemLabel } from '../lib/production-label'
+import type { HudConstruction } from '../types/hud-types'
 import { ProductionItemIcon } from './production-item-icon'
 import { ProductionStatus } from './production-status'
 

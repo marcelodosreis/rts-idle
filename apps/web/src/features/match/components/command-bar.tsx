@@ -1,6 +1,7 @@
 import type { SnapshotProductionItem } from '@rts/protocol'
 import { useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
+import { useTimedValue } from '../hooks/use-timed-value'
 import {
   backAction,
   buildingRootActions,
@@ -11,19 +12,18 @@ import {
   submenuActions,
   workerActions
 } from '../lib/command-actions'
-import { COMMAND_LAYOUTS, type CommandLayout, createSubmenuLayout } from '../types/command-layout'
 import {
   constructionCommandBlockReason,
   constructionUpgradeBlockReason,
   isResearchItem,
   unitSelectionBlockReason
 } from '../lib/command-state'
+import { blockedCommandNotification } from '../lib/hud-notifications'
+import { COMMAND_LAYOUTS, type CommandLayout, createSubmenuLayout } from '../types/command-layout'
 import type { CommandBarProps, MenuState } from '../types/command-types'
+import type { HudConstruction } from '../types/hud-types'
 import { type HudCommandAction, HudCommandButton, type HudCommandTransientState } from './hud-command-button'
 import { HudContextFeedback } from './hud-context-feedback'
-import { blockedCommandNotification } from '../lib/hud-notifications'
-import type { HudConstruction } from '../types/hud-types'
-import { useTimedValue } from '../hooks/use-timed-value'
 
 export type { CommandBarProps } from '../types/command-types'
 

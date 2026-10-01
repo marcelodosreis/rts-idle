@@ -3,10 +3,8 @@ import type { GameRenderer, InputProfile } from '@rts/renderer'
 import type { MatchResult, ResearchType, TrainableUnitKind } from '@rts/shared'
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 import { readPlaytestMap } from '../../../shared/config/playtest-map'
-import { type CommandMode, useCommandModes } from './use-command-modes'
 import type { HudNotification } from '../lib/hud-notifications'
 import { parseMatchQuery, updateMatchQuery } from '../lib/match-query'
-import type { HudConstruction, HudResource, HudSelectionUnit } from '../types/hud-types'
 import { readInputPreferences, writeInputPreferences } from '../services/input-preferences'
 import { createMatchSessionConnectionOwner } from '../services/match-session-connection'
 import type { MatchSessionRuntime } from '../services/match-session-runtime'
@@ -16,6 +14,8 @@ import {
   type SessionResources,
   startMatchSession
 } from '../services/match-session-start'
+import type { HudConstruction, HudResource, HudSelectionUnit } from '../types/hud-types'
+import { type CommandMode, useCommandModes } from './use-command-modes'
 import { type MessageLogEntry, useMessageLog } from './use-message-log'
 
 const INITIAL_QUERY = parseMatchQuery(window.location.search)

@@ -263,7 +263,7 @@ function SingleUnit({ unit, humanPlayer }: { readonly unit: HudSelectionUnit; re
   )
 }
 
-export function UnitChip({
+function UnitChip({
   unit,
   humanPlayer,
   onOpen

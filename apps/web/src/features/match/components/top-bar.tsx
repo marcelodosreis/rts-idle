@@ -15,11 +15,11 @@ import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Separator } from '@/shared/ui/separator'
 import type { MessageLogEntry } from '../hooks/use-message-log'
+import { useObservedDelta } from '../hooks/use-observed-delta'
 import { formatMatchTime } from '../lib/top-bar-display'
 import type { HudResources } from '../types/hud-types'
-import { useObservedDelta } from '../hooks/use-observed-delta'
-import { LaboratoryMenu } from './laboratory-menu/laboratory-menu'
 import type { HudFeedbackTarget } from './hud-context-feedback'
+import { LaboratoryMenu } from './laboratory-menu/laboratory-menu'
 
 interface TopBarProps {
   readonly status: string

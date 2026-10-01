@@ -24,7 +24,10 @@ import {
   Wrench,
   XCircle
 } from 'lucide-react'
+import type { HudCommandAction } from '../components/hud-command-button'
 import { buildingTypeForMode, isRallyMode } from '../hooks/use-command-modes'
+import type { CommandBarProps, MenuState, SubmenuKind } from '../types/command-types'
+import { TRAINABLE_LABEL } from '../types/hud-types'
 import {
   blockedFeedbackTarget,
   buildBlockReason,
@@ -33,9 +36,6 @@ import {
   trainingBlockReason,
   upgradeBlockReason
 } from './command-state'
-import type { CommandBarProps, MenuState, SubmenuKind } from '../types/command-types'
-import type { HudCommandAction } from '../components/hud-command-button'
-import { TRAINABLE_LABEL } from '../types/hud-types'
 
 const BUILDING_ICONS: Readonly<Record<BuildingType, LucideIcon>> = {
   CASTLE: Castle,

@@ -1,10 +1,10 @@
 import type { ErrorMessage, MatchConfig, SnapshotMessage } from '@rts/protocol'
 import type { MatchResult } from '@rts/shared'
 import type { ConnectionHandlers } from '../../../shared/transport/connection'
+import { type HudNotification, matchErrorNotification } from '../lib/hud-notifications'
+import type { SelectionUnitState } from '../lib/selection-projection'
 import { snapshotToFrame } from '../lib/snapshot-to-frame'
 import { projectSnapshotUnit } from '../lib/snapshot-unit'
-import type { SelectionUnitState } from '../lib/selection-projection'
-import { type HudNotification, matchErrorNotification } from '../lib/hud-notifications'
 import type { HudResource } from '../types/hud-types'
 import { hudResourceFor, type MatchSessionRuntime } from './match-session-runtime'
 
