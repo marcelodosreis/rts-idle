@@ -1,57 +1,101 @@
 # RTS Idle
 
-An extremely responsive competitive RTS with simple aesthetics — and a simulation engine engineered far above the size of the game.
+RTS Idle is a browser-first real-time strategy game built around a deterministic,
+server-authoritative simulation.
 
-## What this is
+Players control units, gather resources, construct and manage buildings, produce
+armies, and fight through a responsive PixiJS battlefield with a React-powered
+HUD. Every gameplay decision is sent as a validated command to the server,
+resolved by the isolated simulation core, and returned as authoritative
+snapshots and events.
 
-A browser RTS built on a deterministic, server-authoritative simulation core — engineered to scale to thousands of entities, replay, and full multiplayer without rewriting the core.
+The project is intentionally engineered beyond its current game scope:
+deterministic replays, bots, multiplayer rooms, fog of war, and larger
+simulations can be added without coupling gameplay rules to the browser,
+renderer, or transport layer. Strict TypeScript, fixed-point state, canonical
+hashing, architectural boundaries, and layered automated tests make the
+simulation reproducible and the codebase safe to evolve.
 
-## Design rules (non-negotiable)
+## Project Model
 
-- **Isolated simulation.** `packages/simulation` imports no React, DOM, WebSocket, Node APIs, or renderer. The same code runs in the browser, on the server, in CLI tools, in tests, in replay, and in fuzzing.
-- **Determinism.** Same seed + initial state + command stream → same result. Verified by per-tick canonical state hashes.
-- **Server authority.** Clients send commands and render. They never compute damage, resources, production, or victory.
-- **Single writer.** Only the simulation's `step()` mutates GameState. Commands, observations, and snapshots are immutable outside it.
-- **Fog of war.** Humans and bots receive only filtered observations — nothing a player couldn't see.
-- **Replay is first-class.** Seed + rules + canonical commands reproduce a match exactly, anywhere.
+The runtime flow is:
 
-## Stack
+```text
+Browser input
+    -> web interaction controller
+    -> WebSocket command
+    -> authoritative server session
+    -> deterministic simulation.step()
+    -> snapshot and simulation events
+    -> React HUD and PixiJS renderer
+```
 
-| Layer | Choice |
+The browser never decides damage, resources, production, victory, or other
+authoritative gameplay results. It sends intent and renders the server's answer.
+
+## Engineering Principles
+
+- **Deterministic simulation:** the same seed, initial state, and command stream
+  produce the same result and canonical state hashes.
+- **Server authority:** the server validates and applies gameplay commands.
+- **Isolated core:** the simulation does not import React, DOM, WebSocket, Node,
+  or renderer code.
+- **Single writer:** only the simulation step and its systems mutate `GameState`.
+- **Typed boundaries:** protocol messages, commands, observations, and snapshots
+  are validated and strongly typed.
+- **Testable evolution:** unit, simulation, integration, contract, architecture,
+  determinism, fuzzing, and browser tests protect the boundaries.
+
+## Technology Stack
+
+| Layer | Technology |
 |---|---|
-| Language | TypeScript (strict) |
-| Monorepo | pnpm workspaces |
-| Rendering | PixiJS v8 + pixi-viewport (WebGL2) |
-| UI | React (menus, room, HUD) |
-| Server | Node + `ws` |
-| Tests | Vitest, fast-check (fuzz), Playwright (E2E) |
-| Lint / format | Biome |
+| Language | TypeScript with strict compiler settings |
+| Workspace | pnpm workspaces |
+| Browser UI | React, React Router, Vite, Tailwind CSS |
+| World renderer | PixiJS v8 and pixi-viewport |
+| Server | Node.js and WebSocket (`ws`) |
+| Simulation | Custom ECS, fixed timestep, fixed-point coordinates |
+| Testing | Vitest, fast-check, and Playwright |
+| Quality | Biome, TypeScript, architecture barriers, Husky |
 
-## Repository layout
+## Repository Layout
 
 ```text
 apps/
-  web/        Browser app: screens, room, HUD, network client
-  server/     Node service: rooms, sessions, authority, transport
+  web/        Browser application, HUD, routes, input, and session client
+  server/     Authoritative service, sessions, demo content, and transport
 packages/
-  shared/     Deterministic primitives: fixed point, xoshiro128**, entity IDs
-  game-data/  Declarative content: units, buildings, upgrades, maps
-  pathfinding/Grid, incremental A*, spatial index
-  simulation/ Core: GameState, ECS, commands, systems, observations
-  protocol/   Versioned wire messages
-  renderer/   PixiJS world: camera, layers, selection, minimap
-  audio/      Audio cues
-tools/        Headless CLI: replay, simulate, fuzz, balance, benchmark
-tests/        unit, integration, simulation, determinism, invariants, fuzz, e2e, architecture
-docs/         master-plan.md, specs/, adr/
+  shared/     Deterministic primitives and domain types
+  game-data/  Declarative units, buildings, rules, and maps
+  simulation/ Deterministic state, ECS, commands, systems, and snapshots
+  protocol/   Versioned wire messages and runtime guards
+  renderer/   PixiJS world, camera, input, selection, and effects
+  pathfinding/ Grid and navigation primitives
+  ai/         Agent decision boundaries
+  audio/      Audio integration boundary
+tools/
+  dev/        Multi-instance development launcher
+  e2e/        Browser test orchestration
+  quality/    Postmortem status and quality tooling
+  benchmark/  Simulation and renderer benchmarks
+  balance/    Balance analysis tooling
+tests/
+  unit/       Pure logic and application tests
+  integration/ Cross-package behavior
+  simulation/ Deterministic simulation behavior
+  contracts/  Protocol and public contracts
+  architecture/ Dependency and boundary barriers
+  e2e/        Browser user flows
+docs/         Architecture, specifications, ADRs, tasks, and postmortems
 ```
 
-Dependency direction is enforced and verified by tests: the simulation stays isolated from UI, transport, and platform packages.
+Detailed package boundaries are documented in [`docs/architecture.md`](docs/architecture.md).
 
-## Getting started
+## Getting Started
 
-Prerequisites: NVM, Node 24 from `.nvmrc`, and Corepack. Local command workflow
-and validation rules are defined in [`docs/ai/EXECUTION_PROTOCOL.md`](docs/ai/EXECUTION_PROTOCOL.md).
+The supported local toolchain is Node 24 from `.nvmrc` and pnpm through
+Corepack. Node 20 results are not valid project verification.
 
 ```bash
 nvm install
@@ -59,28 +103,58 @@ nvm use
 node --version  # must report v24.x
 corepack enable
 corepack pnpm install --frozen-lockfile
+```
 
-# Run the whole app locally (authoritative server + browser app, one command).
-# Logs are prefixed [@rts/server] / [@rts/web]; Ctrl+C stops both.
+Start the complete local application:
+
+```bash
 corepack pnpm dev
+```
 
-# Or run the two dev servers in separate terminals:
-corepack pnpm --filter @rts/server dev   # authoritative WS server on :8080
-corepack pnpm --filter @rts/web dev      # Vite app on :5173
+The default instance uses:
 
+- Web application: `http://localhost:5173`
+- WebSocket server: `http://localhost:8080`
+
+Server and web logs appear together with package prefixes. Press `Ctrl+C` to
+stop both processes.
+
+## Parallel Development
+
+Reserve one development instance number per agent. Instance 1 uses the normal
+command; additional agents use the generic instance launcher.
+
+| Instance | Command | Web | Server |
+|---|---|---:|---:|
+| 1 | `corepack pnpm dev` | `5173` | `8080` |
+| 2 | `corepack pnpm dev:instance -- 2` | `5174` | `8081` |
+| 3 | `corepack pnpm dev:instance -- 3` | `5175` | `8082` |
+| 4 | `corepack pnpm dev:instance -- 4` | `5176` | `8083` |
+
+For instance `N`, the web port is `5172 + N` and the server port is `8079 + N`.
+The launcher uses the same recursive parallel workspace output as `pnpm dev`.
+Do not reuse another agent's instance number or use the removed `dev:2` alias.
+
+If a port is occupied, inspect the listener before stopping it:
+
+```bash
+ss -ltnp
+kill <PID>
+```
+
+Each agent should open the web URL belonging to its own instance.
+
+## Validation Commands
+
+Fast iteration:
+
+```bash
 corepack pnpm run typecheck
 corepack pnpm run lint
 corepack pnpm run test:unit
-corepack pnpm run build
-
-# Full local validation gate (typecheck + lint + all suites + build):
-corepack pnpm run verify
 ```
 
-Node 20 is not a supported validation environment for this project; a passing
-test or build under Node 20 does not count as verification.
-
-### E2E (Playwright)
+Focused browser iteration:
 
 ```bash
 corepack pnpm exec playwright install chromium firefox
@@ -88,82 +162,59 @@ corepack pnpm run test:e2e:focused tests/e2e/<target>.spec.ts --list
 corepack pnpm run test:e2e:focused tests/e2e/<target>.spec.ts
 ```
 
-On WSL2/Linux, system libraries may be required (Playwright needs sudo; make sure the pnpm in your nvm PATH is visible to it):
+Completion gate:
 
 ```bash
-sudo env "PATH=$PATH" corepack pnpm exec playwright install-deps chromium firefox
+corepack pnpm run verify
 ```
 
-## Scripts
+Useful validation groups:
 
 | Command | Purpose |
 |---|---|
-| `corepack pnpm dev` | Run server + web locally together (one command, prefixed logs) |
-| `corepack pnpm run verify` | Full local gate: typecheck, lint, all suites, build |
-| `corepack pnpm run verify:fast` | Typecheck, lint, and unit tests for quick iteration |
-| `corepack pnpm run verify:simulation` | Simulation, contracts, orders, determinism, architecture, invariants |
-| `corepack pnpm run verify:browser` | Build and run the complete Chromium + Firefox E2E gate |
-| `corepack pnpm run test:e2e:all` | Complete Chromium + Firefox E2E gate, including performance benchmarks |
-| `corepack pnpm run test:e2e:fast` | Functional Chromium + Firefox E2E gate without heavy performance benchmarks |
-| `corepack pnpm run test:e2e:perf` | Chromium + Firefox performance benchmark gate |
-| `corepack pnpm run test:e2e:focused <file>` | Run one E2E target; use `--list` first to confirm test count |
-| `corepack pnpm run test:e2e -- --project=<browser>` | Explicitly scoped E2E gate for one browser |
-| `corepack pnpm run typecheck` | `tsc --noEmit` across all packages |
-| `corepack pnpm run lint` / `lint:fix` | Biome check / check + fix |
-| `corepack pnpm run test:*` | unit, integration, simulation, contracts, orders, determinism, invariants, architecture, e2e |
-| `corepack pnpm run build` | Topological build of all packages + Vite |
-| `corepack pnpm run replay -- <file>` | Reproduce / validate a replay |
-| `corepack pnpm run simulate -- --games 1000` | Headless matches |
-| `corepack pnpm run fuzz` | Fuzzing; failures save a reproducible replay |
-| `corepack pnpm run balance -- --games 1000` | Matchup statistics |
-| `corepack pnpm run benchmark` | Simulation / renderer benchmarks |
+| `corepack pnpm run verify:fast` | Typecheck, lint, and unit tests |
+| `corepack pnpm run verify:simulation` | Simulation, contracts, orders, determinism, architecture, and invariants |
+| `corepack pnpm run test:unit` | Unit tests across the repository |
+| `corepack pnpm run test:simulation` | Deterministic simulation tests |
+| `corepack pnpm run test:e2e:fast` | Chromium and Firefox functional browser tests |
+| `corepack pnpm run test:e2e:perf` | Renderer performance tests |
+| `corepack pnpm run build` | Topological package and web build |
+| `corepack pnpm run balance -- --games 1000` | Analyze matchup balance |
+| `corepack pnpm run benchmark` | Run simulation and renderer benchmarks |
 
-## Release flow
+## Future Direction
 
-Conventional commits (enforced by commitlint) drive **semantic-release** on
-`main` pushes: version bump, `CHANGELOG`, and a GitHub release (`chore(release):
-X [skip ci]`). Husky gates commits (lint-staged + ≤10 files), and `pnpm
-install` enforces a `minimumReleaseAge` supply-chain guard. PRs follow
-`.github/PULL_REQUEST_TEMPLATE.md` and record the opencode session id for
-resumability.
+The architecture is designed to support the following extensions without
+coupling them to the browser presentation layer:
 
-## Verification philosophy
+- AI-controlled opponents and bots driven by observations.
+- Deterministic replay and playback tooling.
+- Multiplayer rooms and session orchestration.
+- Fog of war and filtered player observations.
+- Grid pathfinding and collision-aware movement.
+- Larger simulations and performance-oriented scaling.
 
-Tests prove behavior — invariants, determinism, integration, and regressions — not coverage. Two simulations with the same seed must produce identical hashes at every tick; any fuzz failure is saved as a seed + commands + replay that reproduces the bug deterministically. Every fixed bug becomes a permanent regression test.
+These are project directions, not a substitute for the operational state of the
+repository.
 
-A feature is **done** only when its acceptance criteria are demonstrated by objective validation, per the Definition of Done. See `docs/master-plan.md` and `docs/references/definition-of-done.md`.
+## Documentation Map
 
-## Documentation
+- [`CURRENT_STATE.md`](CURRENT_STATE.md): current implementation state and active work.
+- [`docs/architecture.md`](docs/architecture.md): module layout and dependency boundaries.
+- [`docs/engineering-standard.md`](docs/engineering-standard.md): coding and quality standards.
+- [`docs/ai/EXECUTION_PROTOCOL.md`](docs/ai/EXECUTION_PROTOCOL.md): required agent workflow and validation.
+- [`docs/commands.md`](docs/commands.md): authoritative command contract.
+- [`docs/testing/manual-smoke.md`](docs/testing/manual-smoke.md): manual browser checks.
+- [`docs/tasks/todo.md`](docs/tasks/todo.md): task board and remaining work.
+- [`docs/specs/`](docs/specs/): capability and module specifications.
+- [`docs/adr/`](docs/adr/): architectural decisions and tradeoffs.
+- [`docs/postmortems/`](docs/postmortems/): bug root causes and permanent regressions.
 
-- `docs/engineering-standard.md` — engineering source of truth: modules, cohesion,
-  naming, typing, math clarity, testing, determinism, Definition of Done, self-audit.
-- `docs/architecture.md` — current module layout, package boundaries, shared concepts.
-- `docs/master-plan.md` — architecture, contracts, phases, acceptance criteria, risks.
-- `docs/simulation.md` — the deterministic simulation core: pipeline order, components, events, victory.
-- `docs/commands.md` — the authoritative command contract (MOVE, orders, combat, surrender).
-- `docs/assets/capabilities.md` — asset inventory and integration/polish possibilities.
-- `docs/specs/` — capability map and per-module specs.
-- `docs/adr/` — architectural decisions (Context / Decision / Alternatives / Consequences / Evidence).
-- `docs/postmortems/` — every bug is closed with a postmortem + permanent regression test.
-- `docs/testing/manual-smoke.md` — what is implemented, how to test it yourself, expected results.
-- `docs/ai/STACKED-PR-WORKFLOW.md` — branch, stacked PR, rebase, and toolchain workflow.
+## Release And Contribution Workflow
 
-## Status
+Use conventional commits, keep changes focused, and run the relevant validation
+before opening a pull request. Husky, lint-staged, commitlint, Biome, typecheck,
+architecture barriers, and CI enforce the repository quality baseline.
 
-Phase 0 (foundation + spikes) **complete** (gate 9/9): deterministic core, ECS,
-fixed-timestep engine (20 t/s), canonical hashing, snapshot/restore, minimal
-replay, validated MOVE with formation, authoritative session, PixiJS renderer
-with selection/ping, benchmark + Node≡Chromium determinism, 13 ADRs, 6
-postmortems. Quality pipeline: husky + commitlint + lint-staged + biome +
-minimumReleaseAge + semantic-release.
-
-Phase 1 (simulation core) **complete**: frozen systems pipeline with per-tick
-events, full command contracts + atomicity, order queue (STOP/HOLD/PATROL),
-players/wallet + surrender, instant combat (ATTACK/ATTACK_MOVE/HOLD auto-attack)
-with simultaneous death, victory/draw/tick-limit, central invariants, expanded
-determinism. The visual track delivers a hostile demo where factions march from
-their corners and fight, with overhead HP bars, attack streaks, damage popups,
-death explosions, and attack animations. The client issues the full command set
-(command bar + contextual right-click), shows a Victory/Defeat/Draw overlay, and
-switches demo scenarios (2v2, 4v4, melee-vs-ranged, free-for-all, win/defeat).
-Next: Phase 2 (economy and production). See `docs/tasks/todo.md`.
+The detailed branch and stacked-PR workflow is documented in
+[`docs/ai/STACKED-PR-WORKFLOW.md`](docs/ai/STACKED-PR-WORKFLOW.md).

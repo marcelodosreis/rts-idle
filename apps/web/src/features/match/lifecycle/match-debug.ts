@@ -28,12 +28,39 @@ export interface RtsDebug {
   getPing(): { readonly x: number; readonly y: number } | null
   moveCamera(x: number, y: number): void
   getTick(): number
+  getReadyState(): MatchReadyState
+  getConstructionDiagnostic(id: number): ConstructionDiagnostic | null
   getMapInfo(): {
     readonly width: number
     readonly height: number
     readonly decorations: number
     readonly isPlaytest: boolean
   }
+}
+
+export interface MatchReadyState {
+  readonly configReceived: boolean
+  readonly snapshotReceived: boolean
+  readonly rendererReady: boolean
+  readonly firstFramePresented: boolean
+  readonly rendererError: string | null
+  readonly tick: number
+  readonly ready: boolean
+}
+
+export interface ConstructionDiagnostic {
+  readonly id: number
+  readonly x: number
+  readonly y: number
+  readonly status: ConstructionStatus
+  readonly progressTicks: number
+  readonly totalTicks: number
+  readonly builderId: number | null
+  readonly builderPosition: { readonly x: number; readonly y: number } | null
+  readonly builderOrder: SelectionUnitState['orderState'] | null
+  readonly workPoint: null
+  readonly constructionPosition: { readonly x: number; readonly y: number }
+  readonly tick: number
 }
 
 declare global {
@@ -51,10 +78,45 @@ export interface MatchDebugOptions {
   readonly setSelection: (ids: readonly number[]) => void
   readonly getTick: () => number
   readonly fixedToRenderPixels: (value: number) => number
+  readonly readyState: () => MatchReadyState
+}
+
+function constructionDiagnostic(options: MatchDebugOptions, id: number): ConstructionDiagnostic | null {
+  const construction = options.buildings().find((building) => building.id === id)
+  if (construction === undefined) {
+    return null
+  }
+  const builderId = construction.builderId ?? null
+  const builder = builderId === null ? undefined : options.unitStates.get(builderId)
+  const builderPosition = builderId === null ? undefined : options.renderer.getUnitPositions().get(builderId)
+  return {
+    id: construction.id,
+    x: construction.x,
+    y: construction.y,
+    status: construction.status,
+    progressTicks: construction.progressTicks,
+    totalTicks: construction.totalTicks,
+    builderId,
+    builderPosition: builderPosition ?? null,
+    builderOrder: builder?.orderState ?? null,
+    workPoint: null,
+    constructionPosition: { x: construction.x, y: construction.y },
+    tick: options.getTick()
+  }
 }
 
 export function createRtsDebug(options: MatchDebugOptions): RtsDebug {
-  const { renderer, config, isPlaytest, unitStates, buildings, setSelection, getTick, fixedToRenderPixels } = options
+  const {
+    renderer,
+    config,
+    isPlaytest,
+    unitStates,
+    buildings,
+    setSelection,
+    getTick,
+    fixedToRenderPixels,
+    readyState
+  } = options
   return {
     getPositions: () => Object.fromEntries([...renderer.getUnitPositions()].map(([id, pos]) => [String(id), pos])),
     getUnitOwners: () => Object.fromEntries([...unitStates].map(([id, state]) => [String(id), state.owner])),
@@ -82,6 +144,8 @@ export function createRtsDebug(options: MatchDebugOptions): RtsDebug {
     getPing: () => renderer.getPing(),
     moveCamera: (x, y) => renderer.moveCamera(fixedToRenderPixels(x), fixedToRenderPixels(y)),
     getTick,
+    getReadyState: readyState,
+    getConstructionDiagnostic: (id) => constructionDiagnostic(options, id),
     getMapInfo: () => ({
       width: config.map.width,
       height: config.map.height,

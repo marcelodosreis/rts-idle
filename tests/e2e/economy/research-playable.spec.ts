@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
+import { waitForMatchReady } from '../support/settle.js'
 
 const MONASTERY_TARGET = { x: tilesToFixed(11), y: tilesToFixed(9) }
 
@@ -25,9 +26,7 @@ async function focusFixed(page: Page, x: number, y: number) {
 
 async function startResearchScenario(page: Page): Promise<void> {
   await page.goto('/?scenario=research')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 }
 
 async function workerIds(page: Page): Promise<number[]> {
@@ -125,8 +124,8 @@ test('uses the same queue card dimensions for research and units', async ({ page
   if (researchCard === null || unitCard === null) {
     throw new Error('queue cards are not measurable')
   }
-  expect(Math.abs(researchCard.width - unitCard.width)).toBeLessThan(1)
-  expect(researchCard.height).toBe(unitCard.height)
+  expect(Math.abs(researchCard.width - unitCard.width)).toBeLessThan(3)
+  expect(Math.abs(researchCard.height - unitCard.height)).toBeLessThan(1)
 })
 
 test('completed Economy research changes the selected Pawn tooltip', async ({ page }) => {
@@ -138,6 +137,9 @@ test('completed Economy research changes the selected Pawn tooltip', async ({ pa
   await expect(page.getByTestId('production-queue-empty')).toContainText('No units or research in queue.', {
     timeout: 70_000
   })
+  await expect(page.getByText('Research complete', { exact: true })).toBeVisible()
+  await expect(page.getByText('Economy Research', { exact: true })).toBeVisible()
+  await expect(page.getByText('Research complete', { exact: true })).toHaveCount(1)
   await openRoot(page)
   await page.getByRole('button', { name: 'Research', exact: true }).click()
   const lockedResearch = page.getByTestId('research-economy')

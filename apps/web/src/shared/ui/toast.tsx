@@ -1,29 +1,9 @@
 import { CircleCheck, Info, OctagonAlert, XCircle } from 'lucide-react'
 import { toast as sonnerToast } from 'sonner'
 import { Button } from '@/shared/ui/button'
+import { createToastScope, type ToastOptions, type ToastScope } from './toast-scope'
 
-type ToastType = 'default' | 'success' | 'info' | 'warning' | 'error'
-
-interface ToastActionProps {
-  readonly children: string
-  readonly onClick: () => void
-}
-
-interface ToastOptions {
-  readonly title?: string
-  readonly description?: string
-  readonly type?: ToastType
-  readonly priority?: 'normal' | 'high'
-  readonly actionProps?: ToastActionProps
-}
-
-const TOAST_STYLES: Readonly<Record<ToastType, string>> = {
-  default: 'border-zinc-600',
-  success: 'border-emerald-500/50',
-  info: 'border-zinc-600',
-  warning: 'border-amber-500/50',
-  error: 'border-transparent'
-}
+export type { ToastOptions, ToastScope } from './toast-scope'
 
 const TOAST_ICONS = {
   default: Info,
@@ -39,7 +19,7 @@ function ToastCard({ id, options }: { readonly id: string | number; readonly opt
   return (
     <div
       role={type === 'error' ? 'alert' : 'status'}
-      className={`flex w-[min(360px,calc(100vw-24px))] items-start gap-3 rounded-lg border bg-zinc-800 px-4 py-3 text-zinc-100 shadow-lg ${TOAST_STYLES[type]}`}
+      className="flex w-[min(360px,calc(100vw-24px))] items-start gap-3 rounded-lg border border-zinc-600 bg-zinc-800 px-4 py-3 text-zinc-100 shadow-lg"
     >
       <Icon
         className={`mt-0.5 size-4 shrink-0 ${type === 'error' ? 'text-red-500' : 'text-zinc-300'}`}
@@ -66,16 +46,18 @@ function ToastCard({ id, options }: { readonly id: string | number; readonly opt
   )
 }
 
-export const toast = {
-  add(options: ToastOptions): string | number {
-    return sonnerToast.custom((id) => <ToastCard id={id} options={options} />, {
-      duration: options.priority === 'high' ? 7000 : 4500
+function createSonnerToast(options: ToastOptions): string | number {
+  const duration = options.priority === 'high' ? 4500 : 3250
+  return sonnerToast.custom((toastId) => <ToastCard id={toastId} options={options} />, { duration })
+}
+
+export function createMatchToastScope(): ToastScope {
+  return {
+    ...createToastScope({
+      create: createSonnerToast,
+      dismiss: sonnerToast.dismiss,
+      setTimeout: (callback, duration) => window.setTimeout(callback, duration),
+      clearTimeout: (timer) => window.clearTimeout(timer)
     })
-  },
-  close(id: string | number): void {
-    sonnerToast.dismiss(id)
-  },
-  closeAll(): void {
-    sonnerToast.dismiss()
   }
 }

@@ -62,6 +62,7 @@ describe('match renderer lifecycle', () => {
       rendererFactory: () => renderer,
       callbacks: { onInteraction: vi.fn() },
       onReady: ready,
+      onFramePresented: vi.fn(),
       onError: vi.fn()
     })
 
@@ -90,6 +91,7 @@ describe('match renderer lifecycle', () => {
       rendererFactory: () => renderer,
       callbacks: { onInteraction: vi.fn() },
       onReady: vi.fn(),
+      onFramePresented: vi.fn(),
       onError: vi.fn()
     })
     lifecycle.mount(config)
@@ -111,6 +113,7 @@ describe('match renderer lifecycle', () => {
       rendererFactory: () => renderer,
       callbacks: { onInteraction: vi.fn() },
       onReady: vi.fn(),
+      onFramePresented: vi.fn(),
       onError
     })
     lifecycle.mount(config)

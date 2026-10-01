@@ -16,8 +16,10 @@ import { Button } from '@/shared/ui/button'
 import { Separator } from '@/shared/ui/separator'
 import { LaboratoryMenu } from '../laboratory-menu'
 import type { MessageLogEntry } from '../lifecycle/useMessageLog'
+import type { HudFeedbackTarget } from './HudContextFeedback'
 import { formatMatchTime } from './top-bar-display'
 import type { HudResources } from './types'
+import { useObservedDelta } from './useObservedDelta'
 
 interface TopBarProps {
   readonly status: string
@@ -31,6 +33,7 @@ interface TopBarProps {
   readonly aggression: 'offensive' | 'passive'
   readonly spritesEnabled: boolean
   readonly inputProfile: InputProfile
+  readonly feedbackTarget: HudFeedbackTarget | null
   readonly onSurrender: () => void
   readonly onChangeScenario: (id: string) => void
   readonly onToggleAggression: () => void
@@ -43,25 +46,39 @@ function Stat({
   value,
   icon: Icon,
   testId,
-  accentClassName
+  accentClassName,
+  delta,
+  highlighted
 }: {
   readonly label: string
   readonly value: string
   readonly icon: typeof Gem
   readonly testId?: string
   readonly accentClassName: string
+  readonly delta?: number | null
+  readonly highlighted?: boolean
 }) {
+  const deltaText = delta === undefined || delta === null || delta === 0 ? null : `${delta > 0 ? '+' : ''}${delta}`
   return (
     <span
       data-testid={testId}
-      className="flex min-w-[4.25rem] flex-col items-start gap-0.5 whitespace-nowrap rounded-md border border-border/60 bg-muted/20 px-2 py-1 text-xs max-[1023px]:min-w-0 max-[1023px]:flex-row max-[1023px]:items-center max-[1023px]:gap-1 max-[1023px]:px-1.5 max-[1023px]:text-[10px]"
+      data-feedback-highlight={highlighted === true ? 'true' : 'false'}
+      className={`flex min-w-[4.25rem] flex-col items-start gap-0.5 whitespace-nowrap rounded-md border border-border/60 bg-muted/20 px-2 py-1 text-xs max-[850px]:min-w-0 max-[850px]:px-1.5 max-[850px]:text-[10px] ${highlighted === true ? 'border-primary/80 bg-primary/10 ring-1 ring-primary/50 motion-safe:animate-[hud-attention_250ms_ease-out]' : ''}`}
     >
-      <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground max-[1023px]:sr-only">
+      <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground max-[850px]:sr-only">
         {label}
       </span>
       <span className="flex items-center gap-1">
         <Icon aria-hidden={true} className={`size-3.5 ${accentClassName}`} />
         <span className={`font-mono font-medium tabular-nums ${accentClassName}`}>{value}</span>
+        {deltaText !== null && (
+          <span
+            data-testid={`${testId ?? label.toLowerCase()}-delta`}
+            className="relative -top-px font-mono text-[9px] text-foreground/80 motion-safe:animate-[hud-delta-in_180ms_ease-out]"
+          >
+            {deltaText}
+          </span>
+        )}
       </span>
     </span>
   )
@@ -71,14 +88,7 @@ function SurrenderAction({ onSurrender }: { readonly onSurrender: () => void }) 
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild={true}>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          title="Surrender"
-          aria-label="Surrender"
-          className="size-7 text-muted-foreground"
-        >
+        <Button type="button" variant="ghost" size="icon" title="Surrender" aria-label="Surrender">
           <Flag aria-hidden={true} className="size-3.5" />
         </Button>
       </AlertDialogTrigger>
@@ -89,9 +99,7 @@ function SurrenderAction({ onSurrender }: { readonly onSurrender: () => void }) 
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction className="bg-destructive text-white hover:bg-destructive/90" onClick={onSurrender}>
-            Surrender
-          </AlertDialogAction>
+          <AlertDialogAction onClick={onSurrender}>Surrender</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -101,20 +109,24 @@ function SurrenderAction({ onSurrender }: { readonly onSurrender: () => void }) 
 function TopBarStats({
   resources,
   unitCount,
-  selectedCount
+  selectedCount,
+  feedbackTarget
 }: {
   readonly resources: HudResources | null
   readonly unitCount: number
   readonly selectedCount: number
+  readonly feedbackTarget: HudFeedbackTarget | null
 }) {
+  const mineralDelta = useObservedDelta(resources?.mineral ?? null)
+  const supplyDelta = useObservedDelta(resources?.supply ?? null)
   return (
     <div
       data-testid="hud-topbar-stats"
-      className="flex min-w-0 items-center gap-2 max-[639px]:col-start-2 max-[639px]:row-start-1 max-[639px]:gap-1"
+      className="flex min-w-0 items-center gap-2 max-[850px]:col-start-2 max-[850px]:row-start-1 max-[850px]:gap-1"
     >
       <div
         data-testid="hud-topbar-economy"
-        className="flex items-center gap-1 rounded-lg border border-border/70 bg-background/30 p-1"
+        className="flex items-center gap-1 rounded-lg border border-border/70 bg-background/30 p-1 max-[850px]:col-start-2 max-[850px]:row-start-1"
       >
         <Stat
           label="Minerals"
@@ -122,6 +134,8 @@ function TopBarStats({
           icon={Gem}
           testId="hud-resource-mineral"
           accentClassName="text-amber-400"
+          delta={mineralDelta}
+          highlighted={feedbackTarget === 'minerals'}
         />
         <Stat
           label="Supply"
@@ -129,6 +143,8 @@ function TopBarStats({
           icon={Users}
           testId="hud-resource-supply"
           accentClassName="text-sky-400"
+          delta={supplyDelta}
+          highlighted={feedbackTarget === 'supply'}
         />
       </div>
       <div
@@ -158,9 +174,9 @@ function TopBarControls(props: TopBarProps) {
   return (
     <div
       data-testid="hud-topbar-controls"
-      className="flex items-center gap-[calc(12px*var(--hud-scale))] opacity-80 max-[639px]:col-start-2 max-[639px]:row-start-2 max-[639px]:justify-self-end max-[639px]:gap-1"
+      className="flex items-center gap-[calc(12px*var(--hud-scale))] opacity-80 max-[850px]:col-start-2 max-[850px]:row-start-2 max-[850px]:justify-self-end max-[850px]:gap-1"
     >
-      <Separator orientation="vertical" className="h-5 max-[639px]:hidden" />
+      <Separator orientation="vertical" className="h-5 max-[850px]:hidden" />
       <SurrenderAction onSurrender={props.onSurrender} />
       <LaboratoryMenu
         status={props.status}
@@ -182,16 +198,22 @@ function TopBarControls(props: TopBarProps) {
 
 export function TopBar(props: TopBarProps) {
   return (
-    <header className="relative grid h-full min-h-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center border-b bg-card/80 px-[calc(12px*var(--hud-scale))] backdrop-blur max-[639px]:grid-cols-[minmax(0,1fr)_minmax(0,auto)] max-[639px]:grid-rows-2 max-[639px]:gap-x-2">
+    <header
+      data-testid="hud-topbar"
+      className="relative grid h-full min-h-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center border-b bg-card/80 px-[calc(12px*var(--hud-scale))] backdrop-blur max-[850px]:grid-cols-[minmax(0,1fr)_minmax(0,auto)] max-[850px]:grid-rows-2 max-[850px]:gap-x-2"
+    >
       <div
         data-testid="hud-topbar-brand"
-        className="flex min-w-0 items-center gap-3 max-[639px]:col-start-1 max-[639px]:row-start-1 max-[639px]:gap-2"
+        className="flex min-w-0 items-center gap-3 max-[850px]:col-start-1 max-[850px]:row-start-1 max-[850px]:gap-2"
       >
         <span aria-hidden={true} className="text-sm text-primary">
           ◆
         </span>
         <span className="text-sm font-semibold tracking-widest uppercase">RTS Idle</span>
-        <Badge variant="outline" className="h-5 gap-1.5 px-1.5 text-[10px] font-normal">
+        <Badge
+          variant="outline"
+          className="h-5 gap-1.5 px-1.5 text-[10px] font-normal max-[850px]:absolute max-[850px]:top-3/4 max-[850px]:left-[calc(12px*var(--hud-scale))] max-[850px]:-translate-y-1/2"
+        >
           <span
             className={`size-1.5 rounded-full ${props.status === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`}
           />
@@ -200,12 +222,17 @@ export function TopBar(props: TopBarProps) {
       </div>
       <time
         data-testid="hud-topbar-time"
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-border/70 bg-background/45 px-2.5 py-1 text-sm font-semibold tabular-nums tracking-[0.14em] text-foreground shadow-sm max-[639px]:top-3/4"
+        className="absolute top-[calc(50%+4px)] left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-border/70 bg-background/45 px-2.5 py-1 text-sm font-semibold tabular-nums tracking-[0.14em] text-foreground shadow-sm max-[850px]:top-3/4"
       >
         {formatMatchTime(props.tick)}
       </time>
-      <div className="flex min-w-max items-center justify-self-end gap-[calc(12px*var(--hud-scale))] max-[639px]:contents">
-        <TopBarStats resources={props.resources} unitCount={props.unitCount} selectedCount={props.selectedCount} />
+      <div className="flex min-w-max items-center justify-self-end gap-[calc(12px*var(--hud-scale))] max-[850px]:contents">
+        <TopBarStats
+          resources={props.resources}
+          unitCount={props.unitCount}
+          selectedCount={props.selectedCount}
+          feedbackTarget={props.feedbackTarget}
+        />
         <TopBarControls {...props} />
       </div>
     </header>

@@ -189,6 +189,32 @@ describe('MatchInteractionController', () => {
     ])
   })
 
+  it('attacks an enemy completed building with selected attack-capable units', () => {
+    const match = context({
+      buildings: () => [
+        {
+          id: 17,
+          buildingType: 'BARRACKS',
+          x: 100,
+          y: 200,
+          owner: 1,
+          footprint: { width: 2, height: 2 },
+          status: 'COMPLETED',
+          progressTicks: 100,
+          totalTicks: 100,
+          hp: 300,
+          maxHp: 300
+        }
+      ]
+    })
+
+    new MatchInteractionController(match).buildingCommand(17)
+
+    expect((match as MatchInteractionContext & { sent: CommandIntent[] }).sent).toEqual([
+      { type: 'ATTACK', payload: { unitIds: [1, 2], targetId: 17 } }
+    ])
+  })
+
   it('deposits cargo at a damaged owned completed building before considering repair', () => {
     const match = context({
       buildings: () => [

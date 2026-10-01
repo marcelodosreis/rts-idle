@@ -1,9 +1,20 @@
 import type { SnapshotProductionItem } from '@rts/protocol'
 import { MAX_PRODUCTION_QUEUE } from '@rts/shared'
+import { useEffect, useRef } from 'react'
 import { ProductionItemIcon, ProductionStatus, productionItemLabel } from './ProductionStatus'
 import type { HudConstruction } from './types'
+import { useProductionTransitions } from './useProductionTransitions'
+import { useTimedValue } from './useTimedValue'
 
-function QueueSlot({ item, index }: { readonly item: SnapshotProductionItem | undefined; readonly index: number }) {
+function QueueSlot({
+  item,
+  index,
+  inserted
+}: {
+  readonly item: SnapshotProductionItem | undefined
+  readonly index: number
+  readonly inserted: boolean
+}) {
   if (item === undefined) {
     return (
       <li
@@ -18,7 +29,9 @@ function QueueSlot({ item, index }: { readonly item: SnapshotProductionItem | un
   return (
     <li className="h-7 min-w-0" data-testid={`production-slot-${index}`}>
       <div
-        className="flex h-full min-w-0 items-center gap-1 rounded border border-border/70 bg-muted/40 px-1"
+        className={`flex h-full min-w-0 items-center gap-1 rounded border border-border/70 bg-muted/40 px-1 ${
+          inserted ? 'border-primary/70 bg-primary/10 motion-safe:animate-[hud-queue-insert_220ms_ease-out]' : ''
+        }`}
         data-testid={`production-item-${index}`}
         data-production-status={item.status}
         title={productionItemLabel(item)}
@@ -34,11 +47,40 @@ function QueueSlot({ item, index }: { readonly item: SnapshotProductionItem | un
   )
 }
 
-export function ProductionPanel({ construction }: { readonly construction: HudConstruction }) {
+function rallyKey(construction: HudConstruction): string {
+  if (construction.rallyPoint === null || construction.rallyPoint === undefined) {
+    return ''
+  }
+  return `${construction.rallyPoint.x}:${construction.rallyPoint.y}`
+}
+
+function useRallyTransition(construction: HudConstruction): boolean {
+  const previous = useRef<string | null>(null)
+  const feedback = useTimedValue<boolean>(260)
+  const value = rallyKey(construction)
+  const showFeedback = feedback.show
+  useEffect(() => {
+    if (previous.current !== null && previous.current !== value) {
+      showFeedback(true)
+    }
+    previous.current = value
+  }, [showFeedback, value])
+  return feedback.value === true
+}
+
+export function ProductionPanel({
+  construction,
+  queueAttention = false
+}: {
+  readonly construction: HudConstruction
+  readonly queueAttention?: boolean
+}) {
+  const queue = construction.production?.queue ?? []
+  const transitions = useProductionTransitions(construction.id, queue)
+  const rallyUpdated = useRallyTransition(construction)
   if (!isProducer(construction.buildingType)) {
     return null
   }
-  const queue = construction.production?.queue ?? []
   const activeItem = queue.find((item) => item.status === 'ACTIVE' || item.status === 'COMPLETED_WAITING')
   const slots = Array.from({ length: MAX_PRODUCTION_QUEUE }, (_, index) => ({
     id: `production-slot-${index}`,
@@ -46,13 +88,23 @@ export function ProductionPanel({ construction }: { readonly construction: HudCo
     item: queue[index]
   }))
   return (
-    <div className="min-h-0 space-y-1 overflow-hidden border-t border-border/60 pt-1" data-testid="production-panel">
-      <ProductionStatus item={activeItem} />
+    <div
+      className={`min-h-0 space-y-1 overflow-hidden border-t border-border/60 pt-1 ${
+        queueAttention ? 'border-primary/70 bg-primary/5 motion-safe:animate-[hud-attention_250ms_ease-out]' : ''
+      }`}
+      data-testid="production-panel"
+      data-queue-attention={queueAttention ? 'true' : 'false'}
+    >
+      <ProductionStatus item={activeItem} activeStarted={transitions.activeStarted} completed={transitions.completed} />
       <div className="flex items-center justify-between text-[9px] font-medium text-muted-foreground uppercase">
         <span data-testid="production-queue-count">
           Queue {queue.length}/{MAX_PRODUCTION_QUEUE}
         </span>
-        <span className="truncate" data-testid="rally-point">
+        <span
+          className={`truncate ${rallyUpdated ? 'text-foreground motion-safe:animate-[hud-production-confirm_260ms_ease-out]' : ''}`}
+          data-testid="rally-point"
+          data-rally-feedback={rallyUpdated ? 'confirmed' : 'idle'}
+        >
           {construction.rallyPoint === null || construction.rallyPoint === undefined
             ? 'Rally: none'
             : `Rally: ${construction.rallyPoint.x}, ${construction.rallyPoint.y}`}
@@ -65,7 +117,12 @@ export function ProductionPanel({ construction }: { readonly construction: HudCo
       )}
       <ol className="grid grid-cols-5 gap-1" aria-label="Production and research queue" aria-live="polite">
         {slots.map((slot) => (
-          <QueueSlot key={slot.id} item={slot.item} index={slot.index} />
+          <QueueSlot
+            key={slot.id}
+            item={slot.item}
+            index={slot.index}
+            inserted={transitions.insertedSlots.includes(slot.index)}
+          />
         ))}
       </ol>
     </div>

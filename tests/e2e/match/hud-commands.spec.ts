@@ -38,8 +38,52 @@ async function unitsByOwner(page: Page): Promise<UnitInfo[]> {
   })
 }
 
-test('STOP cancels auto-orders and an armed ATTACK re-engages the target', async ({ page }) => {
-  await page.goto('/?scenario=8v8&aggression=offensive')
+interface UnitHealth {
+  readonly id: number
+  readonly health: number
+}
+
+async function healths(page: Page, ids: readonly number[]): Promise<readonly UnitHealth[]> {
+  return page.evaluate(
+    (unitIds) => unitIds.map((id) => ({ id, health: window.__rtsDebug?.getUnitHealth(id)?.current ?? 0 })),
+    ids
+  )
+}
+
+async function anyHealthBelow(page: Page, baseline: readonly UnitHealth[]): Promise<boolean> {
+  return page.evaluate(
+    (entries) =>
+      entries.some((entry) => {
+        const health = window.__rtsDebug?.getUnitHealth(entry.id)
+        return health !== null && health !== undefined && health.current < entry.health
+      }),
+    baseline
+  )
+}
+
+async function healthiestRed(page: Page): Promise<{ readonly x: number; readonly y: number } | null> {
+  return page.evaluate(() => {
+    const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    const positions = window.__rtsDebug?.getPositions() ?? {}
+    let best: { readonly x: number; readonly y: number; readonly health: number } | null = null
+    for (const [id, owner] of Object.entries(owners)) {
+      const position = positions[id]
+      if (owner !== 1 || position === undefined) {
+        continue
+      }
+      const health = window.__rtsDebug?.getUnitHealth(Number(id))?.current ?? 0
+      if (best === null || health > best.health) {
+        best = { x: position.x, y: position.y, health }
+      }
+    }
+    return best
+  })
+}
+
+test('STOP cancels an issued order and an armed ATTACK re-engages the target', async ({ page }) => {
+  // Passive enemies keep the squads stable: the test drives the orders itself
+  // instead of racing the auto-battle and dying mid-assertion.
+  await page.goto('/?scenario=8v8&aggression=passive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
   const blueIds = await page.evaluate(() => {
@@ -50,9 +94,10 @@ test('STOP cancels auto-orders and an armed ATTACK re-engages the target', async
       .map(([id]) => Number(id))
       .slice(0, 6)
   })
-  const redIds = units.filter((unit) => unit.owner === 1).map((unit) => unit.id)
+  const reds = units.filter((unit) => unit.owner === 1)
   expect(blueIds.length).toBeGreaterThan(0)
-  expect(redIds.length).toBeGreaterThan(0)
+  expect(reds.length).toBeGreaterThan(0)
+  const redIds = reds.map((unit) => unit.id)
 
   // The squads cluster tightly once engaged, so select the blue units by id
   // through the debug hook (mouse clicks would hit overlapping neighbors).
@@ -61,38 +106,37 @@ test('STOP cancels auto-orders and an armed ATTACK re-engages the target', async
     .poll(() => page.evaluate(() => window.__rtsDebug?.getSelection() ?? []))
     .toEqual(expect.arrayContaining(blueIds))
 
-  // STOP cancels their standing ATTACK orders. Let in-flight shots land, then
-  // the red units' health is frozen (blue no longer damages them).
+  // Arm ATTACK and right-click a red unit: blue must engage it.
+  await page.getByRole('button', { name: 'Attack', exact: true }).click()
+  const firstTarget = reds[0]!
+  const healthBefore = await healths(page, redIds)
+  const firstPoint = await worldToPage(page, firstTarget.x, firstTarget.y)
+  await page.mouse.click(firstPoint.x, firstPoint.y, { button: 'right' })
+  await expect.poll(() => anyHealthBelow(page, healthBefore), { timeout: 15_000 }).toBe(true)
+
+  // STOP cancels the standing order. Let in-flight shots land, then the red
+  // units' health is frozen (blue no longer damages them).
   await page.getByRole('button', { name: 'Stop' }).click()
   await page.waitForTimeout(600)
-  const baselines = await page.evaluate((ids) => {
-    return Object.fromEntries(ids.map((id) => [String(id), window.__rtsDebug?.getUnitHealth(id)?.current ?? 0]))
-  }, redIds)
+  const baselines = await healths(page, redIds)
+  const aliveBlues = await page.evaluate(() => {
+    const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
+    return Object.entries(owners)
+      .filter(([id, owner]) => owner === 0 && kinds[id] !== 'monk')
+      .map(([id]) => Number(id))
+  })
+  await page.evaluate((ids) => window.__rtsDebug!.setSelection(ids), aliveBlues)
 
-  // Arm ATTACK and right-click a red unit (whichever is topmost at the click
-  // point): blue must engage it, so some red unit's health drops below the
-  // frozen baseline.
-  const target = units.find((unit) => unit.owner === 1)!
+  // Re-arm ATTACK and right-click the healthiest red: blue must re-engage, so
+  // some red unit's health drops below the frozen baseline.
+  const target = await healthiestRed(page)
+  expect(target).not.toBeNull()
   await page.getByRole('button', { name: 'Attack', exact: true }).click()
-  const targetNow = (await unitsByOwner(page)).find((unit) => unit.id === target.id) ?? target
-  const targetScreen = await worldToPage(page, targetNow.x, targetNow.y)
+  const targetScreen = await worldToPage(page, target!.x, target!.y)
   await page.mouse.click(targetScreen.x, targetScreen.y, { button: 'right' })
 
-  await expect
-    .poll(
-      () =>
-        page.evaluate(
-          ([ids, base]) => {
-            return ids.some((id) => {
-              const health = window.__rtsDebug?.getUnitHealth(id)
-              return health !== null && health !== undefined && health.current < base[String(id)]
-            })
-          },
-          [redIds, baselines] as const
-        ),
-      { timeout: 15_000 }
-    )
-    .toBe(true)
+  await expect.poll(() => anyHealthBelow(page, baselines), { timeout: 15_000 }).toBe(true)
 })
 
 test('left-clicking empty ground cancels an armed attack-move mode', async ({ page }) => {

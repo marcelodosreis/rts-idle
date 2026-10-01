@@ -64,6 +64,10 @@ without a written justification; fix the code instead.
   user-visible flow is still unavailable.
 - Before reporting PASS, compare the implementation against the original user request,
   not only against the agent-authored plan.
+- When running the browser locally, reserve a unique development instance per agent:
+  use `pnpm dev` for instance 1 and `pnpm dev:instance -- <N>` for additional
+  instances. Do not reuse another agent's instance number or use the removed
+  `dev:2` alias. See the parallel development instance table in `README.md`.
 - Project files live directly at the repo root — do not nest the project in subfolders.
 - For task breakdown, see `docs/ai/TASK_INDEX.md`.
 - For task template, see `docs/ai/TASK_PACKET_TEMPLATE.md`.

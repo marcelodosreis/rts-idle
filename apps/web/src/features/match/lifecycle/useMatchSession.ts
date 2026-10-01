@@ -1,9 +1,10 @@
-import type { BuildCatalogEntry, MatchConfig, ScenarioSummary } from '@rts/protocol'
+import type { BuildCatalogEntry, MatchConfig, ScenarioSummary, SnapshotBuilding } from '@rts/protocol'
 import type { GameRenderer, InputProfile } from '@rts/renderer'
 import type { MatchResult, ResearchType, TrainableUnitKind } from '@rts/shared'
-import { type RefObject, useEffect, useRef, useState } from 'react'
+import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 import { readPlaytestMap } from '../../../shared/config/playtest-map'
 import { type CommandMode, useCommandModes } from '../commands/useCommandModes'
+import type { HudNotification } from '../ui/hud-notifications'
 import type { HudConstruction, HudMineral, HudSelectionUnit } from '../ui/types'
 import { parseMatchQuery, updateMatchQuery } from '../url-state/match-query'
 import { readInputPreferences, writeInputPreferences } from './input-preferences'
@@ -39,7 +40,8 @@ export interface MatchSessionState {
   readonly spritesEnabled: boolean
   readonly inputProfile: InputProfile
   readonly buildHint: string | null
-  readonly hudFeedback: string | null
+  readonly hudNotification: HudNotification | null
+  readonly completedConstructions: readonly SnapshotBuilding[]
   readonly buildings: readonly BuildCatalogEntry[]
   readonly production: MatchConfig['production']
   readonly researchCatalog: MatchConfig['research']
@@ -59,6 +61,19 @@ export interface MatchSessionState {
   setInputProfile(value: InputProfile): void
 }
 
+function useCompletedConstructionHistory(): {
+  readonly value: readonly SnapshotBuilding[]
+  readonly append: (constructions: readonly SnapshotBuilding[]) => void
+} {
+  const [value, setValue] = useState<readonly SnapshotBuilding[]>([])
+  const append = useCallback((constructions: readonly SnapshotBuilding[]): void => {
+    if (constructions.length > 0) {
+      setValue((previous) => [...previous, ...constructions])
+    }
+  }, [])
+  return { value, append }
+}
+
 function useSessionState(): {
   readonly values: {
     readonly status: string
@@ -69,7 +84,8 @@ function useSessionState(): {
     readonly selectedConstruction: HudConstruction | null
     readonly selectedMineral: HudMineral | null
     readonly buildHint: string | null
-    readonly hudFeedback: string | null
+    readonly hudNotification: HudNotification | null
+    readonly completedConstructions: readonly SnapshotBuilding[]
     readonly resources: SessionResources | null
     readonly matchResult: MatchResult | null
     readonly inputProfile: InputProfile
@@ -87,7 +103,8 @@ function useSessionState(): {
   const [selectedConstruction, setSelectedConstruction] = useState<HudConstruction | null>(null)
   const [selectedMineral, setSelectedMineral] = useState<HudMineral | null>(null)
   const [buildHint, setBuildHint] = useState<string | null>(null)
-  const [hudFeedback, setHudFeedback] = useState<string | null>(null)
+  const [hudNotification, setHudNotification] = useState<HudNotification | null>(null)
+  const completedConstructions = useCompletedConstructionHistory()
   const [resources, setResources] = useState<SessionResources | null>(null)
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null)
   const [matchConfig, setMatchConfig] = useState<MatchConfig | null>(null)
@@ -105,7 +122,8 @@ function useSessionState(): {
       selectedConstruction,
       selectedMineral,
       buildHint,
-      hudFeedback,
+      hudNotification,
+      completedConstructions: completedConstructions.value,
       resources,
       matchResult,
       inputProfile,
@@ -120,7 +138,8 @@ function useSessionState(): {
       setSelectedConstruction,
       setSelectedMineral,
       setBuildHint,
-      setHudFeedback,
+      setHudNotification,
+      appendCompletedConstructions: completedConstructions.append,
       setResources,
       setMatchResult,
       setMatchConfig,
@@ -243,14 +262,17 @@ function useSessionActions(
   }
 }
 
-function useHudFeedbackTimeout(message: string | null, setMessage: (message: string | null) => void): void {
+function useHudNotificationTimeout(
+  notification: HudNotification | null,
+  setNotification: (notification: HudNotification | null) => void
+): void {
   useEffect(() => {
-    if (message === null) {
+    if (notification === null) {
       return
     }
-    const timeout = window.setTimeout(() => setMessage(null), 2500)
+    const timeout = window.setTimeout(() => setNotification(null), 2500)
     return () => window.clearTimeout(timeout)
-  }, [message, setMessage])
+  }, [notification, setNotification])
 }
 
 export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): MatchSessionState {
@@ -258,7 +280,7 @@ export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): Matc
   const state = useSessionState()
   const { refs, setInputProfileState } = useSessionConnection(hostRef, commandModes, state)
   const actions = useSessionActions(refs, setInputProfileState)
-  useHudFeedbackTimeout(state.values.hudFeedback, state.setters.setHudFeedback)
+  useHudNotificationTimeout(state.values.hudNotification, state.setters.setHudNotification)
   return {
     ...state.values,
     commandMode: commandModes.mode,

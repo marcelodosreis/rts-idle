@@ -105,6 +105,7 @@ test('production buttons stay inside the completed construction panel', async ({
   await train(page, 'pawn')
   await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 1/5')
   await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE')
+  await expect(page.getByTestId('production-active')).toHaveAttribute('data-production-feedback', /started|idle/)
 
   const worker = (await workerIds(page))[0]!
   await selectWorker(page, worker)
@@ -142,10 +143,51 @@ test('cancels any queued production row with confirmation and refund feedback', 
   expect(queueFitsSelection).toBe(true)
   await expect(page.getByTestId('production-item-1')).toHaveAttribute('data-production-status', 'QUEUED')
 
+  await page.getByTestId('train-pawn').click({ force: true })
+  const localBlock = page.getByTestId('hud-context-feedback')
+  await expect(localBlock).toHaveText(/Queue is full|Insufficient minerals/)
+  const blockTarget = await localBlock.getAttribute('data-feedback-target')
+  if (blockTarget === 'queue') {
+    await expect(page.getByTestId('production-panel')).toHaveAttribute('data-queue-attention', 'true')
+  } else {
+    await expect(page.getByTestId('hud-resource-mineral')).toHaveAttribute('data-feedback-highlight', 'true')
+  }
+  await expect(page.getByRole('alert')).toHaveCount(0)
+
   const beforeFirstCancel = await queueLength(page)
   await cancelFirstQueuedProduction(page)
   await expect.poll(() => queueLength(page)).toBeLessThan(beforeFirstCancel)
   await expect.poll(() => mineralValue(page)).toBeGreaterThan(0)
+  await expect(page.getByTestId('hud-resource-mineral-delta')).toHaveText(/^\+/)
+  await page.setViewportSize({ width: 900, height: 800 })
+  const mineralFeedbackPosition = await page.evaluate(() => {
+    const stat = document.querySelector('[data-testid="hud-resource-mineral"]')
+    const delta = document.querySelector('[data-testid="hud-resource-mineral-delta"]')
+    if (stat === null || delta === null) {
+      throw new Error('mineral feedback is missing')
+    }
+    const statBox = stat.getBoundingClientRect()
+    const deltaBox = delta.getBoundingClientRect()
+    const value = stat.querySelector('span.font-mono')
+    if (value === null) {
+      throw new Error('mineral value is missing')
+    }
+    const valueBox = value.getBoundingClientRect()
+    return {
+      statTop: statBox.top,
+      statBottom: statBox.bottom,
+      deltaTop: deltaBox.top,
+      deltaBottom: deltaBox.bottom,
+      deltaLeft: deltaBox.left,
+      valueRight: valueBox.right,
+      valueCenter: valueBox.top + valueBox.height / 2,
+      deltaCenter: deltaBox.top + deltaBox.height / 2
+    }
+  })
+  expect(mineralFeedbackPosition.deltaTop).toBeGreaterThanOrEqual(mineralFeedbackPosition.statTop)
+  expect(mineralFeedbackPosition.deltaBottom).toBeLessThanOrEqual(mineralFeedbackPosition.statBottom)
+  expect(mineralFeedbackPosition.deltaLeft).toBeGreaterThanOrEqual(mineralFeedbackPosition.valueRight)
+  expect(mineralFeedbackPosition.deltaCenter).toBeLessThanOrEqual(mineralFeedbackPosition.valueCenter + 1)
 
   const firstRefund = await mineralValue(page)
   const beforeSecondCancel = await queueLength(page)
@@ -184,7 +226,10 @@ test('sets a rally point and sends a trained unit toward it', async ({ page }) =
   const before = await workerIds(page)
   await train(page, 'pawn')
   await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE')
+  await page.waitForTimeout(1_200)
+  await expect(page.getByTestId('hud-resource-supply-delta')).toHaveCount(0)
   await expect.poll(() => workerIds(page), { timeout: 15_000 }).toHaveLength(before.length + 1)
+  await expect(page.getByTestId('hud-resource-supply-delta')).toHaveText('+1')
 
   const spawnedId = (await workerIds(page)).find((id) => !before.includes(id))!
   await expect

@@ -47,6 +47,10 @@ export class MatchInteractionController {
     this.context = context
   }
 
+  mode(): CommandMode {
+    return this.context.mode()
+  }
+
   groundCommand(worldX: number, worldY: number): void {
     if (this.context.isMatchEnded()) {
       return
@@ -208,6 +212,11 @@ export class MatchInteractionController {
       return
     }
     if (building.status === 'COMPLETED') {
+      if (building.owner !== this.context.humanPlayer && this.context.selectedUnitIds().length > 0) {
+        this.context.sendCommand({ type: 'ATTACK', payload: { unitIds: this.context.selectedUnitIds(), targetId: id } })
+        this.context.clearMode()
+        return
+      }
       const carrying = ownedPawns.filter((unitId) => this.context.unitStates.get(unitId)?.carrying === true)
       if (building.owner === this.context.humanPlayer && carrying.length > 0) {
         this.context.sendCommand({ type: 'DEPOSIT', payload: { unitIds: carrying, buildingId: id } })

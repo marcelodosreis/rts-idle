@@ -1,5 +1,6 @@
 import type { WorldInteraction } from '@rts/renderer'
 import { assertNever } from '@rts/shared'
+import type { CommandMode } from '../commands/useCommandModes'
 
 interface BuildPlacementController {
   readonly handleBuildPlacementClick: (worldX: number, worldY: number) => boolean
@@ -8,6 +9,7 @@ interface BuildPlacementController {
   readonly autoHealTarget: (id: number) => boolean
   readonly buildingCommand: (id: number) => void
   readonly mineralCommand: (id: number) => void
+  readonly mode: () => CommandMode
 }
 
 export interface WorldInteractionHandlerOptions {
@@ -35,6 +37,10 @@ function handlePrimary(
       options.updateSelection([target.id])
       return
     case 'building':
+      if (options.controller.mode() === 'attack') {
+        options.controller.buildingCommand(target.id)
+        return
+      }
       options.clearMode()
       options.selectBuilding(target.id)
       return

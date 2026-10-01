@@ -1,7 +1,7 @@
 import { PROGRESS_PALETTE } from '@rts/renderer'
 import { economyProgressTone, MOVEMENT_SPEED_SCALE, type UnitKind } from '@rts/shared'
 import { Crosshair, HeartPulse, Info, type LucideIcon, Pickaxe, Shield, Sword } from 'lucide-react'
-import { type ReactElement, useRef, useState } from 'react'
+import { type ReactElement, useEffect, useRef, useState } from 'react'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import {
@@ -149,6 +149,15 @@ function UnitDetails({
     cancelClose()
     closeTimer.current = window.setTimeout(() => setOpen(false), 120)
   }
+
+  useEffect(
+    () => () => {
+      if (closeTimer.current !== null) {
+        window.clearTimeout(closeTimer.current)
+      }
+    },
+    []
+  )
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

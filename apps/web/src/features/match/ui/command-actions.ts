@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { buildingTypeForMode, isRallyMode } from '../commands/useCommandModes'
 import {
+  blockedFeedbackTarget,
   buildBlockReason,
   isResearchItem,
   researchBlockReason,
@@ -70,6 +71,7 @@ export function commonUnitActions(props: CommandBarProps, blockedReason?: string
       description: 'Cancel current orders.',
       icon: CircleStop,
       blockedReason,
+      feedbackKind: 'submit',
       onActivate: props.onStop
     },
     {
@@ -78,6 +80,7 @@ export function commonUnitActions(props: CommandBarProps, blockedReason?: string
       description: 'Hold position and engage nearby enemies.',
       icon: ShieldCheck,
       blockedReason,
+      feedbackKind: 'submit',
       onActivate: props.onHold
     },
     {
@@ -87,6 +90,7 @@ export function commonUnitActions(props: CommandBarProps, blockedReason?: string
       icon: Route,
       blockedReason,
       active: props.mode === 'patrol',
+      feedbackKind: 'arm',
       onActivate: () => props.onArm('patrol')
     },
     {
@@ -96,6 +100,7 @@ export function commonUnitActions(props: CommandBarProps, blockedReason?: string
       icon: Swords,
       blockedReason: attackReason,
       active: props.mode === 'attack',
+      feedbackKind: 'arm',
       onActivate: () => props.onArm('attack')
     },
     {
@@ -105,6 +110,7 @@ export function commonUnitActions(props: CommandBarProps, blockedReason?: string
       icon: Crosshair,
       blockedReason: attackReason,
       active: props.mode === 'attack_move',
+      feedbackKind: 'arm',
       onActivate: () => props.onArm('attack_move')
     }
   ]
@@ -125,6 +131,7 @@ export function workerActions(
       icon: Pickaxe,
       blockedReason,
       active: props.mode === 'gather',
+      feedbackKind: 'arm',
       onActivate: () => props.onArm('gather')
     },
     {
@@ -134,6 +141,7 @@ export function workerActions(
       icon: Wrench,
       blockedReason,
       active: props.mode === 'repair',
+      feedbackKind: 'arm',
       onActivate: () => props.onArm('repair')
     },
     {
@@ -143,6 +151,7 @@ export function workerActions(
       icon: Hammer,
       blockedReason,
       active: buildingTypeForMode(props.mode) !== null,
+      feedbackKind: 'navigate',
       onActivate: openBuild
     },
     {
@@ -153,6 +162,7 @@ export function workerActions(
       blockedReason:
         blockedReason ?? (worker?.carrying === true ? undefined : 'This Worker is not carrying resources.'),
       active: props.mode === 'deposit',
+      feedbackKind: 'arm',
       onActivate: () => props.onArm('deposit')
     }
   ]
@@ -167,6 +177,7 @@ export function monkAction(props: CommandBarProps, blockedReason?: string): HudC
     icon: HeartPulse,
     blockedReason: blockedReason ?? (cooldown > 0 ? `Heal ready in ${Math.ceil(cooldown / 20)}s.` : undefined),
     active: props.mode === 'heal',
+    feedbackKind: 'arm',
     onActivate: () => props.onArm('heal')
   }
 }
@@ -217,6 +228,7 @@ export function buildingRootActions(
       description: 'Choose where newly trained units should move.',
       icon: MapPin,
       active: isRallyMode(props.mode) && props.mode.producerId === building.id,
+      feedbackKind: 'arm',
       onActivate: () => props.onSetRally(building.id)
     })
   }
@@ -227,6 +239,7 @@ export function buildingRootActions(
       description: 'Cancel the first production queue item.',
       icon: XCircle,
       destructive: confirm,
+      feedbackKind: confirm ? 'submit' : 'navigate',
       onActivate: cancelCurrent
     })
   }
@@ -240,6 +253,7 @@ export function constructionAction(confirm: boolean, onActivate: () => void): Hu
     description: 'Cancel this construction and refund its remaining value.',
     icon: XCircle,
     destructive: confirm,
+    feedbackKind: confirm ? 'submit' : 'navigate',
     onActivate
   }
 }
@@ -287,9 +301,11 @@ function buildActions(props: CommandBarProps): readonly HudCommandAction[] {
     description: `Build ${entry.label} at a valid location.`,
     icon: BUILDING_ICONS[entry.type],
     blockedReason: buildBlockReason(entry, props.resources),
+    blockedTarget: blockedFeedbackTarget(buildBlockReason(entry, props.resources)),
     cost: `${entry.costMinerals} minerals`,
     time: `${Math.ceil(entry.constructionTicks / 20)}s`,
     active: buildingTypeForMode(props.mode) === entry.type,
+    feedbackKind: 'arm',
     onActivate: () => props.onArm({ kind: 'build', buildingType: entry.type })
   }))
 }
@@ -308,8 +324,10 @@ function trainingActions(props: CommandBarProps): readonly HudCommandAction[] {
       description: `Train a ${TRAINABLE_LABEL[entry.unitKind]}.`,
       icon: UNIT_ICONS[entry.unitKind],
       blockedReason: trainingBlockReason(entry, props.resources, queueLength),
+      blockedTarget: blockedFeedbackTarget(trainingBlockReason(entry, props.resources, queueLength)),
       cost: `${entry.costMinerals} minerals · ${entry.supply} supply`,
       time: `${Math.ceil(entry.trainingTicks / 20)}s`,
+      feedbackKind: 'submit',
       onActivate: () => props.onTrain(entry.unitKind)
     }))
 }
@@ -326,8 +344,10 @@ function researchActions(props: CommandBarProps): readonly HudCommandAction[] {
     description: `Research ${RESEARCH_LABELS[entry.researchType]}.`,
     icon: BookOpen,
     blockedReason: researchBlockReason(entry, props.resources, queueLength),
+    blockedTarget: blockedFeedbackTarget(researchBlockReason(entry, props.resources, queueLength)),
     cost: `${entry.costMinerals} minerals`,
     time: `${Math.ceil(entry.researchTicks / 20)}s`,
+    feedbackKind: 'submit',
     onActivate: () => props.onResearch(building.id, entry.researchType)
   }))
 }
@@ -345,7 +365,9 @@ function upgradeActions(props: CommandBarProps): readonly HudCommandAction[] {
       description: 'Upgrade this Castle to tier II.',
       icon: ArrowUpCircle,
       blockedReason: upgradeBlockReason(building, cost, props.resources),
+      blockedTarget: blockedFeedbackTarget(upgradeBlockReason(building, cost, props.resources)),
       cost: `${cost} minerals`,
+      feedbackKind: 'submit',
       onActivate: () => props.onUpgradeCastle(building.id)
     }
   ]

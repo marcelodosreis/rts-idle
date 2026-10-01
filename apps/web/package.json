@@ -6,6 +6,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "dev": "vite",
+    "dev:instance": "vite --host 127.0.0.1 --strictPort",
     "build": "tsc -p tsconfig.json && vite build"
   },
   "dependencies": {

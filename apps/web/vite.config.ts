@@ -3,8 +3,15 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
+const developmentPort = Number(process.env.VITE_DEV_PORT ?? '5173')
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    host: process.env.HOST,
+    port: developmentPort,
+    strictPort: true
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),

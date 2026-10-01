@@ -62,6 +62,28 @@ describe('match session runtime selection', () => {
     expect(runtime.selectConstruction(999)).toEqual({ ids: [], units: [], construction: null, mineral: null })
   })
 
+  it('selects an enemy building without exposing it as an owned construction action', () => {
+    const runtime = runtimeWithState()
+    runtime.buildings = [
+      {
+        id: 17,
+        buildingType: 'BARRACKS',
+        x: 40,
+        y: 40,
+        owner: 1,
+        footprint: { width: 2, height: 2 },
+        status: 'COMPLETED',
+        progressTicks: 100,
+        totalTicks: 100,
+        hp: 300,
+        maxHp: 300
+      }
+    ]
+
+    expect(runtime.selectConstruction(17).construction).toMatchObject({ id: 17, owner: 1, status: 'COMPLETED' })
+    expect(runtime.selectedConstructionId).toBe(17)
+  })
+
   it('clears missing entities and refreshes selection from current runtime maps', () => {
     const runtime = runtimeWithState()
     runtime.selectMineral(8)

@@ -5,6 +5,7 @@ import type {
   SnapshotProductionItem
 } from '@rts/protocol'
 import { MAX_PRODUCTION_QUEUE } from '@rts/shared'
+import type { HudFeedbackTarget } from './HudContextFeedback'
 import type { HudConstruction, HudResources, HudSelectionUnit } from './types'
 
 export function unitSelectionBlockReason(selection: readonly HudSelectionUnit[]): string | undefined {
@@ -95,6 +96,22 @@ export function upgradeBlockReason(
     return `Requires ${cost} minerals. You have ${resources.mineral}.`
   }
   return undefined
+}
+
+export function blockedFeedbackTarget(reason: string | undefined): HudFeedbackTarget {
+  if (reason === undefined) {
+    return 'command'
+  }
+  if (reason.includes('minerals')) {
+    return 'minerals'
+  }
+  if (reason.includes('supply')) {
+    return 'supply'
+  }
+  if (reason.includes('queue')) {
+    return 'queue'
+  }
+  return 'command'
 }
 
 export function isResearchItem(

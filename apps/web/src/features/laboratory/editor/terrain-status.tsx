@@ -1,5 +1,14 @@
 import { type ReactNode, useCallback, useState } from 'react'
-import { Button } from '@/shared/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/shared/ui/alert-dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Switch } from '@/shared/ui/switch'
 import {
@@ -166,21 +175,20 @@ export function LevelModal({
   )
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <button type="button" aria-label="Close dialog" className="absolute inset-0 cursor-default" onClick={onClose} />
-      <div className="relative w-[min(500px,calc(100vw-2rem))] rounded-xl border border-border/50 bg-card p-4 shadow-lg">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-sm font-medium">{mode === 'export' ? 'Copy Level' : 'Paste Level'}</h3>
-          <div className="flex items-center gap-2">
-            <div className="flex gap-1 rounded-lg bg-muted/50 p-0.5">
-              {formatButton('lab', 'Lab')}
-              {formatButton('game', 'Game')}
-            </div>
-            <button type="button" className="text-muted-foreground hover:text-foreground" onClick={onClose}>
-              ×
-            </button>
+    <AlertDialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{mode === 'export' ? 'Copy Level' : 'Paste Level'}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {mode === 'export'
+              ? 'Copy the current level data to your clipboard.'
+              : 'Paste level data to load it into the editor.'}
+          </AlertDialogDescription>
+          <div className="flex w-fit gap-1 rounded-lg bg-muted/50 p-0.5">
+            {formatButton('lab', 'Lab')}
+            {formatButton('game', 'Game')}
           </div>
-        </div>
+        </AlertDialogHeader>
         <textarea
           value={text}
           onChange={(event) => setText(event.target.value)}
@@ -188,21 +196,17 @@ export function LevelModal({
           className="h-[200px] w-full resize-none rounded-lg border border-border/50 bg-muted/30 p-3 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-ring"
           placeholder={mode === 'import' ? 'Paste level JSON here…' : ''}
         />
-        <div className="mt-3 flex justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Cancel
-          </Button>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
           {mode === 'export' ? (
-            <Button size="sm" onClick={handleCopy}>
-              Copy to Clipboard
-            </Button>
+            <AlertDialogAction onClick={handleCopy}>Copy to Clipboard</AlertDialogAction>
           ) : (
-            <Button size="sm" onClick={handleImport} disabled={!text.trim()}>
+            <AlertDialogAction onClick={handleImport} disabled={!text.trim()}>
               Load Level
-            </Button>
+            </AlertDialogAction>
           )}
-        </div>
-      </div>
-    </div>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
