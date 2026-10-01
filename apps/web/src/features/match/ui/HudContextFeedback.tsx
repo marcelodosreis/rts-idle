@@ -15,6 +15,7 @@ interface HudContextFeedbackProps {
 /** A fixed overlay keeps actionable HUD feedback close to the command source. */
 export function HudContextFeedback({ feedback, instruction }: HudContextFeedbackProps) {
   const message = instruction ?? feedback?.message
+  const source = instruction === null ? 'system' : 'mode'
   if (message === null) {
     return null
   }
@@ -23,6 +24,7 @@ export function HudContextFeedback({ feedback, instruction }: HudContextFeedback
       aria-live="polite"
       data-testid="hud-context-feedback"
       data-feedback-target={feedback?.target ?? 'command'}
+      data-feedback-source={source}
       className="pointer-events-none absolute -top-8 right-3 left-3 z-20 truncate rounded-md border border-border/70 bg-background/95 px-2 py-1 text-center text-[10px] font-medium shadow-sm motion-safe:animate-[hud-context-feedback-in_180ms_ease-out]"
     >
       {message}
