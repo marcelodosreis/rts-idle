@@ -1,6 +1,6 @@
 import type { WorldInteraction } from '@rts/renderer'
 import { describe, expect, it, vi } from 'vitest'
-import { createWorldInteractionHandler } from '../../../apps/web/src/features/match/selection/create-world-interaction-handler.js'
+import { createWorldInteractionHandler } from '../../../apps/web/src/features/match/services/create-world-interaction-handler'
 
 describe('createWorldInteractionHandler', () => {
   it('clears an armed command when a primary ground click changes selection', () => {

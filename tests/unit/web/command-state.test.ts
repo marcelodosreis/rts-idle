@@ -4,8 +4,8 @@ import {
   constructionCommandBlockReason,
   constructionUpgradeBlockReason,
   trainingBlockReason
-} from '../../../apps/web/src/features/match/ui/command-state'
-import type { HudConstruction } from '../../../apps/web/src/features/match/ui/types'
+} from '../../../apps/web/src/features/match/lib/command-state'
+import type { HudConstruction } from '../../../apps/web/src/features/match/types/hud-types'
 
 const PAWN: ProductionCatalogEntry = {
   unitKind: 'pawn',

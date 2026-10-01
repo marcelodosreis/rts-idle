@@ -4,7 +4,7 @@ import {
   blockedCommandNotification,
   matchErrorNotification,
   notificationPresentation
-} from '../../../apps/web/src/features/match/ui/hud-notifications'
+} from '../../../apps/web/src/features/match/lib/hud-notifications'
 
 function house(): SnapshotBuilding {
   return {

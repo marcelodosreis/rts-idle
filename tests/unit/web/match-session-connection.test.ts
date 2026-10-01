@@ -1,6 +1,6 @@
 import type { CommandIntent } from '@rts/shared'
 import { describe, expect, it, vi } from 'vitest'
-import { createMatchSessionConnectionOwner } from '../../../apps/web/src/features/match/lifecycle/match-session-connection'
+import { createMatchSessionConnectionOwner } from '../../../apps/web/src/features/match/services/match-session-connection'
 
 const command: CommandIntent = { type: 'STOP', payload: { unitIds: [1] } }
 

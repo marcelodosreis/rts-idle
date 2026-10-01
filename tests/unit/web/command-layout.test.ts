@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COMMAND_LAYOUTS, createSubmenuLayout } from '../../../apps/web/src/features/match/ui/command-layout'
+import { COMMAND_LAYOUTS, createSubmenuLayout } from '../../../apps/web/src/features/match/types/command-layout'
 
 describe('HUD command layouts', () => {
   it('keeps all nine slots empty without a selection', () => {
