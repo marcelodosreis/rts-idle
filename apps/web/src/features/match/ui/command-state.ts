@@ -102,8 +102,8 @@ export function blockedFeedbackTarget(reason: string | undefined): HudFeedbackTa
   if (reason === undefined) {
     return 'command'
   }
-  if (reason.includes('minerals')) {
-    return 'minerals'
+  if (reason.includes('gold')) {
+    return 'gold'
   }
   if (reason.includes('supply')) {
     return 'supply'

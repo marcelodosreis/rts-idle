@@ -145,7 +145,7 @@ test('cancels any queued production row with confirmation and refund feedback', 
 
   await page.getByTestId('train-pawn').click({ force: true })
   const localBlock = page.getByTestId('hud-context-feedback')
-  await expect(localBlock).toHaveText(/Queue is full|Insufficient minerals/)
+  await expect(localBlock).toHaveText(/Queue is full|Insufficient gold/)
   const blockTarget = await localBlock.getAttribute('data-feedback-target')
   if (blockTarget === 'queue') {
     await expect(page.getByTestId('production-panel')).toHaveAttribute('data-queue-attention', 'true')

@@ -108,8 +108,8 @@ function logSnapshotEvents(
       appendLog('event', `damageDealt: ${event.targetId} -${event.amount} HP (${event.targetHp} left)`)
     } else if (event.type === 'repairStopped') {
       appendLog('event', `repairStopped: worker ${event.workerId} target ${event.targetId} (${event.reason})`)
-      if (event.reason === 'NO_MINERALS' && runtime.unitStates.get(event.workerId)?.owner === HUMAN_PLAYER) {
-        setHudNotification({ kind: 'REPAIR_STOPPED_NO_MINERALS' })
+      if (event.reason === 'NO_GOLD' && runtime.unitStates.get(event.workerId)?.owner === HUMAN_PLAYER) {
+        setHudNotification({ kind: 'REPAIR_STOPPED_NO_GOLD' })
       }
     } else if (event.type === 'unitDied') {
       appendLog('event', `unitDied: ${event.entityId} (P${event.owner}) killed by ${event.killerId ?? 'unknown'}`)

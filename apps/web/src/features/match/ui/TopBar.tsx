@@ -117,7 +117,7 @@ function TopBarStats({
   readonly selectedCount: number
   readonly feedbackTarget: HudFeedbackTarget | null
 }) {
-  const mineralDelta = useObservedDelta(resources?.mineral ?? null)
+  const goldDelta = useObservedDelta(resources?.resources.GOLD ?? null)
   const supplyDelta = useObservedDelta(resources?.supply ?? null)
   return (
     <div
@@ -134,8 +134,8 @@ function TopBarStats({
           icon={Gem}
           testId="hud-resource-gold"
           accentClassName="text-amber-400"
-          delta={mineralDelta}
-          highlighted={feedbackTarget === 'minerals'}
+          delta={goldDelta}
+          highlighted={feedbackTarget === 'gold'}
         />
         <Stat
           label="Wood"
@@ -233,13 +233,6 @@ export function TopBar(props: TopBarProps) {
       >
         {formatMatchTime(props.tick)}
       </time>
-      <div className="flex min-w-max items-center justify-self-end gap-[calc(12px*var(--hud-scale))] max-[850px]:contents">
-        <TopBarStats
-          resources={props.resources}
-          unitCount={props.unitCount}
-          selectedCount={props.selectedCount}
-          feedbackTarget={props.feedbackTarget}
-        />
       <div className="flex min-w-max items-center justify-self-end gap-[calc(12px*var(--hud-scale))] max-[899px]:contents">
         <TopBarStats
           resources={props.resources}
