@@ -31,8 +31,8 @@ The browser does not reliably identify whether a pixel-based `wheel` event came 
 
 When several rendered objects overlap, input resolves the target in this order:
 
-1. Mineral node.
-2. Unit.
+1. Unit.
+2. Resource (tree or gold mine).
 3. Building.
 4. Ground.
 

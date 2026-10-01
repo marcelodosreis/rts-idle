@@ -178,4 +178,6 @@ web/src/
 Building state is represented by one `Building` component in the simulation.
 Its explicit lifecycle is `FOUNDATION` → `UNDER_CONSTRUCTION` → `COMPLETED`;
 initial bases are completed values of the same component. Protocol snapshots
-and renderer frames expose only `buildings`; mineral nodes remain separate.
+and renderer frames expose only `buildings` for the ECS; map-authored resources
+live in the non-ECS `resources` catalog and project as mutable `resources`
+states (Gold Mine → Gold, Tree → Wood).
