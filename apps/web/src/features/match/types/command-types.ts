@@ -1,7 +1,7 @@
 import type { BuildCatalogEntry, ProductionCatalogEntry, ResearchCatalogEntry } from '@rts/protocol'
 import type { ResearchType, TrainableUnitKind } from '@rts/shared'
-import type { CommandMode } from '../hooks/use-command-modes'
 import type { HudContextFeedback } from '../components/hud-context-feedback'
+import type { CommandMode } from '../hooks/use-command-modes'
 import type { HudNotification } from '../lib/hud-notifications'
 import type { HudConstruction, HudResource, HudResources, HudSelectionUnit } from './hud-types'
 

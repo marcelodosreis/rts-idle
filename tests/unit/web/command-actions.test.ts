@@ -1,8 +1,8 @@
 import type { BuildCatalogEntry } from '@rts/protocol'
 import { describe, expect, it, vi } from 'vitest'
-import { buildingRootActions, submenuActions } from '../../../apps/web/src/features/match/ui/command-actions'
-import type { CommandBarProps } from '../../../apps/web/src/features/match/ui/command-types'
-import type { HudConstruction, HudResources } from '../../../apps/web/src/features/match/ui/types'
+import { buildingRootActions, submenuActions } from '../../../apps/web/src/features/match/lib/command-actions'
+import type { CommandBarProps } from '../../../apps/web/src/features/match/types/command-types'
+import type { HudConstruction, HudResources } from '../../../apps/web/src/features/match/types/hud-types'
 
 const CASTLE_CATALOG: BuildCatalogEntry = {
   type: 'CASTLE',

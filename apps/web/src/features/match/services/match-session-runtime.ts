@@ -1,11 +1,7 @@
 import type { BuildCatalogEntry, SnapshotBuilding, SnapshotResource } from '@rts/protocol'
 import type { GameRenderer, RenderFrame } from '@rts/renderer'
 import type { MapDefinition } from '@rts/shared'
-import {
-  projectSelectionUnits,
-  type RenderedPosition,
-  type SelectionUnitState
-} from '../lib/selection-projection'
+import { projectSelectionUnits, type RenderedPosition, type SelectionUnitState } from '../lib/selection-projection'
 import type { HudConstruction, HudResource, HudSelectionUnit } from '../types/hud-types'
 
 export interface MatchSessionRuntime {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { BoxBuilding, BoxResource } from '../../../apps/web/src/features/match/selection/select-in-box.js'
-import { selectInBox } from '../../../apps/web/src/features/match/selection/select-in-box.js'
+import type { BoxBuilding, BoxResource } from '../../../apps/web/src/features/match/lib/select-in-box'
+import { selectInBox } from '../../../apps/web/src/features/match/lib/select-in-box'
 
 function building(id: number, x: number, y: number, width = 2, height = 2): BoxBuilding {
   return { id, x, y, width, height }
