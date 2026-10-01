@@ -152,8 +152,8 @@ function commandContextKey(props: CommandBarProps): string {
   if (props.construction !== null) {
     return `building:${props.construction.id}`
   }
-  if (props.mineral !== null) {
-    return `mineral:${props.mineral.id}`
+  if (props.resource !== null) {
+    return `resource:${props.resource.id}`
   }
   return `units:${props.selection.map((unit) => unit.id).join(',')}`
 }

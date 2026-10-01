@@ -199,7 +199,13 @@ function EmptyContext() {
   )
 }
 
-export function SelectionPanel({ selection, construction, resource, humanPlayer, feedbackTarget }: SelectionPanelProps) {
+export function SelectionPanel({
+  selection,
+  construction,
+  resource,
+  humanPlayer,
+  feedbackTarget
+}: SelectionPanelProps) {
   let content = <EmptyContext />
   if (construction !== null) {
     content = (

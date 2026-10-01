@@ -1,6 +1,6 @@
 import type { MatchConfig, ScenarioSummary, SnapshotBuilding } from '@rts/protocol'
-import { type GameRenderer, type InputProfile, PixiRenderer } from '@rts/renderer'
 import type { WorldPoint } from '@rts/renderer'
+import { type GameRenderer, type InputProfile, PixiRenderer } from '@rts/renderer'
 import type { CommandIntent, MapDefinition, MatchResult, ResearchType } from '@rts/shared'
 import { FIXED_SCALE, fixedToRenderPixels, renderPixelsToFixed, TILE_PIXELS } from '@rts/shared'
 import type { MutableRefObject } from 'react'
