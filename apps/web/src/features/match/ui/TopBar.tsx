@@ -63,9 +63,9 @@ function Stat({
     <span
       data-testid={testId}
       data-feedback-highlight={highlighted === true ? 'true' : 'false'}
-      className={`flex min-w-[4.25rem] flex-col items-start gap-0.5 whitespace-nowrap rounded-md border border-border/60 bg-muted/20 px-2 py-1 text-xs max-[850px]:min-w-0 max-[850px]:px-1.5 max-[850px]:text-[10px] ${highlighted === true ? 'border-primary/80 bg-primary/10 ring-1 ring-primary/50 motion-safe:animate-[hud-attention_250ms_ease-out]' : ''}`}
+      className={`flex min-w-[4.25rem] flex-col items-start gap-0.5 whitespace-nowrap rounded-md border border-border/60 bg-muted/20 px-2 py-1 text-xs max-[1024px]:min-w-0 max-[1024px]:px-1.5 max-[1024px]:text-[10px] ${highlighted === true ? 'border-primary/80 bg-primary/10 ring-1 ring-primary/50 motion-safe:animate-[hud-attention_250ms_ease-out]' : ''}`}
     >
-      <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground max-[850px]:sr-only">
+      <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground max-[1024px]:sr-only">
         {label}
       </span>
       <span className="flex items-center gap-1">
@@ -122,11 +122,11 @@ function TopBarStats({
   return (
     <div
       data-testid="hud-topbar-stats"
-      className="flex min-w-0 items-center gap-2 max-[899px]:col-start-2 max-[899px]:row-start-1 max-[899px]:gap-1"
+      className="flex min-w-0 items-center gap-2 max-[1024px]:col-start-2 max-[1024px]:row-start-1 max-[1024px]:gap-1"
     >
       <div
         data-testid="hud-topbar-economy"
-        className="flex items-center gap-1 rounded-lg border border-border/70 bg-background/30 p-1 max-[850px]:col-start-2 max-[850px]:row-start-1"
+        className="flex items-center gap-1 rounded-lg border border-border/70 bg-background/30 p-1 max-[1024px]:col-start-2 max-[1024px]:row-start-1"
       >
         <Stat
           label="Gold"
@@ -181,9 +181,9 @@ function TopBarControls(props: TopBarProps) {
   return (
     <div
       data-testid="hud-topbar-controls"
-      className="flex items-center gap-[calc(12px*var(--hud-scale))] opacity-80 max-[899px]:col-start-2 max-[899px]:row-start-2 max-[899px]:justify-self-end max-[899px]:gap-1"
+      className="flex items-center gap-[calc(12px*var(--hud-scale))] opacity-80 max-[1024px]:col-start-2 max-[1024px]:row-start-2 max-[1024px]:justify-self-end max-[1024px]:gap-1"
     >
-      <Separator orientation="vertical" className="h-5 max-[899px]:hidden" />
+      <Separator orientation="vertical" className="h-5 max-[1024px]:hidden" />
       <SurrenderAction onSurrender={props.onSurrender} />
       <LaboratoryMenu
         status={props.status}
@@ -207,11 +207,11 @@ export function TopBar(props: TopBarProps) {
   return (
     <header
       data-testid="hud-topbar"
-      className="relative grid h-full min-h-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center border-b bg-card/80 px-[calc(12px*var(--hud-scale))] backdrop-blur max-[899px]:grid-cols-[minmax(0,1fr)_minmax(0,auto)] max-[899px]:grid-rows-2 max-[899px]:gap-x-2"
+      className="relative grid h-full min-h-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center border-b bg-card/80 px-[calc(12px*var(--hud-scale))] backdrop-blur max-[1024px]:grid-cols-[minmax(0,1fr)_minmax(0,auto)] max-[1024px]:grid-rows-2 max-[1024px]:gap-x-2"
     >
       <div
         data-testid="hud-topbar-brand"
-        className="flex min-w-0 items-center gap-3 max-[899px]:col-start-1 max-[899px]:row-start-1 max-[899px]:gap-2"
+        className="flex min-w-0 items-center gap-3 max-[1024px]:col-start-1 max-[1024px]:row-start-1 max-[1024px]:gap-2"
       >
         <span aria-hidden={true} className="text-sm text-primary">
           ◆
@@ -219,7 +219,7 @@ export function TopBar(props: TopBarProps) {
         <span className="text-sm font-semibold tracking-widest uppercase">RTS Idle</span>
         <Badge
           variant="outline"
-          className="h-5 gap-1.5 px-1.5 text-[10px] font-normal max-[850px]:absolute max-[850px]:top-3/4 max-[850px]:left-[calc(12px*var(--hud-scale))] max-[850px]:-translate-y-1/2"
+          className="h-5 gap-1.5 px-1.5 text-[10px] font-normal max-[1024px]:absolute max-[1024px]:top-3/4 max-[1024px]:left-[calc(12px*var(--hud-scale))] max-[1024px]:-translate-y-1/2"
         >
           <span
             className={`size-1.5 rounded-full ${props.status === 'connected' ? 'bg-emerald-500' : 'bg-amber-500'}`}
@@ -229,11 +229,11 @@ export function TopBar(props: TopBarProps) {
       </div>
       <time
         data-testid="hud-topbar-time"
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-border/70 bg-background/45 px-2.5 py-1 text-sm font-semibold tabular-nums tracking-[0.14em] text-foreground shadow-sm max-[899px]:static max-[899px]:col-start-1 max-[899px]:row-start-2 max-[899px]:justify-self-start max-[899px]:translate-x-0 max-[899px]:translate-y-0"
+        className="absolute top-[calc(50%+4px)] left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-border/70 bg-background/45 px-2.5 py-1 text-sm font-semibold tabular-nums tracking-[0.14em] text-foreground shadow-sm max-[1024px]:top-3/4"
       >
         {formatMatchTime(props.tick)}
       </time>
-      <div className="flex min-w-max items-center justify-self-end gap-[calc(12px*var(--hud-scale))] max-[899px]:contents">
+      <div className="flex min-w-max items-center justify-self-end gap-[calc(12px*var(--hud-scale))] max-[1024px]:contents">
         <TopBarStats
           resources={props.resources}
           unitCount={props.unitCount}

@@ -59,22 +59,28 @@ test.describe('top HUD', () => {
     await expect(page.getByRole('button', { name: 'Open DevTools menu' })).toBeVisible()
   })
 
-  test('keeps the reference 958x910 layout clear and centered', async ({ page }) => {
+  test('wraps the reference 958x910 layout into two clear rows', async ({ page }) => {
     await page.setViewportSize({ width: 958, height: 910 })
     await page.goto('/?scenario=default')
     await waitForMatchReady(page)
 
     const boxes = await topBarBoxes(page)
     expect(boxes).toHaveLength(4)
+    const brand = boxes.find((box) => box.id === 'hud-topbar-brand')
+    const stats = boxes.find((box) => box.id === 'hud-topbar-stats')
     const time = boxes.find((box) => box.id === 'hud-topbar-time')
+    const controls = boxes.find((box) => box.id === 'hud-topbar-controls')
+    expect(brand).toBeDefined()
+    expect(stats).toBeDefined()
     expect(time).toBeDefined()
-    expect(((time?.left ?? 0) + (time?.right ?? 0)) / 2).toBeCloseTo(958 / 2, 0)
-    const regions = boxes.filter((box) => box.id !== 'hud-topbar-time')
-    for (const region of regions) {
-      const regionCenter = (region.top + region.bottom) / 2
-      const timeCenter = ((time?.top ?? 0) + (time?.bottom ?? 0)) / 2
-      expect(Math.abs(regionCenter - timeCenter)).toBeLessThan(4)
-    }
+    expect(controls).toBeDefined()
+    expect(brand?.top ?? 0).toBeLessThan(time?.top ?? 0)
+    expect(stats?.top ?? 0).toBeLessThan(controls?.top ?? 0)
+    const timeCenter = ((time?.left ?? 0) + (time?.right ?? 0)) / 2
+    const controlsCenter = ((controls?.top ?? 0) + (controls?.bottom ?? 0)) / 2
+    const timeVerticalCenter = ((time?.top ?? 0) + (time?.bottom ?? 0)) / 2
+    expect(timeCenter).toBeCloseTo(958 / 2, 0)
+    expect(timeVerticalCenter).toBeCloseTo(controlsCenter, 0)
     for (let index = 0; index < boxes.length; index += 1) {
       for (let next = index + 1; next < boxes.length; next += 1) {
         const current = boxes[index]!

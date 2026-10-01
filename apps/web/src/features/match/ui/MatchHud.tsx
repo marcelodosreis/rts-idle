@@ -200,7 +200,7 @@ function BottomHud(
 
 function MatchToaster() {
   return (
-    <div className="[--match-toast-top:calc(48px*var(--hud-scale)+12px)] max-[850px]:[--match-toast-top:calc(96px*var(--hud-scale)+12px)]">
+    <div className="[--match-toast-top:calc(48px*var(--hud-scale)+12px)] max-[1024px]:[--match-toast-top:calc(96px*var(--hud-scale)+12px)]">
       <Toaster
         closeButton={true}
         position="top-right"
@@ -270,7 +270,7 @@ export function MatchHud(props: MatchHudProps) {
       className="relative flex h-screen w-full flex-col overflow-hidden bg-background text-foreground"
       style={style}
     >
-      <div className="h-[calc(48px*var(--hud-scale))] shrink-0 max-[899px]:h-[calc(96px*var(--hud-scale))]">
+      <div className="h-[calc(48px*var(--hud-scale))] shrink-0 max-[1024px]:h-[calc(96px*var(--hud-scale))]">
         <TopBar
           status={props.status}
           messageLog={props.messageLog}
