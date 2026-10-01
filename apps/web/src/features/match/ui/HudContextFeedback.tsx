@@ -15,10 +15,10 @@ interface HudContextFeedbackProps {
 /** A fixed overlay keeps actionable HUD feedback close to the command source. */
 export function HudContextFeedback({ feedback, instruction }: HudContextFeedbackProps) {
   const message = instruction ?? feedback?.message
-  const source = instruction === null ? 'system' : 'mode'
-  if (message === null) {
+  if (message === undefined || message.trim() === '') {
     return null
   }
+  const source = instruction === null ? 'system' : 'mode'
   return (
     <div
       aria-live="polite"

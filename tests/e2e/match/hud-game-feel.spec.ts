@@ -34,6 +34,13 @@ async function startMatch(page: Page): Promise<number> {
   return selectWorker(page)
 }
 
+test('does not render an empty contextual feedback overlay while idle', async ({ page }) => {
+  await page.goto('/?scenario=default')
+  await waitForMatchReady(page)
+
+  await expect(page.getByTestId('hud-context-feedback')).toHaveCount(0)
+})
+
 test('armed commands use contextual instruction instead of an order-ready toast', async ({ page }) => {
   await startMatch(page)
 

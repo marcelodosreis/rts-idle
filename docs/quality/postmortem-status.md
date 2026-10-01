@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 64 |
+| open | 65 |
 | closed | 14 |
-| **total** | **78** |
+| **total** | **79** |
 
 ## Details
 
@@ -87,6 +87,7 @@
 | 2026-09-29-topbar-reference-resolution | open | presentation | QH.02 | 2 test(s) |
 | 2026-09-30-compact-resource-delta-alignment | open | presentation | — | 1 test(s) |
 | 2026-09-30-duplicate-secondary-commands | open | input-cross-platform | — | 1 test(s) |
+| 2026-09-30-empty-hud-context-feedback | open | presentation | — | 1 test(s) |
 | 2026-09-30-enemy-building-selection-attack | open | coverage | QH.02 | 2 test(s) |
 | 2026-09-30-hud-commands-auto-battle-race | open | coverage | — | 1 test(s) |
 | 2026-09-30-laboratory-navigation-lazy-route | open | presentation | QH.13 | 1 test(s) |
