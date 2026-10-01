@@ -61,6 +61,11 @@ describe('web file conventions', () => {
     expect(violations).toEqual([])
   })
 
+  it('keeps the unit selection card component private to its file', () => {
+    const source = readFileSync(join(WEB_SOURCE, 'features/match/components/unit-selection-card.tsx'), 'utf8')
+    expect(componentExports(source)).toBe(1)
+  })
+
   it('exposes every feature slice with an explicit barrel and no model segment', () => {
     const missingBarrels = FEATURE_SLICES.filter((slice) => {
       try {

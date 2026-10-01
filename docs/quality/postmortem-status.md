@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 71 |
+| open | 72 |
 | closed | 17 |
-| **total** | **88** |
+| **total** | **89** |
 
 ## Details
 
@@ -103,6 +103,7 @@
 | 2026-10-01-enemy-building-command-panel-empty | closed | presentation | — | 2 test(s) |
 | 2026-10-01-main-e2e-navigation-flake | closed | completion-gate | QH.26.01 | 1 test(s) |
 | 2026-10-01-monk-primary-click-heals | closed | input-cross-platform | — | 2 test(s) |
+| 2026-10-01-web-rebase-component-export | open | convention | QH.24 | 1 test(s) |
 
 ## Legend
 
