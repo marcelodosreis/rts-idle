@@ -1,5 +1,27 @@
 import { expect, type Page } from '@playwright/test'
 
+export async function waitForMatchReady(page: Page): Promise<void> {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            window.__rtsDebug?.getReadyState() ?? {
+              configReceived: false,
+              snapshotReceived: false,
+              rendererReady: false,
+              firstFramePresented: false,
+              rendererError: null,
+              tick: -1,
+              ready: false
+            }
+        ),
+      { timeout: 15_000 }
+    )
+    .toMatchObject({ ready: true })
+  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+}
+
 /**
  * Loads the match and waits until every unit's position stops changing across
  * a poll interval. The hostile demo marches its squads toward each other and
@@ -10,7 +32,7 @@ export async function settleUnits(page: Page): Promise<Record<string, { readonly
   if (page.url() === 'about:blank') {
     await page.goto('/')
   }
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await waitForMatchReady(page)
   let previous = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})
   expect(Object.keys(previous).length).toBeGreaterThan(0)
   // Require ~0.5s of uninterrupted stability at a fast fixed poll interval:
