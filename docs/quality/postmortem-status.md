@@ -95,6 +95,10 @@
 | 2026-09-30-toast-animation-geometry | open | coverage | — | 1 test(s) |
 | 2026-09-30-toast-scope-window-binding | open | presentation | QH.25 | 1 test(s) |
 | 2026-10-01-main-e2e-navigation-flake | closed | completion-gate | QH.26.01 | 1 test(s) |
+| 2026-09-30-natural-resource-hud-label | open | presentation | QH.02 | 1 test(s) |
+| 2026-09-30-natural-resource-particle-buffer-not-uploaded | open | presentation | QH.25 | 2 test(s) |
+| 2026-09-30-tree-overlapped-production-build-site | open | presentation | QH.25 | 2 test(s) |
+| 2026-09-30-wood-hud-compact-layout | open | layout | QH.25 | 1 test(s) |
 
 ## Legend
 

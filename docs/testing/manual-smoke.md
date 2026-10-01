@@ -50,11 +50,34 @@ Open `http://localhost:5173/?scenario=regression`.
 | # | Action | Expected result |
 |---|---|---|
 | 1 | Left-click the Worker | The Worker gets a yellow selection ring and the selection panel reads `1 · Worker`. |
-| 2 | Right-click the amber Mineral Node | A command ping appears and the Worker travels to the node. |
-| 3 | Watch the Worker at the node | The Worker uses the pickaxe animation; an amber progress bar and `Mining N/200` status show collection progress. |
-| 4 | Wait for a full cargo | The Worker returns using the gold-carrying animation; the green cargo bar/status reaches `10/10`, then the Mineral chip changes from `0` to `10`. |
-| 5 | Continue watching | The Worker automatically starts another trip to the Mineral Node. |
+| 2 | Right-click the amber Gold Mine | A command ping appears and the Worker travels to the mine. |
+| 3 | Watch the Worker at the node | The Worker uses the pickaxe animation; an amber progress bar and `Harvesting N/200` status show collection progress. |
+| 4 | Wait for a full cargo | The Worker returns using the gold-carrying animation; the green cargo bar/status reaches `10/10`, then the Gold chip changes from `0` to `10`. |
+| 5 | Continue watching | The Worker automatically starts another trip to the Gold Mine. |
 | 6 | Click **Stop** | The Worker stops, returns to idle, and the economy bar/status and node highlight disappear. |
+
+### Wood resource (trees)
+
+Open `http://localhost:5173/?scenario=regression&aggression=passive&sprites=off`.
+The cataloged competitive map contains 40 trees in the lower-left area, on
+tiles `x=5..12`, `y=23..27`, opposite the gold mine and immediately above
+the lower water border.
+Use middle-drag or the console camera helper to center the first tree:
+
+```js
+window.__rtsDebug.moveCamera(20 * 256, 10 * 256)
+window.__rtsDebug.getResources()
+window.__rtsDebug.getResourceRenderStats()
+```
+
+| # | Action | Expected result |
+|---|---|---|
+| 1 | Center the camera on `(20,10)` | A clear minimal geometric resource marker is visible; tree sprites are not loaded. |
+| 2 | Left-click the tree | The context panel shows `Tree` and its remaining amount. |
+| 3 | Select a Worker and right-click the tree | The Worker travels to the tree and cutting feedback appears. |
+| 4 | Wait for a full cargo | Wood increases independently from Gold after depositing at the Castle. |
+| 5 | Repeat until the amount reaches zero | The tree remains visible as a stump and no longer accepts GATHER. |
+| 6 | Enter build mode and target the tree or stump tile | Construction is rejected because the resource tile remains reserved. |
 
 ### Console diagnostics (F12)
 
