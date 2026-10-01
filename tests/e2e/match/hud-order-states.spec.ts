@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
-import { waitForMatchReady } from '../support/settle.js'
+import { waitForMatchReady, waitForStableCamera } from '../support/settle.js'
 
 async function canvasPointForFixed(page: Page, x: number, y: number) {
   return page.evaluate(
@@ -19,12 +19,7 @@ async function canvasPointForFixed(page: Page, x: number, y: number) {
 
 async function focusFixed(page: Page, x: number, y: number) {
   await page.evaluate(([fixedX, fixedY]) => window.__rtsDebug?.moveCamera(fixedX, fixedY), [x, y] as const)
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) => {
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-      })
-  )
+  await waitForStableCamera(page, x, y)
   return canvasPointForFixed(page, x, y)
 }
 
@@ -40,13 +35,6 @@ async function workerPosition(page: Page, id: number): Promise<{ readonly x: num
 }
 
 async function rightClickGround(page: Page, point: { readonly x: number; readonly y: number }): Promise<void> {
-  await page.mouse.move(point.x, point.y)
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) => {
-        requestAnimationFrame(() => resolve())
-      })
-  )
   await page.mouse.click(point.x, point.y, { button: 'right' })
 }
 

@@ -16,8 +16,16 @@ describe('test output hygiene (QH.26.01)', () => {
       expect(config).not.toMatch(/reporter.*html/)
     })
 
-    it('captures trace on first retry only in CI', () => {
-      expect(config).toMatch(/trace: process\.env\.CI === 'true' \? 'on-first-retry' : 'off'/)
+    it('retains the trace of a failure in CI', () => {
+      expect(config).toMatch(/trace: process\.env\.CI === 'true' \? 'retain-on-failure' : 'off'/)
+    })
+
+    it('runs without retries so a flake cannot hide', () => {
+      expect(config).toMatch(/retries: 0/)
+    })
+
+    it('reduces motion so layout assertions are settled', () => {
+      expect(config).toMatch(/reducedMotion: 'reduce'/)
     })
 
     it('captures screenshots only on failure in CI', () => {

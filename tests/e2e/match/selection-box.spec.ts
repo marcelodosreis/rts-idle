@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
+import { waitForMatchReady } from '../support/settle.js'
 
 async function canvasRect(page: Page) {
   return page.evaluate(() => {
@@ -38,9 +39,7 @@ async function dragBox(
 
 async function ready(page: Page): Promise<void> {
   await page.goto('/?scenario=default&aggression=passive')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 }
 
 test('box-selecting a construction shows it in the current context', async ({ page }) => {
