@@ -1,4 +1,4 @@
-import { competitiveBaseLocations, competitiveMineralLocation } from '@rts/game-data'
+import { competitiveBaseLocations } from '@rts/game-data'
 import { type BuildingType, type CastleTier, type Fixed, type PlayerId, tilesToFixed, type UnitKind } from '@rts/shared'
 
 export interface DemoSpawn {
@@ -19,12 +19,6 @@ export interface DemoBaseSpawn {
   readonly tier?: CastleTier
 }
 
-export interface DemoMineralNodeSpawn {
-  readonly x: Fixed
-  readonly y: Fixed
-  readonly remaining: number
-}
-
 export interface DemoScenario {
   readonly id: string
   readonly label: string
@@ -32,7 +26,6 @@ export interface DemoScenario {
   readonly startingCastleTier?: CastleTier
   readonly spawns: readonly DemoSpawn[]
   readonly buildings?: readonly DemoBaseSpawn[]
-  readonly mineralNodes?: readonly DemoMineralNodeSpawn[]
   /** Engagement pairs: index of the attacking spawn → index of its target. */
   readonly attacks: readonly (readonly [number, number])[]
   /**
@@ -50,7 +43,6 @@ const PAWN: UnitKind = 'pawn'
 const WARRIOR: UnitKind = 'warrior'
 const ARCHER: UnitKind = 'archer'
 const [PLAYER_BASE, OPPONENT_BASE] = competitiveBaseLocations()
-const MINERAL_NODE = competitiveMineralLocation()
 
 /** Demo seed — shared with `demo.ts`; keeps every scenario deterministic. */
 export const DEMO_SEED = 123456
@@ -106,7 +98,6 @@ function defaultScenario(): DemoScenario {
       { owner: 0, ...tile(PLAYER_BASE.x, PLAYER_BASE.y) },
       { owner: 1, ...tile(OPPONENT_BASE.x, OPPONENT_BASE.y) }
     ],
-    mineralNodes: [{ remaining: 3000, ...tile(MINERAL_NODE.x, MINERAL_NODE.y) }],
     attacks: [
       [5, 0],
       [6, 1],
@@ -132,7 +123,6 @@ function regressionScenario(): DemoScenario {
       { owner: 0, initialHp: 250, ...tile(PLAYER_BASE.x, PLAYER_BASE.y) },
       { owner: 1, ...tile(OPPONENT_BASE.x, OPPONENT_BASE.y) }
     ],
-    mineralNodes: [{ remaining: 3000, ...tile(MINERAL_NODE.x, MINERAL_NODE.y) }],
     attacks: []
   }
 }
