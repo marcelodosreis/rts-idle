@@ -1,7 +1,8 @@
-import { expect, test } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
+import { waitForMatchReady } from '../support/settle.js'
 
 test.describe('top HUD', () => {
-  async function topBarBoxes(page: import('@playwright/test').Page) {
+  async function topBarBoxes(page: Page) {
     return page.evaluate(() =>
       ['hud-topbar-brand', 'hud-topbar-stats', 'hud-topbar-time', 'hud-topbar-controls']
         .map((id) => document.querySelector(`[data-testid="${id}"]`))
@@ -22,7 +23,7 @@ test.describe('top HUD', () => {
   test('shows the match clock and semantic resource colors on desktop', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await page.goto('/?scenario=default')
-    await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+    await waitForMatchReady(page)
 
     await expect(page.getByTestId('hud-topbar-time')).toHaveText(/\d{2}:\d{2}/)
     await expect(page.getByTestId('hud-resource-mineral').locator('svg')).toHaveClass(/text-amber-400/)
@@ -36,7 +37,7 @@ test.describe('top HUD', () => {
   test('keeps the brand, resources, clock, and controls in two mobile rows', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.goto('/?scenario=default')
-    await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+    await waitForMatchReady(page)
 
     const brand = await page.getByTestId('hud-topbar-brand').boundingBox()
     const stats = await page.getByTestId('hud-topbar-stats').boundingBox()
@@ -61,7 +62,7 @@ test.describe('top HUD', () => {
   test('keeps the reference 958x910 layout clear and centered', async ({ page }) => {
     await page.setViewportSize({ width: 958, height: 910 })
     await page.goto('/?scenario=default')
-    await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+    await waitForMatchReady(page)
 
     const boxes = await topBarBoxes(page)
     expect(boxes).toHaveLength(4)

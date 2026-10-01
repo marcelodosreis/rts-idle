@@ -29,42 +29,37 @@ jobs:
           if-no-files-found: warn
 
   code_tests:
-    name: Code Tests
+    name: Code Tests (${{ matrix.suite }})
     needs: static_gate
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - unit
+          - integration
+          - simulation
+          - contracts
+          - orders
+          - determinism
+          - architecture
+          - invariants
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/ci-setup
-      - name: Unit tests
-        run: pnpm run test:unit
-      - name: Integration tests
-        if: ${{ success() || github.event_name == 'push' }}
-        run: pnpm run test:integration
-      - name: Simulation tests
-        if: ${{ success() || github.event_name == 'push' }}
-        run: pnpm run test:simulation
-      - name: Contract tests
-        if: ${{ success() || github.event_name == 'push' }}
-        run: pnpm run test:contracts
-      - name: Orders tests
-        if: ${{ success() || github.event_name == 'push' }}
-        run: pnpm run test:orders
-      - name: Determinism tests
-        if: ${{ success() || github.event_name == 'push' }}
-        run: pnpm run test:determinism
-      - name: Architecture tests
-        if: ${{ success() || github.event_name == 'push' }}
-        run: pnpm run test:architecture
-      - name: Invariants tests
-        if: ${{ success() || github.event_name == 'push' }}
-        run: pnpm run test:invariants
+      - name: Run suite
+        run: pnpm run test:${{ matrix.suite }}
 
   e2e_functional:
-    name: Functional End-to-End Tests
+    name: Functional E2E (${{ matrix.browser }})
     needs: [static_gate, code_tests]
-    if: ${{ always() && needs.static_gate.result == 'success' && (needs.code_tests.result == 'success' || github.event_name == 'push') }}
+    if: ${{ needs.static_gate.result == 'success' && needs.code_tests.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
     env:
       E2E_WORKERS: 1
     steps:
@@ -78,15 +73,30 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}
-      - run: pnpm exec playwright install --with-deps chromium firefox
-      - run: pnpm run test:e2e:fast
+      - run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Run functional tests
+        run: pnpm run test:e2e -- --project=${{ matrix.browser }} --grep-invert @perf
+      - name: Upload Playwright diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-functional-${{ matrix.browser }}-${{ github.run_id }}
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: ignore
+          retention-days: 7
 
   e2e_performance:
-    name: Performance End-to-End Tests
-    needs: [static_gate, code_tests, e2e_functional]
-    if: ${{ always() && needs.static_gate.result == 'success' && (github.event_name == 'push' || (needs.code_tests.result == 'success' && needs.e2e_functional.result == 'success')) }}
+    name: Performance E2E (${{ matrix.browser }})
+    needs: [static_gate, code_tests]
+    if: ${{ needs.static_gate.result == 'success' && needs.code_tests.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
     env:
       E2E_WORKERS: 1
     steps:
@@ -100,8 +110,19 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}
-      - run: pnpm exec playwright install --with-deps chromium firefox
-      - run: pnpm run test:e2e:perf
+      - run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Run performance tests
+        run: pnpm run test:e2e -- --project=${{ matrix.browser }} --workers=1 --grep @perf
+      - name: Upload Playwright diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-performance-${{ matrix.browser }}-${{ github.run_id }}
+          path: |
+            test-results
+            playwright-report
+          if-no-files-found: ignore
+          retention-days: 7
 
   release:
     name: Release

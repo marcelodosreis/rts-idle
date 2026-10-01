@@ -29,6 +29,8 @@ test('the match exposes laboratory navigation in the top bar', async ({ page }) 
   await page.getByRole('link', { name: 'Open Laboratory' }).click()
   await expect(page).toHaveURL(/\/laboratory$/)
   await expect(page.getByTestId('laboratory-page-title')).toHaveText('Asset Browser', { timeout: 60000 })
+  await expect(page.getByTestId('route-content-error')).toHaveCount(0)
+  await expect(page.getByTestId('route-loading')).toHaveCount(0)
 })
 
 test('laboratory menu groups match settings and keeps laboratory as its final action', async ({ page }) => {

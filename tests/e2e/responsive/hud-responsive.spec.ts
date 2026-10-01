@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { waitForMatchReady } from '../support/settle.js'
 
 const VIEWPORTS = [
   { width: 800, height: 800 },
@@ -24,7 +25,7 @@ for (const viewport of VIEWPORTS) {
   test(`HUD does not overlap or overflow at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport)
     await page.goto('/')
-    await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+    await waitForMatchReady(page)
 
     const hud = await page.getByTestId('hud-root').boundingBox()
     expect(hud).not.toBeNull()

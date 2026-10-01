@@ -31,7 +31,7 @@ function getPostmortemFiles(): string[] {
 function getQualityIds(): Set<string> {
   const content = readFileSync(TASK_INDEX_PATH, 'utf-8')
   const ids = new Set<string>()
-  const matches = content.matchAll(/\bQH\.\d+\b/g)
+  const matches = content.matchAll(/\bQH\.\d+(?:\.\d+)*\b/g)
   for (const match of matches) {
     ids.add(match[0])
   }
@@ -89,7 +89,7 @@ describe('postmortem status (QUAL-017)', () => {
 
       if (fm.barreira !== null) {
         it('the barrier matches a quality task ID', () => {
-          expect(fm.barreira).toMatch(/^(QUAL-\d+|QH\.\d+)$/)
+          expect(fm.barreira).toMatch(/^(QUAL-\d+|QH\.\d+(?:\.\d+)*)$/)
         })
 
         it('the barrier quality ID exists in TASK_INDEX', () => {

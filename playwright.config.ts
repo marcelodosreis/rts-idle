@@ -20,11 +20,14 @@ export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
   forbidOnly: process.env.CI === 'true',
+  failOnFlakyTests: process.env.CI === 'true',
   retries: process.env.CI ? 1 : 0,
   workers: configuredWorkers === undefined ? defaultWorkers : Number(configuredWorkers),
   reporter: 'dot',
   use: {
-    baseURL: `http://localhost:${WEB_PORT}`
+    baseURL: `http://localhost:${WEB_PORT}`,
+    screenshot: process.env.CI === 'true' ? 'only-on-failure' : 'off',
+    trace: process.env.CI === 'true' ? 'on-first-retry' : 'off'
   },
   projects: [
     {

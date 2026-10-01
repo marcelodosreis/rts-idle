@@ -8,8 +8,8 @@
 | Status | Quantidade |
 |--------|------------|
 | open | 65 |
-| closed | 14 |
-| **total** | **79** |
+| closed | 15 |
+| **total** | **80** |
 
 ## Details
 
@@ -94,6 +94,7 @@
 | 2026-09-30-supply-delta-reservation | open | presentation | — | 1 test(s) |
 | 2026-09-30-toast-animation-geometry | open | coverage | — | 1 test(s) |
 | 2026-09-30-toast-scope-window-binding | open | presentation | QH.25 | 1 test(s) |
+| 2026-10-01-main-e2e-navigation-flake | closed | completion-gate | QH.26.01 | 1 test(s) |
 
 ## Legend
 

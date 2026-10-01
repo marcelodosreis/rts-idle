@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
 import { hasArt } from '../support/art.js'
+import { waitForMatchReady } from '../support/settle.js'
 
 async function screenPoint(page: Page, x: number, y: number) {
   return page.evaluate(
@@ -20,7 +21,7 @@ async function screenPoint(page: Page, x: number, y: number) {
 test('Monk heals an allied unit through the match HUD', async ({ page }) => {
   test.setTimeout(60_000)
   await page.goto('/?scenario=monk-heal')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   const monkPoint = await screenPoint(page, tilesToFixed(8), tilesToFixed(11))
   const warriorPoint = await screenPoint(page, tilesToFixed(9), tilesToFixed(11))
