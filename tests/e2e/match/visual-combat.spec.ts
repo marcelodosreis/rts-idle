@@ -1,8 +1,9 @@
 import { expect, type Page, test } from '@playwright/test'
+import { waitForMatchReady } from '../support/settle.js'
 
 async function waitForUnits(page: Page) {
   await page.goto('/?scenario=8v8&aggression=offensive')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await waitForMatchReady(page)
   const positions = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})
   expect(Object.keys(positions).length).toBeGreaterThan(0)
   return positions

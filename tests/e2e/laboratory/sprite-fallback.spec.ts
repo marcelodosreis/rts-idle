@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { settleUnits } from '../support/settle.js'
+import { settleUnits, waitForMatchReady } from '../support/settle.js'
 
 test('the game remains playable with sprites disabled', async ({ page }) => {
   await page.goto('/?sprites=off')
@@ -22,7 +22,7 @@ test('the game remains playable with sprites disabled', async ({ page }) => {
 test('fallback circles keep their size after units engage in combat', async ({ page }) => {
   await page.goto('/?scenario=8v8&aggression=offensive&sprites=off')
   await page.getByRole('button', { name: 'Open DevTools menu' }).click()
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   // Combat fires `attackFired`, which is what used to shrink the fallback body.
   await expect
@@ -58,7 +58,7 @@ test('fallback circles keep their size after units engage in combat', async ({ p
 
 test('fallback units show kind-specific glyphs and shapes', async ({ page }) => {
   await page.goto('/?scenario=8v8&aggression=offensive&sprites=off')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   const glyphs = await page.evaluate(() => {
     const ids = Object.keys(window.__rtsDebug?.getPositions() ?? {})

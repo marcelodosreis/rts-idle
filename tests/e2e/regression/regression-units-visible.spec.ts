@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { hasArt } from '../support/art.js'
+import { waitForMatchReady } from '../support/settle.js'
 
 // Regression: units were invisible after mount because the camera fit the
 // entire (huge) world into the viewport, collapsing the scale to ~0.016.
@@ -7,7 +8,7 @@ import { hasArt } from '../support/art.js'
 
 async function openWithUnits(page: Page) {
   await page.goto('/')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await waitForMatchReady(page)
   const positions = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})
   expect(Object.keys(positions).length).toBeGreaterThan(0)
   return positions

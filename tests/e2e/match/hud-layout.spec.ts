@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
+import { waitForMatchReady } from '../support/settle.js'
 
 interface UnitCatalogEntry {
   readonly id: number
@@ -12,7 +13,7 @@ interface UnitCatalog {
 
 async function startMatch(page: Page): Promise<UnitCatalog> {
   await page.goto('/?scenario=8v8&aggression=passive')
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1)).toBeGreaterThan(0)
+  await waitForMatchReady(page)
   return page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
     const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
