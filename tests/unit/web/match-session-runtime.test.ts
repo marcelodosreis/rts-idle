@@ -22,7 +22,26 @@ function runtimeWithState() {
       totalTicks: 10
     }
   ]
-  runtime.mineralNodes = [{ id: 8, x: 0, y: 0, remaining: 42 }]
+  runtime.resources = [{ resourceId: 8, remaining: 42 }]
+  runtime.resourceAmounts.set(8, 42)
+  runtime.map = {
+    width: 1,
+    height: 1,
+    tiles: ['land'],
+    resources: [
+      {
+        resourceId: 8,
+        kind: 'TREE',
+        x: 0,
+        y: 0,
+        variant: 0,
+        initialAmount: 30,
+        harvestAmount: 10,
+        harvestTicks: 200,
+        blocksNavigation: false
+      }
+    ]
+  }
   return runtime
 }
 
@@ -44,22 +63,28 @@ describe('match session runtime selection', () => {
     expect(setSelectedRallyProducer).toHaveBeenCalledWith(null)
   })
 
-  it('keeps unit, building, and mineral selection mutually exclusive', () => {
+  it('keeps unit, building, and resource selection mutually exclusive', () => {
     const runtime = runtimeWithState()
 
-    expect(runtime.selectUnits([])).toEqual({ ids: [], units: [], construction: null, mineral: null })
+    expect(runtime.selectUnits([])).toEqual({ ids: [], units: [], construction: null, resource: null })
     expect(runtime.selectConstruction(9).construction?.id).toBe(9)
     expect(runtime.selectedIds).toEqual([])
-    expect(runtime.selectedMineralId).toBeNull()
+    expect(runtime.selectedResourceId).toBeNull()
 
-    expect(runtime.selectMineral(8).mineral).toEqual({ id: 8, remaining: 42 })
+    expect(runtime.selectResource(8).resource).toEqual({ id: 8, remaining: 42, kind: 'TREE' })
     expect(runtime.selectedConstructionId).toBeNull()
     expect(runtime.selectedIds).toEqual([])
 
     expect(runtime.selectUnits([1]).units).toHaveLength(1)
     expect(runtime.selectedConstructionId).toBeNull()
-    expect(runtime.selectedMineralId).toBeNull()
-    expect(runtime.selectConstruction(999)).toEqual({ ids: [], units: [], construction: null, mineral: null })
+    expect(runtime.selectedResourceId).toBeNull()
+    expect(runtime.selectConstruction(999)).toEqual({ ids: [], units: [], construction: null, resource: null })
+  })
+
+  it('resolves the resource kind at selection time instead of defaulting to Gold Mine', () => {
+    const runtime = runtimeWithState()
+
+    expect(runtime.selectResource(8).resource).toEqual({ id: 8, remaining: 42, kind: 'TREE' })
   })
 
   it('selects an enemy building without exposing it as an owned construction action', () => {
@@ -86,9 +111,10 @@ describe('match session runtime selection', () => {
 
   it('clears missing entities and refreshes selection from current runtime maps', () => {
     const runtime = runtimeWithState()
-    runtime.selectMineral(8)
-    runtime.mineralNodes = []
-    expect(runtime.selectMineral(8)).toEqual({ ids: [], units: [], construction: null, mineral: null })
+    runtime.selectResource(8)
+    runtime.resources = []
+    runtime.resourceAmounts.clear()
+    expect(runtime.selectResource(8)).toEqual({ ids: [], units: [], construction: null, resource: null })
 
     runtime.unitPositions.set(1, { x: 7, y: 5 })
     const refreshed = runtime.selectUnits([1])

@@ -11,7 +11,7 @@ describe('createWorldInteractionHandler', () => {
       updateSelection: vi.fn(),
       selectAtWorldPoint,
       selectBuilding: vi.fn(),
-      selectMineral: vi.fn(),
+      selectResource: vi.fn(),
       selectBox: vi.fn(),
       clearMode,
       updatePreview: vi.fn()

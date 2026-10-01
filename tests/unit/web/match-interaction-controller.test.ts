@@ -248,7 +248,7 @@ describe('MatchInteractionController', () => {
     controller.groundCommand(1, 2)
     controller.unitCommand(9)
     controller.buildingCommand(7)
-    controller.mineralCommand(8)
+    controller.resourceCommand(8)
     controller.handleBuildPlacementClick(1, 2)
 
     expect((match as MatchInteractionContext & { sent: CommandIntent[] }).sent).toEqual([])

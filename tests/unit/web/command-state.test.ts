@@ -1,11 +1,12 @@
 import type { ProductionCatalogEntry } from '@rts/protocol'
 import { describe, expect, it } from 'vitest'
-import { trainingBlockReason } from '../../../apps/web/src/features/match/ui/command-state'
+import { canCommandConstruction, trainingBlockReason } from '../../../apps/web/src/features/match/ui/command-state'
+import type { HudConstruction } from '../../../apps/web/src/features/match/ui/types'
 
 const PAWN: ProductionCatalogEntry = {
   unitKind: 'pawn',
   producer: 'CASTLE',
-  costMinerals: 50,
+  cost: { GOLD: 50 },
   trainingTicks: 100,
   supply: 1
 }
@@ -16,7 +17,7 @@ describe('HUD command availability', () => {
       trainingBlockReason(
         PAWN,
         {
-          mineral: 500,
+          resources: { GOLD: 500, WOOD: 0 },
           supply: 7,
           reservedSupply: 3,
           supplyCap: 10,
@@ -29,12 +30,12 @@ describe('HUD command availability', () => {
     ).toBe('Insufficient supply. Requires 1; 0 available.')
   })
 
-  it('reports minerals before allowing an unaffordable command', () => {
+  it('reports gold before allowing an unaffordable command', () => {
     expect(
       trainingBlockReason(
         PAWN,
         {
-          mineral: 20,
+          resources: { GOLD: 20, WOOD: 0 },
           supply: 0,
           reservedSupply: 0,
           supplyCap: 10,
@@ -44,6 +45,23 @@ describe('HUD command availability', () => {
         },
         0
       )
-    ).toBe('Requires 50 minerals. You have 20.')
+    ).toBe('Requires 50 gold. You have 20.')
+  })
+})
+
+describe('construction command gating', () => {
+  const CASTLE: HudConstruction = {
+    id: 1,
+    buildingType: 'CASTLE',
+    owner: 0,
+    status: 'COMPLETED',
+    progressTicks: 100,
+    totalTicks: 100,
+    builderId: null
+  }
+
+  it('allows commands only for the human player construction', () => {
+    expect(canCommandConstruction(CASTLE, 0)).toBe(true)
+    expect(canCommandConstruction({ ...CASTLE, owner: 1 }, 0)).toBe(false)
   })
 })
