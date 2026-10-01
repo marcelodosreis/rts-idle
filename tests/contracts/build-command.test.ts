@@ -21,7 +21,11 @@ function simulation(kind: 'pawn' | 'warrior' = 'pawn', owner = 0, gold = 100) {
     seed: 1,
     identity: TEST_IDENTITY,
     initialWorld: world,
-    initialPlayers: [0, 1, 2, 3].map((id) => ({ id: id as 0 | 1 | 2 | 3, defeated: false, gold: id === 0 ? gold : 0 }))
+    initialPlayers: [0, 1, 2, 3].map((id) => ({
+      id: id as 0 | 1 | 2 | 3,
+      defeated: false,
+      resources: { GOLD: id === 0 ? gold : 0, WOOD: 0 }
+    }))
   })
 }
 
@@ -69,7 +73,7 @@ describe('BUILD command contract', () => {
     const result = sim.step([command(START_ENTITY_ID)])
     const state = sim.inspectState()
     expect(result.rejected).toEqual([])
-    expect(state.players[0]?.gold).toBe(0)
+    expect(state.players[0]?.resources.GOLD).toBe(0)
     expect(state.world.store(Building).get(START_ENTITY_ID + 1)?.status).toBe('FOUNDATION')
   })
 
@@ -86,7 +90,7 @@ describe('BUILD command contract', () => {
       .world.store(Building)
       .get(START_ENTITY_ID + 1)
     expect(result.rejected).toEqual([])
-    expect(sim.inspectState().players[0]?.gold).toBe(0)
+    expect(sim.inspectState().players[0]?.resources.GOLD).toBe(0)
     expect(construction).toMatchObject({
       buildingType: 'BARRACKS',
       status: 'FOUNDATION',

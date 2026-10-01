@@ -19,7 +19,11 @@ function simulation(kind: 'pawn' | 'warrior' = 'pawn', owner = 0, gold = 100) {
     seed: 1,
     identity: TEST_IDENTITY,
     initialWorld: world,
-    initialPlayers: [0, 1, 2, 3].map((id) => ({ id: id as 0 | 1 | 2 | 3, defeated: false, gold: id === 0 ? gold : 0 }))
+    initialPlayers: [0, 1, 2, 3].map((id) => ({
+      id: id as 0 | 1 | 2 | 3,
+      defeated: false,
+      resources: { GOLD: id === 0 ? gold : 0, WOOD: 0 }
+    }))
   })
 }
 
@@ -66,11 +70,11 @@ describe('CANCEL_CONSTRUCTION command contract', () => {
     const sim = simulation()
     const buildingId = BUILDING_ID
     sim.step([build(START_ENTITY_ID)])
-    expect(sim.inspectState().players[0]?.gold).toBe(0)
+    expect(sim.inspectState().players[0]?.resources.GOLD).toBe(0)
     const result = sim.step([cancel(buildingId)])
     const state = sim.inspectState()
     expect(result.rejected).toEqual([])
-    expect(state.players[0]?.gold).toBe(75)
+    expect(state.players[0]?.resources.GOLD).toBe(75)
     expect(state.world.store(Building).has(buildingId)).toBe(false)
     const builderOrder = state.world.store(Orders).get(START_ENTITY_ID)?.queue[0]
     expect(builderOrder?.type).not.toBe('BUILD')

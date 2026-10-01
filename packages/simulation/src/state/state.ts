@@ -1,20 +1,21 @@
-import type { CastleTier, EntityId, PlayerId, ResearchType, RngState } from '@rts/shared'
+import type { CastleTier, EntityId, PlayerId, PlayerResources, ResearchType, RngState } from '@rts/shared'
 import type { RulesIdentity } from '../contracts/simulation.js'
 import type { World } from '../ecs/world.js'
 import type { PlacementMapBounds } from '../placement/building-placement.js'
+import type { ResourceState } from '../resources/resource-state.js'
 import type { SimulationEvent } from '../systems/events.js'
 
 export type Phase = 'RUNNING' | 'FINISHED'
 
 /**
  * One of the four competitive slots. `defeated` flips when the player
- * surrenders or the victory system eliminates them; `gold` is the mineral
- * wallet and supply is authoritative economy state projected to the client.
+ * surrenders or the victory system eliminates them; resources and supply are
+ * authoritative economy state projected to the client.
  */
 export interface PlayerState {
   readonly id: PlayerId
   defeated: boolean
-  gold: number
+  resources: PlayerResources
   usedSupply: number
   reservedSupply: number
   supplyCap: number
@@ -41,6 +42,8 @@ export interface GameState {
   nextEntityId: number
   readonly players: readonly PlayerState[]
   readonly mapBounds: PlacementMapBounds
+  /** Compact state for map-authored resources; passive resources never enter World. */
+  readonly resources: ResourceState
   readonly world: World
   /** Transient per-tick events; never part of the canonical snapshot. */
   readonly events: SimulationEvent[]

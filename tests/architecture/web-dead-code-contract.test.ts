@@ -37,7 +37,7 @@ describe('web and renderer dead-code contract', () => {
     expect(runtime).toContain('selectedIds')
     expect(runtime).toContain('selectUnits(ids)')
     expect(runtime).toContain('selectConstruction(id)')
-    expect(runtime).toContain('selectMineral(id)')
+    expect(runtime).toContain('selectResource(id)')
     expect(sessionHook).not.toContain('runtime.selectedIds =')
     expect(sessionHook).not.toContain('runtime.selectedConstructionId =')
     expect(sessionHook).not.toContain('runtime.selectedMineralId =')

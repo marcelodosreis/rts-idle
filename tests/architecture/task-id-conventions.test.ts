@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 const TASK_INDEX_PATH = join(process.cwd(), 'docs/ai/TASK_INDEX.md')
 
 const CANONICAL_ID =
-  /^(?:P\d+(?:A|B)?\.\d+(?:\.\d+)?|QH\.\d+(?:\.\d+)?|ARCH\.\d+(?:\.\d+)?|DEP\.\d+(?:\.\d+)?|SCL\.\d+(?:\.\d+)?|ED\.\d+(?:\.\d+)?)$/
+  /^(?:P\d+(?:A|B)?\.\d+(?:\.\d+)?|QH\.\d+(?:\.\d+)?|ARCH\.\d+(?:\.\d+)?|DEP\.\d+(?:\.\d+)?|SCL\.\d+(?:\.\d+)?|ED\.\d+(?:\.\d+)?|RESOURCE\.\d+(?:\.\d+)?)$/
 const HISTORICAL_ID =
   /^(?:NAV|FOW|COMBAT|CONTENT|AI|ROOM|NET|EDITOR|QUAL|ECONOMY|BUILD|PROD|AUTH|VS|WEB-ARCH|INPUT|RFC-001-PR|DEPLOY|SCALE|E2E)-/
 

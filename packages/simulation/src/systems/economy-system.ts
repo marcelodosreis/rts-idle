@@ -1,17 +1,20 @@
 import { BUILDING_DEFINITIONS } from '@rts/game-data'
-import { distSquaredFixed, type EntityId, type Fixed, type PlayerId } from '@rts/shared'
-import type { Order } from '../contracts/orders.js'
 import {
-  GATHER_TICKS_PER_BATCH,
-  MINERAL_CARGO_CAPACITY,
-  REPAIR_HP_PER_STEP,
-  REPAIR_MINERAL_COST,
-  REPAIR_TICKS_PER_STEP
-} from '../data/economy-rules.js'
+  addPlayerResource,
+  distSquaredFixed,
+  type EntityId,
+  type Fixed,
+  type PlayerId,
+  type ResourceType,
+  resourceTypeForKind,
+  spendPlayerResource
+} from '@rts/shared'
+import type { Order } from '../contracts/orders.js'
+import { REPAIR_HP_PER_STEP, REPAIR_RESOURCE_COST, REPAIR_TICKS_PER_STEP } from '../data/economy-rules.js'
 import { unitStatsFor } from '../data/unit-stats.js'
 import { isActiveConstruction, isCloserCandidate, isCompletedBase } from '../domain/building-predicates.js'
 import { Building } from '../ecs/building-component.js'
-import { Cargo, Health, Kind, MineralNode, Movement, Orders, Owner, Position } from '../ecs/components.js'
+import { Cargo, Health, Kind, Movement, Orders, Owner, Position } from '../ecs/components.js'
 import { clearMovement, setMovementDestination } from '../movement/destination.js'
 import { removeFrontOrder, replaceFrontOrder } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
@@ -55,14 +58,13 @@ function beginReturn(state: GameState, workerId: EntityId, order: GatherOrder, o
 }
 
 function resumeGathering(state: GameState, workerId: EntityId, order: GatherOrder): void {
-  const node = state.world.store(MineralNode).get(order.nodeId)
-  const nodePosition = state.world.store(Position).get(order.nodeId)
-  if (node === undefined || node.remaining === 0 || nodePosition === undefined) {
+  const source = gatherSource(state, order)
+  if (source === null || source.remaining < source.harvestAmount) {
     removeFrontOrder(state, workerId)
     return
   }
-  replaceFrontOrder(state, workerId, { ...order, baseId: null, phase: 'TO_NODE', progressTicks: 0 })
-  setMovementDestination(state, workerId, nodePosition.x, nodePosition.y)
+  replaceFrontOrder(state, workerId, { ...order, baseId: null, phase: 'TO_RESOURCE', progressTicks: 0 })
+  setMovementDestination(state, workerId, source.x, source.y)
 }
 
 /** A Base that can accept a deposit: owned completed Base with a position. */
@@ -74,12 +76,14 @@ function isValidOwnedBase(state: GameState, baseId: EntityId, owner: PlayerId): 
   )
 }
 
-/** Credits a worker's carried minerals to its player and empties the cargo. */
+/** Credits typed worker cargo to its matching player wallet and empties it. */
 function creditCargo(state: GameState, workerId: EntityId, owner: PlayerId): void {
   const cargo = state.world.store(Cargo).get(workerId)!
   const player = state.players.find((candidate) => candidate.id === owner)!
-  player.gold += cargo.amount
-  state.world.store(Cargo).set(workerId, { ...cargo, amount: 0 })
+  if (cargo.resourceType !== null) {
+    addPlayerResource(player.resources, cargo.resourceType, cargo.amount)
+  }
+  state.world.store(Cargo).set(workerId, { amount: 0, capacity: cargo.capacity, resourceType: null })
 }
 
 function depositCargo(state: GameState, workerId: EntityId, order: GatherOrder, owner: PlayerId): void {
@@ -106,7 +110,7 @@ function updateReturn(state: GameState, workerId: EntityId, order: GatherOrder, 
 }
 
 /**
- * Manual deposit: walk to the ordered Base, credit the carried minerals on
+ * Manual deposit: walk to the ordered Base, credit the carried resource on
  * arrival, and end the order (the worker stays idle instead of resuming the
  * previous Mine). An invalidated Base drops the order without a deposit.
  */
@@ -131,44 +135,73 @@ function updateDeposit(state: GameState, workerId: EntityId, order: DepositOrder
 }
 
 function updateGathering(state: GameState, workerId: EntityId, order: GatherOrder, owner: PlayerId): void {
-  const nodes = state.world.store(MineralNode)
-  const node = nodes.get(order.nodeId)
-  const nodePosition = state.world.store(Position).get(order.nodeId)
+  const source = gatherSource(state, order)
   const cargo = state.world.store(Cargo).get(workerId)!
   if (cargo.amount > 0) {
     beginReturn(state, workerId, order, owner)
     return
   }
-  if (
-    node === undefined ||
-    node.remaining < MINERAL_CARGO_CAPACITY ||
-    node.remaining % MINERAL_CARGO_CAPACITY !== 0 ||
-    nodePosition === undefined
-  ) {
+  if (source === null || source.remaining < source.harvestAmount) {
     removeFrontOrder(state, workerId)
     return
   }
   const workerPosition = state.world.store(Position).get(workerId)!
-  if (workerPosition.x !== nodePosition.x || workerPosition.y !== nodePosition.y) {
-    replaceFrontOrder(state, workerId, { ...order, baseId: null, phase: 'TO_NODE', progressTicks: 0 })
-    setMovementDestination(state, workerId, nodePosition.x, nodePosition.y)
+  if (workerPosition.x !== source.x || workerPosition.y !== source.y) {
+    replaceFrontOrder(state, workerId, { ...order, baseId: null, phase: 'TO_RESOURCE', progressTicks: 0 })
+    setMovementDestination(state, workerId, source.x, source.y)
     return
   }
   const progressTicks = order.progressTicks + 1
-  if (progressTicks < GATHER_TICKS_PER_BATCH) {
-    replaceFrontOrder(state, workerId, { ...order, phase: 'GATHERING', progressTicks })
+  if (progressTicks < source.harvestTicks) {
+    replaceFrontOrder(state, workerId, { ...order, phase: 'HARVESTING', progressTicks })
     return
   }
-  const amount = MINERAL_CARGO_CAPACITY
-  const remaining = node.remaining - MINERAL_CARGO_CAPACITY
-  state.world.store(Cargo).set(workerId, { ...cargo, amount })
-  nodes.set(order.nodeId, { remaining })
-  const nextOrder = { ...order, phase: 'GATHERING' as const, progressTicks: 0 }
+  const amount = source.harvestAmount
+  const remaining = harvestSource(state, order, amount)
+  if (remaining === null) {
+    removeFrontOrder(state, workerId)
+    return
+  }
+  state.world.store(Cargo).set(workerId, { ...cargo, amount, resourceType: source.resourceType })
+  const nextOrder = { ...order, phase: 'HARVESTING' as const, progressTicks: 0 }
   if (amount >= cargo.capacity || remaining === 0) {
     beginReturn(state, workerId, nextOrder, owner)
   } else {
     replaceFrontOrder(state, workerId, nextOrder)
   }
+}
+
+interface GatherSource {
+  readonly x: Fixed
+  readonly y: Fixed
+  readonly remaining: number
+  readonly harvestAmount: number
+  readonly harvestTicks: number
+  readonly resourceType: ResourceType
+}
+
+function gatherSource(state: GameState, order: GatherOrder): GatherSource | null {
+  const resource = state.resources.catalog.entry(order.resourceId)
+  const remaining = state.resources.amount(order.resourceId)
+  if (resource === undefined || remaining === undefined) {
+    return null
+  }
+  return {
+    x: resource.x,
+    y: resource.y,
+    remaining,
+    harvestAmount: resource.harvestAmount,
+    harvestTicks: resource.harvestTicks,
+    resourceType: resourceTypeForKind(resource.kind)
+  }
+}
+
+function harvestSource(state: GameState, order: GatherOrder, amount: number): number | null {
+  const harvested = state.resources.harvest(order.resourceId, amount)
+  if (harvested !== amount) {
+    return null
+  }
+  return state.resources.amount(order.resourceId) ?? 0
 }
 
 function isRepairTarget(state: GameState, targetId: EntityId, owner: PlayerId): boolean {
@@ -216,13 +249,12 @@ function updateRepair(state: GameState, workerId: EntityId, order: RepairOrder, 
     replaceFrontOrder(state, workerId, { ...order, progressTicks })
     return
   }
-  if (player.gold < REPAIR_MINERAL_COST) {
-    state.events.push({ type: 'repairStopped', workerId, targetId, reason: 'NO_MINERALS' })
+  if (!spendPlayerResource(player.resources, 'GOLD', REPAIR_RESOURCE_COST)) {
+    state.events.push({ type: 'repairStopped', workerId, targetId, reason: 'NO_GOLD' })
     clearMovement(state, workerId)
     removeFrontOrder(state, workerId)
     return
   }
-  player.gold -= REPAIR_MINERAL_COST
   const current = Math.min(health.max, health.current + REPAIR_HP_PER_STEP)
   state.world.store(Health).set(targetId, { ...health, current })
   if (current >= health.max) {
@@ -261,7 +293,7 @@ function updateWorkerOrder(state: GameState, workerId: EntityId, order: Order | 
     updateReturn(state, workerId, order, owner)
     return
   }
-  if (order.phase === 'TO_NODE' && state.world.store(Movement).has(workerId)) {
+  if (order.phase === 'TO_RESOURCE' && state.world.store(Movement).has(workerId)) {
     return
   }
   updateGathering(state, workerId, order, owner)
@@ -319,7 +351,7 @@ function updateConstruction(state: GameState): void {
   }
 }
 
-/** Advances deterministic mineral gathering, return, and deposit work. */
+/** Advances deterministic resource gathering, return, and deposit work. */
 export function economySystem(state: GameState): void {
   const owners = state.world.store(Owner)
   for (const workerId of state.world.aliveIds()) {
