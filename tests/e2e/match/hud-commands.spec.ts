@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { settleUnits } from '../support/settle.js'
+import { settleUnits, waitForStableRead } from '../support/settle.js'
 
 interface UnitInfo {
   readonly id: number
@@ -114,11 +114,10 @@ test('STOP cancels an issued order and an armed ATTACK re-engages the target', a
   await page.mouse.click(firstPoint.x, firstPoint.y, { button: 'right' })
   await expect.poll(() => anyHealthBelow(page, healthBefore), { timeout: 15_000 }).toBe(true)
 
-  // STOP cancels the standing order. Let in-flight shots land, then the red
-  // units' health is frozen (blue no longer damages them).
+  // STOP cancels the standing order. Wait until the red units' health settles
+  // (in-flight shots have landed), which freezes the baseline deterministically.
   await page.getByRole('button', { name: 'Stop' }).click()
-  await page.waitForTimeout(600)
-  const baselines = await healths(page, redIds)
+  const baselines = await waitForStableRead(() => healths(page, redIds))
   const aliveBlues = await page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
     const kinds = window.__rtsDebug?.getUnitKinds() ?? {}

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
 import { hasArt } from '../support/art.js'
-import { settleUnits } from '../support/settle.js'
+import { settleUnits, waitForTicks } from '../support/settle.js'
 
 async function canvasPointForFixed(page: import('@playwright/test').Page, x: number, y: number) {
   return page.evaluate(
@@ -94,8 +94,9 @@ test('default passive enemies never damage the player', async ({ page }) => {
   const blueId = Number(Object.entries(owners).find(([, owner]) => owner === 0)![0])
 
   // The player's own units still fight, but the passive enemies never strike
-  // back, so a player unit stays at full health.
-  await page.waitForTimeout(2000)
+  // back, so a player unit stays at full health. Observe real simulated time
+  // (ticks), never wall-clock.
+  await waitForTicks(page, 40)
   const hp = await page.evaluate((id) => window.__rtsDebug?.getUnitHealth(id) ?? null, blueId)
   expect(hp).not.toBeNull()
   expect(hp!.current).toBe(hp!.max)

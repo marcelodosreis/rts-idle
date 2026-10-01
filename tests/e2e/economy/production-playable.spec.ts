@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { FIXED_SCALE, tilesToFixed } from '@rts/shared'
+import { waitForMatchReady } from '../support/settle.js'
 
 async function canvasPoint(page: Page, x: number, y: number) {
   return page.evaluate(
@@ -93,9 +94,7 @@ async function armBuild(page: Page, buildingType: string): Promise<void> {
 test('production buttons stay inside the completed construction panel', async ({ page }) => {
   test.setTimeout(30_000)
   await page.goto('/?scenario=regression')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   await selectEconomyBase(page)
   await expect(page.getByRole('button', { name: 'Train', exact: true })).toBeVisible()
@@ -126,9 +125,7 @@ test('production buttons stay inside the completed construction panel', async ({
 test('cancels any queued production row with confirmation and refund feedback', async ({ page }) => {
   test.setTimeout(30_000)
   await page.goto('/?scenario=regression')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   await selectEconomyBase(page)
   for (let count = 1; count <= 5; count += 1) {
@@ -169,9 +166,7 @@ test('cancels any queued production row with confirmation and refund feedback', 
 test('sets a rally point and sends a trained unit toward it', async ({ page }) => {
   test.setTimeout(30_000)
   await page.goto('/?scenario=regression')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   await selectEconomyBase(page)
   await expect(page.getByTestId('rally')).toBeVisible()
@@ -196,10 +191,9 @@ test('sets a rally point and sends a trained unit toward it', async ({ page }) =
   const before = await workerIds(page)
   await train(page, 'pawn')
   await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE')
-  await page.waitForTimeout(1_200)
   await expect(page.getByTestId('hud-resource-supply-delta')).toHaveCount(0)
+  await expect.poll(() => page.getByTestId('hud-resource-supply-delta').textContent(), { timeout: 15_000 }).toBe('+1')
   await expect.poll(() => workerIds(page), { timeout: 15_000 }).toHaveLength(before.length + 1)
-  await expect(page.getByTestId('hud-resource-supply-delta')).toHaveText('+1')
 
   const spawnedId = (await workerIds(page)).find((id) => !before.includes(id))!
   await expect
@@ -210,9 +204,7 @@ test('sets a rally point and sends a trained unit toward it', async ({ page }) =
 test('shows blocked production until the exit is released', async ({ page }) => {
   test.setTimeout(35_000)
   await page.goto('/?scenario=regression')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   await selectEconomyBase(page)
   const before = await workerIds(page)

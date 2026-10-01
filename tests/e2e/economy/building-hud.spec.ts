@@ -252,7 +252,6 @@ test('a construction can pause and resume with another worker through the HUD', 
   await expect.poll(() => constructionAt(page, target), { timeout: 15_000 }).toMatchObject({ status: 'FOUNDATION' })
 
   await page.getByRole('button', { name: 'Stop', exact: true }).click()
-  await page.waitForTimeout(250)
   await page.mouse.click(targetPoint.x, targetPoint.y)
   await expect(page.getByTestId('construction-panel')).toContainText('Paused')
   await expect(page.getByTestId('construction-panel')).toContainText('No worker assigned')
@@ -261,13 +260,11 @@ test('a construction can pause and resume with another worker through the HUD', 
 
   await selectWorker(page, replacement)
   await page.mouse.click(constructionPoint.x, constructionPoint.y, { button: 'right' })
-  await page.waitForTimeout(100)
   if (!(await page.getByTestId('current-context-card').textContent())?.includes('Building')) {
     await page.mouse.click(targetPoint.x, targetPoint.y, { button: 'right' })
   }
   await expect(page.getByTestId('current-context-card')).toContainText('Building')
   await page.mouse.click(constructionPoint.x, constructionPoint.y)
-  await page.waitForTimeout(100)
   if ((await page.getByTestId('construction-panel').count()) === 0) {
     await page.mouse.click(targetPoint.x, targetPoint.y)
   }
@@ -297,7 +294,6 @@ test('an in-progress construction can be cancelled through the HUD with a partia
 
   const goldBefore = await goldValue(page)
   await page.getByRole('button', { name: 'Stop', exact: true }).click()
-  await page.waitForTimeout(250)
   await page.mouse.click(targetPoint.x, targetPoint.y)
   const cancel = page.getByTestId('cancel-construction')
   await expect(cancel).toBeVisible()

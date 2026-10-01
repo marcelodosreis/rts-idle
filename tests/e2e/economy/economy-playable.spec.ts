@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
 import { hasArt } from '../support/art.js'
+import { waitForMatchReady, waitForTicks } from '../support/settle.js'
 
 /** Economy scenario Gold Mine tile (see packages/game-data/src/maps/competitive.ts). */
 const ECONOMY_NODE_TILE = { x: 24, y: 8.5 }
@@ -104,18 +105,14 @@ async function resourcePixels(page: Page): Promise<readonly string[]> {
 
 test('economy HUD shows authoritative starting supply', async ({ page }) => {
   await page.goto('/?scenario=regression&aggression=passive&sprites=off')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
   await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 10')
 })
 
 test('a worker selects, cuts, carries, and deposits wood from a tree', async ({ page }) => {
   test.setTimeout(100_000)
   await page.goto('/?scenario=regression')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   const treePoint = await focusFixed(page, tilesToFixed(TREE_TILE.x), tilesToFixed(TREE_TILE.y))
   await expect.poll(() => page.evaluate(() => Object.keys(window.__rtsDebug?.getResources() ?? {}).length)).toBe(41)
@@ -148,9 +145,7 @@ test('a worker selects, cuts, carries, and deposits wood from a tree', async ({ 
 test('a depleted tree remains visible as a stump and stops accepting gather', async ({ page }) => {
   test.setTimeout(300_000)
   await page.goto('/?scenario=regression&aggression=passive&sprites=off')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   const treePoint = await focusFixed(page, tilesToFixed(TREE_TILE.x), tilesToFixed(TREE_TILE.y))
   const worker = (await workerIds(page))[0]!
@@ -200,9 +195,7 @@ test('a depleted tree remains visible as a stump and stops accepting gather', as
 
 test('a pawn remains selectable while standing on the gold mine', async ({ page }) => {
   await page.goto('/?scenario=regression')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   const id = (await workerIds(page))[0]!
   const start = await workerPosition(page, id)
@@ -241,9 +234,7 @@ async function boxSelect(page: Page, positions: readonly { readonly x: number; r
 test('a player gathers, deposits, repeats, and stops through browser controls', async ({ page }) => {
   test.setTimeout(35_000)
   await page.goto('/?scenario=regression')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   const initialGold = await goldValue(page)
   expect(initialGold).toBe(250)
@@ -285,8 +276,11 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
   await expect(page.getByTestId('economy-status')).toBeEmpty()
   const stopped = await workerPosition(page, id)
   const stoppedGold = await goldValue(page)
-  await page.waitForTimeout(700)
-  expect(await workerPosition(page, id)).toEqual(stopped)
+  // Observe several authoritative ticks instead of sleeping: the worker must
+  // hold position and the wallet must stop changing.
+  await waitForTicks(page, 15)
+  const after = await workerPosition(page, id)
+  expect(Math.hypot(after.x - stopped.x, after.y - stopped.y)).toBeLessThan(2)
   expect(await goldValue(page)).toBe(stoppedGold)
   if (art) {
     await expect.poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id)).toBe('idle')
@@ -296,9 +290,7 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
 test('an interrupted carrying worker shows cargo and deposits by right-clicking the Base', async ({ page }) => {
   test.setTimeout(35_000)
   await page.goto('/?scenario=regression')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   const initialGold = await goldValue(page)
   const workers = await workerIds(page)
@@ -334,9 +326,7 @@ test('an interrupted carrying worker shows cargo and deposits by right-clicking 
 
 test('a primary click selects the gold mine without selecting a worker', async ({ page }) => {
   await page.goto('/?scenario=regression')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   const nodePoint = await focusFixed(page, tilesToFixed(ECONOMY_NODE_TILE.x), tilesToFixed(ECONOMY_NODE_TILE.y))
   await page.mouse.click(nodePoint.x, nodePoint.y)
@@ -354,9 +344,7 @@ test('a primary click selects the gold mine without selecting a worker', async (
 test('a group harvests the same gold mine concurrently through the browser command path', async ({ page }) => {
   test.setTimeout(35_000)
   await page.goto('/?scenario=regression')
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getTick() ?? -1), { timeout: 15_000 })
-    .toBeGreaterThan(0)
+  await waitForMatchReady(page)
 
   const workers = await workerIds(page)
   const group = workers.slice(0, 2)

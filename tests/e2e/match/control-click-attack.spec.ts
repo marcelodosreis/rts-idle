@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { selectByIds, settleUnits } from '../support/settle.js'
+import { selectByIds, settleUnits, waitForStableRead } from '../support/settle.js'
 
 interface UnitInfo {
   readonly id: number
@@ -57,10 +57,12 @@ test('right-clicking an enemy attacks it and preserves the selection', async ({ 
   await selectByIds(page, blueIds)
 
   // Freeze the red health first: STOP cancels the standing auto-orders so the
-  // only damage afterwards is the one we issue.
+  // only damage afterwards is the one we issue. Wait for the health read to
+  // settle instead of sleeping for in-flight shots.
   await page.getByRole('button', { name: 'Stop' }).click()
-  await page.waitForTimeout(600)
-  const baseline = (await page.evaluate((id) => window.__rtsDebug?.getUnitHealth(id)?.current ?? 0, red!.id)) as number
+  const baseline = await waitForStableRead(() =>
+    page.evaluate((id) => window.__rtsDebug?.getUnitHealth(id)?.current ?? 0, red!.id)
+  )
 
   const target = (await unitsByOwner(page)).find((unit) => unit.id === red!.id) ?? red!
   const targetScreen = await worldToPage(page, target.x, target.y)
