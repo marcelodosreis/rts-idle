@@ -1,24 +1,9 @@
 import { CircleCheck, Info, OctagonAlert, XCircle } from 'lucide-react'
 import { toast as sonnerToast } from 'sonner'
 import { Button } from '@/shared/ui/button'
+import { createToastScope, type ToastOptions, type ToastScope } from './toast-scope'
 
-type ToastType = 'default' | 'success' | 'info' | 'warning' | 'error'
-
-interface ToastActionProps {
-  readonly children: string
-  readonly onClick: () => void
-}
-
-interface ToastOptions {
-  readonly title?: string
-  readonly description?: string
-  readonly type?: ToastType
-  readonly priority?: 'normal' | 'high'
-  readonly actionProps?: ToastActionProps
-  readonly dedupeKey?: string
-}
-
-const toastIdsByKey = new Map<string, string | number>()
+export type { ToastOptions, ToastScope } from './toast-scope'
 
 const TOAST_ICONS = {
   default: Info,
@@ -61,28 +46,18 @@ function ToastCard({ id, options }: { readonly id: string | number; readonly opt
   )
 }
 
-export const toast = {
-  add(options: ToastOptions): string | number {
-    const existing = options.dedupeKey === undefined ? undefined : toastIdsByKey.get(options.dedupeKey)
-    if (existing !== undefined) {
-      return existing
-    }
-    const duration = options.priority === 'high' ? 4500 : 3250
-    const id = sonnerToast.custom((toastId) => <ToastCard id={toastId} options={options} />, {
-      duration
+function createSonnerToast(options: ToastOptions): string | number {
+  const duration = options.priority === 'high' ? 4500 : 3250
+  return sonnerToast.custom((toastId) => <ToastCard id={toastId} options={options} />, { duration })
+}
+
+export function createMatchToastScope(): ToastScope {
+  return {
+    ...createToastScope({
+      create: createSonnerToast,
+      dismiss: sonnerToast.dismiss,
+      setTimeout: (callback, duration) => window.setTimeout(callback, duration),
+      clearTimeout: (timer) => window.clearTimeout(timer)
     })
-    if (options.dedupeKey !== undefined) {
-      toastIdsByKey.set(options.dedupeKey, id)
-      window.setTimeout(() => toastIdsByKey.delete(options.dedupeKey!), duration)
-    }
-    return id
-  },
-  close(id: string | number): void {
-    sonnerToast.dismiss(id)
-    for (const [key, value] of toastIdsByKey) {
-      if (value === id) {
-        toastIdsByKey.delete(key)
-      }
-    }
   }
 }

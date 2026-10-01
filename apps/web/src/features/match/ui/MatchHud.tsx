@@ -3,7 +3,7 @@ import type { InputProfile } from '@rts/renderer'
 import type { MatchResult, ResearchType } from '@rts/shared'
 import { type CSSProperties, type RefObject, useCallback, useEffect, useRef } from 'react'
 import { Toaster } from 'sonner'
-import { toast } from '@/shared/ui/toast'
+import { createMatchToastScope, type ToastScope } from '@/shared/ui/toast'
 import type { CommandMode } from '../commands/useCommandModes'
 import type { MessageLogEntry } from '../lifecycle/useMessageLog'
 import { CommandBar } from './CommandBar'
@@ -93,19 +93,20 @@ function commandHint(mode: CommandMode, buildHint: string | null): string | null
 }
 
 function addHudToast(
+  toastScope: ToastScope,
   type: 'error' | 'info' | 'success',
   title: string,
   description: string,
   dedupeKey: string
 ): string | number {
   let id: string | number
-  id = toast.add({
+  id = toastScope.add({
     type,
     title,
     description,
     actionProps: {
       children: 'Dismiss',
-      onClick: () => toast.close(id)
+      onClick: () => toastScope.close(id)
     },
     dedupeKey
   })
@@ -222,6 +223,12 @@ function useHudNotificationPresenter(): {
   readonly notify: (notification: HudNotification) => void
 } {
   const contextFeedback = useTimedValue<HudContextFeedback>(2300)
+  const toastScopeRef = useRef<ToastScope | null>(null)
+  if (toastScopeRef.current === null) {
+    toastScopeRef.current = createMatchToastScope()
+  }
+  const toastScope = toastScopeRef.current
+  useEffect(() => () => toastScope.dispose(), [toastScope])
   const notify = useCallback(
     (notification: HudNotification): void => {
       const presentation = notificationPresentation(notification)
@@ -230,6 +237,7 @@ function useHudNotificationPresenter(): {
       }
       if (presentation.toast !== null) {
         addHudToast(
+          toastScope,
           presentation.toast.type,
           presentation.toast.title,
           presentation.toast.description,
@@ -237,7 +245,7 @@ function useHudNotificationPresenter(): {
         )
       }
     },
-    [contextFeedback.show]
+    [contextFeedback.show, toastScope]
   )
   return { contextFeedback: contextFeedback.value, notify }
 }

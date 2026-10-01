@@ -9,6 +9,7 @@ export interface MatchRendererLifecycleOptions {
   readonly rendererFactory?: (config: MatchConfig) => GameRenderer
   readonly callbacks: RendererCallbacks
   readonly onReady: (renderer: GameRenderer, config: MatchConfig) => void
+  readonly onFramePresented: () => void
   readonly onError: (error: unknown) => void
 }
 
@@ -37,6 +38,11 @@ function disposeRenderer(disposed: Set<GameRenderer>, renderer: GameRenderer): v
   renderer.dispose()
 }
 
+function presentFrame(options: MatchRendererLifecycleOptions, renderer: GameRenderer, frame: RenderFrame): void {
+  renderer.present(frame)
+  options.onFramePresented()
+}
+
 /** Mounts a configured renderer, presenting any frame that arrived early. */
 function mountRenderer(
   options: MatchRendererLifecycleOptions,
@@ -59,7 +65,7 @@ function mountRenderer(
       }
       runtime.rendererReady = true
       if (runtime.pendingFrame !== null) {
-        configuredRenderer.present(runtime.pendingFrame)
+        presentFrame(options, configuredRenderer, runtime.pendingFrame)
         runtime.pendingFrame = null
       }
       onReady(configuredRenderer, config)
@@ -90,7 +96,7 @@ export function createMatchRendererLifecycle(options: MatchRendererLifecycleOpti
         runtime.pendingFrame = frame
         return
       }
-      runtime.renderer.present(frame)
+      presentFrame(options, runtime.renderer, frame)
     },
     dispose() {
       runtime.sessionActive = false

@@ -130,6 +130,7 @@ function completeMatch(message: SnapshotMessage, options: MatchSessionHandlerOpt
 
 function handleSnapshot(message: SnapshotMessage, options: MatchSessionHandlerOptions): void {
   const { runtime } = options
+  runtime.snapshotReceived = true
   const completedConstructions = completedHumanConstructions(runtime.buildings, message.buildings)
   applySnapshotRuntime(runtime, message)
   if (runtime.selectedConstructionId !== null) {

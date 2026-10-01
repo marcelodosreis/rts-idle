@@ -262,12 +262,30 @@ function createRendererView(
         buildings: () => runtime.buildings,
         setSelection: updaters.updateSelection,
         getTick: () => runtime.lastTick,
-        fixedToRenderPixels
+        fixedToRenderPixels,
+        readyState: () => ({
+          configReceived: runtime.configReceived,
+          snapshotReceived: runtime.snapshotReceived,
+          rendererReady: runtime.rendererReady,
+          firstFramePresented: runtime.firstFramePresented,
+          rendererError: runtime.rendererError,
+          tick: runtime.lastTick,
+          ready:
+            runtime.configReceived &&
+            runtime.snapshotReceived &&
+            runtime.rendererReady &&
+            runtime.firstFramePresented &&
+            runtime.rendererError === null
+        })
       })
+    },
+    onFramePresented: () => {
+      runtime.firstFramePresented = true
     },
     onError: (error) => {
       refs.rendererRef.current = null
-      appendLog('error', error instanceof Error ? error.message : String(error))
+      runtime.rendererError = error instanceof Error ? error.message : String(error)
+      appendLog('error', runtime.rendererError)
     }
   })
 }
@@ -300,6 +318,7 @@ function createSessionHandlers(
     },
     present: rendererLifecycle.present,
     onMatchConfig: (config) => {
+      runtime.configReceived = true
       runtime.map = config.map
       runtime.buildCatalog = config.buildings
       setters.setMatchConfig(config)

@@ -13,6 +13,10 @@ export interface MatchSessionRuntime {
   buildCatalog: readonly BuildCatalogEntry[]
   renderer: GameRenderer | null
   rendererReady: boolean
+  configReceived: boolean
+  snapshotReceived: boolean
+  firstFramePresented: boolean
+  rendererError: string | null
   pendingFrame: RenderFrame | null
   sessionActive: boolean
   lastTick: number
@@ -124,6 +128,10 @@ export function createMatchSessionRuntime(): MatchSessionRuntime {
     buildCatalog: [],
     renderer: null,
     rendererReady: false,
+    configReceived: false,
+    snapshotReceived: false,
+    firstFramePresented: false,
+    rendererError: null,
     pendingFrame: null,
     sessionActive: true,
     lastTick: 0,
