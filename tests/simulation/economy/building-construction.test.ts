@@ -28,7 +28,11 @@ function scenario(
     seed: 7,
     identity: TEST_IDENTITY,
     initialWorld: world,
-    initialPlayers: [0, 1, 2, 3].map((id) => ({ id: id as 0 | 1 | 2 | 3, defeated: false, gold: id === 0 ? gold : 0 }))
+    initialPlayers: [0, 1, 2, 3].map((id) => ({
+      id: id as 0 | 1 | 2 | 3,
+      defeated: false,
+      resources: { GOLD: id === 0 ? gold : 0, WOOD: 0 }
+    }))
   })
 }
 
@@ -208,7 +212,7 @@ describe('BUILD simulation lifecycle', () => {
     const state = sim.inspectState()
     expect(result.rejected).toEqual([])
     expect(state.world.store(Building).has(buildingId)).toBe(false)
-    expect(state.players[0]?.gold).toBe(175)
+    expect(state.players[0]?.resources.GOLD).toBe(175)
     expect(state.world.store(Orders).get(START_ENTITY_ID)?.queue[0]?.type).not.toBe('BUILD')
     expect(sim.step([build(START_ENTITY_ID, 3, 4, 4)]).rejected).toEqual([])
   })
@@ -224,7 +228,7 @@ describe('BUILD simulation lifecycle', () => {
     }
     expect(progress).toBeGreaterThan(0)
     sim.step([cancelConstruction(buildingId, 2)])
-    expect(sim.inspectState().players[0]?.gold).toBe(constructionRefund(100, progress, 100))
+    expect(sim.inspectState().players[0]?.resources.GOLD).toBe(constructionRefund({ GOLD: 100 }, progress, 100).GOLD)
   })
 
   it('leaves the builder where it is when cancelling a construction in progress', () => {

@@ -5,7 +5,6 @@ import {
   createSimulation,
   createWorld,
   Kind,
-  MineralNode,
   Orders,
   Owner,
   Position,
@@ -18,7 +17,7 @@ import { SEEDS, TEST_IDENTITY } from '../../fixtures/index.js'
 interface EconomyScenarioOptions {
   readonly workerCount?: number
   readonly nodeX?: number
-  readonly nodeMinerals?: number
+  readonly resourceAmount?: number
   readonly includeBase?: boolean
 }
 
@@ -45,18 +44,28 @@ function economyScenario(options: EconomyScenarioOptions = {}) {
     world.store(Position).set(worker, { x: 0, y: 0 })
     world.store(Owner).set(worker, { owner: 0 })
     world.store(Kind).set(worker, 'pawn')
-    world.store(Cargo).set(worker, { amount: 0, capacity: 10 })
+    world.store(Cargo).set(worker, { amount: 0, capacity: 10, resourceType: null })
   }
-  world.createEntity(node)
-  world.store(Position).set(node, { x: options.nodeX ?? tilesToFixed(1), y: 0 })
-  world.store(MineralNode).set(node, { remaining: options.nodeMinerals ?? 3_000 })
   // Keep economy command fixtures in RUNNING phase after the common command
   // admission rule was introduced. This entity has no economy/combat role.
   const opponent = 100_000
   world.createEntity(opponent)
   world.store(Position).set(opponent, { x: tilesToFixed(31), y: tilesToFixed(31) })
   world.store(Owner).set(opponent, { owner: 1 })
-  return { world, base, workers, node }
+  const resources = [
+    {
+      resourceId: node,
+      kind: 'GOLD_MINE' as const,
+      x: options.nodeX ?? tilesToFixed(1),
+      y: 0,
+      variant: 0,
+      initialAmount: options.resourceAmount ?? 3_000,
+      harvestAmount: 10,
+      harvestTicks: 200,
+      blocksNavigation: false
+    }
+  ]
+  return { world, base, workers, node, resources }
 }
 
 function gatherCommand(workers: readonly number[], node: number): ScheduledCommand {
@@ -64,7 +73,7 @@ function gatherCommand(workers: readonly number[], node: number): ScheduledComma
     tick: 1,
     playerId: 0,
     sequence: 1,
-    intent: { type: 'GATHER', payload: { unitIds: workers, nodeId: node } }
+    intent: { type: 'GATHER', payload: { unitIds: workers, resourceId: node } }
   }
 }
 
@@ -75,16 +84,17 @@ describe('Economy v0 gathering loop', () => {
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
 
     simulation.step([gatherCommand([worker], scenario.node)])
 
     expect(simulation.inspectState().world.store(Orders).get(worker)?.queue[0]).toEqual({
       type: 'GATHER',
-      nodeId: scenario.node,
+      resourceId: scenario.node,
       baseId: null,
-      phase: 'GATHERING',
+      phase: 'HARVESTING',
       progressTicks: 1
     })
   })
@@ -95,7 +105,8 @@ describe('Economy v0 gathering loop', () => {
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
 
     simulation.step([gatherCommand([worker], scenario.node)])
@@ -105,9 +116,9 @@ describe('Economy v0 gathering loop', () => {
     const state = simulation.inspectState()
 
     expect(state.world.store(Cargo).get(worker)?.amount).toBe(10)
-    expect(state.world.store(MineralNode).get(scenario.node)?.remaining).toBe(2_990)
+    expect(state.resources.amount(scenario.node)).toBe(2_990)
     expect(state.world.store(Orders).get(worker)?.queue[0]).toMatchObject({ phase: 'TO_BASE' })
-    expect(state.players[0]?.gold).toBe(0)
+    expect(state.players[0]?.resources.GOLD).toBe(0)
   })
 
   it('gathers, carries, deposits, and automatically returns for another trip', () => {
@@ -116,22 +127,23 @@ describe('Economy v0 gathering loop', () => {
     const simulation = createSimulation({
       seed: SEEDS.simulation.deterministicPair,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
 
     simulation.step([gatherCommand([worker], scenario.node)])
-    for (let tick = 1; tick < 400 && simulation.inspectState().players[0]?.gold === 0; tick += 1) {
+    for (let tick = 1; tick < 400 && simulation.inspectState().players[0]?.resources.GOLD === 0; tick += 1) {
       simulation.step()
     }
     const state = simulation.inspectState()
 
-    expect(state.players[0]?.gold).toBe(10)
+    expect(state.players[0]?.resources.GOLD).toBe(10)
     expect(state.world.store(Cargo).get(worker)?.amount).toBe(0)
-    expect(state.world.store(MineralNode).get(scenario.node)?.remaining).toBe(2_990)
+    expect(state.resources.amount(scenario.node)).toBe(2_990)
     expect(state.world.store(Orders).get(worker)?.queue[0]).toMatchObject({
       type: 'GATHER',
-      nodeId: scenario.node,
-      phase: 'TO_NODE'
+      resourceId: scenario.node,
+      phase: 'TO_RESOURCE'
     })
   })
 
@@ -140,7 +152,8 @@ describe('Economy v0 gathering loop', () => {
     const simulation = createSimulation({
       seed: SEEDS.simulation.deterministicPair,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
 
     simulation.step([gatherCommand(scenario.workers, scenario.node)])
@@ -149,7 +162,7 @@ describe('Economy v0 gathering loop', () => {
     }
     for (const worker of scenario.workers) {
       expect(simulation.inspectState().world.store(Orders).get(worker)?.queue[0]).toMatchObject({
-        phase: 'GATHERING',
+        phase: 'HARVESTING',
         progressTicks: 7
       })
     }
@@ -162,7 +175,7 @@ describe('Economy v0 gathering loop', () => {
       expect(state.store(Cargo).get(worker)?.amount).toBe(10)
       expect(state.store(Orders).get(worker)?.queue[0]).toMatchObject({ phase: 'TO_BASE' })
     }
-    expect(state.store(MineralNode).get(scenario.node)?.remaining).toBe(2_960)
+    expect(simulation.inspectState().resources.amount(scenario.node)).toBe(2_960)
   })
 
   it('starts each worker progress independently when workers reach the node at different ticks', () => {
@@ -172,7 +185,8 @@ describe('Economy v0 gathering loop', () => {
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
 
     simulation.step([gatherCommand(scenario.workers, scenario.node)])
@@ -181,19 +195,20 @@ describe('Economy v0 gathering loop', () => {
     }
     const state = simulation.inspectState().world
 
-    expect(state.store(Orders).get(arrivedWorker!)?.queue[0]).toMatchObject({ phase: 'GATHERING', progressTicks: 6 })
-    expect(state.store(Orders).get(lateWorker!)?.queue[0]).toMatchObject({ phase: 'GATHERING', progressTicks: 1 })
+    expect(state.store(Orders).get(arrivedWorker!)?.queue[0]).toMatchObject({ phase: 'HARVESTING', progressTicks: 6 })
+    expect(state.store(Orders).get(lateWorker!)?.queue[0]).toMatchObject({ phase: 'HARVESTING', progressTicks: 1 })
   })
 
   it('advances equidistant workers together after diagonal movement to a node', () => {
     const scenario = economyScenario({ workerCount: 2, nodeX: tilesToFixed(10) })
-    scenario.world.store(Position).set(scenario.node, { x: tilesToFixed(10), y: tilesToFixed(8) })
+    scenario.resources[0] = { ...scenario.resources[0]!, x: tilesToFixed(10), y: tilesToFixed(8) }
     scenario.world.store(Position).set(scenario.workers[0]!, { x: tilesToFixed(8), y: tilesToFixed(7) })
     scenario.world.store(Position).set(scenario.workers[1]!, { x: tilesToFixed(8), y: tilesToFixed(9) })
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
 
     simulation.step([gatherCommand(scenario.workers, scenario.node)])
@@ -203,7 +218,7 @@ describe('Economy v0 gathering loop', () => {
 
     for (const worker of scenario.workers) {
       expect(simulation.inspectState().world.store(Orders).get(worker)?.queue[0]).toMatchObject({
-        phase: 'GATHERING',
+        phase: 'HARVESTING',
         progressTicks: 4
       })
     }
@@ -214,7 +229,8 @@ describe('Economy v0 gathering loop', () => {
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
 
     simulation.step([gatherCommand(scenario.workers, scenario.node)])
@@ -223,11 +239,11 @@ describe('Economy v0 gathering loop', () => {
     }
     const state = simulation.inspectState().world
 
-    expect(simulation.inspectState().players[0]?.gold).toBe(20)
-    expect(state.store(MineralNode).get(scenario.node)?.remaining).toBe(2_980)
+    expect(simulation.inspectState().players[0]?.resources.GOLD).toBe(20)
+    expect(simulation.inspectState().resources.amount(scenario.node)).toBe(2_980)
     for (const worker of scenario.workers) {
       expect(state.store(Cargo).get(worker)?.amount).toBe(0)
-      expect(state.store(Orders).get(worker)?.queue[0]).toMatchObject({ phase: 'TO_NODE', progressTicks: 0 })
+      expect(state.store(Orders).get(worker)?.queue[0]).toMatchObject({ phase: 'TO_RESOURCE', progressTicks: 0 })
     }
   })
 
@@ -236,13 +252,24 @@ describe('Economy v0 gathering loop', () => {
     const secondNode = scenario.node + 1
     scenario.world.createEntity(secondNode)
     scenario.world.store(Position).set(secondNode, { x: tilesToFixed(2), y: 0 })
-    scenario.world.store(MineralNode).set(secondNode, { remaining: 3_000 })
+    scenario.resources.push({
+      resourceId: secondNode,
+      kind: 'GOLD_MINE',
+      x: tilesToFixed(2),
+      y: 0,
+      variant: 0,
+      initialAmount: 3_000,
+      harvestAmount: 10,
+      harvestTicks: 200,
+      blocksNavigation: false
+    })
     scenario.world.store(Position).set(scenario.workers[2]!, { x: tilesToFixed(2), y: 0 })
     scenario.world.store(Position).set(scenario.workers[3]!, { x: tilesToFixed(2), y: 0 })
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
 
     simulation.step([
@@ -251,7 +278,7 @@ describe('Economy v0 gathering loop', () => {
         tick: 1,
         playerId: 0,
         sequence: 2,
-        intent: { type: 'GATHER', payload: { unitIds: scenario.workers.slice(2), nodeId: secondNode } }
+        intent: { type: 'GATHER', payload: { unitIds: scenario.workers.slice(2), resourceId: secondNode } }
       }
     ])
     for (let tick = 1; tick < 200; tick += 1) {
@@ -262,16 +289,17 @@ describe('Economy v0 gathering loop', () => {
     for (const worker of scenario.workers) {
       expect(state.store(Cargo).get(worker)?.amount).toBe(10)
     }
-    expect(state.store(MineralNode).get(scenario.node)?.remaining).toBe(2_980)
-    expect(state.store(MineralNode).get(secondNode)?.remaining).toBe(2_980)
+    expect(simulation.inspectState().resources.amount(scenario.node)).toBe(2_980)
+    expect(simulation.inspectState().resources.amount(secondNode)).toBe(2_980)
   })
 
-  it('allocates simultaneous scarce final minerals by ascending worker id without underflow', () => {
-    const scenario = economyScenario({ workerCount: 3, nodeX: 0, nodeMinerals: 20 })
+  it('allocates simultaneous scarce final batches by ascending worker id without underflow', () => {
+    const scenario = economyScenario({ workerCount: 3, nodeX: 0, resourceAmount: 20 })
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
 
     simulation.step([gatherCommand(scenario.workers, scenario.node)])
@@ -283,18 +311,19 @@ describe('Economy v0 gathering loop', () => {
     expect(state.store(Cargo).get(scenario.workers[0]!)?.amount).toBe(10)
     expect(state.store(Cargo).get(scenario.workers[1]!)?.amount).toBe(10)
     expect(state.store(Cargo).get(scenario.workers[2]!)?.amount).toBe(0)
-    expect(state.store(MineralNode).get(scenario.node)?.remaining).toBe(0)
+    expect(simulation.inspectState().resources.amount(scenario.node)).toBe(0)
     expect(state.store(Orders).get(scenario.workers[2]!)).toBeUndefined()
   })
 
-  it('returns and deposits pre-existing cargo after missing a scarce final mineral', () => {
-    const scenario = economyScenario({ workerCount: 2, nodeX: 0, nodeMinerals: 10 })
-    scenario.world.store(Cargo).set(scenario.workers[0]!, { amount: 10, capacity: 10 })
-    scenario.world.store(Cargo).set(scenario.workers[1]!, { amount: 10, capacity: 10 })
+  it('returns and deposits pre-existing cargo after missing a scarce final batch', () => {
+    const scenario = economyScenario({ workerCount: 2, nodeX: 0, resourceAmount: 10 })
+    scenario.world.store(Cargo).set(scenario.workers[0]!, { amount: 10, capacity: 10, resourceType: 'GOLD' })
+    scenario.world.store(Cargo).set(scenario.workers[1]!, { amount: 10, capacity: 10, resourceType: 'GOLD' })
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
 
     simulation.step([gatherCommand(scenario.workers, scenario.node)])
@@ -303,8 +332,8 @@ describe('Economy v0 gathering loop', () => {
     }
     const state = simulation.inspectState().world
 
-    expect(simulation.inspectState().players[0]?.gold).toBe(20)
-    expect(state.store(MineralNode).get(scenario.node)?.remaining).toBe(10)
+    expect(simulation.inspectState().players[0]?.resources.GOLD).toBe(20)
+    expect(simulation.inspectState().resources.amount(scenario.node)).toBe(10)
     expect(state.store(Cargo).get(scenario.workers[0]!)?.amount).toBe(0)
     expect(state.store(Cargo).get(scenario.workers[1]!)?.amount).toBe(0)
     expect(state.store(Orders).get(scenario.workers[0]!)?.queue[0]).toMatchObject({ type: 'GATHER' })
@@ -316,7 +345,8 @@ describe('Economy v0 gathering loop', () => {
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
 
     simulation.step([gatherCommand(scenario.workers, scenario.node)])
@@ -326,17 +356,17 @@ describe('Economy v0 gathering loop', () => {
     simulation.step([
       { tick: 6, playerId: 0, sequence: 2, intent: { type: 'STOP', payload: { unitIds: scenario.workers } } }
     ])
-    const stoppedNodeRemaining = simulation.inspectState().world.store(MineralNode).get(scenario.node)?.remaining
+    const stoppedNodeRemaining = simulation.inspectState().resources.amount(scenario.node)
     const stoppedCargo = scenario.workers.map(
       (worker) => simulation.inspectState().world.store(Cargo).get(worker)?.amount
     )
-    const stoppedGold = simulation.inspectState().players[0]?.gold
+    const stoppedGold = simulation.inspectState().players[0]?.resources.GOLD
     for (let tick = 0; tick < 10; tick += 1) {
       simulation.step()
     }
 
-    expect(simulation.inspectState().players[0]?.gold).toBe(stoppedGold)
-    expect(simulation.inspectState().world.store(MineralNode).get(scenario.node)?.remaining).toBe(stoppedNodeRemaining)
+    expect(simulation.inspectState().players[0]?.resources.GOLD).toBe(stoppedGold)
+    expect(simulation.inspectState().resources.amount(scenario.node)).toBe(stoppedNodeRemaining)
     for (const [index, worker] of scenario.workers.entries()) {
       expect(simulation.inspectState().world.store(Cargo).get(worker)?.amount).toBe(stoppedCargo[index])
       expect(simulation.inspectState().world.store(Orders).get(worker)).toBeUndefined()
@@ -348,7 +378,8 @@ describe('Economy v0 gathering loop', () => {
     const original = createSimulation({
       seed: SEEDS.simulation.deterministicPair,
       identity: TEST_IDENTITY,
-      initialWorld: scenario.world
+      initialWorld: scenario.world,
+      resources: scenario.resources
     })
 
     original.step([gatherCommand(scenario.workers, scenario.node)])
@@ -362,6 +393,6 @@ describe('Economy v0 gathering loop', () => {
       original.step()
     }
     expect(restored.inspectState()).toEqual(original.inspectState())
-    expect(restored.inspectState().players[0]?.gold).toBe(30)
+    expect(restored.inspectState().players[0]?.resources.GOLD).toBe(30)
   })
 })
