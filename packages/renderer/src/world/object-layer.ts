@@ -7,7 +7,7 @@ import {
 } from '@rts/shared'
 import { Container, Graphics, Sprite, type Texture } from 'pixi.js'
 import type { AssetLibrary } from '../assets/asset-library.js'
-import type { RenderBuilding, RenderBuildPreview, RenderMineralNode } from '../core/types.js'
+import type { RenderBuilding, RenderBuildPreview } from '../core/types.js'
 import {
   BAR_BACKGROUND,
   BAR_BORDER,
@@ -20,9 +20,6 @@ import {
 import { progressFillColor } from '../effects/progress-palette.js'
 import { buildingVisualStyle } from './building-visual-style.js'
 
-const MINERAL_RADIUS = 30
-const MINERAL_COLOR = progressFillColor('mining')
-const MINERAL_OUTLINE_COLOR = 0xffffff
 const BUILDING_FACTIONS = ['blue', 'red', 'purple', 'yellow'] as const
 const BUILDING_ASSET_NAMES = {
   CASTLE: 'castle',
@@ -56,9 +53,6 @@ export class WorldObjectLayer {
     number,
     { readonly x: number; readonly y: number; readonly width: number; readonly height: number }
   >()
-  private readonly mineralNodes = new Map<number, Graphics>()
-  private readonly mineralNodePositions = new Map<number, { readonly x: number; readonly y: number }>()
-  private readonly activeMineralNodes = new Set<number>()
   private preview: RenderBuildPreview | null = null
   private previewGraphic: Graphics | null = null
 
@@ -88,9 +82,8 @@ export class WorldObjectLayer {
     }
   }
 
-  present(buildings: readonly RenderBuilding[], mineralNodes: readonly RenderMineralNode[]): void {
+  present(buildings: readonly RenderBuilding[]): void {
     this.presentBuildings(buildings)
-    this.presentMineralNodes(mineralNodes)
     this.renderPreview()
   }
 
@@ -255,36 +248,6 @@ export class WorldObjectLayer {
     }
   }
 
-  private presentMineralNodes(mineralNodes: readonly RenderMineralNode[]): void {
-    const seenNodes = new Set<number>()
-    this.mineralNodePositions.clear()
-    for (const node of mineralNodes) {
-      seenNodes.add(node.id)
-      this.drawMineralNode(node)
-    }
-    this.removeMissing(this.mineralNodes, seenNodes)
-  }
-
-  private drawMineralNode(node: RenderMineralNode): void {
-    let graphic = this.mineralNodes.get(node.id)
-    if (graphic === undefined) {
-      graphic = new Graphics()
-      graphic.poly([0, -34, 28, 0, 0, 34, -28, 0]).fill({ color: MINERAL_COLOR, alpha: 0.9 })
-      graphic.poly([0, -34, 28, 0, 0, 34, -28, 0]).stroke({ color: MINERAL_OUTLINE_COLOR, width: 4 })
-      graphic.eventMode = 'none'
-      this.worldObjectsLayer.addChild(graphic)
-      this.mineralNodes.set(node.id, graphic)
-    }
-    const x = fixedToRenderPixels(node.x)
-    const y = fixedToRenderPixels(node.y)
-    graphic.position.set(x, y)
-    graphic.alpha = node.remaining === 0 ? 0.35 : 1
-    graphic.scale.set(this.activeMineralNodes.has(node.id) ? 1.2 : 1)
-    if (node.remaining > 0) {
-      this.mineralNodePositions.set(node.id, { x, y })
-    }
-  }
-
   private drawBase(
     graphic: Graphics,
     size: RenderBuildingSize,
@@ -330,28 +293,6 @@ export class WorldObjectLayer {
     graphic.fill({ color: this.preview.valid ? 0x22c55e : 0xef4444, alpha: 0.28 })
     graphic.stroke({ color: this.preview.valid ? 0x86efac : 0xfca5a5, width: 4 })
     graphic.position.set(fixedToRenderPixels(this.preview.x), fixedToRenderPixels(this.preview.y))
-  }
-
-  setActiveMineralNodes(ids: ReadonlySet<number>): void {
-    this.activeMineralNodes.clear()
-    for (const id of ids) {
-      this.activeMineralNodes.add(id)
-    }
-    for (const [id, graphic] of this.mineralNodes) {
-      graphic.scale.set(this.activeMineralNodes.has(id) ? 1.2 : 1)
-    }
-  }
-
-  mineralNodeAt(x: number, y: number): number | null {
-    const threshold = MINERAL_RADIUS * MINERAL_RADIUS
-    for (const [id, position] of this.mineralNodePositions) {
-      const dx = position.x - x
-      const dy = position.y - y
-      if (dx * dx + dy * dy <= threshold) {
-        return id
-      }
-    }
-    return null
   }
 
   buildingAt(x: number, y: number): number | null {

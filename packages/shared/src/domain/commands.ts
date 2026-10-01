@@ -1,6 +1,7 @@
 import type { Fixed } from '../primitives/fixed.js'
 import type { EntityId } from '../primitives/ids.js'
 import type { ResearchType } from './research.js'
+import type { ResourceId } from './resources.js'
 import type { TrainableUnitKind } from './unit-kind.js'
 
 export interface MovePayload {
@@ -36,7 +37,7 @@ export interface AttackMovePayload {
 
 export interface GatherPayload {
   readonly unitIds: readonly EntityId[]
-  readonly nodeId: EntityId
+  readonly resourceId: ResourceId
 }
 
 export interface DepositPayload {
