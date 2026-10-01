@@ -1,1 +1,1 @@
-export { AssetBrowserFeature } from './AssetBrowserFeature'
+export { AssetBrowserFeature } from './components/asset-browser-feature'
