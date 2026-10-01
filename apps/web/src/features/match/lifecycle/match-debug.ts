@@ -1,6 +1,6 @@
 import type { ConstructionStatus, MatchConfig, SnapshotMessage } from '@rts/protocol'
 import type { GameRenderer } from '@rts/renderer'
-import type { UnitKind } from '@rts/shared'
+import { type ResourceKind, type ResourceType, resourceTypeForKind, type UnitKind } from '@rts/shared'
 import type { SelectionUnitState } from '../selection/selection-projection'
 
 export interface RtsDebug {
@@ -36,6 +36,18 @@ export interface RtsDebug {
     readonly decorations: number
     readonly isPlaytest: boolean
   }
+  getResources(): Record<
+    string,
+    {
+      readonly resourceId: number
+      readonly kind: ResourceKind
+      readonly resourceType: ResourceType
+      readonly x: number
+      readonly y: number
+      readonly remaining: number
+    }
+  >
+  getResourceRenderStats(): ReturnType<GameRenderer['getResourceStats']>
 }
 
 export interface MatchReadyState {
@@ -79,6 +91,7 @@ export interface MatchDebugOptions {
   readonly getTick: () => number
   readonly fixedToRenderPixels: (value: number) => number
   readonly readyState: () => MatchReadyState
+  readonly resourceAmounts: () => ReadonlyMap<number, number>
 }
 
 function constructionDiagnostic(options: MatchDebugOptions, id: number): ConstructionDiagnostic | null {
@@ -105,6 +118,38 @@ function constructionDiagnostic(options: MatchDebugOptions, id: number): Constru
   }
 }
 
+function constructionStates(
+  buildings: readonly SnapshotMessage['buildings'][number][]
+): RtsDebug['getConstructionStates'] extends () => infer T ? T : never {
+  return Object.fromEntries(
+    buildings.map((building) => [
+      String(building.id),
+      {
+        x: building.x,
+        y: building.y,
+        status: building.status,
+        ...(building.hp === undefined ? {} : { hp: building.hp, maxHp: building.maxHp })
+      }
+    ])
+  )
+}
+
+function resources(config: MatchConfig, amounts: ReadonlyMap<number, number>): ReturnType<RtsDebug['getResources']> {
+  return Object.fromEntries(
+    config.map.resources.map((resource) => [
+      String(resource.resourceId),
+      {
+        resourceId: resource.resourceId,
+        kind: resource.kind,
+        resourceType: resourceTypeForKind(resource.kind),
+        x: resource.x,
+        y: resource.y,
+        remaining: amounts.get(resource.resourceId) ?? resource.initialAmount
+      }
+    ])
+  )
+}
+
 export function createRtsDebug(options: MatchDebugOptions): RtsDebug {
   const {
     renderer,
@@ -115,24 +160,14 @@ export function createRtsDebug(options: MatchDebugOptions): RtsDebug {
     setSelection,
     getTick,
     fixedToRenderPixels,
-    readyState
+    readyState,
+    resourceAmounts
   } = options
   return {
     getPositions: () => Object.fromEntries([...renderer.getUnitPositions()].map(([id, pos]) => [String(id), pos])),
     getUnitOwners: () => Object.fromEntries([...unitStates].map(([id, state]) => [String(id), state.owner])),
     getUnitKinds: () => Object.fromEntries([...unitStates].map(([id, state]) => [String(id), state.kind])),
-    getConstructionStates: () =>
-      Object.fromEntries(
-        buildings().map((building) => [
-          String(building.id),
-          {
-            x: building.x,
-            y: building.y,
-            status: building.status,
-            ...(building.hp === undefined ? {} : { hp: building.hp, maxHp: building.maxHp })
-          }
-        ])
-      ),
+    getConstructionStates: () => constructionStates(buildings()),
     getAnimationFrame: (id) => renderer.getUnitAnimationFrame(id),
     getUnitHealth: (id) => renderer.getUnitHealth(id),
     getSpriteState: (id) => renderer.getUnitSpriteState(id),
@@ -151,6 +186,8 @@ export function createRtsDebug(options: MatchDebugOptions): RtsDebug {
       height: config.map.height,
       decorations: config.map.decorations?.length ?? 0,
       isPlaytest
-    })
+    }),
+    getResources: () => resources(config, resourceAmounts()),
+    getResourceRenderStats: () => renderer.getResourceStats()
   }
 }

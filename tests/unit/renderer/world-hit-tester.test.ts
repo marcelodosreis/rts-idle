@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { createWorldHitTester } from '../../../packages/renderer/src/input/world-hit-tester.js'
 
 describe('world hit tester', () => {
-  it('uses the documented unit, mineral, building, ground precedence', () => {
+  it('uses the documented unit, resource, building, ground precedence', () => {
     const tester = createWorldHitTester({
-      mineralNodeAt: () => 3,
+      resourceAt: () => 3,
       unitAt: () => 2,
       buildingAt: () => 1
     })
@@ -14,14 +14,14 @@ describe('world hit tester', () => {
 
   it('falls through each target type before returning ground', () => {
     const tester = createWorldHitTester({
-      mineralNodeAt: () => null,
+      resourceAt: () => null,
       unitAt: () => null,
       buildingAt: () => 7
     })
     expect(tester.targetAt({ x: 10, y: 20 })).toEqual({ kind: 'building', id: 7 })
 
     const ground = createWorldHitTester({
-      mineralNodeAt: () => null,
+      resourceAt: () => null,
       unitAt: () => null,
       buildingAt: () => null
     })

@@ -57,6 +57,13 @@
 | P2.11.01 | Monk Heal | done | P2.11 | shared, game-data, protocol, simulation, server, renderer, web | unit, simulation, contracts, determinism, invariants, e2e |
 | P2.12 | Economic integration | pending | P2.11 | simulation, server, web | integration, determinism, e2e |
 
+## Cross-cutting Resource Track
+
+| ID | Title | Status | Dependencies | Packages | Validation |
+|----|-------|--------|--------------|----------|------------|
+| RESOURCE.01 | Natural resources visual completion | done | — | shared, server, renderer, web, tests, docs | unit, integration, simulation, e2e, benchmark, verify |
+| RESOURCE.02 | Unified resource domain (trees and gold mine) | done | RESOURCE.01 | shared, game-data, protocol, simulation, server, renderer, web, tools, tests, docs | typecheck, lint, unit, simulation, contracts, integration, invariants, architecture, e2e, benchmark, verify |
+
 ## Phase 3 — Navigation and Combat
 
 | ID | Title | Status | Dependencies | Packages | Validation |

@@ -3,7 +3,7 @@ import {
   canCancelConstruction,
   cancelRefundEstimate,
   constructionStatusLine,
-  mineralRemainingLine
+  resourceRemainingLine
 } from '../../../apps/web/src/features/match/selection/selection-panel-logic'
 
 describe('selection panel labels', () => {
@@ -50,8 +50,8 @@ describe('selection panel labels', () => {
     ).toBe('82/100')
   })
 
-  it('shows the selected mineral quantity', () => {
-    expect(mineralRemainingLine({ id: 4, remaining: 275 })).toBe('275 remaining')
+  it('shows the selected resource quantity', () => {
+    expect(resourceRemainingLine({ id: 4, remaining: 275 })).toBe('275 remaining')
   })
 
   it('allows cancelling only non-completed constructions owned by the player', () => {

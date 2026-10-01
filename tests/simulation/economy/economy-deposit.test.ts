@@ -40,7 +40,7 @@ function depositScenario(options: DepositScenarioOptions = {}) {
   world.store(Position).set(worker, { x: options.workerX ?? tilesToFixed(4), y: 0 })
   world.store(Owner).set(worker, { owner: 0 })
   world.store(Kind).set(worker, 'pawn')
-  world.store(Cargo).set(worker, { amount: options.cargo ?? 5, capacity: 10 })
+  world.store(Cargo).set(worker, { amount: options.cargo ?? 5, capacity: 10, resourceType: 'GOLD' })
   // Keeps the match RUNNING so command admission accepts the deposit.
   const opponent = 100_000
   world.createEntity(opponent)
@@ -75,12 +75,12 @@ describe('Economy deposit command', () => {
     })
     expect(ordered.store(Movement).get(scenario.worker)).toMatchObject({ destX: 0, destY: 0 })
 
-    for (let tick = 0; tick < 60 && simulation.inspectState().players[0]?.gold === 0; tick += 1) {
+    for (let tick = 0; tick < 60 && simulation.inspectState().players[0]?.resources.GOLD === 0; tick += 1) {
       simulation.step()
     }
     const state = simulation.inspectState()
 
-    expect(state.players[0]?.gold).toBe(5)
+    expect(state.players[0]?.resources.GOLD).toBe(5)
     expect(state.world.store(Cargo).get(scenario.worker)?.amount).toBe(0)
     expect(state.world.store(Orders).has(scenario.worker)).toBe(false)
     expect(state.world.store(Movement).has(scenario.worker)).toBe(false)
@@ -97,7 +97,7 @@ describe('Economy deposit command', () => {
     simulation.step([depositCommand([scenario.worker], scenario.base)])
     const state = simulation.inspectState()
 
-    expect(state.players[0]?.gold).toBe(7)
+    expect(state.players[0]?.resources.GOLD).toBe(7)
     expect(state.world.store(Cargo).get(scenario.worker)?.amount).toBe(0)
     expect(state.world.store(Orders).has(scenario.worker)).toBe(false)
   })

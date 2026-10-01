@@ -19,9 +19,9 @@ replays. This document is the operational reference; the math lives in
   (`SYSTEM_PIPELINE`, ADR-013); reordering is forbidden and asserted by a test.
 - **Deterministic iteration.** Systems iterate `world.aliveIds()` (sorted by
   id) and pick targets by strictly-lower distance, so ties resolve to the
-  lowest id. Economy lets every Worker at a node progress independently; this
-  ordering allocates only scarce final minerals, while Base distance ties still
-  resolve to the lowest id.
+  lowest id. Economy lets every Worker at a resource progress independently;
+  this ordering allocates only scarce final batches, while Castle distance ties
+  still resolve to the lowest id.
 - **Frozen schema.** The canonical byte format (component registration order,
   presence flags, tags) is pinned by `tests/simulation/hash-golden.test.ts`.
   Changing it requires a deliberate `SIMULATION_VERSION` bump and golden regen.

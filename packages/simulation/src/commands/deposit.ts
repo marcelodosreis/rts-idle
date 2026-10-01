@@ -10,7 +10,7 @@ import { validateOwnedUnits } from './validate-units.js'
 
 /**
  * Applies a DEPOSIT command: owned workers walk to an owned completed Base and
- * deliver their carried minerals on arrival. Validates the whole transaction
+ * deliver their carried resource on arrival. Validates the whole transaction
  * before mutating (atomicity, master plan §10.3). The target Base must be a
  * completed Base owned by the issuing player; every selected entity must be an
  * available pawn with a Cargo component.

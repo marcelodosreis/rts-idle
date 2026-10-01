@@ -22,10 +22,10 @@ function stateFor(
     identity: TEST_IDENTITY,
     initialWorld: world,
     initialPlayers: [
-      { id: 0, defeated: false, gold: 0, completedResearch, highestCastleTierReached: 2 },
-      { id: 1, defeated: false, gold: 0 },
-      { id: 2, defeated: false, gold: 0 },
-      { id: 3, defeated: false, gold: 0 }
+      { id: 0, defeated: false, resources: { GOLD: 0, WOOD: 0 }, completedResearch, highestCastleTierReached: 2 },
+      { id: 1, defeated: false, resources: { GOLD: 0, WOOD: 0 } },
+      { id: 2, defeated: false, resources: { GOLD: 0, WOOD: 0 } },
+      { id: 3, defeated: false, resources: { GOLD: 0, WOOD: 0 } }
     ]
   }).inspectState()
 }

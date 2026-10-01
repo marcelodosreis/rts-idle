@@ -3,7 +3,7 @@ import type { ResearchType, TrainableUnitKind } from '@rts/shared'
 import type { CommandMode } from '../commands/useCommandModes'
 import type { HudContextFeedback } from './HudContextFeedback'
 import type { HudNotification } from './hud-notifications'
-import type { HudConstruction, HudMineral, HudResources, HudSelectionUnit } from './types'
+import type { HudConstruction, HudResource, HudResources, HudSelectionUnit } from './types'
 
 export type SubmenuKind = 'build' | 'train' | 'research' | 'upgrade'
 export type MenuState =
@@ -13,7 +13,8 @@ export type MenuState =
 export interface CommandBarProps {
   readonly selection: readonly HudSelectionUnit[]
   readonly construction: HudConstruction | null
-  readonly mineral: HudMineral | null
+  readonly resource: HudResource | null
+  readonly humanPlayer: number
   readonly mode: CommandMode
   readonly resources: HudResources | null
   readonly buildings: readonly BuildCatalogEntry[]

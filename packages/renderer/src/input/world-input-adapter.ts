@@ -21,6 +21,7 @@ export class WorldInputAdapter {
   private selectionStart: WorldPoint | null = null
   private selectionStartScreen: ScreenPoint | null = null
   private selectionStarted = false
+  private secondaryContextMenuPending = false
 
   constructor(options: WorldInputAdapterOptions) {
     this.canvas = options.canvas
@@ -53,16 +54,23 @@ export class WorldInputAdapter {
     this.selectionStart = null
     this.selectionStartScreen = null
     this.selectionStarted = false
+    this.secondaryContextMenuPending = false
     this.onInteraction({ type: 'cancel', reason })
   }
 
   /** Secondary commands are emitted once per pointerdown; this only blocks the native menu. */
   private readonly onContextMenu = (event: MouseEvent): void => {
     event.preventDefault()
+    if (this.secondaryContextMenuPending) {
+      this.secondaryContextMenuPending = false
+      return
+    }
+    this.emitSecondary(event.clientX, event.clientY)
   }
 
   private readonly onDomPointerDown = (event: PointerEvent): void => {
     if (event.button === 2) {
+      this.secondaryContextMenuPending = true
       this.emitSecondary(event.clientX, event.clientY)
       return
     }

@@ -1,5 +1,5 @@
 import type { OrderState, SnapshotBuilding, SnapshotEconomy } from '@rts/protocol'
-import type { BuildingType, MapDefinition, SimulationEvent, UnitKind } from '@rts/shared'
+import type { BuildingType, MapDefinition, ResourceType, SimulationEvent, UnitKind } from '@rts/shared'
 import type { PointData } from 'pixi.js'
 import type { InputProfile, WorldInteraction } from '../input/input-types.js'
 
@@ -28,6 +28,8 @@ export interface RenderUnit {
   readonly economy?: SnapshotEconomy
   /** True while the worker holds cargo, independent of its current order. */
   readonly carrying?: boolean
+  /** Carried resource type; lets the renderer pick wood vs gold sprites. */
+  readonly cargoType?: ResourceType
 }
 
 export type RenderBuilding = SnapshotBuilding
@@ -66,10 +68,8 @@ export interface UnitSpriteState {
   readonly shape: SpriteShape | null
 }
 
-export interface RenderMineralNode {
-  readonly id: number
-  readonly x: number
-  readonly y: number
+export interface RenderResource {
+  readonly resourceId: number
   readonly remaining: number
 }
 
@@ -88,7 +88,7 @@ export interface RenderFrame {
   readonly tick: number
   readonly units: readonly RenderUnit[]
   readonly buildings?: readonly RenderBuilding[]
-  readonly mineralNodes?: readonly RenderMineralNode[]
+  readonly resources?: readonly RenderResource[]
   /** Per-tick deterministic events that drive combat feedback. */
   readonly events?: readonly SimulationEvent[]
 }
@@ -138,6 +138,15 @@ export interface GameRenderer {
   getZoom(): number
   setInputProfile(profile: InputProfile): void
   getPing(): { readonly x: number; readonly y: number } | null
+  getResourceStats(): {
+    readonly definitions: number
+    readonly active: number
+    readonly depleted: number
+    readonly visibleChunks: number
+    readonly materializedChunks: number
+    readonly activeVisuals: number
+    readonly stumps: number
+  }
   moveCamera(x: number, y: number): void
   worldToScreen(x: number, y: number): { readonly x: number; readonly y: number }
   setBuildPreview(preview: RenderBuildPreview | null): void

@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { economyProgressTone } from '../../../packages/shared/src/domain/economy-progress.js'
 
 describe('economy progress tones', () => {
-  it('keeps all mineral acquisition phases purple', () => {
-    expect(economyProgressTone('to_node')).toBe('mining')
-    expect(economyProgressTone('gathering')).toBe('mining')
+  it('keeps all resource acquisition phases yellow', () => {
+    expect(economyProgressTone('to_resource')).toBe('harvesting')
+    expect(economyProgressTone('harvesting')).toBe('harvesting')
   })
 
   it('keeps cargo delivery phases green', () => {

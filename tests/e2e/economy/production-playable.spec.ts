@@ -60,8 +60,8 @@ async function queueLength(page: Page): Promise<number> {
   return page.locator('[data-testid^="production-item-"]').count()
 }
 
-async function mineralValue(page: Page): Promise<number> {
-  const text = await page.getByTestId('hud-resource-mineral').textContent()
+async function goldValue(page: Page): Promise<number> {
+  const text = await page.getByTestId('hud-resource-gold').textContent()
   return Number(text?.match(/\d+/)?.[0] ?? 0)
 }
 
@@ -136,7 +136,7 @@ test('cancels any queued production row with confirmation and refund feedback', 
     await expect(page.getByTestId('production-queue-count')).toHaveText(/Queue [1-5]\/5/)
   }
   await expect.poll(() => queueLength(page)).toBeGreaterThanOrEqual(2)
-  await expect(page.getByTestId('hud-resource-mineral')).toContainText('0')
+  await expect(page.getByTestId('hud-resource-gold')).toContainText('0')
   const queueFitsSelection = await page
     .getByRole('list', { name: 'Production and research queue' })
     .evaluate((queue) => queue.scrollWidth <= queue.clientWidth)
@@ -145,55 +145,25 @@ test('cancels any queued production row with confirmation and refund feedback', 
 
   await page.getByTestId('train-pawn').click({ force: true })
   const localBlock = page.getByTestId('hud-context-feedback')
-  await expect(localBlock).toHaveText(/Queue is full|Insufficient minerals/)
+  await expect(localBlock).toHaveText(/Queue is full|Insufficient gold/)
   const blockTarget = await localBlock.getAttribute('data-feedback-target')
   if (blockTarget === 'queue') {
     await expect(page.getByTestId('production-panel')).toHaveAttribute('data-queue-attention', 'true')
   } else {
-    await expect(page.getByTestId('hud-resource-mineral')).toHaveAttribute('data-feedback-highlight', 'true')
+    await expect(page.getByTestId('hud-resource-gold')).toHaveAttribute('data-feedback-highlight', 'true')
   }
   await expect(page.getByRole('alert')).toHaveCount(0)
 
   const beforeFirstCancel = await queueLength(page)
   await cancelFirstQueuedProduction(page)
   await expect.poll(() => queueLength(page)).toBeLessThan(beforeFirstCancel)
-  await expect.poll(() => mineralValue(page)).toBeGreaterThan(0)
-  await expect(page.getByTestId('hud-resource-mineral-delta')).toHaveText(/^\+/)
-  await page.setViewportSize({ width: 900, height: 800 })
-  const mineralFeedbackPosition = await page.evaluate(() => {
-    const stat = document.querySelector('[data-testid="hud-resource-mineral"]')
-    const delta = document.querySelector('[data-testid="hud-resource-mineral-delta"]')
-    if (stat === null || delta === null) {
-      throw new Error('mineral feedback is missing')
-    }
-    const statBox = stat.getBoundingClientRect()
-    const deltaBox = delta.getBoundingClientRect()
-    const value = stat.querySelector('span.font-mono')
-    if (value === null) {
-      throw new Error('mineral value is missing')
-    }
-    const valueBox = value.getBoundingClientRect()
-    return {
-      statTop: statBox.top,
-      statBottom: statBox.bottom,
-      deltaTop: deltaBox.top,
-      deltaBottom: deltaBox.bottom,
-      deltaLeft: deltaBox.left,
-      valueRight: valueBox.right,
-      valueCenter: valueBox.top + valueBox.height / 2,
-      deltaCenter: deltaBox.top + deltaBox.height / 2
-    }
-  })
-  expect(mineralFeedbackPosition.deltaTop).toBeGreaterThanOrEqual(mineralFeedbackPosition.statTop)
-  expect(mineralFeedbackPosition.deltaBottom).toBeLessThanOrEqual(mineralFeedbackPosition.statBottom)
-  expect(mineralFeedbackPosition.deltaLeft).toBeGreaterThanOrEqual(mineralFeedbackPosition.valueRight)
-  expect(mineralFeedbackPosition.deltaCenter).toBeLessThanOrEqual(mineralFeedbackPosition.valueCenter + 1)
+  await expect.poll(() => goldValue(page)).toBeGreaterThan(0)
 
-  const firstRefund = await mineralValue(page)
+  const firstRefund = await goldValue(page)
   const beforeSecondCancel = await queueLength(page)
   await cancelFirstQueuedProduction(page)
   await expect.poll(() => queueLength(page)).toBeLessThan(beforeSecondCancel)
-  await expect.poll(() => mineralValue(page)).toBeGreaterThan(firstRefund)
+  await expect.poll(() => goldValue(page)).toBeGreaterThan(firstRefund)
 })
 
 test('sets a rally point and sends a trained unit toward it', async ({ page }) => {

@@ -35,9 +35,9 @@ describe('HUD notification policy', () => {
   })
 
   it('routes typed command blocks to their contextual target', () => {
-    const notification = blockedCommandNotification('not enough minerals', 'minerals')
+    const notification = blockedCommandNotification('not enough gold', 'gold')
     expect(notificationPresentation(notification)).toEqual({
-      context: { message: 'Insufficient minerals', target: 'minerals' },
+      context: { message: 'Insufficient gold', target: 'gold' },
       toast: null
     })
   })

@@ -11,6 +11,7 @@ const MAP: MapDefinition = {
   width: 2,
   height: 2,
   tiles: ['water', 'water', 'water', 'land'],
+  resources: [],
   decorations: [{ x: 1, y: 1, kind: 'tree', variant: 2 }],
   decorationCounts: { bush: 3 }
 }

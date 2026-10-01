@@ -1,3 +1,5 @@
+import { RESOURCE_KINDS, type ResourceId, type ResourceKind } from '../domain/resources.js'
+import { FIXED_SCALE, type Fixed } from '../primitives/fixed.js'
 import { field, isInteger, isRecord } from '../primitives/parse.js'
 
 export const MAP_TILE_KINDS = ['water', 'land', 'elevated'] as const
@@ -23,6 +25,18 @@ export interface DecorationPlacement extends TileCoordinate {
   readonly kind: DressingKind
   readonly variant?: number
 }
+/** Immutable authored gameplay resource, separate from presentation dressing. */
+export interface ResourceDefinition {
+  readonly resourceId: ResourceId
+  readonly kind: ResourceKind
+  readonly x: Fixed
+  readonly y: Fixed
+  readonly variant: number
+  readonly initialAmount: number
+  readonly harvestAmount: number
+  readonly harvestTicks: number
+  readonly blocksNavigation: boolean
+}
 export const STAIR_DIRECTIONS = ['left', 'right'] as const
 export type StairDirection = (typeof STAIR_DIRECTIONS)[number]
 export interface StairEntry extends TileCoordinate {
@@ -37,6 +51,11 @@ export interface MapDefinition {
   readonly decorationSeed?: number
   readonly decorations?: readonly DecorationPlacement[]
   readonly decorationCounts?: Readonly<Partial<Record<DressingKind, number>>>
+  readonly resources: readonly ResourceDefinition[]
+}
+
+function isResourceKind(value: unknown): value is ResourceKind {
+  return typeof value === 'string' && (RESOURCE_KINDS as readonly string[]).includes(value)
 }
 
 export function tileIndex(width: number, x: number, y: number): number {
@@ -124,6 +143,61 @@ function validateOptionalFields(value: Record<string, unknown>): string | null {
   return null
 }
 
+function validateResources(value: Record<string, unknown>, width: number, height: number): string | null {
+  const resources = field(value, 'resources')
+  if (!Array.isArray(resources)) {
+    return 'resources must be an array'
+  }
+  const ids = new Set<number>()
+  const tiles = field(value, 'tiles')
+  const occupiedTiles = new Set<string>()
+  for (const [index, entry] of resources.entries()) {
+    if (!isRecord(entry)) {
+      return `resources[${index}] must be an object`
+    }
+    const resourceId = field(entry, 'resourceId')
+    const initialAmount = field(entry, 'initialAmount')
+    const harvestAmount = field(entry, 'harvestAmount')
+    const harvestTicks = field(entry, 'harvestTicks')
+    const x = field(entry, 'x')
+    const y = field(entry, 'y')
+    if (
+      !isInteger(resourceId) ||
+      resourceId < 0 ||
+      ids.has(resourceId) ||
+      !isResourceKind(field(entry, 'kind')) ||
+      !isInteger(x) ||
+      !isInteger(y) ||
+      !isInteger(field(entry, 'variant')) ||
+      !isInteger(initialAmount) ||
+      !isInteger(harvestAmount) ||
+      !isInteger(harvestTicks) ||
+      initialAmount < harvestAmount ||
+      harvestAmount <= 0 ||
+      harvestTicks <= 0 ||
+      typeof field(entry, 'blocksNavigation') !== 'boolean'
+    ) {
+      return `resources[${index}] is invalid`
+    }
+    const tileX = Math.floor(x / FIXED_SCALE)
+    const tileY = Math.floor(y / FIXED_SCALE)
+    const tile = Array.isArray(tiles) ? tiles[tileIndex(width, tileX, tileY)] : undefined
+    const tileKeyValue = `${tileX},${tileY}`
+    if (x < 0 || y < 0 || x >= width * FIXED_SCALE || y >= height * FIXED_SCALE) {
+      return `resources[${index}] is outside the map`
+    }
+    if (tile !== 'land' && tile !== 'elevated') {
+      return `resources[${index}] must be on buildable terrain`
+    }
+    if (occupiedTiles.has(tileKeyValue)) {
+      return `resources[${index}] overlaps another resource`
+    }
+    occupiedTiles.add(tileKeyValue)
+    ids.add(resourceId)
+  }
+  return null
+}
+
 function buildMapDefinition(
   value: Record<string, unknown>,
   width: number,
@@ -133,6 +207,7 @@ function buildMapDefinition(
   const stairs = field(value, 'stairs')
   const decorations = field(value, 'decorations')
   const decorationCounts = field(value, 'decorationCounts')
+  const resources = field(value, 'resources')
   const palette = field(value, 'palette')
   const decorationSeed = field(value, 'decorationSeed')
   return {
@@ -155,7 +230,8 @@ function buildMapDefinition(
       : {}),
     ...(isRecord(decorationCounts)
       ? { decorationCounts: { ...(decorationCounts as Partial<Record<DressingKind, number>>) } }
-      : {})
+      : {}),
+    resources: Array.isArray(resources) ? resources.map((entry) => ({ ...(entry as ResourceDefinition) })) : []
   }
 }
 
@@ -202,6 +278,10 @@ export function normalizeMapDefinition(
   const optionalError = validateOptionalFields(value)
   if (optionalError !== null) {
     return { ok: false, errors: [optionalError] }
+  }
+  const resourcesError = validateResources(value, width, height)
+  if (resourcesError !== null) {
+    return { ok: false, errors: [resourcesError] }
   }
   return { ok: true, map: buildMapDefinition(value, width, height, tiles) }
 }

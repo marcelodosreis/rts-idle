@@ -4,7 +4,6 @@ import {
   createSimulation,
   Health,
   Kind,
-  MineralNode,
   Movement,
   Orders,
   Position
@@ -44,7 +43,11 @@ describe('central invariants (P1.08)', () => {
     const ids = world.aliveIds()
     world.store(Position).set(ids[0]!, { x: 0, y: 0 })
     world.store(Position).set(ids[1]!, { x: 256, y: 0 })
-    const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
+    const sim = createSimulation({
+      seed: SEEDS.integration.moveOwn,
+      identity: TEST_IDENTITY,
+      initialWorld: world
+    })
     for (let i = 0; i < 30; i += 1) {
       sim.step(
         i === 0
@@ -66,7 +69,11 @@ describe('central invariants (P1.08)', () => {
     const world = worldWithOwners([0])
     const id = world.aliveIds()[0]!
     world.store(Position).delete(id)
-    const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
+    const sim = createSimulation({
+      seed: SEEDS.integration.moveOwn,
+      identity: TEST_IDENTITY,
+      initialWorld: world
+    })
     expect(() => sim.step([])).toThrow(/no position/)
   })
 
@@ -74,7 +81,11 @@ describe('central invariants (P1.08)', () => {
     const world = worldWithCombatUnits([0])
     const id = world.aliveIds()[0]!
     world.store(Health).delete(id)
-    const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
+    const sim = createSimulation({
+      seed: SEEDS.integration.moveOwn,
+      identity: TEST_IDENTITY,
+      initialWorld: world
+    })
     expect(() => sim.step([])).toThrow(/can fight without health/)
   })
 
@@ -118,20 +129,36 @@ describe('central invariants (P1.08)', () => {
     expect(() => sim.step([])).not.toThrow()
   })
 
-  it('rejects negative minerals in a node', () => {
+  it('rejects an invalid resource definition at construction', () => {
     const world = worldWithOwners([0])
     const id = world.aliveIds()[0]!
-    world.store(MineralNode).set(id, { remaining: -1 })
-    const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
-
-    expect(() => sim.step()).toThrow(/negative mineral amount/)
+    expect(() =>
+      createSimulation({
+        seed: SEEDS.integration.moveOwn,
+        identity: TEST_IDENTITY,
+        initialWorld: world,
+        resources: [
+          {
+            resourceId: id,
+            kind: 'GOLD_MINE',
+            x: 0,
+            y: 0,
+            variant: 0,
+            initialAmount: -1,
+            harvestAmount: 1,
+            harvestTicks: 1,
+            blocksNavigation: false
+          }
+        ]
+      })
+    ).toThrow(/invalid definition/)
   })
 
   it('rejects cargo outside the v0 capacity bounds', () => {
     const world = worldWithOwners([0])
     const id = world.aliveIds()[0]!
     world.store(Kind).set(id, 'pawn')
-    world.store(Cargo).set(id, { amount: 11, capacity: 10 })
+    world.store(Cargo).set(id, { amount: 11, capacity: 10, resourceType: 'GOLD' })
     const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
 
     expect(() => sim.step()).toThrow(/invalid cargo/)
@@ -141,9 +168,9 @@ describe('central invariants (P1.08)', () => {
     const world = worldWithOwners([0])
     const id = world.aliveIds()[0]!
     world.store(Kind).set(id, 'pawn')
-    world.store(Cargo).set(id, { amount: 0, capacity: 10 })
+    world.store(Cargo).set(id, { amount: 0, capacity: 10, resourceType: null })
     world.store(Orders).set(id, {
-      queue: [{ type: 'GATHER', nodeId: 99, baseId: null, phase: 'TO_NODE', progressTicks: 200 }]
+      queue: [{ type: 'GATHER', resourceId: 99, baseId: null, phase: 'TO_RESOURCE', progressTicks: 200 }]
     })
     world.store(Movement).set(id, {
       speedTilesPerSecondFixed: 40,
@@ -152,7 +179,24 @@ describe('central invariants (P1.08)', () => {
       remainderX: 0,
       remainderY: 0
     })
-    const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
+    const sim = createSimulation({
+      seed: SEEDS.integration.moveOwn,
+      identity: TEST_IDENTITY,
+      initialWorld: world,
+      resources: [
+        {
+          resourceId: 99,
+          kind: 'GOLD_MINE',
+          x: 0,
+          y: 0,
+          variant: 0,
+          initialAmount: 3_000,
+          harvestAmount: 10,
+          harvestTicks: 200,
+          blocksNavigation: false
+        }
+      ]
+    })
 
     expect(() => sim.step()).toThrow(/invalid gather progress/)
   })
@@ -162,7 +206,7 @@ describe('central invariants (P1.08)', () => {
     const id = world.aliveIds()[0]!
     world.store(Kind).set(id, 'pawn')
     world.store(Orders).set(id, {
-      queue: [{ type: 'GATHER', nodeId: 99, baseId: null, phase: 'TO_NODE', progressTicks: 0 }]
+      queue: [{ type: 'GATHER', resourceId: 99, baseId: null, phase: 'TO_RESOURCE', progressTicks: 0 }]
     })
     world.store(Movement).set(id, {
       speedTilesPerSecondFixed: 40,

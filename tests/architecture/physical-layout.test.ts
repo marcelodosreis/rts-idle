@@ -25,6 +25,7 @@ describe('physical layout', () => {
       'effects',
       'index.ts',
       'input',
+      'resources',
       'terrain',
       'units',
       'world'
@@ -44,6 +45,7 @@ describe('physical layout', () => {
       'movement',
       'orders',
       'placement',
+      'resources',
       'snapshot',
       'state',
       'systems'

@@ -1,4 +1,4 @@
-export const HUD_FEEDBACK_TARGETS = ['command', 'minerals', 'supply', 'queue'] as const
+export const HUD_FEEDBACK_TARGETS = ['command', 'gold', 'supply', 'queue'] as const
 
 export type HudFeedbackTarget = (typeof HUD_FEEDBACK_TARGETS)[number]
 

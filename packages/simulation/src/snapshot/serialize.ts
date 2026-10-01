@@ -1,10 +1,20 @@
-import { type PlayerId, RESEARCH_TYPES, type ResearchType, type RngState } from '@rts/shared'
+import {
+  createPlayerResources,
+  type PlayerId,
+  RESEARCH_TYPES,
+  RESOURCE_KINDS,
+  type ResearchType,
+  type ResourceDefinition,
+  type RngState
+} from '@rts/shared'
 import { CanonicalReader } from '../canonical/reader.js'
 import { CanonicalWriter } from '../canonical/writer.js'
 import { SIMULATION_VERSION } from '../contracts/simulation-version.js'
 import { MAX_SUPPLY_CAPACITY } from '../data/supply-rules.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
+import { ResourceCatalog } from '../resources/resource-catalog.js'
+import { ResourceState } from '../resources/resource-state.js'
 import type { GameState, PlayerState } from '../state/state.js'
 
 /**
@@ -69,7 +79,8 @@ function writePlayers(writer: CanonicalWriter, players: readonly PlayerState[]):
   for (const player of players) {
     writer.writeU8(player.id)
     writer.writeU8(player.defeated ? 1 : 0)
-    writer.writeI32(player.gold)
+    writer.writeI32(player.resources.GOLD)
+    writer.writeI32(player.resources.WOOD)
     writer.writeI32(player.usedSupply)
     writer.writeI32(player.reservedSupply)
     writer.writeI32(player.supplyCap)
@@ -123,6 +134,7 @@ function readPlayers(reader: CanonicalReader): PlayerState[] {
     const id = slot as PlayerId
     const defeated = reader.readU8() === 1
     const gold = reader.readI32()
+    const wood = reader.readI32()
     const usedSupply = reader.readI32()
     const reservedSupply = reader.readI32()
     const supplyCap = reader.readI32()
@@ -141,7 +153,7 @@ function readPlayers(reader: CanonicalReader): PlayerState[] {
     players.push({
       id,
       defeated,
-      gold,
+      resources: createPlayerResources({ GOLD: gold, WOOD: wood }),
       usedSupply,
       reservedSupply,
       supplyCap,
@@ -150,6 +162,71 @@ function readPlayers(reader: CanonicalReader): PlayerState[] {
     })
   }
   return players
+}
+
+function writeResources(writer: CanonicalWriter, state: ResourceState): void {
+  const definitions = state.catalog.definitions()
+  writer.writeLength(definitions.length)
+  for (const [index, definition] of definitions.entries()) {
+    writer.writeU32(definition.resourceId)
+    writer.writeU8(RESOURCE_KINDS.indexOf(definition.kind))
+    writer.writeI32(definition.x)
+    writer.writeI32(definition.y)
+    writer.writeI32(definition.variant)
+    writer.writeI32(definition.initialAmount)
+    writer.writeI32(definition.harvestAmount)
+    writer.writeI32(definition.harvestTicks)
+    writer.writeU8(definition.blocksNavigation ? 1 : 0)
+    writer.writeI32(state.remaining[index]!)
+  }
+  writer.writeLength(state.changedResourceIds.length)
+  for (const resourceId of state.changedResourceIds) {
+    writer.writeU32(resourceId)
+  }
+}
+
+function readResources(reader: CanonicalReader): ResourceState {
+  const definitions: ResourceDefinition[] = []
+  const remaining: number[] = []
+  const count = reader.readLength()
+  for (let index = 0; index < count; index += 1) {
+    const resourceId = reader.readU32()
+    const kind = RESOURCE_KINDS[reader.readU8()]
+    const x = reader.readI32()
+    const y = reader.readI32()
+    const variant = reader.readI32()
+    const initialAmount = reader.readI32()
+    const harvestAmount = reader.readI32()
+    const harvestTicks = reader.readI32()
+    const blocksNavigation = reader.readU8()
+    const amount = reader.readI32()
+    if (
+      kind === undefined ||
+      (blocksNavigation !== 0 && blocksNavigation !== 1) ||
+      initialAmount < harvestAmount ||
+      harvestAmount <= 0 ||
+      harvestTicks <= 0 ||
+      amount < 0 ||
+      amount > initialAmount
+    ) {
+      throw new Error('readResources: invalid resource state')
+    }
+    definitions.push({
+      resourceId,
+      kind,
+      x,
+      y,
+      variant,
+      initialAmount,
+      harvestAmount,
+      harvestTicks,
+      blocksNavigation: blocksNavigation === 1
+    })
+    remaining.push(amount)
+  }
+  const changedCount = reader.readLength()
+  const changedResourceIds = Array.from({ length: changedCount }, () => reader.readU32())
+  return new ResourceState(new ResourceCatalog(definitions), Int32Array.from(remaining), changedResourceIds)
 }
 
 export function serializeState(state: GameState): Uint8Array {
@@ -166,6 +243,7 @@ export function serializeState(state: GameState): Uint8Array {
   writer.writeU32(state.nextEntityId)
   writeMapBounds(writer, state.mapBounds)
   writePlayers(writer, state.players)
+  writeResources(writer, state.resources)
   writeWorld(writer, state.world)
   return writer.toBytes()
 }
@@ -192,6 +270,7 @@ export function deserializeState(bytes: Uint8Array): GameState {
   const nextEntityId = reader.readU32()
   const mapBounds = readMapBounds(reader)
   const players = readPlayers(reader)
+  const resources = readResources(reader)
   const world = readWorld(reader)
   return {
     tick,
@@ -203,6 +282,7 @@ export function deserializeState(bytes: Uint8Array): GameState {
     mapBounds,
     players,
     world,
+    resources,
     events: [],
     pendingDamage: new Map()
   }

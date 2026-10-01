@@ -1,19 +1,10 @@
 import { START_ENTITY_ID, tilesToFixed } from '@rts/shared'
-import {
-  Building,
-  Cargo,
-  createWorld,
-  Kind,
-  MineralNode,
-  Owner,
-  Position,
-  type ScheduledCommand
-} from '@rts/simulation'
+import { Building, Cargo, createWorld, Kind, Owner, Position, type ScheduledCommand } from '@rts/simulation'
 
 interface EconomyScenarioOptions {
   readonly workerCount?: number
   readonly nodeX?: number
-  readonly nodeMinerals?: number
+  readonly resourceAmount?: number
   readonly includeBase?: boolean
 }
 
@@ -40,17 +31,27 @@ export function economyScenario(options: EconomyScenarioOptions = {}) {
     world.store(Position).set(worker, { x: 0, y: 0 })
     world.store(Owner).set(worker, { owner: 0 })
     world.store(Kind).set(worker, 'pawn')
-    world.store(Cargo).set(worker, { amount: 0, capacity: 10 })
+    world.store(Cargo).set(worker, { amount: 0, capacity: 10, resourceType: null })
   }
-  world.createEntity(node)
-  world.store(Position).set(node, { x: options.nodeX ?? tilesToFixed(1), y: 0 })
-  world.store(MineralNode).set(node, { remaining: options.nodeMinerals ?? 3_000 })
   // Keep economy command fixtures in RUNNING phase after the common command admission rule was introduced.
   const opponent = 100_000
   world.createEntity(opponent)
   world.store(Position).set(opponent, { x: tilesToFixed(31), y: tilesToFixed(31) })
   world.store(Owner).set(opponent, { owner: 1 })
-  return { world, base, workers, node }
+  const resources = [
+    {
+      resourceId: node,
+      kind: 'GOLD_MINE' as const,
+      x: options.nodeX ?? tilesToFixed(1),
+      y: 0,
+      variant: 0,
+      initialAmount: options.resourceAmount ?? 3_000,
+      harvestAmount: 10,
+      harvestTicks: 200,
+      blocksNavigation: false
+    }
+  ]
+  return { world, base, workers, node, resources }
 }
 
 export function gatherCommand(workers: readonly number[], node: number): ScheduledCommand {
@@ -58,6 +59,6 @@ export function gatherCommand(workers: readonly number[], node: number): Schedul
     tick: 1,
     playerId: 0,
     sequence: 1,
-    intent: { type: 'GATHER', payload: { unitIds: workers, nodeId: node } }
+    intent: { type: 'GATHER', payload: { unitIds: workers, resourceId: node } }
   }
 }

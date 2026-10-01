@@ -40,6 +40,13 @@ function isTrainIntent(payload: Record<string, unknown>): boolean {
   )
 }
 
+function isGatherIntent(payload: Record<string, unknown>): boolean {
+  if (!isIntegerArray(field(payload, 'unitIds'))) {
+    return false
+  }
+  return isInteger(field(payload, 'resourceId')) && Object.keys(payload).length === 2
+}
+
 /** Validates the shared command intent shape on untrusted wire input. */
 function isCommandIntent(value: unknown): boolean {
   if (!isRecord(value)) {
@@ -62,7 +69,7 @@ function isCommandIntent(value: unknown): boolean {
     case 'ATTACK':
       return isIntegerArray(field(payload, 'unitIds')) && isInteger(field(payload, 'targetId'))
     case 'GATHER':
-      return isIntegerArray(field(payload, 'unitIds')) && isInteger(field(payload, 'nodeId'))
+      return isGatherIntent(payload)
     case 'DEPOSIT':
       return isIntegerArray(field(payload, 'unitIds')) && isInteger(field(payload, 'buildingId'))
     case 'REPAIR':

@@ -12,7 +12,12 @@ import {
   workerActions
 } from './command-actions'
 import { COMMAND_LAYOUTS, type CommandLayout, createSubmenuLayout } from './command-layout'
-import { isResearchItem, unitSelectionBlockReason } from './command-state'
+import {
+  constructionCommandBlockReason,
+  constructionUpgradeBlockReason,
+  isResearchItem,
+  unitSelectionBlockReason
+} from './command-state'
 import type { CommandBarProps, MenuState } from './command-types'
 import { type HudCommandAction, HudCommandButton, type HudCommandTransientState } from './HudCommandButton'
 import { HudContextFeedback } from './HudContextFeedback'
@@ -152,8 +157,8 @@ function commandContextKey(props: CommandBarProps): string {
   if (props.construction !== null) {
     return `building:${props.construction.id}`
   }
-  if (props.mineral !== null) {
-    return `mineral:${props.mineral.id}`
+  if (props.resource !== null) {
+    return `resource:${props.resource.id}`
   }
   return `units:${props.selection.map((unit) => unit.id).join(',')}`
 }
@@ -216,14 +221,17 @@ function commandSlots(
   confirming: boolean,
   setConfirming: (value: boolean) => void
 ): readonly (HudCommandAction | null)[] {
+  if (props.resource !== null || (props.selection.length === 0 && props.construction === null)) {
+    return mapLayout(COMMAND_LAYOUTS.empty, [])
+  }
   if (menu.kind !== 'root') {
     return submenuSlots(props, menu, setMenu)
   }
-  if (props.mineral !== null || (props.selection.length === 0 && props.construction === null)) {
-    return mapLayout(COMMAND_LAYOUTS.empty, [])
-  }
   if (props.construction !== null) {
-    return buildingSlots(props, setMenu, confirming, setConfirming)
+    const blockedReason =
+      constructionCommandBlockReason(props.construction, props.humanPlayer) ??
+      constructionUpgradeBlockReason(props.construction)
+    return buildingSlots(props, setMenu, confirming, setConfirming, blockedReason)
   }
   return unitSlots(props, setMenu)
 }
@@ -244,7 +252,8 @@ function buildingSlots(
   props: CommandBarProps,
   setMenu: (menu: MenuState) => void,
   confirming: boolean,
-  setConfirming: (value: boolean) => void
+  setConfirming: (value: boolean) => void,
+  blockedReason: string | undefined
 ) {
   const building = props.construction
   if (building === null) {
@@ -254,7 +263,7 @@ function buildingSlots(
     const action = constructionAction(confirming, () =>
       confirmOrRun(confirming, setConfirming, () => props.onCancelConstruction(building.id))
     )
-    return mapLayout(COMMAND_LAYOUTS.construction, [action])
+    return mapLayout(COMMAND_LAYOUTS.construction, blockBuildingActions([action], blockedReason))
   }
   const actions = buildingRootActions(
     props,
@@ -262,7 +271,11 @@ function buildingSlots(
     confirming,
     () => confirmOrRun(confirming, setConfirming, () => cancelFirst(props, building))
   )
-  return mapLayout(COMMAND_LAYOUTS.building, actions)
+  return mapLayout(COMMAND_LAYOUTS.building, blockBuildingActions(actions, blockedReason))
+}
+
+function blockBuildingActions(actions: readonly HudCommandAction[], blockedReason: string | undefined) {
+  return blockedReason === undefined ? actions : actions.map((action) => ({ ...action, blockedReason }))
 }
 
 function confirmOrRun(confirming: boolean, setConfirming: (value: boolean) => void, run: () => void): void {
@@ -295,13 +308,13 @@ function submenuSlots(
 ) {
   const all = submenuActions(props, menu.kind)
   const grouped = groupedSubmenu(all, menu, setMenu)
-  const visible = menu.kind === 'build' ? closeBuildMenuAfterSelection(grouped, setMenu) : grouped
+  const visible = menu.kind === 'build' || menu.kind === 'upgrade' ? closeMenuAfterSelection(grouped, setMenu) : grouped
   const backTarget: MenuState = menu.group === undefined ? { kind: 'root' } : { kind: menu.kind }
   const actions = [...visible, backAction(() => setMenu(backTarget))]
   return mapLayout(createSubmenuLayout(visible.map((action) => action.id)), actions)
 }
 
-function closeBuildMenuAfterSelection(
+function closeMenuAfterSelection(
   actions: readonly HudCommandAction[],
   setMenu: (menu: MenuState) => void
 ): readonly HudCommandAction[] {

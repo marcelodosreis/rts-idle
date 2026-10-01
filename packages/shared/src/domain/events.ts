@@ -9,7 +9,7 @@ import type { PlayerId } from '../primitives/players.js'
  * The union is frozen; adding a variant is a deliberate protocol change.
  */
 export const SIMULATION_EVENT_TYPES = ['attackFired', 'damageDealt', 'healCast', 'repairStopped', 'unitDied'] as const
-export const REPAIR_STOP_REASONS = ['NO_MINERALS'] as const
+export const REPAIR_STOP_REASONS = ['NO_GOLD'] as const
 export type RepairStopReason = (typeof REPAIR_STOP_REASONS)[number]
 
 export type SimulationEventType = (typeof SIMULATION_EVENT_TYPES)[number]

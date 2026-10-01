@@ -16,7 +16,7 @@ function fakeStorage(initial: ReadonlyMap<string, string> = new Map()) {
   }
 }
 
-const MAP: MapDefinition = { width: 1, height: 1, tiles: ['land'] }
+const MAP: MapDefinition = { width: 1, height: 1, tiles: ['land'], resources: [] }
 
 describe('playtest map bridge', () => {
   it('returns null unless the URL requests ?map=local', () => {

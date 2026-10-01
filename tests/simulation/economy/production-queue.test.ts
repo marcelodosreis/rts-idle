@@ -75,7 +75,7 @@ function scenario(
       queue: [
         {
           unitKind: 'warrior',
-          costMinerals: 100,
+          cost: { GOLD: 100 },
           reservedSupply: 1,
           progressTicks: 0,
           totalTicks: 200,
@@ -100,7 +100,7 @@ function scenario(
     initialPlayers: [0, 1, 2, 3].map((id) => ({
       id: id as 0 | 1 | 2 | 3,
       defeated: false,
-      gold: id === 0 ? gold : 0,
+      resources: { GOLD: id === 0 ? gold : 0, WOOD: 0 },
       reservedSupply: options.overCap && id === 0 ? 1 : 0
     }))
   })
@@ -132,7 +132,7 @@ describe('production queue', () => {
     const sim = scenario()
     sim.step([train('pawn', 1, START_ENTITY_ID)])
 
-    expect(sim.inspectState().players[0]).toMatchObject({ gold: 200, reservedSupply: 1, usedSupply: 0 })
+    expect(sim.inspectState().players[0]).toMatchObject({ resources: { GOLD: 200 }, reservedSupply: 1, usedSupply: 0 })
     for (let tick = 0; tick < 99; tick += 1) {
       sim.step()
     }
@@ -141,7 +141,7 @@ describe('production queue', () => {
     sim.step()
     const state = sim.inspectState()
     expect(state.world.store(Production).get(START_ENTITY_ID)?.queue).toEqual([])
-    expect(state.players[0]).toMatchObject({ gold: 200, reservedSupply: 0, usedSupply: 1 })
+    expect(state.players[0]).toMatchObject({ resources: { GOLD: 200 }, reservedSupply: 0, usedSupply: 1 })
     expect(state.world.store(Kind).get(START_ENTITY_ID + 2)).toBe('pawn')
     expect(state.world.store(Cargo).get(START_ENTITY_ID + 2)).toMatchObject({ amount: 0, capacity: 10 })
     expect(state.world.store(Health).get(START_ENTITY_ID + 2)).toEqual({ current: 100, max: 100 })
@@ -156,14 +156,14 @@ describe('production queue', () => {
     expect(result.rejected).toHaveLength(2)
     expected.step()
     expect(sim.hashState()).toBe(expected.hashState())
-    expect(sim.inspectState().players[0]).toMatchObject({ gold: 500, reservedSupply: 0 })
+    expect(sim.inspectState().players[0]).toMatchObject({ resources: { GOLD: 500 }, reservedSupply: 0 })
   })
 
-  it('reserves minerals and supply, then spawns a Warrior after training', () => {
+  it('reserves gold and supply, then spawns a Warrior after training', () => {
     const sim = scenario()
     sim.step([train('warrior', 1)])
 
-    expect(sim.inspectState().players[0]).toMatchObject({ gold: 150, reservedSupply: 1, usedSupply: 0 })
+    expect(sim.inspectState().players[0]).toMatchObject({ resources: { GOLD: 150 }, reservedSupply: 1, usedSupply: 0 })
     expect(
       sim
         .inspectState()
@@ -189,7 +189,7 @@ describe('production queue', () => {
     sim.step()
     const state = sim.inspectState()
     expect(state.world.store(Production).get(START_ENTITY_ID + 1)?.queue).toEqual([])
-    expect(state.players[0]).toMatchObject({ gold: 150, reservedSupply: 0, usedSupply: 1 })
+    expect(state.players[0]).toMatchObject({ resources: { GOLD: 150 }, reservedSupply: 0, usedSupply: 1 })
     expect(state.world.store(Kind).get(START_ENTITY_ID + 2)).toBe('warrior')
     expect(state.world.store(Health).get(START_ENTITY_ID + 2)).toEqual({ current: 150, max: 150 })
     expect(state.world.store(Combat).get(START_ENTITY_ID + 2)?.damage).toBe(15)
@@ -208,7 +208,7 @@ describe('production queue', () => {
 
     expect(rejected).toHaveLength(1)
     expect(production?.queue).toHaveLength(5)
-    expect(sim.inspectState().players[0]?.gold).toBe(375)
+    expect(sim.inspectState().players[0]?.resources.GOLD).toBe(375)
     expect(sim.hashState()).not.toBe(before)
   })
 
@@ -224,7 +224,7 @@ describe('production queue', () => {
 
     expect(result.rejected).toEqual([])
     expect(queue?.map((item) => item.unitKind)).toEqual(['warrior', 'archer'])
-    expect(sim.inspectState().players[0]).toMatchObject({ gold: 775, reservedSupply: 2 })
+    expect(sim.inspectState().players[0]).toMatchObject({ resources: { GOLD: 775 }, reservedSupply: 2 })
   })
 
   it('rejects canceling the active item without changing the queue', () => {
@@ -239,7 +239,7 @@ describe('production queue', () => {
 
     expect(result.rejected[0]?.code).toBe('INVALID_STATE')
     expect(queue?.map((item) => item.unitKind)).toEqual(['warrior', 'archer'])
-    expect(sim.inspectState().players[0]).toMatchObject({ gold: 275, reservedSupply: 2 })
+    expect(sim.inspectState().players[0]).toMatchObject({ resources: { GOLD: 275 }, reservedSupply: 2 })
   })
 
   it('releases all production reservations when a producer is removed without refund', () => {
@@ -256,7 +256,7 @@ describe('production queue', () => {
       }
     ])
 
-    expect(sim.inspectState().players[0]).toMatchObject({ gold: 775, reservedSupply: 0 })
+    expect(sim.inspectState().players[0]).toMatchObject({ resources: { GOLD: 775 }, reservedSupply: 0 })
     expect(sim.inspectState().world.hasEntity(producerId)).toBe(false)
   })
 
@@ -273,7 +273,7 @@ describe('production queue', () => {
     const result = sim.step([cancelProduction(producerId, 0, 2, sim.inspectState().tick + 1)])
 
     expect(result.rejected[0]?.code).toBe('INVALID_STATE')
-    expect(sim.inspectState().players[0]).toMatchObject({ gold: 150, reservedSupply: 1 })
+    expect(sim.inspectState().players[0]).toMatchObject({ resources: { GOLD: 150 }, reservedSupply: 1 })
     expect(sim.inspectState().world.store(Production).get(producerId)?.queue[0]?.status).toBe('COMPLETED_WAITING')
   })
 

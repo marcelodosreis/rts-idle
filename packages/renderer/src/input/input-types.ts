@@ -19,7 +19,7 @@ export interface ScreenPoint {
 export type WorldTarget =
   | { readonly kind: 'unit'; readonly id: number }
   | { readonly kind: 'building'; readonly id: number }
-  | { readonly kind: 'mineral'; readonly id: number }
+  | { readonly kind: 'resource'; readonly id: number }
   | { readonly kind: 'ground'; readonly position: WorldPoint }
 
 export type WorldInteraction =

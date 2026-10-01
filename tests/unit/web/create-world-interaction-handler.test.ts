@@ -11,7 +11,7 @@ describe('createWorldInteractionHandler', () => {
       updateSelection: vi.fn(),
       selectAtWorldPoint,
       selectBuilding: vi.fn(),
-      selectMineral: vi.fn(),
+      selectResource: vi.fn(),
       selectBox: vi.fn(),
       clearMode,
       updatePreview: vi.fn()
@@ -24,5 +24,49 @@ describe('createWorldInteractionHandler', () => {
 
     expect(clearMode).toHaveBeenCalledOnce()
     expect(selectAtWorldPoint).toHaveBeenCalledWith(4, 7)
+  })
+
+  it('selects a unit on a primary click without issuing a heal command', () => {
+    const updateSelection = vi.fn()
+    const clearMode = vi.fn()
+    const handler = createWorldInteractionHandler({
+      controller: { handleBuildPlacementClick: () => false },
+      updateSelection,
+      selectAtWorldPoint: vi.fn(),
+      selectBuilding: vi.fn(),
+      selectResource: vi.fn(),
+      selectBox: vi.fn(),
+      clearMode,
+      updatePreview: vi.fn()
+    })
+
+    handler({
+      type: 'primary-activate',
+      target: { kind: 'unit', id: 5 }
+    } satisfies WorldInteraction)
+
+    expect(clearMode).toHaveBeenCalledOnce()
+    expect(updateSelection).toHaveBeenCalledWith([5])
+  })
+
+  it('routes a secondary unit click to the contextual command handler', () => {
+    const unitCommand = vi.fn()
+    const handler = createWorldInteractionHandler({
+      controller: { handleBuildPlacementClick: () => false, unitCommand },
+      updateSelection: vi.fn(),
+      selectAtWorldPoint: vi.fn(),
+      selectBuilding: vi.fn(),
+      selectResource: vi.fn(),
+      selectBox: vi.fn(),
+      clearMode: vi.fn(),
+      updatePreview: vi.fn()
+    })
+
+    handler({
+      type: 'secondary-activate',
+      target: { kind: 'unit', id: 5 }
+    } satisfies WorldInteraction)
+
+    expect(unitCommand).toHaveBeenCalledWith(5)
   })
 })

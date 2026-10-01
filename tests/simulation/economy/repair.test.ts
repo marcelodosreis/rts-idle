@@ -53,7 +53,7 @@ function scenario(gold = 10, targetHp = 50, buildingHp = 500) {
     initialPlayers: [0, 1, 2, 3].map((id) => ({
       id: id as 0 | 1 | 2 | 3,
       defeated: false,
-      gold: id === 0 ? gold : 0,
+      resources: { GOLD: id === 0 ? gold : 0, WOOD: 0 },
       usedSupply: 0,
       reservedSupply: 0,
       supplyCap: 0
@@ -79,7 +79,7 @@ describe('REPAIR simulation lifecycle', () => {
     }
     const state = sim.inspectState()
     expect(state.world.store(Health).get(TARGET_ID)).toEqual({ current: 55, max: 100 })
-    expect(state.players[0]?.gold).toBe(9)
+    expect(state.players[0]?.resources.GOLD).toBe(9)
     expect(state.world.store(Orders).get(WORKER_ID)?.queue[0]).toEqual({
       type: 'REPAIR',
       targetId: TARGET_ID,
@@ -88,18 +88,18 @@ describe('REPAIR simulation lifecycle', () => {
     expect(state.world.store(Orders).get(OTHER_UNIT_ID)).toBeUndefined()
   })
 
-  it('charges one mineral for a partial final repair', () => {
+  it('charges one gold for a partial final repair', () => {
     const sim = scenario(1, 98)
     sim.step([repair(1)])
     for (let tick = 0; tick < 9; tick += 1) {
       sim.step()
     }
     expect(sim.inspectState().world.store(Health).get(TARGET_ID)).toEqual({ current: 100, max: 100 })
-    expect(sim.inspectState().players[0]?.gold).toBe(0)
+    expect(sim.inspectState().players[0]?.resources.GOLD).toBe(0)
     expect(sim.inspectState().world.store(Orders).get(WORKER_ID)).toBeUndefined()
   })
 
-  it('stops without free healing when the player has no minerals', () => {
+  it('stops without free healing when the player has no gold', () => {
     const sim = scenario(0)
     sim.step([repair(1)])
     let result = sim.step()
@@ -109,7 +109,7 @@ describe('REPAIR simulation lifecycle', () => {
     expect(sim.inspectState().world.store(Health).get(TARGET_ID)).toEqual({ current: 50, max: 100 })
     expect(sim.inspectState().world.store(Orders).get(WORKER_ID)).toBeUndefined()
     expect(result.events).toEqual([
-      { type: 'repairStopped', workerId: WORKER_ID, targetId: TARGET_ID, reason: 'NO_MINERALS' }
+      { type: 'repairStopped', workerId: WORKER_ID, targetId: TARGET_ID, reason: 'NO_GOLD' }
     ])
   })
 

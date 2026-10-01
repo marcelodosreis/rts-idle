@@ -12,13 +12,13 @@ import { describe, expect, it } from 'vitest'
 //   SimulationEvent, SimulationEventType, CommandIntent, CommandType, MovePayload, GatherPayload, BuildPayload,
 //   BuildingType, BuildingStatus, UnitKind, StairDirection, AssetKind, AssetKey, MatchResult
 // @rts/protocol types: MatchRequest, MatchConfig, CommandMessage, SnapshotMessage, SnapshotUnit,
-//   SnapshotMineralNode, SnapshotPlayer, OrderState, EconomyPhase, ConstructionStatus, MatchPhase, ErrorMessage
+//   SnapshotResource, SnapshotPlayer, OrderState, EconomyPhase, ConstructionStatus, MatchPhase, ErrorMessage
 // @rts/simulation types: ScheduledCommand, CommandErrorCode, Order, RulesIdentity, TickResult,
 //   SimulationOptions, ComponentType, PositionData, OwnerData, MovementData, OrdersData, HealthData,
-//   CombatData, KindData, MineralNodeData, BuildingData, CargoData, GatherPhase, SimulationHost,
+//   CombatData, KindData, ResourceData, BuildingData, CargoData, GatherPhase, SimulationHost,
 //   SimulationSnapshot, FormationOffset, GameState, PlayerState, UnitCombatStats
 // @rts/renderer types: GameRenderer, RenderFrame, RenderUnit, RenderBuilding,
-//   RenderMineralNode, RendererOptions, RendererCallbacks, InputProfile, WorldInteraction,
+//   RenderResource, RendererOptions, RendererCallbacks, InputProfile, WorldInteraction,
 //   SpriteAnim, SpriteShape, FrameAnim, UnitSpriteState, BuildingVisualKind
 
 import * as protocol from '@rts/protocol'
@@ -29,7 +29,7 @@ import type {
   RendererCallbacks,
   RendererOptions,
   RenderFrame,
-  RenderMineralNode,
+  RenderResource,
   RenderUnit,
   WorldInteraction
 } from '@rts/renderer'
@@ -44,7 +44,7 @@ type RendererPublicTypeAssertions = [
   Assert<RendererOptions extends { worldWidth: number; worldHeight: number } ? true : false>,
   Assert<RenderFrame extends { tick: number; units: readonly RenderUnit[] } ? true : false>,
   Assert<RenderBuilding extends object ? true : false>,
-  Assert<RenderMineralNode extends { id: number; remaining: number } ? true : false>,
+  Assert<RenderResource extends { id: number; remaining: number } ? true : false>,
   Assert<InputProfile extends string ? true : false>,
   Assert<WorldInteraction extends { type: string } ? true : false>
 ]
@@ -125,7 +125,7 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'Health',
       'Combat',
       'Kind',
-      'MineralNode',
+      'ResourceCatalog',
       'Building',
       'Cargo',
       'ComponentStore',
@@ -142,8 +142,8 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'UNIT_COMBAT_STATS',
       'UNIT_STATS_BY_KIND',
       'unitStatsFor',
-      'GATHER_TICKS_PER_MINERAL',
-      'MINERAL_CARGO_CAPACITY',
+      'GATHER_TICKS_PER_RESOURCE',
+      'RESOURCE_CARGO_CAPACITY',
       'SYSTEM_PIPELINE',
       'runSystems',
       'checkInvariants',

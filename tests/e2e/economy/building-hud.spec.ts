@@ -56,11 +56,11 @@ async function constructionAt(
   }, target)
 }
 
-async function mineralValue(page: import('@playwright/test').Page): Promise<number> {
-  const text = await page.getByTestId('hud-resource-mineral').textContent()
+async function goldValue(page: import('@playwright/test').Page): Promise<number> {
+  const text = await page.getByTestId('hud-resource-gold').textContent()
   const value = Number(text?.match(/\d+/)?.[0])
   if (!Number.isFinite(value)) {
-    throw new Error('Mineral HUD value is missing')
+    throw new Error('Gold HUD value is missing')
   }
   return value
 }
@@ -92,6 +92,31 @@ test('construction HUD uses the concise building labels and preserves costs', as
   await expect(page.getByTestId('build-tower')).toHaveCount(1)
   await expect(page.locator('[data-testid^="command-slot-"]')).toHaveCount(9)
   await expect(page.getByRole('button', { name: 'Back', exact: true })).toBeVisible()
+})
+
+test('locks every building command while a Castle upgrade is running', async ({ page }) => {
+  test.setTimeout(30_000)
+  await startMatch(page)
+  const origin = await page.evaluate(() => {
+    const buildings = Object.values(window.__rtsDebug?.getConstructionStates() ?? {})
+    return buildings.sort((left, right) => left.x - right.x)[0]!
+  })
+  const point = await canvasPointForFixed(page, origin.x + tilesToFixed(2.5), origin.y + tilesToFixed(2))
+  await page.mouse.click(point.x, point.y)
+  await expect(page.getByTestId('construction-panel')).toContainText('Castle')
+
+  await page.getByRole('button', { name: 'Upgrade', exact: true }).click()
+  await page.getByTestId('upgrade-castle').click()
+
+  for (const command of ['train', 'rally', 'upgrade']) {
+    await expect(page.getByTestId(command)).toHaveAttribute('aria-disabled', 'true')
+  }
+  await page.getByTestId('upgrade').hover()
+  await expect(page.getByText('Castle upgrade in progress.', { exact: true })).toBeVisible()
+  await expect(page.getByTestId('production-panel')).toHaveCount(0)
+  await expect(page.getByTestId('command-card')).toContainText('COMMANDS')
+  await expect(page.getByTestId('command-card')).not.toContainText('UPGRADE')
+  await expect(page.getByTestId('cancel-construction')).toHaveCount(0)
 })
 
 test('House capacity activates only after construction completes', async ({ page }) => {
@@ -270,7 +295,7 @@ test('an in-progress construction can be cancelled through the HUD with a partia
   await page.mouse.click(targetPoint.x, targetPoint.y)
   await expect.poll(() => constructionAt(page, target), { timeout: 15_000 }).toMatchObject({ status: 'FOUNDATION' })
 
-  const mineralBefore = await mineralValue(page)
+  const goldBefore = await goldValue(page)
   await page.getByRole('button', { name: 'Stop', exact: true }).click()
   await page.waitForTimeout(250)
   await page.mouse.click(targetPoint.x, targetPoint.y)
@@ -281,6 +306,6 @@ test('an in-progress construction can be cancelled through the HUD with a partia
   await cancel.click()
 
   await expect.poll(() => constructionAt(page, target)).toBeNull()
-  await expect.poll(() => mineralValue(page)).toBeGreaterThan(mineralBefore)
+  await expect.poll(() => goldValue(page)).toBeGreaterThan(goldBefore)
   await expect(page.getByTestId('construction-panel')).toHaveCount(0)
 })

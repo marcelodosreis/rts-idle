@@ -7,7 +7,7 @@ export function economyBarRatio(economy: RenderUnit['economy']): number {
   if (economy === undefined) {
     return 0
   }
-  if (economy.phase === 'gathering') {
+  if (economy.phase === 'harvesting') {
     return clampRatio(economy.progressTicks, economy.progressMax)
   }
   return clampRatio(economy.cargoAmount, economy.cargoCapacity)

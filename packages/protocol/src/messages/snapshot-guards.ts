@@ -21,7 +21,7 @@ export function isSnapshotPlayer(value: unknown): value is SnapshotPlayer {
     isInteger(field(value, 'id')) &&
     isPlayerId(field(value, 'id')) &&
     typeof field(value, 'defeated') === 'boolean' &&
-    isInteger(field(value, 'gold')) &&
+    isResourceBalances(field(value, 'resources')) &&
     isNonNegativeInteger(field(value, 'usedSupply')) &&
     isOptionalNonNegativeInteger(field(value, 'reservedSupply')) &&
     isNonNegativeInteger(field(value, 'supplyCap')) &&
@@ -33,4 +33,8 @@ export function isSnapshotPlayer(value: unknown): value is SnapshotPlayer {
       (Array.isArray(queuedResearch) && queuedResearch.every((item: unknown) => isOneOf(RESEARCH_TYPES, item)))) &&
     (field(value, 'supplyCap') as number) <= 200
   )
+}
+
+function isResourceBalances(value: unknown): value is { readonly GOLD: number; readonly WOOD: number } {
+  return isRecord(value) && isNonNegativeInteger(field(value, 'GOLD')) && isNonNegativeInteger(field(value, 'WOOD'))
 }

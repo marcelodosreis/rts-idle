@@ -48,7 +48,7 @@ function scenario(options: { readonly castleTier?: 1 | 2; readonly pawnQueue?: b
       ? [
           {
             unitKind: 'pawn',
-            costMinerals: 50,
+            cost: { GOLD: 50 },
             reservedSupply: 1,
             progressTicks: 0,
             totalTicks: 100,
@@ -67,7 +67,7 @@ function scenario(options: { readonly castleTier?: 1 | 2; readonly pawnQueue?: b
     initialPlayers: [0, 1, 2, 3].map((id) => ({
       id: id as 0 | 1 | 2 | 3,
       defeated: false,
-      gold: id === 0 ? 500 : 0,
+      resources: { GOLD: id === 0 ? 500 : 0, WOOD: 0 },
       reservedSupply: options.pawnQueue && id === 0 ? 1 : 0,
       highestCastleTierReached: options.castleTier ?? 2
     }))
@@ -87,7 +87,7 @@ describe('Castle tier authority', () => {
     ])
 
     expect(result.rejected.map((rejection) => rejection.code)).toEqual(['TECH_REQUIREMENT', 'TECH_REQUIREMENT'])
-    expect(simulation.inspectState().players[0]?.gold).toBe(500)
+    expect(simulation.inspectState().players[0]?.resources.GOLD).toBe(500)
   })
 
   it('rejects Castle II upgrade while the Pawn queue is occupied', () => {
@@ -95,7 +95,7 @@ describe('Castle tier authority', () => {
     const result = simulation.step([command({ type: 'UPGRADE_CASTLE', payload: { castleId: CASTLE_ID } }, 1)])
 
     expect(result.rejected[0]?.code).toBe('INVALID_STATE')
-    expect(simulation.inspectState().players[0]?.gold).toBe(500)
+    expect(simulation.inspectState().players[0]?.resources.GOLD).toBe(500)
     expect(simulation.inspectState().world.store(Building).get(CASTLE_ID)?.tierUpgrade).toBeNull()
   })
 

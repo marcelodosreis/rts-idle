@@ -1,3 +1,4 @@
+import type { ResourceDefinition } from '@rts/shared'
 import type { World } from '../ecs/world.js'
 import type { PlacementMapBounds } from '../placement/building-placement.js'
 import type { PlayerState } from '../state/state.js'
@@ -28,4 +29,5 @@ export interface SimulationOptions {
   readonly initialWorld?: World
   readonly initialPlayers?: readonly InitialPlayerState[]
   readonly mapBounds?: PlacementMapBounds
+  readonly resources?: readonly ResourceDefinition[]
 }

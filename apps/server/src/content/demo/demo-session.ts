@@ -5,7 +5,6 @@ import {
   createUnitEntity,
   createWorld,
   Health,
-  MineralNode,
   Orders,
   Owner,
   Position,
@@ -14,14 +13,7 @@ import {
   type World
 } from '@rts/simulation'
 import { GameSession } from '../../sessions/session.js'
-import {
-  DEMO_SEED,
-  type DemoBaseSpawn,
-  type DemoMineralNodeSpawn,
-  type DemoScenario,
-  type DemoSpawn,
-  scenarioById
-} from './scenarios.js'
+import { DEMO_SEED, type DemoBaseSpawn, type DemoScenario, type DemoSpawn, scenarioById } from './scenarios.js'
 
 interface SeedContext {
   readonly world: World
@@ -92,15 +84,6 @@ function seedBuildings(context: SeedContext, buildings: readonly DemoBaseSpawn[]
   }
 }
 
-function seedMineralNodes(context: SeedContext, nodes: readonly DemoMineralNodeSpawn[]): void {
-  for (const node of nodes) {
-    const id = allocate(context)
-    context.world.createEntity(id)
-    context.world.store(Position).set(id, { x: node.x, y: node.y })
-    context.world.store(MineralNode).set(id, { remaining: node.remaining })
-  }
-}
-
 function seedAttacks(context: SeedContext, scenario: DemoScenario, aggression: 'offensive' | 'passive'): void {
   for (const [attacker, target] of scenario.attacks) {
     // The player's units start idle in interactive scenarios; only enemy
@@ -131,17 +114,17 @@ export function createDemoSession(
   const context: SeedContext = { world: createWorld(), next: START_ENTITY_ID, ids: [] }
   seedUnits(context, scenario.spawns)
   seedBuildings(context, scenario.buildings ?? [])
-  seedMineralNodes(context, scenario.mineralNodes ?? [])
   seedAttacks(context, scenario, aggression)
   return GameSession.create({
     seed: DEMO_SEED,
     identity,
     mapBounds: placementBoundsFromMap(map),
+    resources: map.resources,
     initialWorld: context.world,
     initialPlayers: PLAYER_IDS.map((id) => ({
       id,
       defeated: false,
-      gold: id === 0 ? (scenario.startingGold ?? 0) : 0,
+      resources: { GOLD: id === 0 ? (scenario.startingGold ?? 0) : 0, WOOD: 0 },
       completedResearch: [],
       highestCastleTierReached: scenario.startingCastleTier ?? 1
     }))

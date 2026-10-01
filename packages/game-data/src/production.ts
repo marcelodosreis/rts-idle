@@ -1,4 +1,10 @@
-import { type BuildingType, TRAINABLE_UNIT_KINDS, type TrainableUnitKind, type UnitKind } from '@rts/shared'
+import {
+  type BuildingType,
+  type ResourceCost,
+  TRAINABLE_UNIT_KINDS,
+  type TrainableUnitKind,
+  type UnitKind
+} from '@rts/shared'
 
 export type { TrainableUnitKind }
 export { TRAINABLE_UNIT_KINDS }
@@ -6,7 +12,7 @@ export { TRAINABLE_UNIT_KINDS }
 export interface UnitProductionDefinition {
   readonly unitKind: TrainableUnitKind
   readonly producer: Extract<BuildingType, 'CASTLE' | 'BARRACKS' | 'ARCHERY' | 'MONASTERY'>
-  readonly costMinerals: number
+  readonly cost: ResourceCost
   readonly trainingTicks: number
   readonly supply: number
 }
@@ -17,35 +23,35 @@ export const UNIT_PRODUCTION_DEFINITIONS: Readonly<Record<TrainableUnitKind, Uni
     pawn: Object.freeze({
       unitKind: 'pawn',
       producer: 'CASTLE',
-      costMinerals: 50,
+      cost: { GOLD: 50 },
       trainingTicks: 100,
       supply: 1
     }),
     warrior: Object.freeze({
       unitKind: 'warrior',
       producer: 'BARRACKS',
-      costMinerals: 100,
+      cost: { GOLD: 100 },
       trainingTicks: 200,
       supply: 1
     }),
     archer: Object.freeze({
       unitKind: 'archer',
       producer: 'BARRACKS',
-      costMinerals: 125,
+      cost: { GOLD: 125 },
       trainingTicks: 300,
       supply: 1
     }),
     lancer: Object.freeze({
       unitKind: 'lancer',
       producer: 'BARRACKS',
-      costMinerals: 100,
+      cost: { GOLD: 100 },
       trainingTicks: 200,
       supply: 1
     }),
     monk: Object.freeze({
       unitKind: 'monk',
       producer: 'MONASTERY',
-      costMinerals: 125,
+      cost: { GOLD: 125 },
       trainingTicks: 300,
       supply: 1
     })

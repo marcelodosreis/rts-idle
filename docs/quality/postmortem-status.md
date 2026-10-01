@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 65 |
-| closed | 15 |
-| **total** | **80** |
+| open | 70 |
+| closed | 17 |
+| **total** | **87** |
 
 ## Details
 
@@ -86,15 +86,22 @@
 | 2026-09-29-terrain-editor-narrow-canvas | open | presentation | QH.17 | 1 test(s) |
 | 2026-09-29-topbar-reference-resolution | open | presentation | QH.02 | 2 test(s) |
 | 2026-09-30-compact-resource-delta-alignment | open | presentation | — | 1 test(s) |
+| 2026-09-30-duplicate-secondary-command | open | input-cross-platform | QH.05 | 1 test(s) |
 | 2026-09-30-duplicate-secondary-commands | open | input-cross-platform | — | 1 test(s) |
 | 2026-09-30-empty-hud-context-feedback | open | presentation | — | 1 test(s) |
 | 2026-09-30-enemy-building-selection-attack | open | coverage | QH.02 | 2 test(s) |
 | 2026-09-30-hud-commands-auto-battle-race | open | coverage | — | 1 test(s) |
 | 2026-09-30-laboratory-navigation-lazy-route | open | presentation | QH.13 | 1 test(s) |
+| 2026-09-30-natural-resource-hud-label | open | presentation | QH.02 | 1 test(s) |
+| 2026-09-30-natural-resource-particle-buffer-not-uploaded | open | presentation | QH.25 | 2 test(s) |
 | 2026-09-30-supply-delta-reservation | open | presentation | — | 1 test(s) |
 | 2026-09-30-toast-animation-geometry | open | coverage | — | 1 test(s) |
 | 2026-09-30-toast-scope-window-binding | open | presentation | QH.25 | 1 test(s) |
+| 2026-09-30-tree-overlapped-production-build-site | open | presentation | QH.25 | 2 test(s) |
+| 2026-09-30-wood-hud-compact-layout | open | layout | QH.25 | 1 test(s) |
+| 2026-10-01-enemy-building-command-panel-empty | closed | presentation | — | 2 test(s) |
 | 2026-10-01-main-e2e-navigation-flake | closed | completion-gate | QH.26.01 | 1 test(s) |
+| 2026-10-01-monk-primary-click-heals | closed | input-cross-platform | — | 2 test(s) |
 
 ## Legend
 

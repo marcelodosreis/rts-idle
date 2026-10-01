@@ -2,7 +2,7 @@ import { isCommandMessage, isErrorMessage, isMatchConfig, isMatchRequest, isSnap
 import { describe, expect, it } from 'vitest'
 
 describe('match bootstrap messages', () => {
-  const map = { width: 2, height: 2, tiles: ['land', 'land', 'land', 'land'] }
+  const map = { width: 2, height: 2, tiles: ['land', 'land', 'land', 'land'], resources: [] }
   it('accepts a valid request and config', () => {
     expect(
       isMatchRequest({
@@ -23,12 +23,14 @@ describe('match bootstrap messages', () => {
             type: 'CASTLE',
             label: 'Castle',
             footprint: { width: 5, height: 4 },
-            costMinerals: 100,
+            cost: { GOLD: 100, WOOD: 0 },
             constructionTicks: 100
           }
         ],
-        production: [{ unitKind: 'pawn', producer: 'CASTLE', costMinerals: 50, trainingTicks: 100, supply: 1 }],
-        research: [{ researchType: 'ATTACK', costMinerals: 150, researchTicks: 600 }]
+        production: [
+          { unitKind: 'pawn', producer: 'CASTLE', cost: { GOLD: 50, WOOD: 0 }, trainingTicks: 100, supply: 1 }
+        ],
+        research: [{ researchType: 'ATTACK', cost: { GOLD: 150, WOOD: 0 }, researchTicks: 600 }]
       })
     ).toBe(true)
   })
@@ -41,7 +43,7 @@ describe('match bootstrap messages', () => {
         type: 'match_request',
         scenarioId: '8v8',
         aggression: 'offensive',
-        map: { source: 'local', definition: { width: 999, height: 1, tiles: [] } }
+        map: { source: 'local', definition: { width: 999, height: 1, tiles: [], resources: [] } }
       })
     ).toBe(false)
   })
@@ -123,10 +125,11 @@ describe('protocol snapshot message', () => {
         maxHp: 500
       }
     ],
-    mineralNodes: [{ id: 4, x: 768, y: 256, remaining: 3000 }],
+    resources: [{ resourceId: 4, remaining: 3000 }],
+    resourcesComplete: true,
     players: [
-      { id: 0, defeated: false, gold: 0, usedSupply: 2, reservedSupply: 1, supplyCap: 10 },
-      { id: 1, defeated: true, gold: 5, usedSupply: 0, supplyCap: 0 }
+      { id: 0, defeated: false, resources: { GOLD: 0, WOOD: 0 }, usedSupply: 2, reservedSupply: 1, supplyCap: 10 },
+      { id: 1, defeated: true, resources: { GOLD: 5, WOOD: 0 }, usedSupply: 0, supplyCap: 0 }
     ],
     events: [{ type: 'damageDealt', targetId: 1, amount: 10, targetHp: 90 }]
   }
@@ -164,7 +167,7 @@ describe('protocol snapshot message', () => {
               queue: [
                 {
                   unitKind: 'pawn',
-                  costMinerals: 50,
+                  cost: { GOLD: 50 },
                   reservedSupply: 1,
                   progressTicks: 4,
                   totalTicks: 100,
@@ -172,7 +175,7 @@ describe('protocol snapshot message', () => {
                 },
                 {
                   unitKind: 'warrior',
-                  costMinerals: 100,
+                  cost: { GOLD: 100 },
                   reservedSupply: 1,
                   progressTicks: 0,
                   totalTicks: 200,
@@ -180,7 +183,7 @@ describe('protocol snapshot message', () => {
                 },
                 {
                   unitKind: 'archer',
-                  costMinerals: 125,
+                  cost: { GOLD: 125 },
                   reservedSupply: 1,
                   progressTicks: 300,
                   totalTicks: 300,
@@ -206,10 +209,10 @@ describe('protocol snapshot message', () => {
             buildingType: 'MONASTERY',
             production: {
               queue: [
-                { researchType: 'ATTACK', costMinerals: 150, progressTicks: 4, totalTicks: 600, status: 'ACTIVE' },
+                { researchType: 'ATTACK', cost: { GOLD: 150 }, progressTicks: 4, totalTicks: 600, status: 'ACTIVE' },
                 {
                   unitKind: 'monk',
-                  costMinerals: 125,
+                  cost: { GOLD: 125 },
                   reservedSupply: 1,
                   progressTicks: 0,
                   totalTicks: 300,
@@ -235,7 +238,8 @@ describe('protocol snapshot message', () => {
         phase: 'RUNNING',
         units: [],
         buildings: [],
-        mineralNodes: [],
+        resources: [],
+        resourcesComplete: true,
         players: [],
         events: []
       })
@@ -244,10 +248,16 @@ describe('protocol snapshot message', () => {
 
   it('rejects invalid authoritative supply values', () => {
     expect(
-      isSnapshotMessage({ ...valid, players: [{ id: 0, defeated: false, gold: 0, usedSupply: -1, supplyCap: 10 }] })
+      isSnapshotMessage({
+        ...valid,
+        players: [{ id: 0, defeated: false, resources: { GOLD: 0, WOOD: 0 }, usedSupply: -1, supplyCap: 10 }]
+      })
     ).toBe(false)
     expect(
-      isSnapshotMessage({ ...valid, players: [{ id: 0, defeated: false, gold: 0, usedSupply: 2, supplyCap: 201 }] })
+      isSnapshotMessage({
+        ...valid,
+        players: [{ id: 0, defeated: false, resources: { GOLD: 0, WOOD: 0 }, usedSupply: 2, supplyCap: 201 }]
+      })
     ).toBe(false)
   })
 
@@ -259,7 +269,8 @@ describe('protocol snapshot message', () => {
         phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0 }],
         buildings: [],
-        mineralNodes: [],
+        resources: [],
+        resourcesComplete: true,
         players: [],
         events: []
       })
@@ -268,12 +279,12 @@ describe('protocol snapshot message', () => {
 
   it('validates authoritative economy presentation state', () => {
     const economy = {
-      phase: 'gathering',
+      phase: 'harvesting',
       cargoAmount: 3,
       cargoCapacity: 10,
       progressTicks: 12,
       progressMax: 200,
-      nodeId: 4
+      resourceId: 4
     }
     expect(isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], economy }] })).toBe(true)
     expect(
@@ -287,9 +298,18 @@ describe('protocol snapshot message', () => {
     ).toBe(false)
   })
 
-  it('validates the optional carrying flag', () => {
+  it('validates the optional carrying flag and cargo type', () => {
     expect(isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], carrying: true }] })).toBe(true)
     expect(isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], carrying: 'yes' }] })).toBe(false)
+    expect(isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], carrying: true, cargoType: 'WOOD' }] })).toBe(
+      true
+    )
+    expect(isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], carrying: true, cargoType: 'GOLD' }] })).toBe(
+      true
+    )
+    expect(isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], carrying: true, cargoType: 'IRON' }] })).toBe(
+      false
+    )
   })
 
   it('rejects unknown kinds, order states, and phases', () => {
@@ -300,7 +320,8 @@ describe('protocol snapshot message', () => {
         phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0, kind: 'zeppelin' }],
         buildings: [],
-        mineralNodes: [],
+        resources: [],
+        resourcesComplete: true,
         players: [],
         events: []
       })
@@ -312,7 +333,8 @@ describe('protocol snapshot message', () => {
         phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0, orderState: 'flying' }],
         buildings: [],
-        mineralNodes: [],
+        resources: [],
+        resourcesComplete: true,
         players: [],
         events: []
       })
@@ -324,20 +346,21 @@ describe('protocol snapshot message', () => {
         phase: 'PAUSED',
         units: [],
         buildings: [],
-        mineralNodes: [],
+        resources: [],
+        resourcesComplete: true,
         players: [],
         events: []
       })
     ).toBe(false)
   })
 
-  it('requires and validates buildings and Mineral Node projections', () => {
+  it('requires and validates buildings and resource projections', () => {
     const { buildings: _buildings, ...withoutBuildings } = valid
-    const { mineralNodes: _mineralNodes, ...withoutMineralNodes } = valid
+    const { resources: _resources, ...withoutResources } = valid
     expect(isSnapshotMessage(withoutBuildings)).toBe(false)
-    expect(isSnapshotMessage(withoutMineralNodes)).toBe(false)
+    expect(isSnapshotMessage(withoutResources)).toBe(false)
     expect(isSnapshotMessage({ ...valid, buildings: [{ ...valid.buildings[0]!, owner: 4 }] })).toBe(false)
-    expect(isSnapshotMessage({ ...valid, mineralNodes: [{ id: 4, x: 0, y: 0, remaining: -1 }] })).toBe(false)
+    expect(isSnapshotMessage({ ...valid, resources: [{ resourceId: 4, remaining: -1 }] })).toBe(false)
   })
 
   it('validates construction projection state', () => {

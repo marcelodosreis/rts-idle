@@ -1,5 +1,5 @@
-import { fixedToRenderPixels, UNIT_GEOMETRY } from '@rts/shared'
-import { AnimatedSprite, Circle, Container, Graphics, type Text, Texture, type Ticker } from 'pixi.js'
+import { fixedToRenderPixels, type ResourceType, UNIT_GEOMETRY } from '@rts/shared'
+import { AnimatedSprite, Circle, Container, Graphics, type Text, type Ticker } from 'pixi.js'
 import type { FrameAnim, RenderUnit, SpriteAnim, UnitKind } from '../core/types.js'
 import { STANDARD_ATTACK_CYCLE_MS } from '../core/visual-timing.js'
 import {
@@ -13,11 +13,14 @@ import {
   hpColor
 } from '../effects/progress-bar.js'
 import { drawEconomyBar } from './economy.js'
-import { type EconomyFrames, economyAnimation, FACTIONS, unitAssetKey } from './economy-animation.js'
+import { economyAnimation, FACTIONS, unitAssetKey } from './economy-animation.js'
 import { facingForState } from './facing.js'
 import { FALLBACK_GLYPH, type FallbackShape } from './fallback.js'
 import { createFallbackVisual } from './fallback-visual.js'
-import { LANCER_ATTACK_DIRECTIONS, type LancerAttackDirection, lancerDirectionForDelta } from './lancer-animation.js'
+import { type LancerAttackDirection, lancerDirectionForDelta } from './lancer-animation.js'
+import { cloneUnitFrames, installFrames, type UnitFrames } from './unit-frames.js'
+
+export type { UnitFrames } from './unit-frames.js'
 
 export const UNIT_RADIUS = fixedToRenderPixels(UNIT_GEOMETRY.pawn.cellSize / 2)
 export const CLICK_RADIUS = fixedToRenderPixels(UNIT_GEOMETRY.pawn.clickRadius)
@@ -36,6 +39,7 @@ export interface UnitFrameState {
   readonly lookAtX?: number
   readonly now: number
   readonly economy: RenderUnit['economy']
+  readonly material?: ResourceType
   readonly carrying?: boolean
   readonly building?: boolean
   readonly repairing?: boolean
@@ -48,72 +52,6 @@ const ATTACK_SUBTYPE: Readonly<Record<UnitKind, string>> = {
   archer: 'shoot',
   lancer: 'downright_attack',
   monk: 'heal'
-}
-
-export interface UnitFrames extends EconomyFrames {
-  readonly idle: AnimatedSprite
-  readonly run: AnimatedSprite
-  readonly attack: AnimatedSprite | null
-  readonly attackVariants: Readonly<Record<LancerAttackDirection, AnimatedSprite | null>> | null
-  readonly healEffect: AnimatedSprite | null
-}
-
-function cloneAnimation(template: AnimatedSprite, loop = true): AnimatedSprite {
-  const textures = template.textures.filter((texture): texture is Texture => texture instanceof Texture)
-  const clone = new AnimatedSprite(textures, false)
-  clone.anchor.set(0.5, 0.5)
-  clone.animationSpeed = template.animationSpeed
-  clone.loop = loop
-  clone.play()
-  return clone
-}
-
-function cloneUnitFrames(template: UnitFrames): UnitFrames {
-  return {
-    idle: cloneAnimation(template.idle),
-    run: cloneAnimation(template.run),
-    attack: template.attack === null ? null : cloneAnimation(template.attack),
-    attackVariants:
-      template.attackVariants === null
-        ? null
-        : (Object.fromEntries(
-            LANCER_ATTACK_DIRECTIONS.map((direction) => [
-              direction,
-              template.attackVariants?.[direction] === null || template.attackVariants?.[direction] === undefined
-                ? null
-                : cloneAnimation(template.attackVariants[direction]!)
-            ])
-          ) as Record<LancerAttackDirection, AnimatedSprite | null>),
-    healEffect: template.healEffect === null ? null : cloneAnimation(template.healEffect, false),
-    build: template.build === null ? null : cloneAnimation(template.build),
-    gather: template.gather === null ? null : cloneAnimation(template.gather),
-    carryIdle: template.carryIdle === null ? null : cloneAnimation(template.carryIdle),
-    carryRun: template.carryRun === null ? null : cloneAnimation(template.carryRun),
-    repairRun: template.repairRun === null ? null : cloneAnimation(template.repairRun),
-    repairInteract: template.repairInteract === null ? null : cloneAnimation(template.repairInteract)
-  }
-}
-
-function installFrames(container: Container, frames: UnitFrames): void {
-  const allFrames = [
-    frames.idle,
-    frames.run,
-    frames.attack,
-    ...(frames.attackVariants === null ? [] : Object.values(frames.attackVariants)),
-    frames.build,
-    frames.gather,
-    frames.repairRun,
-    frames.repairInteract,
-    frames.carryIdle,
-    frames.carryRun,
-    frames.healEffect
-  ]
-  for (const frame of allFrames) {
-    if (frame !== null) {
-      frame.visible = false
-      container.addChild(frame)
-    }
-  }
 }
 
 /** Asset key for a unit animation: kind → manifest subtype (pawn_* / warrior_* / archer_*). */
@@ -191,7 +129,16 @@ export class UnitSprite {
   }
 
   setState(state: UnitFrameState): void {
-    const { moving, now, economy, carrying = false, building = false, repairing = false, healing = false } = state
+    const {
+      moving,
+      now,
+      economy,
+      material,
+      carrying = false,
+      building = false,
+      repairing = false,
+      healing = false
+    } = state
     if (this.frames === null) {
       return
     }
@@ -199,10 +146,18 @@ export class UnitSprite {
     const attack = this.frames.attackVariants?.[this.attackDirection] ?? this.frames.attack
     const attacking = (now < this.attackUntil || healing) && attack !== null && attack !== undefined
     let next: AnimatedSprite
-    const economyFrame = economyAnimation(this.frames, { phase: economy?.phase, moving, carrying, building, repairing })
+    const economyFrame = economyAnimation(this.frames, {
+      phase: economy?.phase,
+      moving,
+      carrying,
+      building,
+      repairing,
+      ...(material === undefined ? {} : { material })
+    })
     if (
       economyFrame !== null &&
       (economyFrame === this.frames.gather ||
+        economyFrame === this.frames.gatherAxe ||
         economyFrame === this.frames.build ||
         economyFrame === this.frames.repairRun ||
         economyFrame === this.frames.repairInteract)
@@ -336,7 +291,11 @@ export class UnitSprite {
     if (this.frames === null) {
       return 'fallback'
     }
-    if (this.body === this.frames.run) {
+    if (
+      this.body === this.frames.run ||
+      this.body === this.frames.travelAxeRun ||
+      this.body === this.frames.travelPickaxeRun
+    ) {
       return 'run'
     }
     if (
@@ -354,13 +313,13 @@ export class UnitSprite {
     if (this.body === this.frames.repairInteract) {
       return 'repair_interact'
     }
-    if (this.body === this.frames.gather) {
+    if (this.body === this.frames.gather || this.body === this.frames.gatherAxe) {
       return 'gather'
     }
-    if (this.body === this.frames.carryIdle) {
+    if (this.body === this.frames.carryIdle || this.body === this.frames.carryWoodIdle) {
       return 'carry_idle'
     }
-    if (this.body === this.frames.carryRun) {
+    if (this.body === this.frames.carryRun || this.body === this.frames.carryWoodRun) {
       return 'carry_run'
     }
     return 'idle'

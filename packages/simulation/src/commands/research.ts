@@ -1,5 +1,5 @@
 import { RESEARCH_DEFINITIONS } from '@rts/game-data'
-import { MAX_PRODUCTION_QUEUE, productionRefund } from '@rts/shared'
+import { applyResourceCost, canAfford, MAX_PRODUCTION_QUEUE, productionRefund } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { hasCurrentCastleTier } from '../domain/tier-access.js'
 import { Building } from '../ecs/building-component.js'
@@ -39,8 +39,8 @@ function validateMonastery(state: GameState, command: ScheduledCommand): GameSta
   if (player.completedResearch.includes(researchType) || hasQueuedResearch(state, command.playerId, researchType)) {
     reject(command, 'INVALID_STATE', `RESEARCH: ${researchType} is already completed or queued`)
   }
-  if (player.gold < definition.costMinerals) {
-    reject(command, 'INSUFFICIENT_RESOURCES', `RESEARCH: insufficient Minerals for ${researchType}`)
+  if (!canAfford(player.resources, definition.cost)) {
+    reject(command, 'INSUFFICIENT_RESOURCES', `RESEARCH: insufficient resources for ${researchType}`)
   }
   return player
 }
@@ -72,13 +72,13 @@ export function applyResearch(state: GameState, command: ScheduledCommand): void
   const { monasteryId, researchType } = command.intent.payload
   const definition = RESEARCH_DEFINITIONS[researchType]
   const queue = state.world.store(Production).get(monasteryId)?.queue ?? []
-  player.gold -= definition.costMinerals
+  applyResourceCost(player.resources, definition.cost, -1)
   state.world.store(Production).set(monasteryId, {
     queue: [
       ...queue,
       {
         researchType,
-        costMinerals: definition.costMinerals,
+        cost: definition.cost,
         progressTicks: 0,
         totalTicks: definition.researchTicks,
         status: queue.length === 0 ? 'ACTIVE' : 'QUEUED'
@@ -126,10 +126,10 @@ export function applyCancelResearch(state: GameState, command: ScheduledCommand)
   if (!isResearchProductionItem(item)) {
     throw new Error('applyCancelResearch: validated item is not research')
   }
-  const refund = productionRefund(item.status, item.costMinerals, item.progressTicks, item.totalTicks)
+  const refund = productionRefund(item.status, item.cost, item.progressTicks, item.totalTicks)
   const remaining = queue.filter((_, index) => index !== queueIndex)
   state.world.store(Production).set(monasteryId, {
     queue: remaining.map((entry, index) => (index === 0 ? { ...entry, status: 'ACTIVE' as const } : entry))
   })
-  player.gold += refund
+  applyResourceCost(player.resources, refund, 1)
 }

@@ -31,7 +31,7 @@ The pipeline order is part of the deterministic contract:
 |---|---|---|
 | 1 | `orders` | Advance the per-unit order queue (PATROL leg rotation) |
 | 2 | `movement` | Advance units toward their destination (integer remainder) |
-| 3 | `economy` | Gather minerals, return cargo, and deposit using post-movement positions |
+| 3 | `economy` | Gather resources, return cargo, and deposit using post-movement positions |
 | 4 | `tier` | Complete Castle tier upgrades and unlock current Tier II access |
 | 5 | `research` | Advance Monastery queues and apply completed modifiers |
 | 6 | `combat` | Resolve attack intent; accumulate damage in the per-tick buffer |
@@ -56,9 +56,11 @@ Registered in `createWorld()` in this order (part of the canonical schema):
 - `Combat` — damage, range (tiles), cooldown (ticks), remaining cooldown.
 - `Kind` — unit archetype (`pawn` / `warrior` / `archer` / `lancer` / `monk`), driven by
   `data/unit-stats.ts` per-role combat stats.
-- `MineralNode` — remaining mineral amount.
+- Map-authored resources are not ECS components: `GameState.resources` holds
+  the immutable `ResourceCatalog` plus compact remaining amounts (see
+  "Economy v0").
 - `Building` — placed building: type, lifecycle status, progress, builder, footprint.
-- `Cargo` — a Worker's carried mineral amount and capacity.
+- `Cargo` — a Worker's carried resource amount, capacity, and `resourceType`.
 - `Production` — a producer's canonical queue, progress, reservations, and
   completion-waiting state.
 - `Production` — a producer's canonical FIFO queue, including Monk training and
@@ -80,7 +82,8 @@ client as `events[]` in the snapshot message (master plan §23.2):
 
 ## Players and victory
 
-`GameState.players` holds the four competitive slots (`defeated`, `minerals`). A
+`GameState.players` holds the four competitive slots (`defeated`, `resources`
+with canonical `GOLD` and `WOOD` balances). A
 player is eliminated when they surrender or lose all living units. The match
 finishes when one player remains (win), nobody remains (draw), or the tick
 limit is reached (5000 ticks ≈ 4 minutes at 20/s). `phase` becomes `FINISHED`
@@ -89,22 +92,24 @@ liveness.
 
 ## Economy v0
 
-`GATHER` is valid for owned pawn Workers with Cargo and a live Mineral Node.
-Workers move through the existing straight-line Movement component, complete
-one atomic 10-mineral batch after 200 ticks, then return to the nearest owned
-Castle (distance, then entity id). Nodes permit any number of simultaneous
-Workers, and only nodes with complete 10-mineral batches can be gathered.
-Partial batch progress is discarded when an order is interrupted; the node and
-Cargo remain unchanged. `PlayerState.minerals` is the authoritative Mineral wallet
-and changes only on deposit. Nodes, cargo, order phase/progress, and wallet
-balances are canonical; a dead Worker loses its Cargo component.
+`GATHER` is valid for owned pawn Workers with Cargo and a live resource
+(a `TREE` yields Wood, a `GOLD_MINE` yields Gold). Workers move through the
+existing straight-line Movement component, complete one atomic
+`harvestAmount` batch after `harvestTicks`, then return to the nearest owned
+Castle (distance, then entity id). Resources permit any number of simultaneous
+Workers, and only resources with a complete batch can be gathered. Partial
+batch progress is discarded when an order is interrupted; the resource and
+Cargo remain unchanged. `PlayerState.resources` is the authoritative
+Gold/Wood wallet and changes only on deposit. Resource amounts, cargo, order
+phase/progress, and wallet balances are canonical; a dead Worker loses its
+Cargo component.
 
 ## Production v0
 
 Completed Castle, Barracks, Archery, and Monastery entities own a maximum five-item `Production` queue. `TRAIN`
-reserves minerals and supply before adding an item. Pawn items take 100 ticks;
-Warrior items cost 100 minerals and take 200 ticks; Archer items cost 125
-minerals and take 300 ticks.
+reserves resources and supply before adding an item. Pawn items take 100 ticks;
+Warrior items cost 100 gold and take 200 ticks; Archer items cost 125
+gold and take 300 ticks.
 The first item is active and later items are queued. Production pauses when
 `usedSupply + reservedSupply > supplyCap`. Completed items spawn at the
 deterministic producer exit, or remain `COMPLETED_WAITING` when that position is
@@ -114,14 +119,14 @@ becomes the spawned unit's normal movement destination.
 
 `CANCEL_PRODUCTION` removes one `QUEUED` item by canonical index. Active and
 `COMPLETED_WAITING` items reject cancellation. A queued item refunds its full
-mineral cost and releases its reserved supply without reordering the rest of
+resource cost and releases its reserved supply without reordering the rest of
 the queue. The authoritative producer-removal lifecycle releases all queue
 reservations and never refunds production costs.
 
 ## Research v0
 
 Completed Monasteries accept a maximum five-item shared Monk/Research queue. `RESEARCH`
-reserves Minerals atomically and `CANCEL_RESEARCH` uses the production refund
+reserves resources atomically and `CANCEL_RESEARCH` uses the production refund
 rule. Attack, Defense, Economy, and Movement are single-level global
 technologies. Their capabilities affect existing and future units without
 changing static unit definitions. Research state is canonical and deterministic.

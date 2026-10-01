@@ -1,10 +1,11 @@
-import { fixedToRenderPixels } from '@rts/shared'
+import { fixedToRenderPixels, type ResourceType } from '@rts/shared'
 import type { AnimatedSprite, Container, Ticker } from 'pixi.js'
 import type { AssetLibrary } from '../assets/asset-library.js'
 import { interpolationAlpha, lerpPoint } from '../core/interpolation.js'
 import type { RenderUnit, UnitKind, UnitSpriteState } from '../core/types.js'
 import { frameCountToPixiAnimationSpeed, STANDARD_ATTACK_CYCLE_MS } from '../core/visual-timing.js'
-import { economyFrameKey, FACTIONS } from './economy-animation.js'
+import { FACTIONS } from './economy-animation.js'
+import { loadEconomyFrames } from './economy-frame-loader.js'
 import { LANCER_ATTACK_DIRECTIONS, lancerAttackFrameKey } from './lancer-animation.js'
 import { frameKey, healEffectKey, TARGET_RADIUS, type UnitFrames, UnitSprite } from './sprite.js'
 
@@ -41,7 +42,11 @@ export class UnitLayer {
   private readonly framesByKind = new Map<string, UnitFrames>()
   private readonly loadState = new Map<string, 'loading' | 'loaded' | 'failed'>()
 
-  constructor(unitsLayer: Container, library: AssetLibrary) {
+  constructor(
+    unitsLayer: Container,
+    library: AssetLibrary,
+    private readonly resourceTypes: ReadonlyMap<number, ResourceType> = new Map()
+  ) {
     this.unitsLayer = unitsLayer
     this.library = library
   }
@@ -79,13 +84,8 @@ export class UnitLayer {
       this.library.animated(frameKey(owner, kind, 'run')),
       this.library.animated(healEffectKey(owner)),
       this.loadAttackFrames(owner, kind),
-      kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'build')) : Promise.resolve(null),
-      kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'repairRun')) : Promise.resolve(null),
-      kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'repairInteract')) : Promise.resolve(null),
-      kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'gather')) : Promise.resolve(null),
-      kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'carryIdle')) : Promise.resolve(null),
-      kind === 'pawn' ? this.library.animated(economyFrameKey(owner, 'carryRun')) : Promise.resolve(null)
-    ]).then(([idle, run, healEffect, attackFrames, build, repairRun, repairInteract, gather, carryIdle, carryRun]) => {
+      loadEconomyFrames(this.library, owner, kind)
+    ]).then(([idle, run, healEffect, attackFrames, economyFrames]) => {
       if (idle === null || run === null) {
         this.loadState.set(cacheKey, 'failed')
         return
@@ -108,12 +108,7 @@ export class UnitLayer {
         attack: attackFrames.attack,
         attackVariants: attackFrames.attackVariants,
         healEffect,
-        build,
-        repairRun,
-        repairInteract,
-        gather,
-        carryIdle,
-        carryRun
+        ...economyFrames
       }
       this.framesByKind.set(cacheKey, frames)
       this.loadState.set(cacheKey, 'loaded')
@@ -154,12 +149,15 @@ export class UnitLayer {
         deltaMoved) ||
       (unit.orderState === 'repairing' && deltaMoved)
     sprite.setHealth(unit.hp, unit.maxHp)
+    const material =
+      unit.cargoType ?? (unit.economy === undefined ? undefined : this.resourceTypes.get(unit.economy.resourceId))
     sprite.setState({
       moving,
       facingLeft: unit.x < (last?.x ?? unit.x),
       ...(unit.lookAtX === undefined ? {} : { lookAtX: fixedToRenderPixels(unit.lookAtX) }),
       now,
       economy: unit.economy,
+      ...(material === undefined ? {} : { material }),
       carrying: unit.carrying ?? false,
       building: unit.orderState === 'building',
       repairing: unit.orderState === 'repairing',

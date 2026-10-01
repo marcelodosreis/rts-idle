@@ -1,4 +1,4 @@
-import type { MatchPhase, SnapshotBuilding, SnapshotMineralNode, SnapshotPlayer, SnapshotUnit } from '@rts/protocol'
+import type { MatchPhase, SnapshotBuilding, SnapshotPlayer, SnapshotResource, SnapshotUnit } from '@rts/protocol'
 import type { PlayerId, SimulationEvent } from '@rts/shared'
 import {
   type CommandRejectedError,
@@ -10,7 +10,7 @@ import {
   type SimulationSnapshot,
   simulationFromSnapshot
 } from '@rts/simulation'
-import { projectBuildings, projectMineralNodes, projectPlayers, projectUnits } from './projections/index.js'
+import { projectBuildings, projectPlayers, projectUnits } from './projections/index.js'
 
 export interface SessionResult {
   readonly tick: number
@@ -57,9 +57,13 @@ export class GameSession {
     return this.simulation.exportSnapshot()
   }
 
+  tick(): number {
+    return this.simulation.tick()
+  }
+
   /** Current match phase ('RUNNING' or 'FINISHED'), projected for the client. */
   phase(): MatchPhase {
-    return this.simulation.inspectState().phase
+    return this.simulation.phase()
   }
 
   hashState(): string {
@@ -68,15 +72,19 @@ export class GameSession {
 
   projectUnits(): readonly SnapshotUnit[] {
     const state = this.simulation.inspectState()
-    return projectUnits(state.world, state.players)
+    return projectUnits(state.world, state.players, state.resources.catalog)
   }
 
   projectBuildings(): readonly SnapshotBuilding[] {
     return projectBuildings(this.simulation.inspectState().world)
   }
 
-  projectMineralNodes(): readonly SnapshotMineralNode[] {
-    return projectMineralNodes(this.simulation.inspectState().world)
+  /** Resource amounts without materializing state: full on reconnect, delta per tick. */
+  projectResources(complete: boolean): readonly SnapshotResource[] {
+    return this.simulation.resources(complete).map((resource) => ({
+      resourceId: resource.resourceId,
+      remaining: resource.remaining
+    }))
   }
 
   projectPlayers(): readonly SnapshotPlayer[] {

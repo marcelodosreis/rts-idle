@@ -1,4 +1,4 @@
-import { assertNever } from '@rts/shared'
+import { assertNever, type ResourceType, resourceTypeForKind } from '@rts/shared'
 import { Application, Graphics, type Ticker } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
 import { AssetLibrary } from '../assets/asset-library.js'
@@ -10,6 +10,8 @@ import { createCameraController } from '../input/camera-controller.js'
 import type { WorldInteraction } from '../input/input-types.js'
 import { createWorldHitTester } from '../input/world-hit-tester.js'
 import { WorldInputAdapter } from '../input/world-input-adapter.js'
+import { createResourceFallbackTextures } from '../resources/resource-fallback.js'
+import { ResourceLayer } from '../resources/resource-layer.js'
 import { TerrainLayer } from '../terrain/layer.js'
 import { WATER_BG } from '../terrain/palette.js'
 import { UnitLayer } from '../units/layer.js'
@@ -25,6 +27,15 @@ import type {
 } from './types.js'
 
 const MIN_ZOOM = 0.05
+const EMPTY_RESOURCE_STATS = {
+  definitions: 0,
+  active: 0,
+  depleted: 0,
+  visibleChunks: 0,
+  materializedChunks: 0,
+  activeVisuals: 0,
+  stumps: 0
+} as const
 const MAX_ZOOM = 4
 /** Canvas background is always the water color so no beige ever shows. */
 interface WiredLayers {
@@ -35,6 +46,7 @@ interface WiredLayers {
   readonly effects: EffectsLayer
   readonly terrain: TerrainLayer
   readonly worldObjects: WorldObjectLayer
+  readonly resources: ResourceLayer
   readonly input: WorldInputAdapter
   readonly camera: ReturnType<typeof createCameraController>
 }
@@ -55,6 +67,7 @@ export class PixiRenderer implements GameRenderer {
   private effects: EffectsLayer | null = null
   private terrain: TerrainLayer | null = null
   private worldObjects: WorldObjectLayer | null = null
+  private resources: ResourceLayer | null = null
   private input: WorldInputAdapter | null = null
   private camera: ReturnType<typeof createCameraController> | null = null
   private mountId = 0
@@ -67,7 +80,6 @@ export class PixiRenderer implements GameRenderer {
     this.options = options
     this.assets = new AssetLibrary(options.assetsUrl ?? '')
   }
-
   private async createApplication(host: HTMLElement, mountId: number): Promise<Application | null> {
     const app = new Application()
     await app.init({ resizeTo: host, background: WATER_BG, roundPixels: true, preference: 'webgl' })
@@ -83,7 +95,6 @@ export class PixiRenderer implements GameRenderer {
     app.canvas.style.overscrollBehavior = 'contain'
     return app
   }
-
   private createCamera(app: Application): ReturnType<typeof createCameraController> {
     const zoom = this.options.initialZoom ?? 1
     const center = this.options.initialCenter ?? {
@@ -98,7 +109,6 @@ export class PixiRenderer implements GameRenderer {
       input: { profile: this.options.inputProfile ?? 'mouse', minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM }
     })
   }
-
   private async wire(app: Application, viewport: Viewport, mountId: number): Promise<WiredLayers | null> {
     const layers = new RenderLayers(viewport)
     app.ticker.add((ticker) => this.tick(ticker))
@@ -107,12 +117,20 @@ export class PixiRenderer implements GameRenderer {
     selectionRect.eventMode = 'none'
     app.stage.addChild(selectionRect)
 
-    const units = new UnitLayer(layers.units, this.assets)
+    const unitResourceTypes = new Map<number, ResourceType>(
+      (this.options.map?.resources ?? []).map((resource) => [resource.resourceId, resourceTypeForKind(resource.kind)])
+    )
+    const units = new UnitLayer(layers.units, this.assets, unitResourceTypes)
     const selection = new SelectionController({ selectionLayer: layers.selection, units, selectionRect })
     const ping = new CommandPing(layers.interaction)
     const effects = new EffectsLayer(layers.effects)
     const worldObjects = new WorldObjectLayer(layers.worldObjects, layers.interaction, this.assets)
     await worldObjects.loadAssets()
+    const resources = new ResourceLayer(
+      layers.worldObjects,
+      this.options.map,
+      createResourceFallbackTextures(app.renderer)
+    )
     const terrain = new TerrainLayer(layers.terrain, this.assets)
     if (this.options.map !== undefined) {
       await terrain.build(this.options.map)
@@ -126,7 +144,7 @@ export class PixiRenderer implements GameRenderer {
     const hitTester = createWorldHitTester({
       unitAt: (x, y) => units.unitAt(x, y),
       buildingAt: (x, y) => worldObjects.buildingAt(x, y),
-      mineralNodeAt: (x, y) => worldObjects.mineralNodeAt(x, y)
+      resourceAt: (x, y) => resources.resourceAt(x, y)
     })
     const input = new WorldInputAdapter({
       canvas: app.canvas,
@@ -135,9 +153,8 @@ export class PixiRenderer implements GameRenderer {
       onInteraction: (interaction) => this.handleInteraction(interaction, selection),
       dragThresholdPx: 6
     })
-    return { viewport, units, selection, ping, effects, terrain, worldObjects, input, camera }
+    return { viewport, units, selection, ping, effects, terrain, worldObjects, resources, input, camera }
   }
-
   async mount(host: HTMLElement, callbacks: RendererCallbacks): Promise<void> {
     if (this.app !== null) {
       throw new Error('PixiRenderer: already mounted')
@@ -168,14 +185,13 @@ export class PixiRenderer implements GameRenderer {
     this.effects = wired.effects
     this.terrain = wired.terrain
     this.worldObjects = wired.worldObjects
+    this.resources = wired.resources
     this.input = wired.input
     this.camera = wired.camera
   }
-
   private destroyApplication(app: Application, releaseGlobalResources: boolean): void {
     app.destroy({ removeView: true, releaseGlobalResources }, { children: true, texture: false, textureSource: false })
   }
-
   present(frame: RenderFrame): void {
     if (
       this.viewport === null ||
@@ -183,15 +199,14 @@ export class PixiRenderer implements GameRenderer {
       this.selection === null ||
       this.ping === null ||
       this.effects === null ||
-      this.worldObjects === null
+      this.worldObjects === null ||
+      this.resources === null
     ) {
       throw new Error('PixiRenderer: not mounted')
     }
     const now = performance.now()
-    this.worldObjects.present(frame.buildings ?? [], frame.mineralNodes ?? [])
-    this.worldObjects.setActiveMineralNodes(
-      new Set(frame.units.flatMap((unit) => (unit.economy === undefined ? [] : [unit.economy.nodeId])))
-    )
+    this.worldObjects.present(frame.buildings ?? [])
+    this.resources.present(frame.resources ?? [])
     this.units.present(frame.units, now)
     this.selection.updateRings()
     this.ping.expireIfElapsed(Date.now())
@@ -251,7 +266,13 @@ export class PixiRenderer implements GameRenderer {
 
   /** Visual-loop tick: advances animations and eases interpolated positions. */
   private tick(ticker: Ticker): void {
-    if (this.units === null || this.selection === null || this.ping === null || this.effects === null) {
+    if (
+      this.units === null ||
+      this.selection === null ||
+      this.ping === null ||
+      this.effects === null ||
+      this.viewport === null
+    ) {
       return
     }
     const now = performance.now()
@@ -260,6 +281,12 @@ export class PixiRenderer implements GameRenderer {
     this.selection.updateRings()
     this.ping.expireIfElapsed(now)
     this.effects.tick(now)
+    this.resources?.setViewBounds({
+      left: this.viewport.left,
+      right: this.viewport.right,
+      top: this.viewport.top,
+      bottom: this.viewport.bottom
+    })
   }
 
   setSelection(ids: readonly number[]): void {
@@ -283,18 +310,16 @@ export class PixiRenderer implements GameRenderer {
     return this.selection?.get() ?? []
   }
 
-  getSelectionBoxState(): {
-    readonly visible: boolean
-    readonly x: number
-    readonly y: number
-    readonly width: number
-    readonly height: number
-  } {
+  getSelectionBoxState(): ReturnType<SelectionController['getBoxState']> {
     return this.selection?.getBoxState() ?? { visible: false, x: 0, y: 0, width: 0, height: 0 }
   }
 
   getPing(): { readonly x: number; readonly y: number } | null {
     return this.ping?.position() ?? null
+  }
+
+  getResourceStats(): ReturnType<ResourceLayer['resourceStats']> {
+    return this.resources?.resourceStats() ?? EMPTY_RESOURCE_STATS
   }
 
   moveCamera(x: number, y: number): void {
@@ -330,6 +355,7 @@ export class PixiRenderer implements GameRenderer {
     this.effects = null
     this.terrain = null
     this.worldObjects = null
+    this.resources = null
     this.input = null
     this.camera = null
   }

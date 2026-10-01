@@ -1,4 +1,5 @@
 import type { MatchConfig, ScenarioSummary, SnapshotBuilding } from '@rts/protocol'
+import type { WorldPoint } from '@rts/renderer'
 import { type GameRenderer, type InputProfile, PixiRenderer } from '@rts/renderer'
 import type { CommandIntent, MapDefinition, MatchResult, ResearchType } from '@rts/shared'
 import { FIXED_SCALE, fixedToRenderPixels, renderPixelsToFixed, TILE_PIXELS } from '@rts/shared'
@@ -8,9 +9,10 @@ import { type CommandModes, isBuildMode } from '../commands/useCommandModes'
 import { type MatchPlacement, placementFor } from '../construction/match-session-placement'
 import { createWorldInteractionHandler } from '../selection/create-world-interaction-handler'
 import { MatchInteractionController } from '../selection/match-interaction-controller'
+import { selectInBox } from '../selection/select-in-box'
 import { selectUnitsInBox } from '../selection/select-units-in-box'
 import type { HudNotification } from '../ui/hud-notifications'
-import type { HudConstruction, HudMineral, HudSelectionUnit } from '../ui/types'
+import type { HudConstruction, HudResource, HudSelectionUnit } from '../ui/types'
 import { createRtsDebug } from './match-debug'
 import type { MatchSessionConnectionOwner } from './match-session-connection'
 import { createMatchSessionHandlers } from './match-session-handlers'
@@ -18,7 +20,7 @@ import { createMatchRendererLifecycle } from './match-session-renderer'
 import { createMatchSessionRuntime, type MatchSessionRuntime } from './match-session-runtime'
 
 export interface SessionResources {
-  readonly mineral: number
+  readonly resources: { readonly GOLD: number; readonly WOOD: number }
   readonly supply: number
   readonly reservedSupply: number
   readonly supplyCap: number
@@ -33,7 +35,7 @@ export type SessionCommandModes = Pick<CommandModes, 'modeRef' | 'clear'>
 export interface MatchSessionSetters {
   readonly setSelectionUnits: (units: readonly HudSelectionUnit[]) => void
   readonly setSelectedConstruction: (value: HudConstruction | null) => void
-  readonly setSelectedMineral: (value: HudMineral | null) => void
+  readonly setSelectedResource: (value: HudResource | null) => void
   readonly setBuildHint: (value: string | null) => void
   readonly setHudNotification: (value: HudNotification | null) => void
   readonly setStatus: (value: string) => void
@@ -71,14 +73,14 @@ export interface MatchSessionStartParams {
 interface SelectionUpdaters {
   readonly updateSelection: (ids: readonly number[]) => void
   readonly updateConstructionSelection: (id: number) => void
-  readonly updateMineralSelection: (id: number) => void
+  readonly updateResourceSelection: (id: number) => void
 }
 
 function createSelectionUpdaters(runtime: MatchSessionRuntime, setters: MatchSessionSetters): SelectionUpdaters {
   const apply = (selection: ReturnType<MatchSessionRuntime['selectUnits']>): void => {
     setters.setSelectionUnits(selection.units)
     setters.setSelectedConstruction(selection.construction)
-    setters.setSelectedMineral(selection.mineral)
+    setters.setSelectedResource(selection.resource)
     const construction = selection.construction
     const producerId =
       construction !== null &&
@@ -102,7 +104,7 @@ function createSelectionUpdaters(runtime: MatchSessionRuntime, setters: MatchSes
   return {
     updateSelection: (ids) => apply(runtime.selectUnits(ids)),
     updateConstructionSelection: (id) => apply(runtime.selectConstruction(id)),
-    updateMineralSelection: (id) => apply(runtime.selectMineral(id))
+    updateResourceSelection: (id) => apply(runtime.selectResource(id))
   }
 }
 
@@ -144,6 +146,46 @@ function createCommandBridge(params: MatchSessionStartParams, runtime: MatchSess
   return { cancelPlacement, sendCommand, placement, updatePreview }
 }
 
+function createBoxSelectionHandler(
+  runtime: MatchSessionRuntime,
+  updaters: SelectionUpdaters,
+  bridge: CommandBridge,
+  commandModes: SessionCommandModes
+): (value: { readonly worldFrom: WorldPoint; readonly worldTo: WorldPoint }) => void {
+  return (value) => {
+    bridge.cancelPlacement()
+    commandModes.clear()
+    const selection = selectInBox({
+      units: runtime.unitPositions,
+      buildings: runtime.buildings.map((building) => ({
+        id: building.id,
+        x: building.x,
+        y: building.y,
+        width: building.footprint.width * FIXED_SCALE,
+        height: building.footprint.height * FIXED_SCALE
+      })),
+      resources: (runtime.map?.resources ?? [])
+        .filter((resource) => runtime.resourceAmounts.has(resource.resourceId))
+        .map((resource) => ({ id: resource.resourceId, x: resource.x, y: resource.y })),
+      from: { x: renderPixelsToFixed(value.worldFrom.x), y: renderPixelsToFixed(value.worldFrom.y) },
+      to: { x: renderPixelsToFixed(value.worldTo.x), y: renderPixelsToFixed(value.worldTo.y) }
+    })
+    if (selection.kind === 'units') {
+      updaters.updateSelection(selection.ids)
+      return
+    }
+    if (selection.kind === 'building') {
+      updaters.updateConstructionSelection(selection.id)
+      return
+    }
+    if (selection.kind === 'resource') {
+      updaters.updateResourceSelection(selection.id)
+      return
+    }
+    updaters.updateSelection([])
+  }
+}
+
 function createInteraction(
   params: MatchSessionStartParams,
   runtime: MatchSessionRuntime,
@@ -151,7 +193,7 @@ function createInteraction(
   bridge: CommandBridge
 ): (interaction: Parameters<ReturnType<typeof createWorldInteractionHandler>>[0]) => void {
   const { commandModes, humanPlayer } = params
-  const { updateSelection, updateConstructionSelection, updateMineralSelection } = updaters
+  const { updateSelection, updateConstructionSelection, updateResourceSelection } = updaters
   const controller = new MatchInteractionController({
     isMatchEnded: () => runtime.matchEnded,
     selectedUnitIds: () => runtime.selectedIds,
@@ -181,16 +223,9 @@ function createInteraction(
         )
       ),
     selectBuilding: updateConstructionSelection,
-    selectMineral: updateMineralSelection,
+    selectResource: updateResourceSelection,
     clearMode: commandModes.clear,
-    selectBox: (value) =>
-      updateSelection(
-        selectUnitsInBox(
-          runtime.unitPositions,
-          { x: renderPixelsToFixed(value.worldFrom.x), y: renderPixelsToFixed(value.worldFrom.y) },
-          { x: renderPixelsToFixed(value.worldTo.x), y: renderPixelsToFixed(value.worldTo.y) }
-        )
-      ),
+    selectBox: createBoxSelectionHandler(runtime, updaters, bridge, commandModes),
     updatePreview: bridge.updatePreview
   })
 }
@@ -276,7 +311,8 @@ function createRendererView(
             runtime.rendererReady &&
             runtime.firstFramePresented &&
             runtime.rendererError === null
-        })
+        }),
+        resourceAmounts: () => runtime.resourceAmounts
       })
     },
     onFramePresented: () => {
@@ -311,7 +347,7 @@ function createSessionHandlers(
     setResources: setters.setResources,
     appendCompletedConstructions: setters.appendCompletedConstructions,
     setHudNotification: setters.setHudNotification,
-    setSelectedMineral: setters.setSelectedMineral,
+    setSelectedResource: setters.setSelectedResource,
     setMatchResult: (result) => {
       refs.matchEndedRef.current = true
       setters.setMatchResult(result)
@@ -320,6 +356,10 @@ function createSessionHandlers(
     onMatchConfig: (config) => {
       runtime.configReceived = true
       runtime.map = config.map
+      runtime.resourceAmounts.clear()
+      for (const resource of config.map.resources) {
+        runtime.resourceAmounts.set(resource.resourceId, resource.initialAmount)
+      }
       runtime.buildCatalog = config.buildings
       setters.setMatchConfig(config)
       setters.setScenarios(config.scenarios)

@@ -16,8 +16,8 @@ pnpm run build
 ## Command and observation contracts
 
 - `DEPOSIT { unitIds, buildingId }`: owned workers walk to an owned completed
-  Base and deposit their carried minerals; the wire shape is validated by
-  `isCommandMessage`.
+  Castle and deposit their carried resources (Gold or Wood); the wire shape is
+  validated by `isCommandMessage`.
 - `SnapshotUnit.carrying?: boolean`: true while a worker holds cargo,
   independent of its front order.
 
@@ -25,12 +25,13 @@ pnpm run build
 
 ```text
 packages/protocol/src/
-├── envelope.ts
-├── room.ts
-├── commands.ts
-├── observation.ts
-├── replication.ts
-└── errors.ts
+├── index.ts
+└── messages/
+    ├── command.ts
+    ├── error.ts
+    ├── match.ts
+    ├── snapshot.ts
+    └── snapshot-guards.ts
 ```
 
 ## Code Style

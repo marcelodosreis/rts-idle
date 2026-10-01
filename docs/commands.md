@@ -45,8 +45,8 @@ be integer fixed units.
 | `PATROL` | `unitIds, x, y` | Walk back and forth between the current position and the target. |
 | `ATTACK` | `unitIds, targetId` | Acquire and attack a specific enemy (chases when out of range). |
 | `ATTACK_MOVE` | `unitIds, x, y` | Move to a destination, attacking enemies encountered en route; defend on arrival. |
-| `GATHER` | `unitIds, nodeId` | Pawns repeatedly gather Minerals, return to the nearest owned Castle, and deposit. |
-| `TRAIN` | `producerId, unitKind` | Queue the unit allowed by the selected owned completed producer, reserving Minerals and supply. |
+| `GATHER` | `unitIds, resourceId` | Pawns repeatedly gather the resource (tree → Wood, gold mine → Gold), return to the nearest owned Castle, and deposit. |
+| `TRAIN` | `producerId, unitKind` | Queue the unit allowed by the selected owned completed producer, reserving resources and supply. |
 | `RESEARCH` | `monasteryId, researchType` | Queue one of the four Tier II researches at an owned completed Monastery. |
 | `CANCEL_RESEARCH` | `monasteryId, queueIndex` | Cancel a research item and refund according to its authoritative queue state. |
 | `CANCEL_PRODUCTION` | `producerId, queueIndex` | Cancel any item in an owned producer queue, refunding according to its state and releasing its reserved supply. |
@@ -62,7 +62,7 @@ movement), and removes the building so its footprint is freed. The worker stays
 where it is. The refund uses integer arithmetic with an explicit denominator:
 
 ```text
-refund = floor(costMinerals * (totalTicks - progressTicks) * 3 / (totalTicks * 4))
+refund = floor(cost * (totalTicks - progressTicks) * 3 / (totalTicks * 4))
 ```
 
 A not-yet-started foundation (progress 0) refunds 75% of the cost; the formula
@@ -96,8 +96,9 @@ The browser transport (`packages/protocol`) validates incoming messages before
 they reach the server: a generic `command` message carries the shared
 `CommandIntent` (`isCommandMessage`); the legacy `MOVE` message is still
 accepted. The server projects snapshots back with `hp/maxHp`, `kind`,
-`orderState`, optional Worker economy phase/progress/cargo, separate `bases[]`
-and `mineralNodes[]` observations, `players`, `phase`, and per-tick `events[]`.
+`orderState`, optional Worker economy phase/progress/cargo, separate
+`buildings[]` and `resources[]` observations, `players`, `phase`, and per-tick
+`events[]`.
 The command intent type lives in
 `@rts/shared` so protocol and simulation share one definition.
 
@@ -106,7 +107,7 @@ The command intent type lives in
 The current production contract accepts Pawn at Castle, Warrior/Lancer at
 Barracks, Archer at Archery, and Monk at Monastery. Lancer and Monk require the
 player's Tier II unlock.
-The queue holds at most five items and reserves the mineral cost and one supply
+The queue holds at most five items and reserves the resource cost and one supply
 per item at acceptance. The authoritative production definitions, including the
 balance for all three trainable unit kinds, live in `@rts/game-data` and are
 centralized in `UNIT_PRODUCTION_DEFINITIONS`.
@@ -128,7 +129,7 @@ completed Base or Barracks and a `QUEUED` item. Active and
 the canonical queue at command application time; removing a queued item
 preserves the relative order of the remaining items.
 
-Queued items refund their full reserved mineral cost and release their reserved
+Queued items refund their full reserved resource cost and release their reserved
 supply. Removing a producer discards its complete queue
 and releases all reservations without refund; building combat and building
 health are outside this contract.

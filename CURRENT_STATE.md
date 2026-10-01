@@ -21,15 +21,16 @@ See `docs/tasks/todo.md` for full phase list.
 - 8 pipeline systems: orders → movement → economy → combat → death → supply → victory → invariants
 - 3 unit types: pawn (100hp/10dmg), warrior (150hp/15dmg), archer (60hp/8dmg/range 3)
 - Combat with simultaneous death, victory/draw/tick-limit
-- Economy v0: Worker → Mineral Node → cargo → owned Base → wallet deposit
+- Economy v0: Worker → Resource (tree → Wood, gold mine → Gold) → cargo → owned Castle → wallet deposit
+- Map-authored resources unified under one domain: compact catalog/state, deterministic gather/deposit into Gold/Wood wallets, snapshot deltas, chunked renderer presentation, minimal geometric resource/stump markers, and Gold/Wood HUD
 - Snapshot/hash/export/restore
 - PixiJS renderer (animated sprites, terrain autotile, combat effects, HP bars)
 - Centralized renderer input adapter with Mouse/Trackpad camera profiles, shared
   camera setup, target precedence, pointer capture, and focus-loss cleanup
 - Unit selection (click + box), command bar, match overlay
 - Playable regression scenario with four controllable workers and no enemies,
-   250 starting minerals, contextual GATHER, pickaxe/carry animations, progress
-   feedback, live Mineral HUD, and a player Base starting at 250/500 HP
+   250 starting gold, contextual GATHER, pickaxe/carry animations, progress
+   feedback, live Gold/Wood HUD, and a player Base starting at 250/500 HP
 - Manual DEPOSIT: a worker that keeps cargo after a manual move shows the carry
   pose and deposits when the player right-clicks an owned completed Base
 - Unified Building construction with HUD placement feedback, shared selection,
@@ -37,7 +38,7 @@ See `docs/tasks/todo.md` for full phase list.
 - Authoritative supply accounting: Base capacity, unit usage, completed Supply
   Depot capacity, over-cap handling, canonical snapshots, and Supply HUD
 - Producer production: Base trains Pawn; Barracks trains Warrior/Archer with
-  TRAIN queues, mineral/supply reservations, deterministic production state,
+  TRAIN queues, resource/supply reservations, deterministic production state,
   blocked-exit waiting, production snapshots, player-facing HUD flow, and
   per-item cancellation with authoritative refunds and reservation cleanup
 - Persistent troop health bars, plus authoritative health for completed Base,
@@ -59,7 +60,7 @@ See `docs/tasks/todo.md` for full phase list.
 
 Player connects → gets isolated match → selects units → issues commands → fights
 pre-scripted enemies, or opens the default scenario to gather and deposit
-minerals through the authoritative command path. In the economy scenario, the player
+resources through the authoritative command path. In the economy scenario, the player
 can also place Base/Barracks/Supply Depot construction, pause it by stopping the
 worker, and resume it by assigning another worker through the construction HUD.
 The top bar shows authoritative `used / cap` supply and updates on Depot completion.
@@ -68,6 +69,8 @@ blocked exit without overlap and follow the latest authoritative rally point
 after spawning.
 
 No real AI, pathfinding, fog of war, or multiplayer.
+Resource tiles remain permanently reserved for construction; physical
+movement blocking is deferred with pathfinding/collision.
 
 ## Current Limitations
 
@@ -115,8 +118,24 @@ Damage are complete. Full-health troops keep their overhead HP bars; completed
 buildings use the shared Health component and can be damaged and destroyed.
 P2.10 Repair is complete. Pawns select the deterministic first worker from the
 selection, repair mechanical owned targets every 10 ticks for centralized
-5-HP/1-Mineral rules, and expose authoritative progress/HP through the HUD and
+5-HP/1-gold rules, and expose authoritative progress/HP through the HUD and
 regression E2E scenario.
+
+RESOURCE.01 Natural Resources Visual Completion is complete: authoritative
+trees are not ECS entities, active trees and depleted stumps render as minimal
+geometric markers without loading tree art assets, resource tiles are validated as land/elevated and reserved
+for construction, and the real-server regression flow covers Wood gathering,
+depletion, stump persistence, and construction rejection. Unit, integration,
+simulation, architecture, verification, benchmark, performance, and full
+Chromium/Firefox E2E gates are green.
+
+RESOURCE.02 Unified Resource Domain is complete: one canonical `Resource` model
+replaced the removed mineral-node and natural-resource paths across shared,
+game-data, protocol, simulation, server, renderer, web, and tools. `GATHER`
+uses `resourceId` with `TO_RESOURCE`/`HARVESTING` phases, players hold canonical
+Gold/Wood wallets, `ResourceCost` unifies construction/training/research
+pricing, and `tests/architecture/legacy-resource-symbols.test.ts` blocks
+reintroduction of the removed symbols.
 
 Quality Hardening remains deferred after the completed QUAL-016 output hygiene
 and QUAL-018 tracking work. The Concept Authority closure (AUTH-005A through

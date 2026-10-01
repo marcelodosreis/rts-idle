@@ -7,7 +7,7 @@ export interface WorldHitTester {
 export interface WorldHitTesterSources {
   readonly unitAt: (x: number, y: number) => number | null
   readonly buildingAt: (x: number, y: number) => number | null
-  readonly mineralNodeAt: (x: number, y: number) => number | null
+  readonly resourceAt: (x: number, y: number) => number | null
 }
 
 /** Keeps target precedence in one place for both primary and secondary input. */
@@ -18,9 +18,9 @@ export function createWorldHitTester(sources: WorldHitTesterSources): WorldHitTe
       if (unit !== null) {
         return { kind: 'unit', id: unit }
       }
-      const mineral = sources.mineralNodeAt(position.x, position.y)
-      if (mineral !== null) {
-        return { kind: 'mineral', id: mineral }
+      const resource = sources.resourceAt(position.x, position.y)
+      if (resource !== null) {
+        return { kind: 'resource', id: resource }
       }
       const building = sources.buildingAt(position.x, position.y)
       if (building !== null) {

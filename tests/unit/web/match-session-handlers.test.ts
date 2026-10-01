@@ -10,8 +10,9 @@ function snapshot(overrides: Partial<SnapshotMessage> = {}): SnapshotMessage {
     phase: 'RUNNING',
     units: [{ id: 1, x: 10, y: 20, owner: 0, kind: 'pawn', orderState: 'moving' }],
     buildings: [],
-    mineralNodes: [{ id: 7, x: 0, y: 0, remaining: 30 }],
-    players: [{ id: 0, defeated: false, gold: 12, usedSupply: 1, supplyCap: 5 }],
+    resources: [{ resourceId: 7, remaining: 30 }],
+    resourcesComplete: true,
+    players: [{ id: 0, defeated: false, resources: { GOLD: 12, WOOD: 0 }, usedSupply: 1, supplyCap: 5 }],
     events: [],
     ...overrides
   }
@@ -31,7 +32,7 @@ function harness() {
     setResources: vi.fn(),
     appendCompletedConstructions: vi.fn(),
     setHudNotification: vi.fn(),
-    setSelectedMineral: vi.fn(),
+    setSelectedResource: vi.fn(),
     setMatchResult: vi.fn(),
     present: vi.fn(),
     onMatchConfig: vi.fn(),
@@ -48,7 +49,7 @@ describe('match session handlers', () => {
     expect(runtime.unitPositions.get(1)).toEqual({ x: 10, y: 20 })
     expect(callbacks.setTick).toHaveBeenCalledWith(4)
     expect(callbacks.setResources).toHaveBeenCalledWith({
-      mineral: 12,
+      resources: { GOLD: 12, WOOD: 0 },
       supply: 1,
       reservedSupply: 0,
       supplyCap: 5,
@@ -103,7 +104,7 @@ describe('match session handlers', () => {
           {
             id: 0,
             defeated: false,
-            gold: 40,
+            resources: { GOLD: 40, WOOD: 0 },
             usedSupply: 2,
             supplyCap: 8,
             highestCastleTierReached: 2,
@@ -114,7 +115,7 @@ describe('match session handlers', () => {
       })
     )
     expect(callbacks.setResources).toHaveBeenCalledWith({
-      mineral: 40,
+      resources: { GOLD: 40, WOOD: 0 },
       supply: 2,
       reservedSupply: 0,
       supplyCap: 8,
@@ -132,7 +133,7 @@ describe('match session handlers', () => {
           {
             id: 0,
             defeated: false,
-            gold: 40,
+            resources: { GOLD: 40, WOOD: 0 },
             usedSupply: 2,
             supplyCap: 8,
             highestCastleTierReached: 2
@@ -141,7 +142,7 @@ describe('match session handlers', () => {
       })
     )
     expect(callbacks.setResources).toHaveBeenCalledWith({
-      mineral: 40,
+      resources: { GOLD: 40, WOOD: 0 },
       supply: 2,
       reservedSupply: 0,
       supplyCap: 8,
@@ -151,17 +152,59 @@ describe('match session handlers', () => {
     })
   })
 
-  it('removes missing units and refreshes a selected mineral', () => {
+  it('removes missing units and refreshes a selected resource', () => {
     const { runtime, callbacks, handlers } = harness()
     handlers.onSnapshot(snapshot())
-    runtime.selectedMineralId = 7
+    runtime.selectedResourceId = 7
     handlers.onSnapshot(snapshot({ tick: 5, units: [] }))
     expect(runtime.unitStates.size).toBe(0)
     expect(runtime.unitPositions.size).toBe(0)
-    expect(callbacks.setSelectedMineral).toHaveBeenLastCalledWith({ id: 7, remaining: 30 })
-    handlers.onSnapshot(snapshot({ tick: 6, mineralNodes: [] }))
-    expect(runtime.selectedMineralId).toBeNull()
-    expect(callbacks.setSelectedMineral).toHaveBeenLastCalledWith(null)
+    expect(callbacks.setSelectedResource).toHaveBeenLastCalledWith({ id: 7, remaining: 30 })
+    handlers.onSnapshot(snapshot({ tick: 6, resources: [], resourcesComplete: true }))
+    expect(runtime.selectedResourceId).toBeNull()
+    expect(callbacks.setSelectedResource).toHaveBeenLastCalledWith(null)
+  })
+
+  it('keeps the resource kind when refreshing the selection from a snapshot', () => {
+    const { runtime, callbacks, handlers } = harness()
+    runtime.map = {
+      width: 1,
+      height: 1,
+      tiles: ['land'],
+      resources: [
+        {
+          resourceId: 7,
+          kind: 'GOLD_MINE',
+          x: 0,
+          y: 0,
+          variant: 0,
+          initialAmount: 3_000,
+          harvestAmount: 10,
+          harvestTicks: 200,
+          blocksNavigation: false
+        }
+      ]
+    }
+    runtime.selectedResourceId = 7
+    handlers.onSnapshot(snapshot())
+
+    expect(callbacks.setSelectedResource).toHaveBeenLastCalledWith({ id: 7, remaining: 30, kind: 'GOLD_MINE' })
+  })
+
+  it('merges resource deltas and rebuilds every amount on a complete snapshot', () => {
+    const { runtime, handlers } = harness()
+    handlers.onSnapshot(snapshot())
+    expect(runtime.resourceAmounts.get(7)).toBe(30)
+
+    handlers.onSnapshot(snapshot({ tick: 5, resources: [{ resourceId: 7, remaining: 20 }], resourcesComplete: false }))
+    handlers.onSnapshot(snapshot({ tick: 6, resources: [{ resourceId: 8, remaining: 5 }], resourcesComplete: false }))
+    expect(runtime.resourceAmounts.get(7)).toBe(20)
+    expect(runtime.resourceAmounts.get(8)).toBe(5)
+
+    handlers.onSnapshot(snapshot({ tick: 7, resources: [{ resourceId: 9, remaining: 1 }], resourcesComplete: true }))
+    expect(runtime.resourceAmounts.has(7)).toBe(false)
+    expect(runtime.resourceAmounts.has(8)).toBe(false)
+    expect(runtime.resourceAmounts.get(9)).toBe(1)
   })
 
   it('logs command errors without changing the connected status', () => {
@@ -200,22 +243,22 @@ describe('match session handlers', () => {
     [
       'victory',
       [
-        { id: 0, defeated: false, gold: 0, usedSupply: 0, supplyCap: 1 },
-        { id: 1, defeated: true, gold: 0, usedSupply: 0, supplyCap: 0 }
+        { id: 0, defeated: false, resources: { GOLD: 0, WOOD: 0 }, usedSupply: 0, supplyCap: 1 },
+        { id: 1, defeated: true, resources: { GOLD: 0, WOOD: 0 }, usedSupply: 0, supplyCap: 0 }
       ]
     ],
     [
       'defeat',
       [
-        { id: 0, defeated: true, gold: 0, usedSupply: 0, supplyCap: 1 },
-        { id: 1, defeated: false, gold: 0, usedSupply: 0, supplyCap: 1 }
+        { id: 0, defeated: true, resources: { GOLD: 0, WOOD: 0 }, usedSupply: 0, supplyCap: 1 },
+        { id: 1, defeated: false, resources: { GOLD: 0, WOOD: 0 }, usedSupply: 0, supplyCap: 1 }
       ]
     ],
     [
       'draw',
       [
-        { id: 0, defeated: false, gold: 0, usedSupply: 0, supplyCap: 1 },
-        { id: 1, defeated: false, gold: 0, usedSupply: 0, supplyCap: 1 }
+        { id: 0, defeated: false, resources: { GOLD: 0, WOOD: 0 }, usedSupply: 0, supplyCap: 1 },
+        { id: 1, defeated: false, resources: { GOLD: 0, WOOD: 0 }, usedSupply: 0, supplyCap: 1 }
       ]
     ]
   ] as const)('reports finished %s once and cancels command mode', (result, players) => {
@@ -232,7 +275,7 @@ describe('match session handlers', () => {
     const { callbacks, handlers } = harness()
     const config: MatchConfig = {
       type: 'match_config',
-      map: { width: 1, height: 1, tiles: ['land'] },
+      map: { width: 1, height: 1, tiles: ['land'], resources: [] },
       buildings: [],
       production: [],
       research: [],

@@ -153,7 +153,10 @@ test('switching the scenario in the top bar reloads into the new match', async (
 
 test('a failed local map keeps the server-provided scenario selector available', async ({ page }) => {
   await page.addInitScript(() => {
-    window.localStorage.setItem('rts.playtestMap', JSON.stringify({ width: 1, height: 1, tiles: ['land'] }))
+    window.localStorage.setItem(
+      'rts.playtestMap',
+      JSON.stringify({ width: 1, height: 1, tiles: ['land'], resources: [] })
+    )
   })
   await page.goto('/?map=local')
 

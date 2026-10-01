@@ -6,7 +6,7 @@ export const BUILDINGS: readonly BuildCatalogEntry[] = Object.values(BUILDING_DE
   type: definition.type,
   label: definition.label,
   footprint: { ...definition.footprint },
-  costMinerals: definition.costMinerals,
+  cost: { GOLD: definition.cost.GOLD ?? 0, WOOD: definition.cost.WOOD ?? 0 },
   constructionTicks: definition.constructionTicks,
   supplyProvided: definition.supplyProvided
 }))
@@ -14,9 +14,10 @@ export const BUILDINGS: readonly BuildCatalogEntry[] = Object.values(BUILDING_DE
 export const SCENARIOS: readonly ScenarioSummary[] = DEMO_SCENARIOS.map(({ id, label }) => ({ id, label }))
 
 export const PRODUCTION: readonly ProductionCatalogEntry[] = Object.values(UNIT_PRODUCTION_DEFINITIONS).map(
-  (definition) => ({ ...definition })
+  (definition) => ({ ...definition, cost: { GOLD: definition.cost.GOLD ?? 0, WOOD: definition.cost.WOOD ?? 0 } })
 )
 
 export const RESEARCH: readonly ResearchCatalogEntry[] = Object.values(RESEARCH_DEFINITIONS).map((definition) => ({
-  ...definition
+  ...definition,
+  cost: { GOLD: definition.cost.GOLD ?? 0, WOOD: definition.cost.WOOD ?? 0 }
 }))

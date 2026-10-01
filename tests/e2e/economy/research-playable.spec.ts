@@ -99,7 +99,7 @@ test('starts with Castle II and Monastery research, then cancels a queued topic'
 
   await startResearch(page, 'economy')
   await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE')
-  const beforeCancel = Number((await page.getByTestId('hud-resource-mineral').textContent())?.match(/\d+/)?.[0] ?? 0)
+  const beforeCancel = Number((await page.getByTestId('hud-resource-gold').textContent())?.match(/\d+/)?.[0] ?? 0)
   await openRoot(page)
   const cancel = page.getByTestId('cancel-current')
   await cancel.click()
@@ -107,12 +107,25 @@ test('starts with Castle II and Monastery research, then cancels a queued topic'
   await cancel.click()
   await expect(page.getByTestId('production-queue-empty')).toContainText('No units or research in queue.')
   await expect
-    .poll(() => page.getByTestId('hud-resource-mineral').textContent(), { timeout: 5_000 })
+    .poll(() => page.getByTestId('hud-resource-gold').textContent(), { timeout: 5_000 })
     .not.toBe(String(beforeCancel))
+})
+
+test('shows the unavailable Castle III upgrade after reaching Castle II', async ({ page }) => {
+  await startResearchScenario(page)
+  await selectEconomyBase(page)
+
+  await page.getByRole('button', { name: 'Upgrade', exact: true }).click()
+  const castleIii = page.getByTestId('upgrade-castle')
+  await expect(castleIii).toHaveText('Castle III')
+  await expect(castleIii).toHaveAttribute('aria-disabled', 'true')
+  await castleIii.hover()
+  await expect(page.getByText('Castle III content is unavailable.', { exact: true }).first()).toBeVisible()
 })
 
 test('uses the same queue card dimensions for research and units', async ({ page }) => {
   test.setTimeout(60_000)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await prepareResearch(page)
 
   await startResearch(page, 'economy')
@@ -126,6 +139,9 @@ test('uses the same queue card dimensions for research and units', async ({ page
   }
   expect(Math.abs(researchCard.width - unitCard.width)).toBeLessThan(3)
   expect(Math.abs(researchCard.height - unitCard.height)).toBeLessThan(1)
+  expect(researchCard.height).toBeGreaterThanOrEqual(48)
+  const emptySlot = await page.getByTestId('production-slot-2').boundingBox()
+  expect(emptySlot?.height).toBeGreaterThanOrEqual(48)
 })
 
 test('completed Economy research changes the selected Pawn tooltip', async ({ page }) => {

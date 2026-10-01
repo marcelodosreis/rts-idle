@@ -5,7 +5,6 @@ import {
   Combat,
   Health,
   Kind,
-  MineralNode,
   Movement,
   Orders,
   Owner,
@@ -28,7 +27,6 @@ export function createWorld(): World {
   world.registerComponent(Combat)
   world.registerComponent(AbilityCooldown)
   world.registerComponent(Kind)
-  world.registerComponent(MineralNode)
   world.registerComponent(Building)
   world.registerComponent(Cargo)
   world.registerComponent(Production)

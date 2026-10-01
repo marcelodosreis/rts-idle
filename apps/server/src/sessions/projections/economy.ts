@@ -1,16 +1,17 @@
 import type { EconomyPhase, SnapshotEconomy } from '@rts/protocol'
-import { GATHER_TICKS_PER_MINERAL, MINERAL_CARGO_CAPACITY, type Order } from '@rts/simulation'
+import type { Order, ResourceCatalog } from '@rts/simulation'
 
 export function projectEconomy(
   front: Order | undefined,
-  cargo: { readonly amount: number; readonly capacity: number } | undefined
+  cargo: { readonly amount: number; readonly capacity: number } | undefined,
+  resources: ResourceCatalog
 ): SnapshotEconomy | undefined {
   if (front?.type !== 'GATHER' || cargo === undefined) {
     return undefined
   }
   const phaseByOrder: Readonly<Record<typeof front.phase, EconomyPhase>> = {
-    TO_NODE: 'to_node',
-    GATHERING: 'gathering',
+    TO_RESOURCE: 'to_resource',
+    HARVESTING: 'harvesting',
     TO_BASE: 'to_base',
     WAITING_FOR_BASE: 'waiting_for_base'
   }
@@ -19,7 +20,7 @@ export function projectEconomy(
     cargoAmount: cargo.amount,
     cargoCapacity: cargo.capacity,
     progressTicks: front.progressTicks,
-    progressMax: GATHER_TICKS_PER_MINERAL * MINERAL_CARGO_CAPACITY,
-    nodeId: front.nodeId
+    progressMax: resources.entry(front.resourceId)?.harvestTicks ?? 1,
+    resourceId: front.resourceId
   }
 }

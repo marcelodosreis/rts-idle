@@ -21,7 +21,14 @@ function frames(): UnitFrames {
     repairInteract: null,
     gather: null,
     carryIdle: null,
-    carryRun: null
+    carryRun: null,
+    gatherAxe: null,
+    carryWoodIdle: null,
+    carryWoodRun: null,
+    travelAxeIdle: null,
+    travelAxeRun: null,
+    travelPickaxeIdle: null,
+    travelPickaxeRun: null
   }
 }
 

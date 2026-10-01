@@ -1,11 +1,11 @@
-import type { BuildingType } from '@rts/shared'
+import type { BuildingType, ResourceCost } from '@rts/shared'
 import { BUILDING_FOOTPRINTS } from './building-footprints.js'
 
 export interface BuildingDefinition {
   readonly type: BuildingType
   readonly label: string
   readonly footprint: { readonly width: number; readonly height: number }
-  readonly costMinerals: number
+  readonly cost: ResourceCost
   readonly constructionTicks: number
   readonly supplyProvided: number
   readonly maxHp: number
@@ -17,7 +17,7 @@ export const CASTLE_BUILDING: BuildingDefinition = Object.freeze({
   type: 'CASTLE',
   label: 'Castle',
   footprint: BUILDING_FOOTPRINTS.CASTLE,
-  costMinerals: 100,
+  cost: { GOLD: 100 },
   constructionTicks: 100,
   supplyProvided: 10,
   maxHp: 500,
@@ -28,7 +28,7 @@ export const BARRACKS_BUILDING: BuildingDefinition = Object.freeze({
   type: 'BARRACKS',
   label: 'Barracks',
   footprint: BUILDING_FOOTPRINTS.BARRACKS,
-  costMinerals: 150,
+  cost: { GOLD: 150 },
   constructionTicks: 100,
   supplyProvided: 0,
   maxHp: 400,
@@ -39,7 +39,7 @@ export const ARCHERY_BUILDING: BuildingDefinition = Object.freeze({
   type: 'ARCHERY',
   label: 'Archery',
   footprint: BUILDING_FOOTPRINTS.ARCHERY,
-  costMinerals: 150,
+  cost: { GOLD: 150 },
   constructionTicks: 100,
   supplyProvided: 0,
   maxHp: 400,
@@ -50,7 +50,7 @@ export const MONASTERY_BUILDING: BuildingDefinition = Object.freeze({
   type: 'MONASTERY',
   label: 'Monastery',
   footprint: BUILDING_FOOTPRINTS.MONASTERY,
-  costMinerals: BARRACKS_BUILDING.costMinerals,
+  cost: BARRACKS_BUILDING.cost,
   constructionTicks: BARRACKS_BUILDING.constructionTicks,
   supplyProvided: 0,
   maxHp: 400,
@@ -61,7 +61,7 @@ export const HOUSE_BUILDING: BuildingDefinition = Object.freeze({
   type: 'HOUSE',
   label: 'House',
   footprint: BUILDING_FOOTPRINTS.HOUSE,
-  costMinerals: 100,
+  cost: { GOLD: 100 },
   constructionTicks: 100,
   supplyProvided: 8,
   maxHp: 250,
@@ -72,7 +72,7 @@ export const TOWER_BUILDING: BuildingDefinition = Object.freeze({
   type: 'TOWER',
   label: 'Tower',
   footprint: BUILDING_FOOTPRINTS.TOWER,
-  costMinerals: 125,
+  cost: { GOLD: 125 },
   constructionTicks: 100,
   supplyProvided: 0,
   maxHp: 300,

@@ -1,21 +1,21 @@
-import { Gem, Hammer } from 'lucide-react'
+import { Gem, Hammer, Trees } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { Badge } from '@/shared/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Progress } from '@/shared/ui/progress'
-import { constructionStatusLine, mineralRemainingLine } from '../selection/selection-panel-logic'
+import { constructionStatusLine, resourceRemainingLine } from '../selection/selection-panel-logic'
 import type { HudFeedbackTarget } from './HudContextFeedback'
 import { ProductionPanel } from './ProductionPanel'
-import type { HudConstruction, HudMineral, HudSelectionUnit } from './types'
+import type { HudConstruction, HudResource, HudSelectionUnit } from './types'
 import { UnitSelectionCard } from './UnitSelectionCard'
 import { useTimedValue } from './useTimedValue'
 
-export { constructionStatusLine, mineralRemainingLine } from '../selection/selection-panel-logic'
+export { constructionStatusLine, resourceRemainingLine } from '../selection/selection-panel-logic'
 
 interface SelectionPanelProps {
   readonly selection: readonly HudSelectionUnit[]
   readonly construction: HudConstruction | null
-  readonly mineral: HudMineral | null
+  readonly resource: HudResource | null
   readonly humanPlayer: number
   readonly feedbackTarget: HudFeedbackTarget | null
 }
@@ -116,6 +116,7 @@ function ConstructionContext({
   readonly queueAttention?: boolean
 }) {
   const completed = construction.status === 'COMPLETED'
+  const upgrading = construction.tierUpgrade !== undefined && construction.tierUpgrade !== null
   const previousStatus = useRef(construction.status)
   const completedFeedback = useTimedValue<boolean>(260)
   const showCompletedFeedback = completedFeedback.show
@@ -154,23 +155,37 @@ function ConstructionContext({
         <HealthStatus current={construction.hp} maximum={construction.maxHp} label="HP" />
       )}
       <ConstructionProgress construction={construction} />
-      {completed && <ProductionPanel construction={construction} queueAttention={queueAttention} />}
+      {completed && !upgrading && <ProductionPanel construction={construction} queueAttention={queueAttention} />}
     </div>
   )
 }
 
-function MineralContext({ mineral }: { readonly mineral: HudMineral }) {
+function ResourceContext({ resource }: { readonly resource: HudResource }) {
+  const naturalTree = resource.kind === 'TREE'
+  const Icon = naturalTree ? Trees : Gem
   return (
-    <div className="flex flex-1 items-center gap-3 overflow-hidden" data-testid="mineral-panel">
-      <span className="grid size-10 shrink-0 place-items-center rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-300">
-        <Gem className="size-5" aria-hidden="true" />
+    <div className="flex flex-1 items-center gap-3 overflow-hidden" data-testid="resource-panel">
+      <span
+        className={`grid size-10 shrink-0 place-items-center rounded-lg border ${
+          naturalTree
+            ? 'border-lime-500/30 bg-lime-500/10 text-lime-300'
+            : 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+        }`}
+        data-testid="neutral-resource-icon"
+      >
+        <Icon className="size-5" aria-hidden="true" />
       </span>
       <div className="min-w-0">
-        <h3 className="text-sm font-semibold">Mineral Node</h3>
-        <p className="font-medium tabular-nums text-cyan-300" data-testid="mineral-remaining">
-          {mineralRemainingLine(mineral)}
+        <h3 className="text-sm font-semibold">{naturalTree ? 'Tree' : 'Gold Mine'}</h3>
+        <p
+          className={`font-medium tabular-nums ${naturalTree ? 'text-lime-300' : 'text-amber-300'}`}
+          data-testid="resource-remaining"
+        >
+          {resourceRemainingLine(resource)}
         </p>
-        <p className="text-[10px] text-muted-foreground">Neutral resource · Node #{mineral.id}</p>
+        <p className="text-[10px] text-muted-foreground">
+          Neutral resource · {naturalTree ? 'Tree' : 'Gold Mine'} #{resource.id}
+        </p>
       </div>
     </div>
   )
@@ -185,7 +200,13 @@ function EmptyContext() {
   )
 }
 
-export function SelectionPanel({ selection, construction, mineral, humanPlayer, feedbackTarget }: SelectionPanelProps) {
+export function SelectionPanel({
+  selection,
+  construction,
+  resource,
+  humanPlayer,
+  feedbackTarget
+}: SelectionPanelProps) {
   let content = <EmptyContext />
   if (construction !== null) {
     content = (
@@ -195,8 +216,8 @@ export function SelectionPanel({ selection, construction, mineral, humanPlayer, 
         queueAttention={feedbackTarget === 'queue'}
       />
     )
-  } else if (mineral !== null) {
-    content = <MineralContext mineral={mineral} />
+  } else if (resource !== null) {
+    content = <ResourceContext resource={resource} />
   } else if (selection.length > 0) {
     content = <UnitSelectionCard selection={selection} humanPlayer={humanPlayer} />
   }
@@ -212,9 +233,9 @@ export function SelectionPanel({ selection, construction, mineral, humanPlayer, 
       </CardHeader>
       <CardContent className="flex min-h-0 flex-1 overflow-hidden px-3">
         <div
-          key={selectionContextKey(selection, construction, mineral)}
+          key={selectionContextKey(selection, construction, resource)}
           data-testid="selection-context-content"
-          data-selection-context={selectionContextKey(selection, construction, mineral)}
+          data-selection-context={selectionContextKey(selection, construction, resource)}
           className="flex min-h-0 w-full motion-safe:animate-[hud-context-enter_180ms_ease-out]"
         >
           {content}
@@ -227,13 +248,13 @@ export function SelectionPanel({ selection, construction, mineral, humanPlayer, 
 function selectionContextKey(
   selection: readonly HudSelectionUnit[],
   construction: HudConstruction | null,
-  mineral: HudMineral | null
+  resource: HudResource | null
 ): string {
   if (construction !== null) {
     return `building:${construction.id}`
   }
-  if (mineral !== null) {
-    return `mineral:${mineral.id}`
+  if (resource !== null) {
+    return `resource:${resource.id}`
   }
   return selection.length === 0 ? 'none' : `units:${selection.map((unit) => unit.id).join(',')}`
 }

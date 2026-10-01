@@ -1,6 +1,6 @@
-import type { BuildingType, EntityId, Fixed } from '@rts/shared'
+import type { BuildingType, EntityId, Fixed, ResourceId } from '@rts/shared'
 
-export type GatherPhase = 'TO_NODE' | 'GATHERING' | 'TO_BASE' | 'WAITING_FOR_BASE'
+export type GatherPhase = 'TO_RESOURCE' | 'HARVESTING' | 'TO_BASE' | 'WAITING_FOR_BASE'
 
 /**
  * A single unit order (master plan P1.03, §15). Orders live in a per-unit
@@ -16,7 +16,7 @@ export type Order =
   | { readonly type: 'ATTACK_MOVE'; readonly x: Fixed; readonly y: Fixed }
   | {
       readonly type: 'GATHER'
-      readonly nodeId: EntityId
+      readonly resourceId: ResourceId
       readonly baseId: EntityId | null
       readonly phase: GatherPhase
       readonly progressTicks: number

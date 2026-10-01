@@ -26,7 +26,7 @@ export function projectPlayers(players: readonly PlayerState[], world: World): r
     return {
       id: player.id,
       defeated: player.defeated,
-      gold: player.gold,
+      resources: { GOLD: player.resources.GOLD, WOOD: player.resources.WOOD },
       usedSupply: player.usedSupply,
       reservedSupply: player.reservedSupply,
       supplyCap: player.supplyCap,

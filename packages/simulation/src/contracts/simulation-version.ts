@@ -16,5 +16,9 @@
  * canonical snapshots.
  * 0.13.0: Monk and Research entries joined one canonical Monastery queue.
  * 0.14.0: Monk Heal orders, cooldowns, and ability events joined canonical state.
+ * 0.15.0: One unified Resource domain replaced the legacy mineral-node and
+ * natural-resource models; GATHER orders use resourceId and
+ * TO_RESOURCE/HARVESTING phases, and player wallets track GOLD and WOOD
+ * canonically.
  */
-export const SIMULATION_VERSION = '0.14.0'
+export const SIMULATION_VERSION = '0.15.0'

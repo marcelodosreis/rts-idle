@@ -5,7 +5,7 @@
 This plan covers the foundation, the first complete game, and the content expansion. The architectural decisions are defined; decisions conditioned on measurements have explicit criteria and escalation rules.
 
 **Status of this deliverable:** active design authority. The current one-faction
-Mineral design below supersedes earlier two-faction, Energy, Tech Lab, and
+Gold/Wood design below supersedes earlier two-faction, Energy, Tech Lab, and
 Factory proposals in this file.
 
 ## Current Design Authority
@@ -13,8 +13,12 @@ Factory proposals in this file.
 This section is authoritative for the current product and takes precedence over
 any historical baseline later in this document.
 
-- One faction and one resource: Minerals.
-- Pawns gather Minerals and deposit them at owned Castles.
+- One faction and two economic resources: Gold and Wood.
+- Gold Mine is the physical map object (`ResourceKind.GOLD_MINE`) that yields
+  the Gold resource type; Tree is the physical map object (`ResourceKind.TREE`)
+  that yields the Wood resource type.
+- Pawns gather from map-authored Gold Mines and Trees and deposit at owned
+  Castles.
 - Canonical buildings are Castle, Barracks, Archery, Monastery, House, and Tower.
 - House1/House2/House3 are visual variants of one House definition.
 - Castle I is initial. Castle II is an individual Castle upgrade that occupies
@@ -23,10 +27,10 @@ any historical baseline later in this document.
   researches: Attack, Defense, Economy, and Movement.
 - Barracks produces Warrior and Lancer. Archery produces Archer. Monastery
   produces Monk. Castle produces Pawn.
-- Attack is 150 Minerals/30s and adds +2 damage to military attack capability.
-- Defense is 150 Minerals/30s and adds +1 armor to military defense capability.
-- Economy is 175 Minerals/35s and changes Pawn cargo from 10 to 12.
-- Movement is 175 Minerals/35s and adds 10% speed to every current unit.
+- Attack is 150 Gold/30s and adds +2 damage to military attack capability.
+- Defense is 150 Gold/30s and adds +1 armor to military defense capability.
+- Economy is 175 Gold/35s and changes Pawn cargo from 10 to 12.
+- Movement is 175 Gold/35s and adds 10% speed to every current unit.
 - Research is single-level, global per player, queued in Monasteries, limited to
   five entries, unique across Monasteries, cancelable, and proportionally
   refundable using the production refund rule.
@@ -96,11 +100,13 @@ These are the **initial candidate versions for the spike**, not versions already
 
 # 2. Scope and delivery milestones
 
-## 2.1. Current product slice — One-faction Mineral RTS
+## 2.1. Current product slice — One-faction Gold/Wood RTS
 
-The current product has one faction and one resource: Minerals. The playable
-slice includes deterministic construction, production, supply, repair, combat,
-Castle tiers, Monastery research, and browser validation through the real server.
+The current product has one faction and two economic resources: Gold (from
+map-authored Gold Mines) and Wood (from map-authored Trees). The playable slice
+includes deterministic construction, production, supply, repair, combat,
+Castle tiers, Monastery research, resource gathering and depletion, and browser
+validation through the real server.
 
 Current roster:
 
@@ -114,7 +120,7 @@ Current roster:
 
 Current buildings:
 
-- Castle: main building, Pawn production, Mineral deposit, individual Tier.
+- Castle: main building, Pawn production, Gold/Wood deposit, individual Tier.
 - Barracks: Warrior and Lancer production.
 - Archery: Archer production and Tower prerequisite.
 - Monastery: Monk production and global research.
@@ -2343,11 +2349,12 @@ Dependency: Phase 0 approved. Full command contracts, order queue, and complete 
 
 Dependency: Phase 1. Full economy on the simulation core.
 
-Economy v0 Mineral Nodes allow any number of eligible Workers to gather in
-parallel. Each Worker owns its own 20-tick progress cycle; sorted entity-id
-iteration only decides allocation when simultaneous completed cycles contend
-for the final remaining minerals. Return routing continues to choose the
-nearest owned Base, breaking equal-distance ties by entity id.
+Economy v0 map-authored resources (trees yielding Wood, gold mines yielding
+Gold) allow any number of eligible Workers to gather in parallel. Each Worker
+owns its own progress cycle; sorted entity-id iteration only decides allocation
+when simultaneous completed cycles contend for the final remaining batch.
+Return routing continues to choose the nearest owned Castle, breaking
+equal-distance ties by entity id.
 
 ---
 
