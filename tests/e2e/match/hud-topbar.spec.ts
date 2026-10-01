@@ -35,7 +35,7 @@ test.describe('top HUD', () => {
   })
 
   test('keeps the brand, resources, clock, and controls in two mobile rows', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 })
+    await page.setViewportSize({ width: 375, height: 667 })
     await page.goto('/?scenario=default')
     await waitForMatchReady(page)
 
@@ -49,6 +49,12 @@ test.describe('top HUD', () => {
     expect(controls).not.toBeNull()
     expect(brand?.y ?? 0).toBeLessThan(time?.y ?? 0)
     expect(stats?.y ?? 0).toBeLessThan(controls?.y ?? 0)
+    for (const label of ['Gold', 'Wood', 'Supply']) {
+      const narrowLabel = page.getByTestId(`hud-resource-${label.toLowerCase()}`).getByText(label, { exact: true })
+      await expect(narrowLabel).toHaveClass(/sr-only/)
+      await expect(narrowLabel).toHaveCSS('position', 'absolute')
+      await expect(narrowLabel).toHaveCSS('width', '1px')
+    }
 
     const documentSize = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
@@ -81,6 +87,11 @@ test.describe('top HUD', () => {
     const timeVerticalCenter = ((time?.top ?? 0) + (time?.bottom ?? 0)) / 2
     expect(timeCenter).toBeCloseTo(958 / 2, 0)
     expect(timeVerticalCenter).toBeCloseTo(controlsCenter, 0)
+    for (const label of ['Gold', 'Wood', 'Supply']) {
+      const wideLabel = page.getByTestId(`hud-resource-${label.toLowerCase()}`).getByText(label, { exact: true })
+      await expect(wideLabel).toBeVisible()
+      await expect(wideLabel).toHaveCSS('position', 'static')
+    }
     for (let index = 0; index < boxes.length; index += 1) {
       for (let next = index + 1; next < boxes.length; next += 1) {
         const current = boxes[index]!

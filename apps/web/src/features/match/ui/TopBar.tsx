@@ -65,7 +65,7 @@ function Stat({
       data-feedback-highlight={highlighted === true ? 'true' : 'false'}
       className={`flex min-w-[4.25rem] flex-col items-start gap-0.5 whitespace-nowrap rounded-md border border-border/60 bg-muted/20 px-2 py-1 text-xs max-[1024px]:min-w-0 max-[1024px]:px-1.5 max-[1024px]:text-[10px] ${highlighted === true ? 'border-primary/80 bg-primary/10 ring-1 ring-primary/50 motion-safe:animate-[hud-attention_250ms_ease-out]' : ''}`}
     >
-      <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground max-[1024px]:sr-only">
+      <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground max-[480px]:sr-only">
         {label}
       </span>
       <span className="flex items-center gap-1">
