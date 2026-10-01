@@ -1,4 +1,4 @@
-import type { DecorationPlacement, DressingKind, MapDefinition, StairEntry } from '@rts/shared'
+import type { DecorationPlacement, DressingKind, MapDefinition, ResourceDefinition, StairEntry } from '@rts/shared'
 import type { AutoTileTerrain } from './autotile.js'
 import type { ManualDecoration } from './scene.js'
 
@@ -21,6 +21,7 @@ export interface GridConversionOptions {
   readonly decorationSeed?: number
   readonly decorations?: readonly DecorationPlacement[]
   readonly decorationCounts?: Readonly<Partial<Record<DressingKind, number>>>
+  readonly resources?: readonly ResourceDefinition[]
 }
 
 /**
@@ -81,7 +82,8 @@ export function gridToMapDefinition(
     ...(options?.palette !== undefined ? { palette: options.palette } : {}),
     ...(options?.decorationSeed !== undefined ? { decorationSeed: options.decorationSeed } : {}),
     ...(options?.decorations !== undefined ? { decorations: options.decorations } : {}),
-    ...(options?.decorationCounts !== undefined ? { decorationCounts: options.decorationCounts } : {})
+    ...(options?.decorationCounts !== undefined ? { decorationCounts: options.decorationCounts } : {}),
+    resources: options?.resources ?? []
   }
 }
 
