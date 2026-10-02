@@ -2,12 +2,23 @@ import type { WorldInteraction } from '@rts/renderer'
 import { describe, expect, it, vi } from 'vitest'
 import { createWorldInteractionHandler } from '../../../apps/web/src/features/match/services/create-world-interaction-handler'
 
+function controller() {
+  return {
+    handleBuildPlacementClick: (): boolean => false,
+    groundCommand: (): void => undefined,
+    unitCommand: (): void => undefined,
+    buildingCommand: (): void => undefined,
+    mode: (): 'idle' => 'idle',
+    resourceCommand: (): void => undefined
+  }
+}
+
 describe('createWorldInteractionHandler', () => {
   it('clears an armed command when a primary ground click changes selection', () => {
     const clearMode = vi.fn()
     const selectAtWorldPoint = vi.fn()
     const handler = createWorldInteractionHandler({
-      controller: { handleBuildPlacementClick: () => false },
+      controller: controller(),
       updateSelection: vi.fn(),
       selectAtWorldPoint,
       selectBuilding: vi.fn(),
@@ -30,7 +41,7 @@ describe('createWorldInteractionHandler', () => {
     const updateSelection = vi.fn()
     const clearMode = vi.fn()
     const handler = createWorldInteractionHandler({
-      controller: { handleBuildPlacementClick: () => false },
+      controller: controller(),
       updateSelection,
       selectAtWorldPoint: vi.fn(),
       selectBuilding: vi.fn(),
@@ -52,7 +63,7 @@ describe('createWorldInteractionHandler', () => {
   it('routes a secondary unit click to the contextual command handler', () => {
     const unitCommand = vi.fn()
     const handler = createWorldInteractionHandler({
-      controller: { handleBuildPlacementClick: () => false, unitCommand },
+      controller: { ...controller(), unitCommand },
       updateSelection: vi.fn(),
       selectAtWorldPoint: vi.fn(),
       selectBuilding: vi.fn(),

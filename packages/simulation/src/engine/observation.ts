@@ -285,7 +285,7 @@ function projectPlayer(state: GameState, player: PlayerState): ObservationPlayer
       continue
     }
     for (const item of state.world.store(Production).get(id)?.queue ?? []) {
-      if ('researchType' in item) {
+      if (item.researchType !== undefined) {
         queuedResearch.add(item.researchType)
       }
     }

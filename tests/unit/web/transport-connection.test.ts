@@ -1,4 +1,11 @@
-import { isMatchConfig, type MatchRequest, PROTOCOL_VERSION } from '@rts/protocol'
+import {
+  isMatchConfig,
+  type MatchConfig,
+  type MatchRequest,
+  PROTOCOL_VERSION,
+  type SnapshotDeltaMessage,
+  type SnapshotMessage
+} from '@rts/protocol'
 import { describe, expect, it, vi } from 'vitest'
 import { connectMatch, startNewMatch } from '../../../apps/web/src/shared/transport/connection'
 
@@ -114,7 +121,7 @@ describe('match transport snapshot resync', () => {
     const onSnapshotDelta = vi.fn().mockReturnValueOnce(false).mockReturnValue(true)
     connectMatch('ws://test', request, { onSnapshot, onSnapshotDelta })
 
-    const baseline = {
+    const baseline: SnapshotMessage = {
       type: 'snapshot',
       tick: 3,
       viewSequence: 1,
@@ -127,7 +134,7 @@ describe('match transport snapshot resync', () => {
       players: [],
       events: []
     }
-    const delta = {
+    const delta: SnapshotDeltaMessage = {
       type: 'snapshot_delta',
       baseTick: 3,
       baseSequence: 1,
@@ -174,7 +181,7 @@ describe('match transport snapshot resync', () => {
       }
     )
     const connection = connectMatch('ws://test', request, { onSnapshot: vi.fn() })
-    const config = {
+    const config: MatchConfig = {
       type: 'match_config',
       protocolVersion: PROTOCOL_VERSION,
       resumeToken: 'resume-token',

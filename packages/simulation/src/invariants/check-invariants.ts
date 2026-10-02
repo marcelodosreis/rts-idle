@@ -42,7 +42,7 @@ export class InvariantError extends Error {
 export function checkBuildingFootprints(mapBounds: PlacementMapBounds, footprints: readonly BuildingFootprint[]): void {
   for (const [index, footprint] of footprints.entries()) {
     const result = validateBuildingPlacement(mapBounds, footprints.slice(0, index), footprint)
-    if (result.ok) {
+    if (result.ok === true) {
       continue
     }
     throw new InvariantError(`check-invariants: building footprint ${index} is ${result.reason}`)

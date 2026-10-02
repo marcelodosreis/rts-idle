@@ -24,7 +24,7 @@ export function parseMapJson(text: string): ParseResult {
     return { ok: false, errors: ['not valid JSON'] }
   }
   const result = normalizeMapDefinition(value)
-  if (result.ok) {
+  if (result.ok === true) {
     return { ok: true, map: result.map, errors: [] }
   }
   return { ok: false, errors: result.errors }

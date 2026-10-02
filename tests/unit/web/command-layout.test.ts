@@ -3,7 +3,7 @@ import { COMMAND_LAYOUTS, createSubmenuLayout } from '../../../apps/web/src/feat
 
 describe('HUD command layouts', () => {
   it('keeps all nine slots empty without a selection', () => {
-    expect(COMMAND_LAYOUTS.empty).toEqual(Array.from({ length: 9 }, () => null))
+    expect(COMMAND_LAYOUTS.empty).toEqual(Array.from({ length: 9 }, (): null => null))
   })
 
   it('keeps common unit commands in deterministic slots', () => {

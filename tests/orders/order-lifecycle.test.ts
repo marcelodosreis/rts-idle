@@ -1,9 +1,9 @@
-import { tilesToFixed } from '@rts/shared'
+import { type PlayerId, tilesToFixed } from '@rts/shared'
 import { createSimulation, Movement, Orders, Position } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { runUntilArrived, SEEDS, TEST_IDENTITY, worldWithOwners } from '../fixtures/index.js'
 
-function unitSim(seed: number, owners: readonly number[]) {
+function unitSim(seed: number, owners: readonly PlayerId[]) {
   return createSimulation({
     seed,
     identity: TEST_IDENTITY,

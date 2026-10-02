@@ -1,4 +1,4 @@
-import { createSimulation, Movement, Orders } from '@rts/simulation'
+import { createSimulation, Movement, Orders, type ScheduledCommand } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { SEEDS, TEST_IDENTITY, worldWithOwners } from '../fixtures/index.js'
 
@@ -87,7 +87,7 @@ describe('command atomicity (P1.02)', () => {
       initialWorld: worldWithOwners([0, 0])
     })
     const unit = sim.inspectState().world.aliveIds()[0]!
-    const commands = [
+    const commands: readonly ScheduledCommand[] = [
       { tick: 1, playerId: 0, sequence: 1, intent: { type: 'HOLD', payload: { unitIds: [unit, 999] } } }
     ]
 

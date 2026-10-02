@@ -200,7 +200,7 @@ function depositWorld() {
   world.store(Position).set(worker, { x: tilesToFixed(4), y: 0 })
   world.store(Owner).set(worker, { owner: 0 })
   world.store(Kind).set(worker, 'pawn')
-  world.store(Cargo).set(worker, { amount: 4, capacity: 10 })
+  world.store(Cargo).set(worker, { amount: 4, capacity: 10, resourceType: 'GOLD' })
   return { world, base, worker }
 }
 

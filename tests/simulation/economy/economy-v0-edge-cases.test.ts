@@ -206,7 +206,9 @@ describe('Economy v0 edge cases', () => {
     scenario.world.store(Position).set(enemy, { x: 0, y: 0 })
     scenario.world.store(Owner).set(enemy, { owner: 1 })
     scenario.world.store(Health).set(enemy, { current: 100, max: 100 })
-    scenario.world.store(Combat).set(enemy, { damage: 1, rangeTiles: 1, cooldownTicks: 1, cooldownRemaining: 0 })
+    scenario.world
+      .store(Combat)
+      .set(enemy, { armor: 0, damage: 1, rangeTiles: 1, cooldownTicks: 1, cooldownRemaining: 0 })
     const simulation = createSimulation({
       seed: SEEDS.simulation.fixedTick,
       identity: TEST_IDENTITY,

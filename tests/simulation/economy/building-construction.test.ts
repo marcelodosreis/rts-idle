@@ -1,4 +1,4 @@
-import { constructionRefund, START_ENTITY_ID } from '@rts/shared'
+import { constructionRefund, type PlayerId, START_ENTITY_ID } from '@rts/shared'
 import {
   Building,
   createSimulation,
@@ -8,6 +8,7 @@ import {
   Orders,
   Owner,
   Position,
+  type ScheduledCommand,
   simulationFromSnapshot
 } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
@@ -21,7 +22,7 @@ function scenario(
   for (const id of [START_ENTITY_ID, START_ENTITY_ID + 1, START_ENTITY_ID + 2]) {
     world.createEntity(id)
     world.store(Position).set(id, workerPositions[id] ?? { x: 0, y: 0 })
-    world.store(Owner).set(id, { owner: id === START_ENTITY_ID + 2 ? 1 : 0 })
+    world.store(Owner).set(id, { owner: (id === START_ENTITY_ID + 2 ? 1 : 0) as PlayerId })
     world.store(Kind).set(id, id === START_ENTITY_ID + 2 ? 'warrior' : 'pawn')
   }
   return createSimulation({
@@ -36,28 +37,28 @@ function scenario(
   })
 }
 
-const build = (workerId: number, sequence: number, x = 0, y = 0) => ({
+const build = (workerId: number, sequence: number, x = 0, y = 0): ScheduledCommand => ({
   tick: 1,
   playerId: 0,
   sequence,
   intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'CASTLE' as const, x, y } }
 })
 
-const buildBarracks = (workerId: number, sequence: number) => ({
+const buildBarracks = (workerId: number, sequence: number): ScheduledCommand => ({
   tick: 1,
   playerId: 0,
   sequence,
   intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'BARRACKS' as const, x: 0, y: 0 } }
 })
 
-const buildDepot = (workerId: number, sequence: number) => ({
+const buildDepot = (workerId: number, sequence: number): ScheduledCommand => ({
   tick: 1,
   playerId: 0,
   sequence,
   intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'HOUSE' as const, x: 0, y: 0 } }
 })
 
-const cancelConstruction = (buildingId: number, sequence: number) => ({
+const cancelConstruction = (buildingId: number, sequence: number): ScheduledCommand => ({
   tick: 2,
   playerId: 0,
   sequence,
@@ -69,7 +70,9 @@ describe('BUILD simulation lifecycle', () => {
     const sim = scenario()
     sim.step([build(START_ENTITY_ID, 1)])
     const buildingId = START_ENTITY_ID + 3
-    sim.step([{ tick: 2, playerId: 0, sequence: 2, intent: { type: 'STOP', payload: { unitIds: [START_ENTITY_ID] } } }])
+    sim.step([
+      { tick: 2, playerId: 0 as const, sequence: 2, intent: { type: 'STOP', payload: { unitIds: [START_ENTITY_ID] } } }
+    ])
     expect(sim.inspectState().world.store(Building).get(buildingId)?.builderId).toBeNull()
     const paused = sim.inspectState().world.store(Building).get(buildingId)?.progressTicks
     sim.step([build(START_ENTITY_ID + 1, 3)])

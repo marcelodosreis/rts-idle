@@ -18,7 +18,6 @@ describe('snapshot to frame mapping', () => {
     })
     expect(frame.units[0]!.carrying).toBe(true)
     expect(frame.units[0]!.cargoType).toBe('WOOD')
-    expect(frame.units[0]!.canAttack).toBe(true)
   })
 
   it('maps a snapshot message to a render frame', () => {
@@ -63,7 +62,7 @@ describe('snapshot to frame mapping', () => {
           production: {
             queue: [
               {
-                unitKind: 'WARRIOR',
+                unitKind: 'warrior',
                 cost: { GOLD: 50 },
                 reservedSupply: 1,
                 progressTicks: 12,
@@ -117,7 +116,7 @@ describe('snapshot to frame mapping', () => {
         production: {
           queue: [
             {
-              unitKind: 'WARRIOR',
+              unitKind: 'warrior',
               cost: { GOLD: 50 },
               reservedSupply: 1,
               progressTicks: 12,

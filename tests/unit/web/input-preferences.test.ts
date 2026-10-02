@@ -8,7 +8,7 @@ import {
 function storage(initial: string | null = null) {
   let value = initial
   return {
-    getItem: () => value,
+    getItem: (_key: string) => value,
     setItem: (_key: string, next: string) => {
       value = next
     }

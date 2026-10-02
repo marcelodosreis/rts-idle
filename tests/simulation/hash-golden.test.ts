@@ -31,7 +31,7 @@ function buildGoldenSimulation() {
     next = allocated.nextEntityId
     world.createEntity(allocated.id)
     world.store(Position).set(allocated.id, { x: i * 256, y: 256 })
-    world.store(Owner).set(allocated.id, { owner: i % 2 })
+    world.store(Owner).set(allocated.id, { owner: (i % 2) as 0 | 1 })
   }
   const sim = createSimulation({ seed: GOLDEN_SEED, identity: GOLDEN_IDENTITY, initialWorld: world })
   sim.step()

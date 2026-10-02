@@ -1,10 +1,11 @@
 import { checkKeyContract, validateAsset } from '@rts/renderer'
-import type { AssetEntry } from '@rts/shared'
+import { type AssetEntry, toAssetKey } from '@rts/shared'
 import { describe, expect, it } from 'vitest'
 
-function entry(overrides: Partial<AssetEntry>): AssetEntry {
+type AssetOverrides = Omit<Partial<AssetEntry>, 'key'> & { readonly key?: string }
+
+function entry(overrides: AssetOverrides): AssetEntry {
   return {
-    key: 'test.asset',
     file: 'test.png',
     kind: 'static',
     cellW: 64,
@@ -12,7 +13,8 @@ function entry(overrides: Partial<AssetEntry>): AssetEntry {
     frames: 1,
     anchorX: 0.5,
     anchorY: 0.5,
-    ...overrides
+    ...overrides,
+    key: toAssetKey(overrides.key ?? 'test.asset')!
   }
 }
 
@@ -35,18 +37,18 @@ const codes = (issues: readonly { readonly code: string }[]): readonly string[] 
 
 describe('validateAsset geometry', () => {
   it('accepts a clean static', () => {
-    const asset = entry({ key: 'ui.panels.wood_table' })
+    const asset = entry({ key: toAssetKey('ui.panels.wood_table')! })
     expect(validateAsset(asset, { geometry: { width: 64, height: 64 } })).toEqual([])
   })
 
   it('flags strip width not divisible by height', () => {
-    const asset = entry({ key: 'fx.explosion_01', kind: 'strip', cellW: 100, cellH: 64, frames: 3 })
+    const asset = entry({ key: toAssetKey('fx.explosion_01')!, kind: 'strip', cellW: 100, cellH: 64, frames: 3 })
     const issues = validateAsset(asset, { geometry: { width: 200, height: 64 } })
     expect(codes(issues)).toContain('strip-cell-mismatch')
   })
 
   it('flags strip frame count mismatch', () => {
-    const asset = entry({ key: 'fx.explosion_01', kind: 'strip', cellW: 64, cellH: 64, frames: 2 })
+    const asset = entry({ key: toAssetKey('fx.explosion_01')!, kind: 'strip', cellW: 64, cellH: 64, frames: 2 })
     const issues = validateAsset(asset, { geometry: { width: 256, height: 64 } })
     expect(codes(issues)).toContain('strip-frame-count')
   })

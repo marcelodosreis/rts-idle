@@ -30,7 +30,7 @@ export function createAuthoritativeMatch(request: MatchRequest): AuthoritativeMa
   }
   const candidateMap = request.map.source === 'catalog' ? createCompetitiveMap() : request.map.definition
   const normalized = normalizeMapDefinition(candidateMap)
-  if (!normalized.ok) {
+  if (normalized.ok === false) {
     throw new Error(`invalid map: ${normalized.errors.join(', ')}`)
   }
   assertScenarioFitsMap(scenarioById(scenario.id), normalized.map)

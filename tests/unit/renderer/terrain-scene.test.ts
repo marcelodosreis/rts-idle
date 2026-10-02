@@ -1,5 +1,5 @@
 import { AssetLibrary, createTerrainScene } from '@rts/renderer'
-import type { AssetEntry } from '@rts/shared'
+import { type AssetEntry, toAssetKey } from '@rts/shared'
 import { Texture, TextureSource } from 'pixi.js'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -14,7 +14,7 @@ function testTexture(): Texture {
 }
 
 const bushEntry: AssetEntry = {
-  key: 'terrain.decorations.bushes.bushe1',
+  key: toAssetKey('terrain.decorations.bushes.bushe1')!,
   file: 'bush.png',
   kind: 'static',
   cellW: 64,

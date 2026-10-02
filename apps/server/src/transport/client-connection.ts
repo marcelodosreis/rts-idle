@@ -1,13 +1,19 @@
 import { isCommandMessage, isMatchRequest, isSnapshotResyncRequest, type MatchConfig } from '@rts/protocol'
 import type { CommandIntent } from '@rts/shared'
-import type { RawData, WebSocket } from 'ws'
+import type { RawData } from 'ws'
 import { bootstrapMatch } from '../bootstrap/match-bootstrap.js'
 import type { GameSession } from '../sessions/session.js'
 import { decodeMessage } from './message-decoder.js'
-import { SnapshotSender } from './snapshot-sender.js'
+import { SnapshotSender, type SnapshotSocket } from './snapshot-sender.js'
 
 export const TICK_MS = 50
 export const RECONNECT_GRACE_MS = 60_000
+
+interface ClientSocket extends SnapshotSocket {
+  on(event: 'message', listener: (raw: RawData) => void): this
+  on(event: 'close', listener: () => void): this
+  close(): void
+}
 
 type ConnectionLifecycle = 'awaiting_request' | 'running' | 'closed'
 
@@ -28,7 +34,7 @@ export class ClientConnection {
   private lifecycle: ConnectionLifecycle = 'awaiting_request'
   private readonly sender: SnapshotSender
 
-  constructor(private readonly ws: WebSocket) {
+  constructor(private readonly ws: ClientSocket) {
     this.sender = new SnapshotSender(ws)
   }
 

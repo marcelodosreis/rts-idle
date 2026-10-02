@@ -2,6 +2,15 @@
 
 . "$(dirname "$0")/ensure-project-toolchain.sh"
 
+corepack pnpm run typecheck
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "❌ Commit blocked: TypeScript errors found."
+  echo "   Fix the errors above before committing."
+  echo ""
+  exit 1
+fi
+
 if [ -f "$(git rev-parse --git-path MERGE_HEAD)" ] || [ -f "$(git rev-parse --git-path CHERRY_PICK_HEAD)" ]; then
   npx lint-staged
   exit $?

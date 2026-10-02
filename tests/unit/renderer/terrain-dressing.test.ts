@@ -89,7 +89,8 @@ describe('MapDefinition decoration contract', () => {
       height: 2,
       tiles: ['water', 'water', 'water', 'land'],
       decorations,
-      decorationCounts: { bush: 2, rock: 1 }
+      decorationCounts: { bush: 2, rock: 1 },
+      resources: []
     }
     expect(map.decorations).toBe(decorations)
     expect(map.decorationCounts).toEqual({ bush: 2, rock: 1 })

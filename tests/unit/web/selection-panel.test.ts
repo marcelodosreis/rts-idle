@@ -57,14 +57,20 @@ describe('selection panel labels', () => {
   })
 
   it('allows cancelling only non-completed constructions owned by the player', () => {
-    const base = { id: 1, buildingType: 'CASTLE' as const, progressTicks: 0, totalTicks: 100, builderId: null }
+    const base: {
+      readonly id: number
+      readonly buildingType: 'CASTLE'
+      readonly progressTicks: number
+      readonly totalTicks: number
+      readonly builderId: number | null
+    } = { id: 1, buildingType: 'CASTLE', progressTicks: 0, totalTicks: 100, builderId: null }
     expect(canCancelConstruction({ ...base, owner: 0, status: 'FOUNDATION' }, 0)).toBe(true)
     expect(canCancelConstruction({ ...base, owner: 0, status: 'COMPLETED' }, 0)).toBe(false)
     expect(canCancelConstruction({ ...base, owner: 1, status: 'FOUNDATION' }, 0)).toBe(false)
   })
 
   it('estimates the refund from the remaining progress and definition cost', () => {
-    const construction = {
+    const construction: Parameters<typeof cancelRefundEstimate>[0] = {
       id: 1,
       buildingType: 'CASTLE' as const,
       owner: 0,

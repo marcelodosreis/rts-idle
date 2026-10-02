@@ -94,7 +94,7 @@ function validateBuild(state: GameState, command: ScheduledCommand): BuildContex
       occupied.map((construction) => construction.footprint),
       footprint
     )
-    if (!placement.ok) {
+    if (placement.ok === false) {
       reject(command, 'INVALID_PLACEMENT', `BUILD: placement is ${placement.reason}`)
     }
     if (!canAfford(player.resources, definition.cost)) {

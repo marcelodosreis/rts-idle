@@ -144,6 +144,7 @@ describe('game session commands', () => {
   it('projects an empty resource delta while idle and every amount on reconnect', () => {
     const session = createAuthoritativeMatch({
       type: 'match_request',
+      protocolVersion: PROTOCOL_VERSION,
       scenarioId: 'default',
       aggression: 'passive',
       map: { source: 'catalog' }
@@ -160,6 +161,7 @@ describe('game session commands', () => {
   it('projects a builder as moving, then building at its work point', () => {
     const session = createAuthoritativeMatch({
       type: 'match_request',
+      protocolVersion: PROTOCOL_VERSION,
       scenarioId: 'default',
       aggression: 'passive',
       map: { source: 'catalog' }
@@ -278,7 +280,7 @@ describe('game session commands', () => {
       initialWorld: world
     })
     const observation = session.observe(true)
-    observation.buildings[0]!.production!.queue[0]!.cost.GOLD = 999_999
+    Object.assign(observation.buildings[0]!.production!.queue[0]!.cost, { GOLD: 999_999 })
 
     expect(session.observe(true).buildings[0]!.production!.queue[0]!.cost.GOLD).toBe(50)
   })

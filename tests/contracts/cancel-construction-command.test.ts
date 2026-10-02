@@ -1,10 +1,19 @@
 import { isCommandMessage } from '@rts/protocol'
 import { START_ENTITY_ID } from '@rts/shared'
-import { Building, createSimulation, createWorld, Kind, Orders, Owner, Position } from '@rts/simulation'
+import {
+  Building,
+  createSimulation,
+  createWorld,
+  Kind,
+  Orders,
+  Owner,
+  Position,
+  type ScheduledCommand
+} from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { TEST_IDENTITY } from '../fixtures/index.js'
 
-function simulation(kind: 'pawn' | 'warrior' = 'pawn', owner = 0, gold = 100) {
+function simulation(kind: 'pawn' | 'warrior' = 'pawn', owner: 0 | 1 = 0, gold = 100) {
   const world = createWorld()
   world.createEntity(START_ENTITY_ID)
   world.store(Position).set(START_ENTITY_ID, { x: 0, y: 0 })
@@ -29,14 +38,14 @@ function simulation(kind: 'pawn' | 'warrior' = 'pawn', owner = 0, gold = 100) {
 
 const BUILDING_ID = START_ENTITY_ID + 2
 
-const build = (unitId: number, sequence = 1) => ({
+const build = (unitId: number, sequence = 1): ScheduledCommand => ({
   tick: 1,
   playerId: 0,
   sequence,
   intent: { type: 'BUILD' as const, payload: { unitId, buildingType: 'CASTLE' as const, x: 0, y: 0 } }
 })
 
-const cancel = (buildingId: number, sequence = 2, playerId = 0) => ({
+const cancel = (buildingId: number, sequence = 2, playerId: 0 | 1 = 0): ScheduledCommand => ({
   tick: 2,
   playerId,
   sequence,

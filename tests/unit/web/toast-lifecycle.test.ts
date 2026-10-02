@@ -4,11 +4,11 @@ import { createToastScope, type ToastScopeDependencies } from '../../../apps/web
 function fakeToastDependencies(): {
   readonly dependencies: ToastScopeDependencies
   readonly dismissed: readonly (string | number)[]
-  trigger(timer: ReturnType<typeof window.setTimeout>): void
+  trigger(timer: number): void
 } {
   let nextId = 0
   let nextTimer = 0
-  const callbacks = new Map<ReturnType<typeof window.setTimeout>, () => void>()
+  const callbacks = new Map<number, () => void>()
   const dismissed: (string | number)[] = []
   return {
     dependencies: {
