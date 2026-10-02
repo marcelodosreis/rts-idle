@@ -64,6 +64,10 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/ci-setup
+      - uses: actions/download-artifact@v6
+        with:
+          name: dist
+          path: .
       - name: Download previous timing history
         env:
           GH_TOKEN: ${{ github.token }}
