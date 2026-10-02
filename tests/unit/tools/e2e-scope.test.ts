@@ -19,4 +19,8 @@ describe('E2E scope guard', () => {
   it('ignores the pnpm argument separator before checking selectors', () => {
     expect(hasExplicitE2eScope(['--', '--project=chromium'], existingSpec)).toBe(true)
   })
+
+  it('accepts a generated plan selector', () => {
+    expect(hasExplicitE2eScope(['--plan=tmp/e2e-plan.json', '--group=functional-chromium-1'], existingSpec)).toBe(true)
+  })
 })

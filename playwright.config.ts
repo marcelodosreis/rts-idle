@@ -23,7 +23,7 @@ export default defineConfig({
   maxFailures: 1,
   retries: 0,
   workers: e2eWorkerCount(process.env.E2E_WORKERS),
-  reporter: 'dot',
+  reporter: process.env.E2E_TIMINGS_FILE === undefined ? 'dot' : [['dot'], ['./tools/e2e/timing-reporter.ts']],
   use: {
     baseURL: `http://localhost:${WEB_PORT}`,
     // E2E asserts layout and state, never animation geometry. Reduced motion

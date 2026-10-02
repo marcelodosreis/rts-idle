@@ -363,6 +363,12 @@ importers:
         specifier: ^24.0.0
         version: 24.13.5
 
+  tools/e2e:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.5
+
   tools/replay:
     dependencies:
       '@rts/shared':

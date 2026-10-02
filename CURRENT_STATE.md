@@ -210,9 +210,10 @@ pnpm run test:e2e:perf
 pnpm run test:e2e:all
 ```
 
-The CI runs `test:e2e:fast` and `test:e2e:perf` as independent jobs. Their union
-is equivalent to `test:e2e:all`, while keeping functional feedback independent
-from the heavy renderer benchmark.
+The CI runs functional and `@perf` E2E pools as independent jobs for Chromium
+and Firefox. Each pool is discovered and rebalanced automatically from per-test
+timing artifacts; their union is equivalent to `test:e2e:all`, while keeping
+functional feedback independent from the renderer benchmark.
 
 ## Definition of Done
 

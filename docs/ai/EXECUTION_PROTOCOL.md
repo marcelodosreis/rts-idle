@@ -169,8 +169,10 @@ bar runs at pre-commit (`lint-staged`) and pre-push (`typecheck` + `lint` +
 For browser or protocol changes, run the appropriate E2E gate. Use
 `pnpm run test:e2e:fast` for functional iteration, `pnpm run test:e2e:perf` for
 renderer benchmark changes, and `pnpm run test:e2e:all` for release or complete
-browser validation. CI runs the first two gates as parallel jobs; together they
-cover the same tests as `test:e2e:all`.
+browser validation. CI keeps functional and `@perf` tests in separate pools for
+each browser, then automatically rebalances the shards inside each pool from
+per-test timing artifacts. Together the two pools cover the same tests as
+`test:e2e:all`.
 
 Before any focused browser run, enumerate the target first:
 

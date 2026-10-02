@@ -50,19 +50,64 @@ jobs:
       - name: Run suite
         run: pnpm run test:${{ matrix.suite }}
 
-  e2e_functional:
-    name: Functional E2E (${{ matrix.browser }})
+  prepare_e2e:
+    name: Prepare E2E plan
     needs: [static_gate, code_tests]
     if: ${{ needs.static_gate.result == 'success' && needs.code_tests.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      functional: ${{ steps.plan.outputs.functional }}
+      performance: ${{ steps.plan.outputs.performance }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/ci-setup
+      - name: Download previous timing history
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p tmp/e2e-history
+          branch="${{ github.head_ref || github.ref_name }}"
+          run_id="$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --branch "$branch" --status success --limit 10 --json databaseId --jq '.[0].databaseId' || true)"
+          if [ -n "$run_id" ]; then
+            gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name e2e-timing-history --dir tmp/e2e-history || true
+          fi
+      - name: Generate E2E plan
+        run: |
+          history_arg=""
+          if [ -f tmp/e2e-history/e2e-timing-history.json ]; then
+            history_arg="--history=tmp/e2e-history/e2e-timing-history.json"
+          fi
+          pnpm run test:e2e:prepare -- --output=tmp/e2e-plan.json $history_arg
+      - uses: actions/upload-artifact@v6
+        with:
+          name: e2e-plan
+          path: tmp/e2e-plan.json
+          retention-days: 1
+      - name: Publish matrices
+        id: plan
+        run: |
+          functional="$(node --input-type=module -e "import { readFileSync } from 'node:fs'; const plan = JSON.parse(readFileSync('tmp/e2e-plan.json', 'utf8')); process.stdout.write(JSON.stringify({ include: plan.groups.filter((group) => group.category === 'functional').map((group) => ({ browser: group.browser, group: group.id })) }))")"
+          performance="$(node --input-type=module -e "import { readFileSync } from 'node:fs'; const plan = JSON.parse(readFileSync('tmp/e2e-plan.json', 'utf8')); process.stdout.write(JSON.stringify({ include: plan.groups.filter((group) => group.category === 'performance').map((group) => ({ browser: group.browser, group: group.id })) }))")"
+          echo "functional=$functional" >> "$GITHUB_OUTPUT"
+          echo "performance=$performance" >> "$GITHUB_OUTPUT"
+
+  e2e_functional:
+    name: Functional E2E (${{ matrix.browser }}, ${{ matrix.group }})
+    needs: prepare_e2e
+    if: ${{ needs.prepare_e2e.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
       fail-fast: true
-      matrix:
-        browser: [chromium, firefox]
-        shard: ['1/2', '2/2']
+      matrix: ${{ fromJSON(needs.prepare_e2e.outputs.functional) }}
     env:
       E2E_WORKERS: 1
+      E2E_CATEGORY: functional
+      E2E_BROWSER: ${{ matrix.browser }}
+      E2E_TIMINGS_FILE: tmp/e2e-timings-${{ matrix.browser }}-${{ matrix.group }}.json
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/ci-setup
@@ -70,18 +115,30 @@ jobs:
         with:
           name: dist
           path: .
+      - uses: actions/download-artifact@v6
+        with:
+          name: e2e-plan
+          path: tmp
       - uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}
       - run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
       - name: Run functional tests
-        run: pnpm run test:e2e -- --project=${{ matrix.browser }} --shard=${{ matrix.shard }} --grep-invert @perf
+        run: pnpm run test:e2e -- --project=${{ matrix.browser }} --plan=tmp/e2e-plan.json --group=${{ matrix.group }}
+      - name: Upload timing data
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-timings-functional-${{ matrix.browser }}-${{ matrix.group }}-${{ github.run_id }}
+          path: tmp/e2e-timings-${{ matrix.browser }}-${{ matrix.group }}.json
+          if-no-files-found: ignore
+          retention-days: 1
       - name: Upload Playwright diagnostics
         if: ${{ failure() }}
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-functional-${{ matrix.browser }}-${{ matrix.shard }}-${{ github.run_id }}
+          name: playwright-functional-${{ matrix.browser }}-${{ matrix.group }}-${{ github.run_id }}
           path: |
             test-results
             playwright-report
@@ -89,18 +146,19 @@ jobs:
           retention-days: 7
 
   e2e_performance:
-    name: Performance E2E (${{ matrix.browser }})
-    needs: [static_gate, code_tests]
-    if: ${{ needs.static_gate.result == 'success' && needs.code_tests.result == 'success' }}
+    name: Performance E2E (${{ matrix.browser }}, ${{ matrix.group }})
+    needs: prepare_e2e
+    if: ${{ needs.prepare_e2e.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
       fail-fast: false
-      matrix:
-        browser: [chromium, firefox]
-        shard: ['1/2', '2/2']
+      matrix: ${{ fromJSON(needs.prepare_e2e.outputs.performance) }}
     env:
       E2E_WORKERS: 1
+      E2E_CATEGORY: performance
+      E2E_BROWSER: ${{ matrix.browser }}
+      E2E_TIMINGS_FILE: tmp/e2e-timings-${{ matrix.browser }}-${{ matrix.group }}.json
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/ci-setup
@@ -108,23 +166,55 @@ jobs:
         with:
           name: dist
           path: .
+      - uses: actions/download-artifact@v6
+        with:
+          name: e2e-plan
+          path: tmp
       - uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}
       - run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
       - name: Run performance tests
-        run: pnpm run test:e2e -- --project=${{ matrix.browser }} --workers=1 --shard=${{ matrix.shard }} --grep @perf
+        run: pnpm run test:e2e -- --project=${{ matrix.browser }} --plan=tmp/e2e-plan.json --group=${{ matrix.group }}
+      - name: Upload timing data
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-timings-performance-${{ matrix.browser }}-${{ matrix.group }}-${{ github.run_id }}
+          path: tmp/e2e-timings-${{ matrix.browser }}-${{ matrix.group }}.json
+          if-no-files-found: ignore
+          retention-days: 1
       - name: Upload Playwright diagnostics
         if: ${{ failure() }}
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-performance-${{ matrix.browser }}-${{ matrix.shard }}-${{ github.run_id }}
+          name: playwright-performance-${{ matrix.browser }}-${{ matrix.group }}-${{ github.run_id }}
           path: |
             test-results
             playwright-report
           if-no-files-found: ignore
           retention-days: 7
+
+  collect_e2e_timings:
+    name: Collect E2E timings
+    needs: [e2e_functional, e2e_performance]
+    if: ${{ needs.e2e_functional.result == 'success' && needs.e2e_performance.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/ci-setup
+      - uses: actions/download-artifact@v6
+        with:
+          pattern: e2e-timings-*
+          path: tmp/e2e-timings
+          merge-multiple: true
+      - run: pnpm run test:e2e:collect -- --input=tmp/e2e-timings --output=tmp/e2e-timing-history.json
+      - uses: actions/upload-artifact@v6
+        with:
+          name: e2e-timing-history
+          path: tmp/e2e-timing-history.json
+          retention-days: 30
 
   release:
     name: Release
