@@ -1,7 +1,7 @@
-import type { MatchConfig, ScenarioSummary, SnapshotBuilding } from '@rts/protocol'
+import { type MatchConfig, PROTOCOL_VERSION, type ScenarioSummary, type SnapshotBuilding } from '@rts/protocol'
 import type { WorldPoint } from '@rts/renderer'
 import { type GameRenderer, type InputProfile, PixiRenderer } from '@rts/renderer'
-import type { CommandIntent, MapDefinition, MatchResult, ResearchType } from '@rts/shared'
+import type { CommandIntent, MapDefinition, MatchResult, PlayerResources, ResearchType } from '@rts/shared'
 import { FIXED_SCALE, fixedToRenderPixels, renderPixelsToFixed, TILE_PIXELS } from '@rts/shared'
 import type { MutableRefObject } from 'react'
 import { connectMatch } from '../../../shared/transport/connection'
@@ -20,7 +20,7 @@ import { createMatchRendererLifecycle } from './match-session-renderer'
 import { createMatchSessionRuntime, type MatchSessionRuntime } from './match-session-runtime'
 
 export interface SessionResources {
-  readonly resources: { readonly GOLD: number; readonly WOOD: number }
+  readonly resources: PlayerResources
   readonly supply: number
   readonly reservedSupply: number
   readonly supplyCap: number
@@ -85,10 +85,7 @@ function createSelectionUpdaters(runtime: MatchSessionRuntime, setters: MatchSes
     const producerId =
       construction !== null &&
       construction.status === 'COMPLETED' &&
-      (construction.buildingType === 'CASTLE' ||
-        construction.buildingType === 'BARRACKS' ||
-        construction.buildingType === 'ARCHERY' ||
-        construction.buildingType === 'MONASTERY')
+      runtime.buildCatalog.find((entry) => entry.type === construction.buildingType)?.capabilities?.canProduce === true
         ? construction.id
         : null
     runtime.renderer?.setSelectedRallyProducer(producerId)
@@ -201,6 +198,7 @@ function createInteraction(
     mode: () => commandModes.modeRef.current,
     unitStates: runtime.unitStates,
     buildings: () => runtime.buildings,
+    buildCatalog: () => runtime.buildCatalog,
     placementFor: bridge.placement,
     toCommandPoint: (x, y) => ({ x: Math.round(renderPixelsToFixed(x)), y: Math.round(renderPixelsToFixed(y)) }),
     placementToCommandPoint: (value) => ({ x: value.x / FIXED_SCALE, y: value.y / FIXED_SCALE }),
@@ -246,6 +244,7 @@ export function startMatchSession(params: MatchSessionStartParams): () => void {
     params.serverUrl,
     {
       type: 'match_request',
+      protocolVersion: PROTOCOL_VERSION,
       scenarioId: params.scenarioId,
       aggression: params.aggression,
       map: params.playtestMap === null ? { source: 'catalog' } : { source: 'local', definition: params.playtestMap }

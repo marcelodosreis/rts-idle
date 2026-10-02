@@ -11,7 +11,7 @@ import { movementStep } from './movement-step.js'
 export function movementSystem(state: GameState): void {
   const positions = state.world.store(Position)
   const movements = state.world.store(Movement)
-  for (const id of state.world.aliveIds()) {
+  for (const id of state.world.query(Position, Movement)) {
     const movement = movements.get(id)
     if (movement === undefined) {
       continue

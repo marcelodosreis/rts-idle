@@ -1,22 +1,25 @@
-import type { MatchPhase, SnapshotBuilding, SnapshotPlayer, SnapshotResource, SnapshotUnit } from '@rts/protocol'
-import type { PlayerId, SimulationEvent } from '@rts/shared'
+import type { MatchPhase } from '@rts/protocol'
+import type { EntityId, PlayerId, SimulationEvent } from '@rts/shared'
 import {
   type CommandRejectedError,
   createSimulation,
   type RulesIdentity,
   type ScheduledCommand,
   type SimulationHost,
+  type SimulationObservation,
   type SimulationOptions,
   type SimulationSnapshot,
-  simulationFromSnapshot
+  simulationFromSnapshot,
+  type WorldChangeSet
 } from '@rts/simulation'
-import { projectBuildings, projectPlayers, projectUnits } from './projections/index.js'
 
 export interface SessionResult {
   readonly tick: number
   readonly rejected: readonly CommandRejectedError[]
   readonly events: readonly SimulationEvent[]
 }
+
+export const MAX_PENDING_COMMANDS_PER_SESSION = 128
 
 /**
  * Authoritative game session: the only path through which the transport can
@@ -39,6 +42,9 @@ export class GameSession {
   }
 
   submit(asPlayerId: PlayerId, commands: readonly ScheduledCommand[]): void {
+    if (this.pending.length + commands.length > MAX_PENDING_COMMANDS_PER_SESSION) {
+      throw new Error(`GameSession: pending command limit ${MAX_PENDING_COMMANDS_PER_SESSION} exceeded`)
+    }
     for (const command of commands) {
       if (command.playerId !== asPlayerId) {
         throw new Error(`GameSession: player ${asPlayerId} cannot submit commands for player ${command.playerId}`)
@@ -70,26 +76,16 @@ export class GameSession {
     return this.simulation.hashState()
   }
 
-  projectUnits(): readonly SnapshotUnit[] {
-    const state = this.simulation.inspectState()
-    return projectUnits(state.world, state.players, state.resources.catalog)
+  observe(completeResources: boolean, entityIds?: readonly EntityId[]): SimulationObservation {
+    return this.simulation.observe(completeResources, entityIds)
   }
 
-  projectBuildings(): readonly SnapshotBuilding[] {
-    return projectBuildings(this.simulation.inspectState().world)
+  changeCursor(): number {
+    return this.simulation.changeCursor()
   }
 
-  /** Resource amounts without materializing state: full on reconnect, delta per tick. */
-  projectResources(complete: boolean): readonly SnapshotResource[] {
-    return this.simulation.resources(complete).map((resource) => ({
-      resourceId: resource.resourceId,
-      remaining: resource.remaining
-    }))
-  }
-
-  projectPlayers(): readonly SnapshotPlayer[] {
-    const state = this.simulation.inspectState()
-    return projectPlayers(state.players, state.world)
+  changesSince(cursor: number): WorldChangeSet {
+    return this.simulation.changesSince(cursor)
   }
 
   identity(): RulesIdentity {

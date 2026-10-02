@@ -1,4 +1,13 @@
-import { isCommandMessage, isErrorMessage, isMatchConfig, isMatchRequest, isSnapshotMessage } from '@rts/protocol'
+import {
+  isCommandMessage,
+  isErrorMessage,
+  isMatchConfig,
+  isMatchRequest,
+  isSnapshotDeltaMessage,
+  isSnapshotMessage,
+  isSnapshotResyncRequest,
+  PROTOCOL_VERSION
+} from '@rts/protocol'
 import { describe, expect, it } from 'vitest'
 
 describe('match bootstrap messages', () => {
@@ -7,6 +16,7 @@ describe('match bootstrap messages', () => {
     expect(
       isMatchRequest({
         type: 'match_request',
+        protocolVersion: PROTOCOL_VERSION,
         scenarioId: '8v8',
         aggression: 'offensive',
         map: { source: 'local', definition: map }
@@ -15,6 +25,8 @@ describe('match bootstrap messages', () => {
     expect(
       isMatchConfig({
         type: 'match_config',
+        protocolVersion: PROTOCOL_VERSION,
+        resumeToken: 'resume-token',
         scenario: { id: '8v8', label: '8v8' },
         scenarios: [{ id: '8v8', label: '8v8' }],
         map,
@@ -24,26 +36,87 @@ describe('match bootstrap messages', () => {
             label: 'Castle',
             footprint: { width: 5, height: 4 },
             cost: { GOLD: 100, WOOD: 0 },
-            constructionTicks: 100
+            constructionTicks: 100,
+            capabilities: { canProduce: true, canResearch: false, canUpgrade: true }
           }
         ],
         production: [
-          { unitKind: 'pawn', producer: 'CASTLE', cost: { GOLD: 50, WOOD: 0 }, trainingTicks: 100, supply: 1 }
+          {
+            unitKind: 'pawn',
+            producer: 'CASTLE',
+            cost: { GOLD: 50, WOOD: 0 },
+            trainingTicks: 100,
+            supply: 1
+          }
         ],
-        research: [{ researchType: 'ATTACK', cost: { GOLD: 150, WOOD: 0 }, researchTicks: 600 }]
+        research: [{ researchType: 'ATTACK', cost: { GOLD: 150, WOOD: 0 }, researchTicks: 600, minimumCastleTier: 2 }]
       })
     ).toBe(true)
   })
   it('rejects malformed bootstrap payloads', () => {
     expect(
-      isMatchRequest({ type: 'match_request', scenarioId: '', aggression: 'offensive', map: { source: 'catalog' } })
+      isMatchRequest({
+        type: 'match_request',
+        protocolVersion: PROTOCOL_VERSION,
+        scenarioId: '',
+        aggression: 'offensive',
+        map: { source: 'catalog' }
+      })
+    ).toBe(false)
+    expect(
+      isMatchConfig({
+        type: 'match_config',
+        protocolVersion: PROTOCOL_VERSION,
+        resumeToken: 'resume-token',
+        scenario: { id: '8v8', label: '8v8' },
+        scenarios: [{ id: '8v8', label: '8v8' }],
+        map,
+        buildings: [
+          {
+            type: 'CASTLE',
+            label: 'Castle',
+            footprint: { width: 5, height: 4 },
+            cost: { GOLD: 100 },
+            constructionTicks: 100,
+            supplyProvided: -1
+          }
+        ],
+        production: [],
+        research: []
+      })
     ).toBe(false)
     expect(
       isMatchRequest({
         type: 'match_request',
+        protocolVersion: PROTOCOL_VERSION,
         scenarioId: '8v8',
         aggression: 'offensive',
         map: { source: 'local', definition: { width: 999, height: 1, tiles: [], resources: [] } }
+      })
+    ).toBe(false)
+  })
+
+  it('rejects a request or config from another protocol version', () => {
+    expect(
+      isMatchRequest({
+        type: 'match_request',
+        protocolVersion: '0.0.0',
+        scenarioId: '8v8',
+        aggression: 'offensive',
+        map: { source: 'catalog' }
+      })
+    ).toBe(false)
+    expect(
+      isMatchConfig({
+        type: 'match_config',
+        protocolVersion: '0.0.0',
+        resumeToken: 'resume-token',
+        scenario: { id: '8v8', label: '8v8' },
+        scenarios: [],
+        map,
+        buildings: [],
+        production: [],
+        research: []
       })
     ).toBe(false)
   })
@@ -104,10 +177,22 @@ describe('protocol snapshot message', () => {
   const valid = {
     type: 'snapshot',
     tick: 7,
+    viewSequence: 3,
+    viewHash: 'a'.repeat(64),
     phase: 'RUNNING' as const,
     units: [
-      { id: 1, x: 256, y: 512, owner: 0, kind: 'pawn', hp: 90, maxHp: 100, orderState: 'attacking' },
-      { id: 2, x: 0, y: 0, owner: 1 }
+      {
+        id: 1,
+        x: 256,
+        y: 512,
+        owner: 0,
+        kind: 'pawn',
+        hp: 90,
+        maxHp: 100,
+        orderState: 'attacking',
+        canAttack: true
+      },
+      { id: 2, x: 0, y: 0, owner: 1, kind: 'pawn' }
     ],
     buildings: [
       {
@@ -136,6 +221,138 @@ describe('protocol snapshot message', () => {
 
   it('accepts a valid snapshot message', () => {
     expect(isSnapshotMessage(valid)).toBe(true)
+  })
+
+  it('accepts a valid snapshot delta and rejects a non-forward base tick', () => {
+    const delta = {
+      type: 'snapshot_delta',
+      baseTick: 1,
+      baseSequence: 2,
+      baseHash: 'b'.repeat(64),
+      tick: 2,
+      viewSequence: 3,
+      viewHash: 'c'.repeat(64),
+      phase: 'RUNNING',
+      units: valid.units.slice(0, 1),
+      removedUnitIds: [2],
+      buildings: [],
+      removedBuildingIds: [5],
+      resources: [{ resourceId: 4, remaining: 2990 }],
+      resourcesComplete: false,
+      players: [valid.players[0]],
+      events: []
+    }
+    expect(isSnapshotDeltaMessage(delta)).toBe(true)
+    expect(isSnapshotDeltaMessage({ ...delta, baseTick: 2 })).toBe(false)
+    expect(isSnapshotDeltaMessage({ ...delta, baseSequence: 3 })).toBe(false)
+    expect(isSnapshotDeltaMessage({ ...delta, viewHash: 'not-a-hash' })).toBe(false)
+  })
+
+  it('accepts distinct identities across snapshot delta collections', () => {
+    expect(
+      isSnapshotDeltaMessage({
+        type: 'snapshot_delta',
+        baseTick: 1,
+        baseSequence: 2,
+        baseHash: 'b'.repeat(64),
+        tick: 2,
+        viewSequence: 3,
+        viewHash: 'c'.repeat(64),
+        phase: 'RUNNING',
+        units: valid.units,
+        removedUnitIds: [3],
+        buildings: valid.buildings,
+        removedBuildingIds: [6],
+        resources: [...valid.resources, { resourceId: 7, remaining: 1500 }],
+        resourcesComplete: false,
+        players: valid.players,
+        events: []
+      })
+    ).toBe(true)
+  })
+
+  it('rejects duplicate or conflicting identities in snapshot delta collections', () => {
+    const delta = {
+      type: 'snapshot_delta',
+      baseTick: 1,
+      baseSequence: 2,
+      baseHash: 'b'.repeat(64),
+      tick: 2,
+      viewSequence: 3,
+      viewHash: 'c'.repeat(64),
+      phase: 'RUNNING',
+      units: valid.units.slice(0, 1),
+      removedUnitIds: [2],
+      buildings: [],
+      removedBuildingIds: [5],
+      resources: valid.resources,
+      resourcesComplete: false,
+      players: valid.players.slice(0, 1),
+      events: []
+    }
+
+    expect(isSnapshotDeltaMessage({ ...delta, units: [valid.units[0], { ...valid.units[0], x: 128 }] })).toBe(false)
+    expect(isSnapshotDeltaMessage({ ...delta, removedUnitIds: [2, 2] })).toBe(false)
+    expect(isSnapshotDeltaMessage({ ...delta, units: valid.units.slice(0, 1), removedUnitIds: [1] })).toBe(false)
+    expect(
+      isSnapshotDeltaMessage({
+        ...delta,
+        buildings: [valid.buildings[0], { ...valid.buildings[0], x: 256 }],
+        removedBuildingIds: []
+      })
+    ).toBe(false)
+    expect(isSnapshotDeltaMessage({ ...delta, removedBuildingIds: [5, 5] })).toBe(false)
+    expect(isSnapshotDeltaMessage({ ...delta, buildings: [valid.buildings[0]], removedBuildingIds: [5] })).toBe(false)
+    expect(
+      isSnapshotDeltaMessage({
+        ...delta,
+        resources: [valid.resources[0], { ...valid.resources[0], remaining: 1 }]
+      })
+    ).toBe(false)
+    expect(
+      isSnapshotDeltaMessage({
+        ...delta,
+        players: [valid.players[0], { ...valid.players[0], defeated: true }]
+      })
+    ).toBe(false)
+    expect(
+      isSnapshotDeltaMessage({
+        ...delta,
+        units: [{ ...valid.units[0], id: valid.buildings[0].id }],
+        buildings: valid.buildings
+      })
+    ).toBe(false)
+  })
+
+  it('rejects duplicate, negative, and cross-collection identities in full snapshots', () => {
+    expect(isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], id: -1 }, valid.units[1]] })).toBe(false)
+    expect(isSnapshotMessage({ ...valid, units: [valid.units[0], valid.units[0]] })).toBe(false)
+    expect(isSnapshotMessage({ ...valid, buildings: [valid.buildings[0], valid.buildings[0]] })).toBe(false)
+    expect(
+      isSnapshotMessage({
+        ...valid,
+        resources: [valid.resources[0], { ...valid.resources[0], remaining: 10 }]
+      })
+    ).toBe(false)
+    expect(
+      isSnapshotMessage({
+        ...valid,
+        units: [{ ...valid.units[0], id: valid.buildings[0].id }, valid.units[1]]
+      })
+    ).toBe(false)
+  })
+
+  it('validates snapshot resync requests', () => {
+    expect(
+      isSnapshotResyncRequest({ type: 'snapshot_resync_request', baseSequence: 4, baseHash: 'd'.repeat(64) })
+    ).toBe(true)
+    expect(
+      isSnapshotResyncRequest({ type: 'snapshot_resync_request', baseSequence: 0, baseHash: 'd'.repeat(64) })
+    ).toBe(false)
+    expect(
+      isSnapshotResyncRequest({ type: 'snapshot_resync_request', baseSequence: 1.5, baseHash: 'd'.repeat(64) })
+    ).toBe(false)
+    expect(isSnapshotResyncRequest({ type: 'snapshot_resync_request', baseSequence: 4, baseHash: 'bad' })).toBe(false)
   })
 
   it('accepts Monk heal state and events', () => {
@@ -235,6 +452,8 @@ describe('protocol snapshot message', () => {
       isSnapshotMessage({
         type: 'snapshot',
         tick: 0,
+        viewSequence: 1,
+        viewHash: 'e'.repeat(64),
         phase: 'RUNNING',
         units: [],
         buildings: [],
@@ -266,8 +485,10 @@ describe('protocol snapshot message', () => {
       isSnapshotMessage({
         type: 'snapshot',
         tick: 0,
+        viewSequence: 1,
+        viewHash: 'e'.repeat(64),
         phase: 'RUNNING',
-        units: [{ id: 1, x: 0, y: 0, owner: 0 }],
+        units: [{ id: 1, x: 0, y: 0, owner: 0, kind: 'pawn' }],
         buildings: [],
         resources: [],
         resourcesComplete: true,
@@ -312,11 +533,22 @@ describe('protocol snapshot message', () => {
     )
   })
 
+  it('projects repairability independently from the repair worker capability', () => {
+    expect(isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], repairable: false }, valid.units[1]] })).toBe(
+      true
+    )
+    expect(isSnapshotMessage({ ...valid, units: [{ ...valid.units[0], repairable: 'no' }, valid.units[1]] })).toBe(
+      false
+    )
+  })
+
   it('rejects unknown kinds, order states, and phases', () => {
     expect(
       isSnapshotMessage({
         type: 'snapshot',
         tick: 1,
+        viewSequence: 1,
+        viewHash: 'e'.repeat(64),
         phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0, kind: 'zeppelin' }],
         buildings: [],
@@ -330,8 +562,10 @@ describe('protocol snapshot message', () => {
       isSnapshotMessage({
         type: 'snapshot',
         tick: 1,
+        viewSequence: 1,
+        viewHash: 'e'.repeat(64),
         phase: 'RUNNING',
-        units: [{ id: 1, x: 0, y: 0, owner: 0, orderState: 'flying' }],
+        units: [{ id: 1, x: 0, y: 0, owner: 0, kind: 'pawn', orderState: 'flying' }],
         buildings: [],
         resources: [],
         resourcesComplete: true,
@@ -410,7 +644,7 @@ describe('protocol snapshot message', () => {
         type: 'snapshot',
         tick: 1,
         phase: 'RUNNING',
-        units: [{ id: 1, x: 1.5, y: 0, owner: 0 }],
+        units: [{ id: 1, x: 1.5, y: 0, owner: 0, kind: 'pawn' }],
         players: [],
         events: []
       })
@@ -420,7 +654,7 @@ describe('protocol snapshot message', () => {
         type: 'snapshot',
         tick: 1,
         phase: 'RUNNING',
-        units: [{ id: 1, x: 1, y: 0, owner: 4 }],
+        units: [{ id: 1, x: 1, y: 0, owner: 4, kind: 'pawn' }],
         players: [],
         events: []
       })

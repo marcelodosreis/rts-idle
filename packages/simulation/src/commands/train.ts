@@ -41,8 +41,11 @@ function validateTrain(
   if (definition === undefined || definition.producer !== building.buildingType) {
     reject(command, 'INVALID_PAYLOAD', `TRAIN: unit ${unitKind} is not trainable`)
   }
-  if ((unitKind === 'lancer' || unitKind === 'monk') && !hasCurrentCastleTier(state, command.playerId, 2)) {
-    reject(command, 'TECH_REQUIREMENT', `TRAIN: ${unitKind} requires Castle II`)
+  if (
+    definition.minimumCastleTier !== undefined &&
+    !hasCurrentCastleTier(state, command.playerId, definition.minimumCastleTier)
+  ) {
+    reject(command, 'TECH_REQUIREMENT', `TRAIN: ${unitKind} requires Castle ${definition.minimumCastleTier}`)
   }
   const queue = state.world.store(Production).get(producerId)?.queue ?? []
   if (queue.length >= MAX_PRODUCTION_QUEUE) {

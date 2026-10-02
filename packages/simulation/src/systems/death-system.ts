@@ -12,7 +12,7 @@ import type { GameState } from '../state/state.js'
  */
 function clearOrdersTargeting(state: GameState, deadId: number): void {
   const orders = state.world.store(Orders)
-  for (const id of state.world.aliveIds()) {
+  for (const id of state.world.query(Orders)) {
     const queue = orders.get(id)?.queue
     if (queue === undefined || queue.length === 0) {
       continue
@@ -28,7 +28,7 @@ function clearOrdersTargeting(state: GameState, deadId: number): void {
 
 function clearOrdersForBuilding(state: GameState, buildingId: number): void {
   const orders = state.world.store(Orders)
-  for (const id of state.world.aliveIds()) {
+  for (const id of state.world.query(Orders)) {
     const queue = orders.get(id)?.queue
     if (queue === undefined) {
       continue

@@ -11,14 +11,14 @@ import {
   Position,
   Production
 } from './components.js'
-import { World } from './world.js'
+import { World, type WorldOptions } from './world.js'
 
 /**
  * Creates a world with the built-in components registered. Registration order
  * Registration order is part of the canonical serialization schema.
  */
-export function createWorld(): World {
-  const world = new World()
+export function createWorld(options: WorldOptions = {}): World {
+  const world = new World(options.instrumentation, options.changeHistoryLimit)
   world.registerComponent(Position)
   world.registerComponent(Owner)
   world.registerComponent(Movement)

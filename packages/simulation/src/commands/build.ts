@@ -1,4 +1,4 @@
-import { BUILDING_DEFINITIONS, type BuildingDefinition } from '@rts/game-data'
+import { BUILDING_DEFINITIONS, type BuildingDefinition, unitDefinitionFor } from '@rts/game-data'
 import { applyResourceCost, BUILDING_GEOMETRY, BUILDING_TYPES, canAfford, tilesToFixed } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { hasCurrentCastleTier } from '../domain/tier-access.js'
@@ -24,6 +24,19 @@ interface BuildContext {
   readonly existingId: number | undefined
 }
 
+function validateBuildingRequirement(
+  state: GameState,
+  command: ScheduledCommand,
+  definition: BuildingDefinition
+): void {
+  if (
+    definition.minimumCastleTier !== undefined &&
+    !hasCurrentCastleTier(state, command.playerId, definition.minimumCastleTier)
+  ) {
+    reject(command, 'TECH_REQUIREMENT', `BUILD: ${definition.label} requires Castle ${definition.minimumCastleTier}`)
+  }
+}
+
 /** Validates the complete BUILD transaction before creating or reserving anything. */
 function validateBuild(state: GameState, command: ScheduledCommand): BuildContext {
   if (command.intent.type !== 'BUILD') {
@@ -40,10 +53,8 @@ function validateBuild(state: GameState, command: ScheduledCommand): BuildContex
   if (!BUILDING_TYPES.includes(buildingType) || !Number.isInteger(x) || !Number.isInteger(y)) {
     reject(command, 'INVALID_PAYLOAD', 'BUILD: building type and tile coordinates are invalid')
   }
-  if (buildingType === 'MONASTERY' && !hasCurrentCastleTier(state, command.playerId, 2)) {
-    reject(command, 'TECH_REQUIREMENT', 'BUILD: Monastery requires Castle II')
-  }
   const definition = BUILDING_DEFINITIONS[buildingType]
+  validateBuildingRequirement(state, command, definition)
   if (!state.world.hasEntity(unitId)) {
     reject(command, 'ENTITY_UNAVAILABLE', `BUILD: worker ${unitId} does not exist`)
   }
@@ -51,7 +62,12 @@ function validateBuild(state: GameState, command: ScheduledCommand): BuildContex
   if (owner === undefined || owner.owner !== command.playerId) {
     reject(command, 'NOT_OWNER', `BUILD: player ${command.playerId} does not own worker ${unitId}`)
   }
-  if (state.world.store(Kind).get(unitId) !== 'pawn' || state.world.store(Position).get(unitId) === undefined) {
+  const kind = state.world.store(Kind).get(unitId)
+  if (
+    kind === undefined ||
+    !unitDefinitionFor(kind).canBuild ||
+    state.world.store(Position).get(unitId) === undefined
+  ) {
     reject(command, 'ENTITY_UNAVAILABLE', `BUILD: entity ${unitId} is not a worker`)
   }
 
@@ -62,7 +78,7 @@ function validateBuild(state: GameState, command: ScheduledCommand): BuildContex
     height: definition.footprint.height
   }
   const buildings = state.world.store(Building)
-  const existingId = state.world.aliveIds().find((id) => {
+  const existingId = state.world.query(Building).find((id) => {
     const construction = buildings.get(id)
     return construction !== undefined && sameFootprint(construction.footprint, footprint)
   })
@@ -70,7 +86,7 @@ function validateBuild(state: GameState, command: ScheduledCommand): BuildContex
 
   if (existing === undefined || existing.status === 'COMPLETED') {
     const occupied = state.world
-      .aliveIds()
+      .query(Building)
       .map((id) => buildings.get(id))
       .filter((construction): construction is BuildingData => construction !== undefined)
     const placement = validateBuildingPlacement(
@@ -136,7 +152,7 @@ function assignBuilder(state: GameState, buildingId: number, workerId: number, f
       clearMovement(state, current.builderId)
     }
   }
-  for (const id of state.world.aliveIds()) {
+  for (const id of state.world.query(Building)) {
     const construction = buildings.get(id)
     if (construction?.builderId === workerId && id !== buildingId) {
       buildings.set(id, { ...construction, builderId: null })

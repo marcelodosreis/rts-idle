@@ -1,4 +1,4 @@
-import type { ErrorMessage, MatchConfig, SnapshotMessage } from '@rts/protocol'
+import type { BuildCatalogEntry, ErrorMessage, MatchConfig, SnapshotDeltaMessage, SnapshotMessage } from '@rts/protocol'
 import type { MatchResult } from '@rts/shared'
 import type { ConnectionHandlers } from '../../../shared/transport/connection'
 import { type HudNotification, matchErrorNotification } from '../lib/hud-notifications'
@@ -10,10 +10,24 @@ import { hudResourceFor, type MatchSessionRuntime } from './match-session-runtim
 
 const HUMAN_PLAYER = 0
 
-function currentCastleTier(message: SnapshotMessage, ownerId: number): number {
+function unitForHud(unit: SnapshotMessage['units'][number]): SelectionUnitState {
+  return projectSnapshotUnit(unit)
+}
+
+function currentUpgradeTier(message: SnapshotMessage, buildCatalog: readonly BuildCatalogEntry[]): number {
+  const upgradeableTypes = new Set(
+    buildCatalog.filter((entry) => entry.capabilities?.canUpgrade === true).map((entry) => entry.type)
+  )
+  const useTierFallback = buildCatalog.length === 0
   let tier = 1
   for (const building of message.buildings) {
-    if (building.buildingType !== 'CASTLE' || building.owner !== ownerId || building.status !== 'COMPLETED') {
+    if (building.owner !== HUMAN_PLAYER || building.status !== 'COMPLETED') {
+      continue
+    }
+    if (!useTierFallback && !upgradeableTypes.has(building.buildingType)) {
+      continue
+    }
+    if (useTierFallback && building.tier === undefined) {
       continue
     }
     tier = Math.max(tier, building.tier ?? 1)
@@ -21,20 +35,16 @@ function currentCastleTier(message: SnapshotMessage, ownerId: number): number {
   return tier
 }
 
-function unitForHud(unit: SnapshotMessage['units'][number]): SelectionUnitState {
-  return projectSnapshotUnit(unit)
-}
-
-function resourcesForHuman(message: SnapshotMessage) {
+function resourcesForHuman(message: SnapshotMessage, buildCatalog: readonly BuildCatalogEntry[]) {
   const player = message.players.find((candidate) => candidate.id === HUMAN_PLAYER)
   return player === undefined
     ? null
     : {
-        resources: { GOLD: player.resources.GOLD, WOOD: player.resources.WOOD },
+        resources: { ...player.resources },
         supply: player.usedSupply,
         reservedSupply: player.reservedSupply ?? 0,
         supplyCap: player.supplyCap,
-        castleTier: currentCastleTier(message, HUMAN_PLAYER),
+        castleTier: currentUpgradeTier(message, buildCatalog),
         completedResearch: [...(player.completedResearch ?? [])],
         queuedResearch: [...(player.queuedResearch ?? [])]
       }
@@ -61,6 +71,7 @@ export interface MatchSessionHandlerOptions {
 }
 
 function applySnapshotRuntime(runtime: MatchSessionRuntime, message: SnapshotMessage): void {
+  runtime.snapshot = message
   runtime.lastTick = message.tick
   runtime.buildings = message.buildings
   runtime.resources = message.resources
@@ -76,6 +87,49 @@ function applySnapshotRuntime(runtime: MatchSessionRuntime, message: SnapshotMes
   for (const unit of message.units) {
     runtime.unitStates.set(unit.id, unitForHud(unit))
     runtime.unitPositions.set(unit.id, { x: unit.x, y: unit.y })
+  }
+}
+
+function mergeById<T extends { readonly id: number }>(
+  previous: readonly T[],
+  changed: readonly T[],
+  removed: readonly number[]
+): readonly T[] {
+  const removedIds = new Set(removed)
+  const changedById = new Map(changed.map((value) => [value.id, value]))
+  return previous.filter((value) => !removedIds.has(value.id) && !changedById.has(value.id)).concat(changed)
+}
+
+function mergeResources(previous: SnapshotMessage['resources'], changed: SnapshotDeltaMessage['resources']) {
+  const byId = new Map(previous.map((resource) => [resource.resourceId, resource.remaining]))
+  for (const resource of changed) {
+    byId.set(resource.resourceId, resource.remaining)
+  }
+  return [...byId].map(([resourceId, remaining]) => ({ resourceId, remaining }))
+}
+
+function expandSnapshotDelta(runtime: MatchSessionRuntime, delta: SnapshotDeltaMessage): SnapshotMessage | null {
+  const previous = runtime.snapshot
+  if (
+    previous === null ||
+    previous.tick !== delta.baseTick ||
+    previous.viewSequence !== delta.baseSequence ||
+    previous.viewHash !== delta.baseHash
+  ) {
+    return null
+  }
+  return {
+    type: 'snapshot',
+    tick: delta.tick,
+    viewSequence: delta.viewSequence,
+    viewHash: delta.viewHash,
+    phase: delta.phase,
+    units: mergeById(previous.units, delta.units, delta.removedUnitIds),
+    buildings: mergeById(previous.buildings, delta.buildings, delta.removedBuildingIds),
+    resources: mergeResources(previous.resources, delta.resources),
+    resourcesComplete: false,
+    players: mergeById(previous.players, delta.players, []),
+    events: delta.events
   }
 }
 
@@ -153,7 +207,7 @@ function handleSnapshot(message: SnapshotMessage, options: MatchSessionHandlerOp
   }
   options.setTick(message.tick)
   options.setUnitCount(message.units.length)
-  options.setResources(resourcesForHuman(message))
+  options.setResources(resourcesForHuman(message, runtime.buildCatalog))
   options.appendCompletedConstructions(completedConstructions)
   logSnapshotEvents(message.events, options.appendLog, options.setHudNotification, runtime)
   completeMatch(message, options)
@@ -171,6 +225,18 @@ export function createMatchSessionHandlers(options: MatchSessionHandlerOptions):
       if (runtime.sessionActive) {
         handleSnapshot(message, options)
       }
+    },
+    onSnapshotDelta: (delta) => {
+      if (!runtime.sessionActive) {
+        return true
+      }
+      const message = expandSnapshotDelta(runtime, delta)
+      if (message === null) {
+        options.appendLog('error', `snapshot delta base mismatch at tick ${delta.tick}`)
+        return false
+      }
+      handleSnapshot(message, options)
+      return true
     },
     onOpen: () => {
       if (!runtime.sessionActive) {

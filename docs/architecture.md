@@ -13,7 +13,7 @@ apps/
   web/      React app: match screen, renderer orchestration, network client
 packages/
   shared/       Deterministic primitives (no dependencies)
-  game-data/    Declarative content (units, buildings, upgrades, maps)  [placeholder]
+  game-data/    Declarative content (units, buildings, upgrades, maps)
   pathfinding/  Grid + incremental A* + spatial queries                  [placeholder]
   protocol/     Versioned wire messages + runtime guards
   simulation/   Deterministic simulation core (single writer)
@@ -88,7 +88,7 @@ simulation/src/
   commands/      apply-command.ts (dispatch) + one handler per command
                  (move, stop, hold, patrol, attack, attack-move, surrender),
                  validate-units.ts (shared atomic validation), limits.ts
-  data/          unit-stats.ts (combat stats), economy-rules.ts (v0 constants)
+  data/          economy-rules.ts, production-rules.ts, supply-rules.ts
   engine/        create-simulation.ts, simulation-from-snapshot.ts,
                  simulation-host.ts (contract), simulation.ts (the class)
   ecs/           component-store.ts, components.ts, building-component.ts,
@@ -104,6 +104,12 @@ simulation/src/
   fixtures/      Simulation fixture helpers
   determinism-fixture.ts  Browser/benchmark determinism fixture
 ```
+
+Unit definitions and capabilities live in `packages/game-data/src/units.ts`.
+`engine/observation.ts` is the immutable simulation-to-server boundary: it
+copies nested component data before transport consumes it. Protocol
+`snapshot`/`snapshot_delta` messages are the wire boundary; the server's
+`SnapshotSender` maps observations to those messages without exposing ECS state.
 
 Invariants:
 

@@ -1,5 +1,4 @@
 import {
-  createPlayerResources,
   type PlayerId,
   RESEARCH_TYPES,
   RESOURCE_KINDS,
@@ -8,6 +7,7 @@ import {
   type RngState
 } from '@rts/shared'
 import { CanonicalReader } from '../canonical/reader.js'
+import { readPlayerResources, writePlayerResources } from '../canonical/resource-codecs.js'
 import { CanonicalWriter } from '../canonical/writer.js'
 import { SIMULATION_VERSION } from '../contracts/simulation-version.js'
 import { MAX_SUPPLY_CAPACITY } from '../data/supply-rules.js'
@@ -16,6 +16,7 @@ import type { World } from '../ecs/world.js'
 import { ResourceCatalog } from '../resources/resource-catalog.js'
 import { ResourceState } from '../resources/resource-state.js'
 import type { GameState, PlayerState } from '../state/state.js'
+import { compareScheduledCommands, decodeScheduledCommand, encodeScheduledCommand } from './commands.js'
 
 /**
  * Canonical state serialization (ADR-002/011): explicit schema order, integers
@@ -79,8 +80,7 @@ function writePlayers(writer: CanonicalWriter, players: readonly PlayerState[]):
   for (const player of players) {
     writer.writeU8(player.id)
     writer.writeU8(player.defeated ? 1 : 0)
-    writer.writeI32(player.resources.GOLD)
-    writer.writeI32(player.resources.WOOD)
+    writePlayerResources(writer, player.resources)
     writer.writeI32(player.usedSupply)
     writer.writeI32(player.reservedSupply)
     writer.writeI32(player.supplyCap)
@@ -133,8 +133,7 @@ function readPlayers(reader: CanonicalReader): PlayerState[] {
     }
     const id = slot as PlayerId
     const defeated = reader.readU8() === 1
-    const gold = reader.readI32()
-    const wood = reader.readI32()
+    const resources = readPlayerResources(reader)
     const usedSupply = reader.readI32()
     const reservedSupply = reader.readI32()
     const supplyCap = reader.readI32()
@@ -153,12 +152,12 @@ function readPlayers(reader: CanonicalReader): PlayerState[] {
     players.push({
       id,
       defeated,
-      resources: createPlayerResources({ GOLD: gold, WOOD: wood }),
+      resources,
       usedSupply,
       reservedSupply,
       supplyCap,
-      highestCastleTierReached: highestCastleTierReached as 1 | 2 | 3,
-      completedResearch
+      completedResearch,
+      highestCastleTierReached: highestCastleTierReached as 1 | 2 | 3
     })
   }
   return players
@@ -178,10 +177,6 @@ function writeResources(writer: CanonicalWriter, state: ResourceState): void {
     writer.writeI32(definition.harvestTicks)
     writer.writeU8(definition.blocksNavigation ? 1 : 0)
     writer.writeI32(state.remaining[index]!)
-  }
-  writer.writeLength(state.changedResourceIds.length)
-  for (const resourceId of state.changedResourceIds) {
-    writer.writeU32(resourceId)
   }
 }
 
@@ -224,9 +219,23 @@ function readResources(reader: CanonicalReader): ResourceState {
     })
     remaining.push(amount)
   }
-  const changedCount = reader.readLength()
-  const changedResourceIds = Array.from({ length: changedCount }, () => reader.readU32())
-  return new ResourceState(new ResourceCatalog(definitions), Int32Array.from(remaining), changedResourceIds)
+  return new ResourceState(new ResourceCatalog(definitions), Int32Array.from(remaining))
+}
+
+function writePendingCommands(
+  writer: CanonicalWriter,
+  commands: readonly GameState['pendingCommands'][number][]
+): void {
+  const ordered = [...commands].sort(compareScheduledCommands)
+  writer.writeLength(ordered.length)
+  for (const command of ordered) {
+    encodeScheduledCommand(writer, command)
+  }
+}
+
+function readPendingCommands(reader: CanonicalReader): GameState['pendingCommands'] {
+  const commands = Array.from({ length: reader.readLength() }, () => decodeScheduledCommand(reader))
+  return commands.sort(compareScheduledCommands)
 }
 
 export function serializeState(state: GameState): Uint8Array {
@@ -245,6 +254,7 @@ export function serializeState(state: GameState): Uint8Array {
   writePlayers(writer, state.players)
   writeResources(writer, state.resources)
   writeWorld(writer, state.world)
+  writePendingCommands(writer, state.pendingCommands)
   return writer.toBytes()
 }
 
@@ -272,6 +282,8 @@ export function deserializeState(bytes: Uint8Array): GameState {
   const players = readPlayers(reader)
   const resources = readResources(reader)
   const world = readWorld(reader)
+  const pendingCommands = readPendingCommands(reader)
+  reader.assertEOF()
   return {
     tick,
     phase,
@@ -284,6 +296,7 @@ export function deserializeState(bytes: Uint8Array): GameState {
     world,
     resources,
     events: [],
-    pendingDamage: new Map()
+    pendingDamage: new Map(),
+    pendingCommands
   }
 }

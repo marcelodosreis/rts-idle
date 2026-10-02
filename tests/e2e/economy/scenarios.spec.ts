@@ -148,6 +148,7 @@ test('switching the scenario in the top bar reloads into the new match', async (
   await page.getByRole('option', { name: 'ffa' }).click()
 
   await expect.poll(() => page.url()).toContain('scenario=ffa')
+  await expect.poll(() => page.evaluate(() => Object.keys(window.__rtsDebug?.getPositions() ?? {}).length)).toBe(4)
   const positions = await settleUnits(page)
   expect(Object.keys(positions).length).toBe(4)
 })

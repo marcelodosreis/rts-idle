@@ -1,5 +1,6 @@
+import { type UnitDefinition, unitDefinitionFor } from '@rts/game-data'
 import { allocateEntityId, type PlayerId, START_ENTITY_ID } from '@rts/shared'
-import { Combat, createWorld, Health, Owner, Position, UNIT_COMBAT_STATS, type World } from '@rts/simulation'
+import { Combat, createWorld, Health, Owner, Position, type World } from '@rts/simulation'
 
 /**
  * Builds a world with one unit per owner entry, ids allocated from
@@ -26,7 +27,7 @@ export function worldWithUnits(count: number, owner: PlayerId = 0): World {
 export interface CombatSpawnOptions {
   /** Placement in fixed units; defaults to `gridPosition(i, 4, 512)`. */
   readonly position?: { readonly x: number; readonly y: number }
-  readonly stats?: typeof UNIT_COMBAT_STATS
+  readonly stats?: UnitDefinition
 }
 
 /**
@@ -36,7 +37,7 @@ export interface CombatSpawnOptions {
  */
 export function worldWithCombatUnits(owners: readonly PlayerId[], options: CombatSpawnOptions = {}): World {
   const world = createWorld()
-  const stats = options.stats ?? UNIT_COMBAT_STATS
+  const stats = options.stats ?? unitDefinitionFor('pawn')
   let next = START_ENTITY_ID
   for (const owner of owners) {
     const allocated = allocateEntityId(next)

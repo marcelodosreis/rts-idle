@@ -1,4 +1,5 @@
-import { fixedToTiles, type ResearchType, tilesToFixed } from '@rts/shared'
+import { BUILDING_DEFINITIONS } from '@rts/game-data'
+import { advanceTimedProgress, fixedToTiles, type ResearchType, tilesToFixed } from '@rts/shared'
 import { effectiveCargoCapacity, refreshEconomyResearch } from '../domain/research-effects.js'
 import { Building } from '../ecs/building-component.js'
 import {
@@ -30,7 +31,7 @@ function spawnPosition(state: GameState, producerId: number): { readonly x: numb
     return null
   }
   if (
-    state.world.aliveIds().some((id) => {
+    state.world.query(Building).some((id) => {
       if (id === producerId) {
         return false
       }
@@ -48,7 +49,7 @@ function spawnPosition(state: GameState, producerId: number): { readonly x: numb
   }
   if (
     state.world
-      .aliveIds()
+      .query(Position)
       .some(
         (id) =>
           id !== producerId &&
@@ -77,14 +78,11 @@ function createUnit(state: GameState, producerId: number, item: UnitProductionIt
     x: position.x,
     y: position.y,
     owner: owner.owner,
-    kind: item.unitKind,
-    worker: item.unitKind === 'pawn'
+    kind: item.unitKind
   })
-  if (item.unitKind === 'pawn') {
-    const cargo = state.world.store(Cargo).get(id)
-    if (cargo !== undefined) {
-      state.world.store(Cargo).set(id, { ...cargo, capacity: effectiveCargoCapacity(state, id, cargo.capacity) })
-    }
+  const cargo = state.world.store(Cargo).get(id)
+  if (cargo !== undefined) {
+    state.world.store(Cargo).set(id, { ...cargo, capacity: effectiveCargoCapacity(state, id, cargo.capacity) })
   }
   const rallyPoint = state.world.store(Building).get(producerId)?.rallyPoint ?? null
   if (rallyPoint !== null) {
@@ -125,10 +123,10 @@ function advanceResearchQueue(
   if (first === undefined || !isResearchProductionItem(first)) {
     return
   }
-  const progressTicks = first.progressTicks + 1
-  if (progressTicks < first.totalTicks) {
+  const progress = advanceTimedProgress(first)
+  if (!progress.completed) {
     state.world.store(Production).set(producerId, {
-      queue: [{ ...first, progressTicks, status: 'ACTIVE' }, ...queue.slice(1)]
+      queue: [{ ...first, progressTicks: progress.progressTicks, status: 'ACTIVE' }, ...queue.slice(1)]
     })
     return
   }
@@ -164,15 +162,15 @@ function advanceQueue(state: GameState, producerId: number, ownerId: number, que
   if (player === undefined || player.usedSupply + player.reservedSupply > player.supplyCap) {
     return
   }
-  const progressTicks = first.progressTicks + 1
-  if (progressTicks < first.totalTicks) {
+  const progress = advanceTimedProgress(first)
+  if (!progress.completed) {
     state.world.store(Production).set(producerId, {
-      queue: [{ ...first, progressTicks, status: 'ACTIVE' }, ...queue.slice(1)]
+      queue: [{ ...first, progressTicks: progress.progressTicks, status: 'ACTIVE' }, ...queue.slice(1)]
     })
     return
   }
   state.world.store(Production).set(producerId, {
-    queue: [{ ...first, progressTicks: first.totalTicks, status: 'COMPLETED_WAITING' }, ...queue.slice(1)]
+    queue: [{ ...first, progressTicks: progress.progressTicks, status: 'COMPLETED_WAITING' }, ...queue.slice(1)]
   })
 }
 
@@ -180,19 +178,18 @@ function advanceProducerQueues(state: GameState, monasteryOnly: boolean): void {
   const buildings = state.world.store(Building)
   const owners = state.world.store(Owner)
   const productions = state.world.store(Production)
-  for (const producerId of state.world.aliveIds()) {
+  for (const producerId of state.world.query(Building, Owner, Production)) {
     const building = buildings.get(producerId)
     const owner = owners.get(producerId)?.owner
     const production = productions.get(producerId)
-    const isMonastery = building?.buildingType === 'MONASTERY'
+    const canResearch =
+      building === undefined ? false : BUILDING_DEFINITIONS[building.buildingType].capabilities.canResearch
     if (
-      (building?.buildingType !== 'CASTLE' &&
-        building?.buildingType !== 'BARRACKS' &&
-        building?.buildingType !== 'ARCHERY' &&
-        building?.buildingType !== 'MONASTERY') ||
+      building === undefined ||
+      !BUILDING_DEFINITIONS[building.buildingType].capabilities.canProduce ||
       building.status !== 'COMPLETED' ||
       (building.tierUpgrade !== undefined && building.tierUpgrade !== null) ||
-      isMonastery !== monasteryOnly ||
+      canResearch !== monasteryOnly ||
       owner === undefined ||
       production === undefined
     ) {

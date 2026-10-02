@@ -1,6 +1,7 @@
-export const version = '0.6.0'
-
 export * from './messages/command.js'
 export * from './messages/error.js'
 export * from './messages/match.js'
 export * from './messages/snapshot.js'
+export * from './messages/snapshot-delta.js'
+export * from './messages/snapshot-resync.js'
+export { PROTOCOL_VERSION, PROTOCOL_VERSION as version } from './protocol-version.js'

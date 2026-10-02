@@ -1,4 +1,5 @@
 import type { CastleTier, EntityId, PlayerId, PlayerResources, ResearchType, RngState } from '@rts/shared'
+import type { ScheduledCommand } from '../contracts/commands.js'
 import type { RulesIdentity } from '../contracts/simulation.js'
 import type { World } from '../ecs/world.js'
 import type { PlacementMapBounds } from '../placement/building-placement.js'
@@ -45,6 +46,8 @@ export interface GameState {
   /** Compact state for map-authored resources; passive resources never enter World. */
   readonly resources: ResourceState
   readonly world: World
+  /** Future commands are authoritative state and survive snapshot/restore. */
+  readonly pendingCommands: ScheduledCommand[]
   /** Transient per-tick events; never part of the canonical snapshot. */
   readonly events: SimulationEvent[]
   /** Transient per-tick damage buffer (combat step 13, death step 14). */

@@ -33,7 +33,7 @@ jobs:
     needs: static_gate
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         suite:
           - unit
@@ -57,9 +57,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         browser: [chromium, firefox]
+        shard: ['1/2', '2/2']
     env:
       E2E_WORKERS: 1
     steps:
@@ -75,12 +76,12 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}
       - run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
       - name: Run functional tests
-        run: pnpm run test:e2e -- --project=${{ matrix.browser }} --grep-invert @perf
+        run: pnpm run test:e2e -- --project=${{ matrix.browser }} --shard=${{ matrix.shard }} --grep-invert @perf
       - name: Upload Playwright diagnostics
         if: ${{ failure() }}
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-functional-${{ matrix.browser }}-${{ github.run_id }}
+          name: playwright-functional-${{ matrix.browser }}-${{ matrix.shard }}-${{ github.run_id }}
           path: |
             test-results
             playwright-report
@@ -97,6 +98,7 @@ jobs:
       fail-fast: false
       matrix:
         browser: [chromium, firefox]
+        shard: ['1/2', '2/2']
     env:
       E2E_WORKERS: 1
     steps:
@@ -112,12 +114,12 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'package.json') }}
       - run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
       - name: Run performance tests
-        run: pnpm run test:e2e -- --project=${{ matrix.browser }} --workers=1 --grep @perf
+        run: pnpm run test:e2e -- --project=${{ matrix.browser }} --workers=1 --shard=${{ matrix.shard }} --grep @perf
       - name: Upload Playwright diagnostics
         if: ${{ failure() }}
         uses: actions/upload-artifact@v6
         with:
-          name: playwright-performance-${{ matrix.browser }}-${{ github.run_id }}
+          name: playwright-performance-${{ matrix.browser }}-${{ matrix.shard }}-${{ github.run_id }}
           path: |
             test-results
             playwright-report

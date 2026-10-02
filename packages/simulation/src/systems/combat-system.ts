@@ -1,6 +1,6 @@
+import { unitCanAttack } from '@rts/game-data'
 import { distSquaredFixed, type EntityId, FIXED_SCALE } from '@rts/shared'
 import type { Order } from '../contracts/orders.js'
-import { unitCanAttack } from '../data/unit-stats.js'
 import { isCloserCandidate } from '../domain/building-predicates.js'
 import { effectiveArmor, effectiveDamage } from '../domain/research-effects.js'
 import { Combat, Kind, Orders, Owner, Position } from '../ecs/components.js'
@@ -24,7 +24,7 @@ function nearestEnemyInRange(
   const owners = state.world.store(Owner)
   let best: EntityId | null = null
   let bestDistance = Number.POSITIVE_INFINITY
-  for (const other of state.world.aliveIds()) {
+  for (const other of state.world.query(Position)) {
     if (other === selfId) {
       continue
     }
@@ -103,7 +103,7 @@ export function combatSystem(state: GameState): void {
   const kinds = state.world.store(Kind)
   const orders = state.world.store(Orders)
 
-  for (const id of state.world.aliveIds()) {
+  for (const id of state.world.query(Combat)) {
     const combat = combats.get(id)
     if (combat === undefined) {
       continue

@@ -1,5 +1,4 @@
-import type { EconomyPhase } from '@rts/protocol'
-import type { ResourceType, UnitKind } from '@rts/shared'
+import type { EconomyPhase, ResourceType, UnitKind } from '@rts/shared'
 import type { AnimatedSprite } from 'pixi.js'
 
 export const FACTIONS = ['blue', 'red', 'purple', 'yellow'] as const

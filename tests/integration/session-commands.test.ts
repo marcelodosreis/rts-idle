@@ -1,6 +1,17 @@
+import { PROTOCOL_VERSION } from '@rts/protocol'
 import { GameSession } from '@rts/server'
 import { tilesToFixed } from '@rts/shared'
-import { Building, Cargo, createRulesIdentity, createWorld, Health, Kind, Owner, Position } from '@rts/simulation'
+import {
+  Building,
+  Cargo,
+  createRulesIdentity,
+  createWorld,
+  Health,
+  Kind,
+  Owner,
+  Position,
+  Production
+} from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { bootstrapMatch, createAuthoritativeMatch } from '../../apps/server/src/bootstrap/match-bootstrap.js'
 import { DEMO_SCENARIOS } from '../../apps/server/src/content/demo/scenarios.js'
@@ -16,10 +27,27 @@ function combatSession(seed: number) {
   return { session, ids }
 }
 
+function units(session: GameSession) {
+  return session.observe(true).units
+}
+
+function buildings(session: GameSession) {
+  return session.observe(true).buildings
+}
+
+function players(session: GameSession) {
+  return session.observe(true).players
+}
+
+function resources(session: GameSession, complete: boolean) {
+  return session.observe(complete).resources
+}
+
 describe('game session commands', () => {
   it('returns the server scenario catalog when a local map fails bootstrap', () => {
     const result = bootstrapMatch({
       type: 'match_request',
+      protocolVersion: PROTOCOL_VERSION,
       scenarioId: '8v8',
       aggression: 'offensive',
       map: { source: 'local', definition: { width: 1, height: 1, tiles: ['land'], resources: [] } }
@@ -37,13 +65,14 @@ describe('game session commands', () => {
   it('seeds the economy sandbox with five workers, five enemy pawns, two Castles, 250 gold, and one resource', () => {
     const session = createAuthoritativeMatch({
       type: 'match_request',
+      protocolVersion: PROTOCOL_VERSION,
       scenarioId: 'default',
       aggression: 'passive',
       map: { source: 'catalog' }
     }).session
 
-    expect(session.projectUnits()).toHaveLength(10)
-    expect(session.projectUnits().map(({ x, y }) => ({ x, y }))).toEqual([
+    expect(units(session)).toHaveLength(10)
+    expect(units(session).map(({ x, y }) => ({ x, y }))).toEqual([
       { x: tilesToFixed(7), y: tilesToFixed(11) },
       { x: tilesToFixed(8), y: tilesToFixed(11) },
       { x: tilesToFixed(9), y: tilesToFixed(11) },
@@ -55,7 +84,7 @@ describe('game session commands', () => {
       { x: tilesToFixed(25), y: tilesToFixed(27) },
       { x: tilesToFixed(26), y: tilesToFixed(27) }
     ])
-    expect(session.projectUnits()).toEqual(
+    expect(units(session)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ owner: 0, kind: 'pawn' }),
         expect.objectContaining({ owner: 0, kind: 'pawn' }),
@@ -69,16 +98,14 @@ describe('game session commands', () => {
         expect.objectContaining({ owner: 1, kind: 'pawn' })
       ])
     )
-    expect(session.projectPlayers().find((player) => player.id === 0)?.resources.GOLD).toBe(250)
-    expect(session.projectBuildings()).toHaveLength(2)
-    expect(session.projectBuildings()).toEqual(
+    expect(players(session).find((player) => player.id === 0)?.resources.GOLD).toBe(250)
+    expect(buildings(session)).toHaveLength(2)
+    expect(buildings(session)).toEqual(
       expect.arrayContaining([expect.objectContaining({ buildingType: 'CASTLE', owner: 0 })])
     )
-    expect(session.projectResources(true)).toEqual(
-      expect.arrayContaining([expect.objectContaining({ remaining: 3000 })])
-    )
-    const worker = session.projectUnits()[0]!
-    const node = session.projectResources(true).find((resource) => resource.remaining === 3000)!
+    expect(resources(session, true)).toEqual(expect.arrayContaining([expect.objectContaining({ remaining: 3000 })]))
+    const worker = units(session)[0]!
+    const node = resources(session, true).find((resource) => resource.remaining === 3000)!
     session.submit(0, [
       {
         tick: 1,
@@ -88,8 +115,8 @@ describe('game session commands', () => {
       }
     ])
     expect(session.advance().rejected).toEqual([])
-    expect(session.projectUnits()[0]!.x).not.toBe(worker.x)
-    expect(session.projectUnits()[0]!.economy).toEqual(
+    expect(units(session)[0]!.x).not.toBe(worker.x)
+    expect(units(session)[0]!.economy).toEqual(
       expect.objectContaining({
         phase: 'to_resource',
         cargoAmount: 0,
@@ -98,10 +125,10 @@ describe('game session commands', () => {
         resourceId: node.resourceId
       })
     )
-    for (let tick = 0; tick < 100 && session.projectUnits()[0]!.economy?.phase !== 'harvesting'; tick += 1) {
+    for (let tick = 0; tick < 100 && units(session)[0]!.economy?.phase !== 'harvesting'; tick += 1) {
       session.advance()
     }
-    expect(session.projectUnits()[0]!.economy).toEqual(expect.objectContaining({ phase: 'harvesting' }))
+    expect(units(session)[0]!.economy).toEqual(expect.objectContaining({ phase: 'harvesting' }))
     expect(session.phase()).toBe('RUNNING')
   })
 
@@ -111,7 +138,7 @@ describe('game session commands', () => {
       identity: createRulesIdentity('session-test')
     })
 
-    expect(session.projectPlayers().find((player) => player.id === 0)?.resources.GOLD).toBe(0)
+    expect(players(session).find((player) => player.id === 0)?.resources.GOLD).toBe(0)
   })
 
   it('projects an empty resource delta while idle and every amount on reconnect', () => {
@@ -122,10 +149,10 @@ describe('game session commands', () => {
       map: { source: 'catalog' }
     }).session
 
-    expect(session.projectResources(false)).toEqual([])
+    expect(resources(session, false)).toEqual([])
     session.advance()
-    expect(session.projectResources(false)).toEqual([])
-    const complete = session.projectResources(true)
+    expect(resources(session, false)).toEqual([])
+    const complete = resources(session, true)
     expect(complete).toHaveLength(41)
     expect(complete.every((resource) => resource.remaining > 0)).toBe(true)
   })
@@ -137,7 +164,7 @@ describe('game session commands', () => {
       aggression: 'passive',
       map: { source: 'catalog' }
     }).session
-    const worker = session.projectUnits()[0]!
+    const worker = units(session)[0]!
 
     session.submit(0, [
       {
@@ -148,15 +175,15 @@ describe('game session commands', () => {
       }
     ])
     expect(session.advance().rejected).toEqual([])
-    expect(session.projectUnits().find((unit) => unit.id === worker.id)?.orderState).toBe('moving')
+    expect(units(session).find((unit) => unit.id === worker.id)?.orderState).toBe('moving')
 
     for (let tick = 0; tick < 100; tick += 1) {
       session.advance()
-      if (session.projectUnits().find((unit) => unit.id === worker.id)?.orderState === 'building') {
+      if (units(session).find((unit) => unit.id === worker.id)?.orderState === 'building') {
         break
       }
     }
-    expect(session.projectUnits().find((unit) => unit.id === worker.id)?.orderState).toBe('building')
+    expect(units(session).find((unit) => unit.id === worker.id)?.orderState).toBe('building')
   })
 
   it('projects units, Castles, and resources as distinct observations', () => {
@@ -195,11 +222,112 @@ describe('game session commands', () => {
       ]
     })
 
-    expect(session.projectUnits()).toEqual([expect.objectContaining({ id: 1, x: 0, y: 0, owner: 0, kind: 'pawn' })])
-    expect(session.projectBuildings()).toEqual([
+    expect(units(session)).toEqual([expect.objectContaining({ id: 1, x: 0, y: 0, owner: 0, kind: 'pawn' })])
+    expect(buildings(session)).toEqual([
       expect.objectContaining({ id: 2, x: 256, y: 0, owner: 0, buildingType: 'CASTLE' })
     ])
-    expect(session.projectResources(true)).toEqual([{ resourceId: 3, remaining: 25 }])
+    expect(resources(session, true)).toEqual([{ resourceId: 3, remaining: 25 }])
+  })
+
+  it('keeps observations independent from authoritative session state', () => {
+    const session = createAuthoritativeMatch({
+      type: 'match_request',
+      protocolVersion: PROTOCOL_VERSION,
+      scenarioId: 'default',
+      aggression: 'passive',
+      map: { source: 'catalog' }
+    }).session
+    const observation = session.observe(true)
+    const unit = observation.units[0]!
+    const player = observation.players[0]!
+    Object.assign(unit, { x: 999_999 })
+    Object.assign(player.resources, { GOLD: 999_999 })
+
+    expect(session.observe(true).units.find(({ id }) => id === unit.id)?.x).not.toBe(999_999)
+    expect(session.observe(true).players.find(({ id }) => id === player.id)?.resources.GOLD).not.toBe(999_999)
+  })
+
+  it('keeps nested production costs independent from authoritative session state', () => {
+    const world = createWorld()
+    world.createEntity(1)
+    world.store(Position).set(1, { x: 0, y: 0 })
+    world.store(Owner).set(1, { owner: 0 })
+    world.store(Building).set(1, {
+      buildingType: 'CASTLE',
+      status: 'COMPLETED',
+      progressTicks: 1,
+      totalTicks: 1,
+      builderId: null,
+      footprint: { x: 0, y: 0, width: 5, height: 4 }
+    })
+    world.store(Production).set(1, {
+      queue: [
+        {
+          unitKind: 'pawn',
+          cost: { GOLD: 50 },
+          reservedSupply: 1,
+          progressTicks: 0,
+          totalTicks: 100,
+          status: 'QUEUED'
+        }
+      ]
+    })
+    const session = GameSession.create({
+      seed: SEEDS.integration.session,
+      identity: createRulesIdentity('session-test'),
+      initialWorld: world
+    })
+    const observation = session.observe(true)
+    observation.buildings[0]!.production!.queue[0]!.cost.GOLD = 999_999
+
+    expect(session.observe(true).buildings[0]!.production!.queue[0]!.cost.GOLD).toBe(50)
+  })
+
+  it('isolates nested building observations in both directions', () => {
+    const session = createAuthoritativeMatch({
+      type: 'match_request',
+      protocolVersion: PROTOCOL_VERSION,
+      scenarioId: 'default',
+      aggression: 'passive',
+      map: { source: 'catalog' }
+    }).session
+    const castleId = session.observe(true).buildings.find((candidate) => candidate.buildingType === 'CASTLE')!.id
+    session.submit(0, [
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'RALLY', payload: { producerId: castleId, x: 768, y: 512 } }
+      },
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 2,
+        intent: { type: 'UPGRADE_CASTLE', payload: { castleId } }
+      }
+    ])
+    session.advance()
+
+    const observation = session.observe(true)
+    const building = observation.buildings.find((candidate) => candidate.id === castleId)!
+    const oldRallyPoint = building.rallyPoint!
+    const oldTierUpgrade = building.tierUpgrade!
+    const mutableObservation = session.observe(true).buildings.find((candidate) => candidate.id === castleId)!
+    const rallyPoint = mutableObservation.rallyPoint!
+    const tierUpgrade = mutableObservation.tierUpgrade!
+    Object.assign(rallyPoint, { x: -1 })
+    Object.assign(tierUpgrade, { progressTicks: -1 })
+
+    const unchanged = session.observe(true).buildings.find((candidate) => candidate.id === castleId)!
+    expect(unchanged.rallyPoint).toEqual({ x: 768, y: 512 })
+    expect(unchanged.tierUpgrade?.progressTicks).toBe(1)
+
+    session.advance()
+    expect(oldRallyPoint).toEqual({ x: 768, y: 512 })
+    expect(oldTierUpgrade).toEqual({ progressTicks: 1, totalTicks: 100 })
+    expect(
+      session.observe(true).buildings.find((candidate) => candidate.id === castleId)?.tierUpgrade?.progressTicks
+    ).toBe(2)
   })
 
   it('projects carrying independently of the front order', () => {
@@ -220,7 +348,7 @@ describe('game session commands', () => {
       initialWorld: world
     })
 
-    const projected = session.projectUnits()
+    const projected = units(session)
     expect(projected.find((unit) => unit.id === 1)?.carrying).toBe(true)
     expect(projected.find((unit) => unit.id === 1)?.cargoType).toBe('GOLD')
     expect(projected.find((unit) => unit.id === 2)?.carrying).toBeUndefined()
@@ -245,7 +373,7 @@ describe('game session commands', () => {
       identity: createRulesIdentity('session-test'),
       initialWorld: world
     })
-    expect(session.projectBuildings()).toEqual([
+    expect(buildings(session)).toEqual([
       expect.objectContaining({
         id: 1,
         buildingType: 'BARRACKS',
@@ -272,7 +400,7 @@ describe('game session commands', () => {
 
     // The one-hit target died: it is removed from the projection and the match
     // finished with player 0 as the only survivor.
-    const projected = session.projectUnits()
+    const projected = units(session)
     expect(projected.some((unit) => unit.id === ids[1])).toBe(false)
     expect(result.events).toEqual(
       expect.arrayContaining([{ type: 'damageDealt', targetId: ids[1], amount: 10, targetHp: 0 }])
@@ -285,7 +413,7 @@ describe('game session commands', () => {
     session.submit(0, [{ tick: 1, playerId: 0, sequence: 1, intent: { type: 'SURRENDER', payload: {} } }])
     session.advance()
     expect(session.phase()).toBe('FINISHED')
-    const playerZero = session.projectPlayers().find((player) => player.id === 0)
+    const playerZero = players(session).find((player) => player.id === 0)
     expect(playerZero!.defeated).toBe(true)
   })
 

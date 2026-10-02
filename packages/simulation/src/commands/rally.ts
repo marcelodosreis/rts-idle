@@ -1,3 +1,4 @@
+import { BUILDING_DEFINITIONS } from '@rts/game-data'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { Building } from '../ecs/building-component.js'
 import { Owner } from '../ecs/components.js'
@@ -19,12 +20,7 @@ export function applyRally(state: GameState, command: ScheduledCommand): void {
   if (building.status !== 'COMPLETED') {
     reject(command, 'INVALID_STATE', `RALLY: producer ${producerId} is not complete`)
   }
-  if (
-    building.buildingType !== 'CASTLE' &&
-    building.buildingType !== 'BARRACKS' &&
-    building.buildingType !== 'ARCHERY' &&
-    building.buildingType !== 'MONASTERY'
-  ) {
+  if (!BUILDING_DEFINITIONS[building.buildingType].capabilities.canProduce) {
     reject(command, 'INVALID_STATE', `RALLY: building ${producerId} cannot produce units`)
   }
   if (state.world.store(Owner).get(producerId)?.owner !== command.playerId) {

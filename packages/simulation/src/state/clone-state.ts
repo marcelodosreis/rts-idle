@@ -2,6 +2,7 @@ import { CanonicalReader } from '../canonical/reader.js'
 import { CanonicalWriter } from '../canonical/writer.js'
 import type { ComponentType } from '../ecs/components.js'
 import { World } from '../ecs/world.js'
+import { decodeScheduledCommand, encodeScheduledCommand } from '../snapshot/commands.js'
 import type { GameState, PlayerState } from './state.js'
 
 /**
@@ -41,6 +42,12 @@ function clonePlayer(player: PlayerState): PlayerState {
   }
 }
 
+function cloneCommand(command: GameState['pendingCommands'][number]): GameState['pendingCommands'][number] {
+  const writer = new CanonicalWriter()
+  encodeScheduledCommand(writer, command)
+  return decodeScheduledCommand(new CanonicalReader(writer.toBytes()))
+}
+
 /**
  * Independent observation copy of the state. Mirrors `deserializeState` for
  * every persisted field (fresh world, players, bounds, resource amounts) and
@@ -68,6 +75,7 @@ export function cloneGameState(state: GameState): GameState {
           },
     resources: state.resources.clone(),
     world: cloneWorld(state.world),
+    pendingCommands: state.pendingCommands.map(cloneCommand),
     events: [],
     pendingDamage: new Map()
   }

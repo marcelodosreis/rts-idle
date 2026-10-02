@@ -1,4 +1,4 @@
-import type { BuildCatalogEntry } from '@rts/protocol'
+import type { BuildCatalogEntry, ProductionCatalogEntry } from '@rts/protocol'
 import { describe, expect, it, vi } from 'vitest'
 import { buildingRootActions, submenuActions } from '../../../apps/web/src/features/match/lib/command-actions'
 import type { CommandBarProps } from '../../../apps/web/src/features/match/types/command-types'
@@ -9,7 +9,9 @@ const CASTLE_CATALOG: BuildCatalogEntry = {
   label: 'Castle',
   footprint: { width: 3, height: 3 },
   cost: { GOLD: 100 },
-  constructionTicks: 100
+  constructionTicks: 100,
+  capabilities: { canProduce: false, canResearch: false, canUpgrade: true },
+  maximumCastleTier: 2
 }
 
 const RESOURCES: HudResources = {
@@ -31,6 +33,25 @@ const CASTLE: HudConstruction = {
   totalTicks: 100,
   builderId: null,
   tier: 1
+}
+
+const ARCHERY_CATALOG: BuildCatalogEntry = {
+  type: 'ARCHERY',
+  label: 'Archery',
+  footprint: { width: 3, height: 3 },
+  cost: { GOLD: 150 },
+  constructionTicks: 100,
+  capabilities: { canProduce: true, canResearch: false, canUpgrade: false }
+}
+
+const ARCHERY: HudConstruction = { ...CASTLE, buildingType: 'ARCHERY' }
+
+const ARCHERY_PRODUCTION: ProductionCatalogEntry = {
+  unitKind: 'archer',
+  producer: 'ARCHERY',
+  cost: { GOLD: 125 },
+  trainingTicks: 100,
+  supply: 1
 }
 
 function props(overrides: Partial<CommandBarProps> = {}): CommandBarProps {
@@ -62,6 +83,20 @@ function props(overrides: Partial<CommandBarProps> = {}): CommandBarProps {
 }
 
 describe('building root actions', () => {
+  it('uses catalog production entries for a producer without a roster whitelist', () => {
+    const properties = props({
+      construction: ARCHERY,
+      buildings: [ARCHERY_CATALOG],
+      production: [ARCHERY_PRODUCTION]
+    })
+
+    expect(buildingRootActions(properties, vi.fn(), false, vi.fn()).map((action) => action.id)).toEqual([
+      'train',
+      'rally'
+    ])
+    expect(submenuActions(properties, 'train').map((action) => action.id)).toEqual(['train-archer'])
+  })
+
   it('keeps the Upgrade action available for a Castle while a tier upgrade runs', () => {
     const building = { ...CASTLE, tierUpgrade: { progressTicks: 10, totalTicks: 100 } }
     const actions = buildingRootActions(props({ construction: building }), vi.fn(), false, vi.fn())
@@ -96,7 +131,7 @@ describe('Castle upgrade actions', () => {
     expect(action?.blockedTarget).toBe('gold')
   })
 
-  it('shows Castle III as unavailable content after reaching tier II', () => {
+  it('explains unavailable content after reaching the catalog maximum tier', () => {
     const [action] = submenuActions(props({ construction: { ...CASTLE, tier: 2 } }), 'upgrade')
 
     expect(action).toMatchObject({

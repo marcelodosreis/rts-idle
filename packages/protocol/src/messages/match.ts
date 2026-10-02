@@ -1,10 +1,12 @@
 import {
   BUILDING_TYPES,
   type BuildingType,
+  type CastleTier,
   field,
-  isNonNegativeInteger,
   isOneOf,
+  isOptionalNonNegativeInteger,
   isRecord,
+  isResourceCost,
   type MapDefinition,
   normalizeMapDefinition,
   RESEARCH_TYPES,
@@ -13,6 +15,7 @@ import {
   TRAINABLE_UNIT_KINDS,
   type TrainableUnitKind
 } from '@rts/shared'
+import { PROTOCOL_VERSION } from '../protocol-version.js'
 
 export const MATCH_AGGRESSIONS = ['offensive', 'passive'] as const
 
@@ -30,31 +33,44 @@ export interface BuildCatalogEntry {
   readonly cost: ResourceCost
   readonly constructionTicks: number
   readonly supplyProvided?: number
+  readonly capabilities?: {
+    readonly canProduce: boolean
+    readonly canResearch: boolean
+    readonly canUpgrade: boolean
+  }
+  readonly minimumCastleTier?: CastleTier
+  readonly maximumCastleTier?: CastleTier
 }
 
 export interface ProductionCatalogEntry {
   readonly unitKind: TrainableUnitKind
-  readonly producer: Extract<BuildingType, 'CASTLE' | 'BARRACKS' | 'ARCHERY' | 'MONASTERY'>
+  readonly producer: BuildingType
   readonly cost: ResourceCost
   readonly trainingTicks: number
   readonly supply: number
+  readonly minimumCastleTier?: CastleTier
 }
 
 export interface ResearchCatalogEntry {
   readonly researchType: ResearchType
   readonly cost: ResourceCost
   readonly researchTicks: number
+  readonly minimumCastleTier?: CastleTier
 }
 
 export interface MatchRequest {
   readonly type: 'match_request'
+  readonly protocolVersion: typeof PROTOCOL_VERSION
   readonly scenarioId: string
   readonly aggression: MatchAggression
   readonly map: { readonly source: 'catalog' } | { readonly source: 'local'; readonly definition: MapDefinition }
+  readonly resumeToken?: string
 }
 
 export interface MatchConfig {
   readonly type: 'match_config'
+  readonly protocolVersion: typeof PROTOCOL_VERSION
+  readonly resumeToken: string
   readonly scenario: ScenarioSummary
   readonly scenarios: readonly ScenarioSummary[]
   readonly map: MapDefinition
@@ -71,25 +87,19 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
 }
 
-function isResourceCost(value: unknown): value is ResourceCost {
-  if (!isRecord(value)) {
-    return false
-  }
-  const gold = field(value, 'GOLD')
-  const wood = field(value, 'WOOD')
-  return isNonNegativeInteger(gold) && (wood === undefined || isNonNegativeInteger(wood)) && gold + (wood ?? 0) > 0
-}
-
 export function isMatchRequest(value: unknown): value is MatchRequest {
   if (!isRecord(value)) {
     return false
   }
   const map = field(value, 'map')
+  const resumeToken = field(value, 'resumeToken')
   if (
     field(value, 'type') !== 'match_request' ||
+    field(value, 'protocolVersion') !== PROTOCOL_VERSION ||
     !isNonEmptyString(field(value, 'scenarioId')) ||
     !isOneOf(MATCH_AGGRESSIONS, field(value, 'aggression')) ||
-    !isRecord(map)
+    !isRecord(map) ||
+    (resumeToken !== undefined && !isNonEmptyString(resumeToken))
   ) {
     return false
   }
@@ -109,12 +119,22 @@ function isBuildCatalogEntry(value: unknown): value is BuildCatalogEntry {
     return false
   }
   const footprint = field(value, 'footprint')
+  const capabilities = field(value, 'capabilities')
+  const supplyProvided = field(value, 'supplyProvided')
   if (
     !isOneOf(BUILDING_TYPES, field(value, 'type')) ||
     typeof field(value, 'label') !== 'string' ||
-    !isResourceCost(field(value, 'cost')) ||
+    !isResourceCost(field(value, 'cost'), true) ||
     !isPositiveInteger(field(value, 'constructionTicks')) ||
-    !isRecord(footprint)
+    !isOptionalNonNegativeInteger(supplyProvided) ||
+    !isRecord(footprint) ||
+    (capabilities !== undefined &&
+      (!isRecord(capabilities) ||
+        typeof field(capabilities, 'canProduce') !== 'boolean' ||
+        typeof field(capabilities, 'canResearch') !== 'boolean' ||
+        typeof field(capabilities, 'canUpgrade') !== 'boolean')) ||
+    !isOptionalCastleTier(field(value, 'minimumCastleTier')) ||
+    !isOptionalCastleTier(field(value, 'maximumCastleTier'))
   ) {
     return false
   }
@@ -125,13 +145,11 @@ function isProductionCatalogEntry(value: unknown): value is ProductionCatalogEnt
   return (
     isRecord(value) &&
     isOneOf(TRAINABLE_UNIT_KINDS, field(value, 'unitKind')) &&
-    (field(value, 'producer') === 'CASTLE' ||
-      field(value, 'producer') === 'BARRACKS' ||
-      field(value, 'producer') === 'ARCHERY' ||
-      field(value, 'producer') === 'MONASTERY') &&
+    isOneOf(BUILDING_TYPES, field(value, 'producer')) &&
     isResourceCost(field(value, 'cost')) &&
     isPositiveInteger(field(value, 'trainingTicks')) &&
-    isPositiveInteger(field(value, 'supply'))
+    isPositiveInteger(field(value, 'supply')) &&
+    isOptionalCastleTier(field(value, 'minimumCastleTier'))
   )
 }
 
@@ -140,8 +158,17 @@ function isResearchCatalogEntry(value: unknown): value is ResearchCatalogEntry {
     isRecord(value) &&
     isOneOf(RESEARCH_TYPES, field(value, 'researchType')) &&
     isResourceCost(field(value, 'cost')) &&
-    isPositiveInteger(field(value, 'researchTicks'))
+    isPositiveInteger(field(value, 'researchTicks')) &&
+    isOptionalCastleTier(field(value, 'minimumCastleTier'))
   )
+}
+
+function isCastleTier(value: unknown): value is CastleTier {
+  return value === 1 || value === 2 || value === 3
+}
+
+function isOptionalCastleTier(value: unknown): boolean {
+  return value === undefined || isCastleTier(value)
 }
 
 /** Type guard for server-provided match configuration at the browser boundary. */
@@ -155,6 +182,8 @@ export function isMatchConfig(value: unknown): value is MatchConfig {
   const research = field(value, 'research')
   return (
     field(value, 'type') === 'match_config' &&
+    field(value, 'protocolVersion') === PROTOCOL_VERSION &&
+    isNonEmptyString(field(value, 'resumeToken')) &&
     isScenarioSummary(field(value, 'scenario')) &&
     Array.isArray(scenarios) &&
     scenarios.every(isScenarioSummary) &&

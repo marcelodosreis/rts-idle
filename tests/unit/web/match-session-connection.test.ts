@@ -5,7 +5,7 @@ import { createMatchSessionConnectionOwner } from '../../../apps/web/src/feature
 const command: CommandIntent = { type: 'STOP', payload: { unitIds: [1] } }
 
 function connection() {
-  return { sendCommand: vi.fn(), close: vi.fn() }
+  return { sendCommand: vi.fn(), reconnect: vi.fn(), close: vi.fn() }
 }
 
 describe('match session connection ownership', () => {

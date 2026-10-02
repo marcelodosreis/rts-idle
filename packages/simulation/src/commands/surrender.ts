@@ -19,7 +19,7 @@ export function applySurrender(state: GameState, command: ScheduledCommand): voi
   }
   player.defeated = true
   const owners = state.world.store(Owner)
-  for (const id of state.world.aliveIds()) {
+  for (const id of state.world.query(Owner)) {
     const owner = owners.get(id)
     if (owner !== undefined && owner.owner === playerId) {
       removeEntity(state, id)

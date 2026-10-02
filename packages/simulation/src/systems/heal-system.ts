@@ -1,4 +1,4 @@
-import { MONK_HEAL_AMOUNT, MONK_HEAL_COOLDOWN_TICKS, MONK_HEAL_RANGE_FIXED } from '@rts/game-data'
+import { MONK_HEAL_AMOUNT, MONK_HEAL_COOLDOWN_TICKS, MONK_HEAL_RANGE_FIXED, unitDefinitionFor } from '@rts/game-data'
 import { distSquaredFixed } from '@rts/shared'
 import { AbilityCooldown, Health, Kind, Orders, Owner, Position } from '../ecs/components.js'
 import { clearMovement, setMovementDestination } from '../movement/destination.js'
@@ -13,13 +13,16 @@ export function healSystem(state: GameState): void {
   const owners = state.world.store(Owner)
   const kinds = state.world.store(Kind)
 
-  for (const id of state.world.aliveIds()) {
+  for (const id of state.world.query(AbilityCooldown)) {
     const cooldown = cooldowns.get(id)
     if (cooldown !== undefined) {
       cooldowns.set(id, { healCooldownRemaining: Math.max(0, cooldown.healCooldownRemaining - 1) })
     }
+  }
+  for (const id of state.world.query(Orders, Kind)) {
     const order = orders.get(id)?.queue[0]
-    if (order?.type !== 'HEAL' || kinds.get(id) !== 'monk') {
+    const kind = kinds.get(id)
+    if (order?.type !== 'HEAL' || kind === undefined || !unitDefinitionFor(kind).canHeal) {
       continue
     }
     const targetPosition = positions.get(order.targetId)

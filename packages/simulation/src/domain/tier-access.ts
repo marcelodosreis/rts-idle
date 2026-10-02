@@ -7,7 +7,7 @@ import type { GameState } from '../state/state.js'
 export function hasCurrentCastleTier(state: GameState, ownerId: PlayerId, minimumTier: CastleTier): boolean {
   const buildings = state.world.store(Building)
   const owners = state.world.store(Owner)
-  return state.world.aliveIds().some((id) => {
+  return state.world.query(Building, Owner).some((id) => {
     const building = buildings.get(id)
     return (
       building?.buildingType === 'CASTLE' &&

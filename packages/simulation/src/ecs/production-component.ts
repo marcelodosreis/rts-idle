@@ -1,12 +1,5 @@
-import {
-  type ProductionItemStatus,
-  RESOURCE_TYPES,
-  type ResearchType,
-  type ResourceCost,
-  type TrainableUnitKind
-} from '@rts/shared'
-import type { CanonicalReader } from '../canonical/reader.js'
-import type { CanonicalWriter } from '../canonical/writer.js'
+import type { ProductionItemStatus, ResearchType, ResourceCost, TrainableUnitKind } from '@rts/shared'
+import { readResourceCost, writeResourceCost } from '../canonical/resource-codecs.js'
 import { kindFromTag, kindTag } from './codecs.js'
 import type { ComponentType } from './components.js'
 
@@ -85,16 +78,6 @@ function researchTypeFromTag(tag: number): ResearchType {
   throw new Error(`Production: invalid research type tag ${tag}`)
 }
 
-function writeCost(writer: CanonicalWriter, cost: ResourceCost): void {
-  for (const type of RESOURCE_TYPES) {
-    writer.writeI32(cost[type] ?? 0)
-  }
-}
-
-function readCost(reader: CanonicalReader): ResourceCost {
-  return { GOLD: reader.readI32(), WOOD: reader.readI32() }
-}
-
 export function isResearchProductionItem(item: ProductionItem): item is ResearchProductionItem {
   return item.researchType !== undefined
 }
@@ -107,7 +90,7 @@ export const Production: ComponentType<ProductionData> = {
       if (isResearchProductionItem(item)) {
         writer.writeU8(PRODUCTION_ITEM_TAGS.RESEARCH)
         writer.writeU8(RESEARCH_TYPE_TAGS[item.researchType])
-        writeCost(writer, item.cost)
+        writeResourceCost(writer, item.cost)
         writer.writeI32(item.progressTicks)
         writer.writeI32(item.totalTicks)
         writer.writeU8(PRODUCTION_STATUS_TAGS[item.status])
@@ -115,7 +98,7 @@ export const Production: ComponentType<ProductionData> = {
       }
       writer.writeU8(PRODUCTION_ITEM_TAGS.UNIT)
       writer.writeU8(kindTag(item.unitKind))
-      writeCost(writer, item.cost)
+      writeResourceCost(writer, item.cost)
       writer.writeI32(item.reservedSupply)
       writer.writeI32(item.progressTicks)
       writer.writeI32(item.totalTicks)
@@ -130,7 +113,7 @@ export const Production: ComponentType<ProductionData> = {
       if (itemTag === PRODUCTION_ITEM_TAGS.RESEARCH) {
         queue.push({
           researchType: researchTypeFromTag(reader.readU8()),
-          cost: readCost(reader),
+          cost: readResourceCost(reader),
           progressTicks: reader.readI32(),
           totalTicks: reader.readI32(),
           status: productionStatusFromTag(reader.readU8())
@@ -142,7 +125,7 @@ export const Production: ComponentType<ProductionData> = {
       }
       queue.push({
         unitKind: trainableKindFromTag(reader.readU8()),
-        cost: readCost(reader),
+        cost: readResourceCost(reader),
         reservedSupply: reader.readI32(),
         progressTicks: reader.readI32(),
         totalTicks: reader.readI32(),

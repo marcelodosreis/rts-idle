@@ -16,7 +16,7 @@ export function updateSupply(state: GameState): void {
     used.set(player.id, 0)
     capacity.set(player.id, 0)
   }
-  for (const id of state.world.aliveIds()) {
+  for (const id of state.world.query(Owner)) {
     const owner = owners.get(id)?.owner
     if (owner === undefined) {
       continue

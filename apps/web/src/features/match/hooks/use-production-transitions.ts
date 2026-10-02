@@ -1,5 +1,6 @@
 import type { SnapshotProductionItem } from '@rts/protocol'
 import { useEffect, useRef } from 'react'
+import { resourceCostKey } from '../lib/resource-cost'
 import { useTimedValue } from './use-timed-value'
 
 interface ProductionSnapshot {
@@ -9,8 +10,8 @@ interface ProductionSnapshot {
 
 function itemIdentity(item: SnapshotProductionItem): string {
   return 'researchType' in item
-    ? `research:${item.researchType}:${item.cost.GOLD ?? 0}:${item.totalTicks}`
-    : `unit:${item.unitKind}:${item.cost.GOLD ?? 0}:${item.reservedSupply}:${item.totalTicks}`
+    ? `research:${item.researchType}:${resourceCostKey(item.cost)}:${item.totalTicks}`
+    : `unit:${item.unitKind}:${resourceCostKey(item.cost)}:${item.reservedSupply}:${item.totalTicks}`
 }
 
 function activeItem(queue: readonly SnapshotProductionItem[]): SnapshotProductionItem | undefined {

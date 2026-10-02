@@ -3,10 +3,12 @@ export interface CliOptions {
   readonly entities: readonly number[]
   readonly steps: number
   readonly seed: number
+  readonly repetitions: number
 }
 
 const DEFAULT_STEPS = 200
 const DEFAULT_SEED = 12345
+const DEFAULT_REPETITIONS = 5
 const DEFAULT_ENTITIES = [100, 500, 1000, 2000, 5000, 10000]
 
 /** Parses the benchmark CLI flags (`--suite`, `--entities`, `--steps`, `--seed`). */
@@ -15,6 +17,7 @@ export function parseArgs(args: readonly string[]): CliOptions {
   let entities: number[] = []
   let steps = DEFAULT_STEPS
   let seed = DEFAULT_SEED
+  let repetitions = DEFAULT_REPETITIONS
 
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i]
@@ -31,6 +34,9 @@ export function parseArgs(args: readonly string[]): CliOptions {
     } else if (arg === '--seed' && next !== undefined) {
       seed = Number.parseInt(next, 10)
       i += 1
+    } else if (arg === '--repetitions' && next !== undefined) {
+      repetitions = Number.parseInt(next, 10)
+      i += 1
     }
   }
 
@@ -38,6 +44,7 @@ export function parseArgs(args: readonly string[]): CliOptions {
     suite,
     entities: entities.length > 0 ? entities : DEFAULT_ENTITIES,
     steps,
-    seed
+    seed,
+    repetitions
   }
 }

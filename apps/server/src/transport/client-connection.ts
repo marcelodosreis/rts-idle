@@ -1,4 +1,4 @@
-import { isCommandMessage, isMatchRequest } from '@rts/protocol'
+import { isCommandMessage, isMatchRequest, isSnapshotResyncRequest, type MatchConfig } from '@rts/protocol'
 import type { CommandIntent } from '@rts/shared'
 import type { RawData, WebSocket } from 'ws'
 import { bootstrapMatch } from '../bootstrap/match-bootstrap.js'
@@ -7,14 +7,24 @@ import { decodeMessage } from './message-decoder.js'
 import { SnapshotSender } from './snapshot-sender.js'
 
 export const TICK_MS = 50
+export const RECONNECT_GRACE_MS = 60_000
 
 type ConnectionLifecycle = 'awaiting_request' | 'running' | 'closed'
 
+interface MatchRuntime {
+  readonly session: GameSession
+  readonly config: MatchConfig
+  timer: ReturnType<typeof setInterval> | null
+  expirationTimer: ReturnType<typeof setTimeout> | null
+  nextSequence: number
+  client: ClientConnection | null
+}
+
+const MATCHES = new Map<string, MatchRuntime>()
+
 /** One isolated match per socket, mirroring the future rooms architecture. */
 export class ClientConnection {
-  private session: GameSession | null = null
-  private timer: ReturnType<typeof setInterval> | null = null
-  private sequence = 1
+  private runtime: MatchRuntime | null = null
   private lifecycle: ConnectionLifecycle = 'awaiting_request'
   private readonly sender: SnapshotSender
 
@@ -28,25 +38,38 @@ export class ClientConnection {
   }
 
   private schedule(intent: CommandIntent): void {
-    if (this.session === null) {
+    if (this.runtime === null || this.runtime.client !== this) {
       return
     }
-    this.session.submit(0, [{ tick: this.session.snapshot().tick + 1, playerId: 0, sequence: this.sequence++, intent }])
+    this.runtime.session.submit(0, [
+      {
+        tick: this.runtime.session.tick() + 1,
+        playerId: 0,
+        sequence: this.runtime.nextSequence++,
+        intent
+      }
+    ])
   }
 
-  private startTicker(): void {
-    this.timer = setInterval(() => this.tick(), TICK_MS)
-  }
-
-  private tick(): void {
-    if (this.session === null) {
+  private startTicker(runtime: MatchRuntime): void {
+    if (runtime.timer !== null) {
       return
     }
-    const result = this.session.advance()
+    runtime.timer = setInterval(() => this.tickRuntime(runtime), TICK_MS)
+  }
+
+  private tickRuntime(runtime: MatchRuntime): void {
+    const result = runtime.session.advance()
+    runtime.client?.sendTickResult(result)
+  }
+
+  private sendTickResult(result: ReturnType<GameSession['advance']>): void {
     for (const rejection of result.rejected) {
       this.sender.sendError(`${rejection.code}: ${rejection.message}`)
     }
-    this.sender.sendSnapshot(this.session, result.events)
+    if (this.runtime !== null) {
+      this.sender.sendSnapshot(this.runtime.session, result.events)
+    }
   }
 
   private onMessage(raw: RawData): void {
@@ -63,7 +86,7 @@ export class ClientConnection {
   }
 
   private handleParsed(parsed: unknown): void {
-    if (this.lifecycle === 'closed') {
+    if (this.lifecycle === 'closed' || (this.runtime !== null && this.runtime.client !== this)) {
       return
     }
     if (this.lifecycle === 'awaiting_request') {
@@ -72,6 +95,14 @@ export class ClientConnection {
     }
     if (isMatchRequest(parsed)) {
       this.sender.sendError('match_request already received')
+      return
+    }
+    if (isSnapshotResyncRequest(parsed)) {
+      if (this.runtime === null) {
+        return
+      }
+      this.sender.reset()
+      this.sender.sendSnapshot(this.runtime.session, [])
       return
     }
     if (isCommandMessage(parsed)) {
@@ -86,22 +117,81 @@ export class ClientConnection {
       this.sender.sendError('expected one valid match_request before commands')
       return
     }
+    if (parsed.resumeToken !== undefined) {
+      const runtime = MATCHES.get(parsed.resumeToken)
+      if (runtime === undefined) {
+        this.sender.sendError('unknown resume token')
+        return
+      }
+      this.attach(runtime)
+      return
+    }
     const result = bootstrapMatch(parsed)
     if ('error' in result) {
       this.sender.sendErrorMessage(result.error)
       return
     }
-    this.session = result.match.session
-    this.sender.sendMatchConfig(result.match.config)
-    this.sender.sendSnapshot(this.session, [])
+    const runtime: MatchRuntime = {
+      session: result.match.session,
+      config: result.match.config,
+      timer: null,
+      expirationTimer: null,
+      nextSequence: 1,
+      client: null
+    }
+    MATCHES.set(result.match.config.resumeToken, runtime)
+    this.attach(runtime)
+    this.startTicker(runtime)
+  }
+
+  private attach(runtime: MatchRuntime): void {
+    if (runtime.client !== null && runtime.client !== this) {
+      runtime.client.supersede()
+    }
+    runtime.client = this
+    this.runtime = runtime
+    if (runtime.expirationTimer !== null) {
+      clearTimeout(runtime.expirationTimer)
+      runtime.expirationTimer = null
+    }
+    this.sender.reset()
+    this.sender.sendMatchConfig(runtime.config)
+    this.sender.sendSnapshot(runtime.session, [])
     this.lifecycle = 'running'
-    this.startTicker()
+  }
+
+  private supersede(): void {
+    this.lifecycle = 'closed'
+    this.runtime = null
+    this.ws.close()
   }
 
   private close(): void {
     this.lifecycle = 'closed'
-    if (this.timer !== null) {
-      clearInterval(this.timer)
+    if (this.runtime?.client === this) {
+      this.runtime.client = null
+      const runtime = this.runtime
+      runtime.expirationTimer = setTimeout(() => this.expireRuntime(runtime), RECONNECT_GRACE_MS)
     }
+  }
+
+  private expireRuntime(runtime: MatchRuntime): void {
+    if (runtime.client !== null || MATCHES.get(runtime.config.resumeToken) !== runtime) {
+      return
+    }
+    runtime.session.submit(0, [
+      {
+        tick: runtime.session.tick() + 1,
+        playerId: 0,
+        sequence: runtime.nextSequence++,
+        intent: { type: 'SURRENDER', payload: {} }
+      }
+    ])
+    runtime.session.advance()
+    if (runtime.timer !== null) {
+      clearInterval(runtime.timer)
+      runtime.timer = null
+    }
+    MATCHES.delete(runtime.config.resumeToken)
   }
 }

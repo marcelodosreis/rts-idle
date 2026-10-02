@@ -8,7 +8,7 @@ import {
   commonUnitActions,
   constructionAction,
   groupedSubmenu,
-  monkAction,
+  healAction,
   submenuActions,
   workerActions
 } from '../lib/command-actions'
@@ -16,6 +16,7 @@ import {
   constructionCommandBlockReason,
   constructionUpgradeBlockReason,
   isResearchItem,
+  isWorkerSelection,
   unitSelectionBlockReason
 } from '../lib/command-state'
 import { blockedCommandNotification } from '../lib/hud-notifications'
@@ -238,12 +239,13 @@ function commandSlots(
 
 function unitSlots(props: CommandBarProps, setMenu: (menu: MenuState) => void) {
   const blocked = unitSelectionBlockReason(props.selection)
-  const worker = props.selection.length === 1 && props.selection[0]?.kind === 'pawn'
+  const selectedUnit = props.selection[0]
+  const worker = isWorkerSelection(props.selection)
   const actions = worker
     ? [...workerActions(props, () => setMenu({ kind: 'build' }), blocked)]
     : [...commonUnitActions(props, blocked)]
-  if (props.selection.length === 1 && props.selection[0]?.kind === 'monk') {
-    actions.push(monkAction(props, blocked))
+  if (props.selection.length === 1 && selectedUnit?.canHeal === true) {
+    actions.push(healAction(props, blocked))
   }
   return mapLayout(worker ? COMMAND_LAYOUTS.worker : COMMAND_LAYOUTS.unit, actions)
 }

@@ -13,40 +13,29 @@ import {
   isOptionalNonNegativeInteger,
   isPlayerId,
   isRecord,
+  isResourceCost,
+  ORDER_STATES,
+  type OrderState,
   type PlayerId,
+  type PlayerResources,
   PRODUCTION_ITEM_STATUSES,
   type ProductionItemStatus,
-  REPAIR_STOP_REASONS,
   RESEARCH_TYPES,
   RESOURCE_TYPES,
   type ResearchType,
   type ResourceCost,
   type ResourceId,
   type ResourceType,
-  SIMULATION_EVENT_TYPES,
   type SimulationEvent,
   TRAINABLE_UNIT_KINDS,
   UNIT_KINDS,
   type UnitKind
 } from '@rts/shared'
+import { isSimulationEvent } from './simulation-event-guards.js'
 import { isSnapshotPlayer } from './snapshot-guards.js'
+import { isSnapshotViewHash, isSnapshotViewSequence } from './snapshot-metadata.js'
 
-export const ORDER_STATES = [
-  'idle',
-  'moving',
-  'building',
-  'attacking',
-  'healing',
-  'repairing',
-  'hold',
-  'patrol',
-  'attack_move'
-] as const
-
-export type OrderState = (typeof ORDER_STATES)[number]
-
-export type { EconomyPhase }
-export { ECONOMY_PHASES }
+export { ECONOMY_PHASES, type EconomyPhase, isSimulationEvent, ORDER_STATES, type OrderState }
 
 export interface SnapshotEconomy {
   readonly phase: EconomyPhase
@@ -62,7 +51,7 @@ export interface SnapshotUnit {
   readonly x: Fixed
   readonly y: Fixed
   readonly owner: PlayerId
-  readonly kind?: UnitKind
+  readonly kind: UnitKind
   readonly hp?: number
   readonly maxHp?: number
   readonly armor?: number
@@ -78,12 +67,19 @@ export interface SnapshotUnit {
   readonly carrying?: boolean
   /** Carried resource type, so the renderer can show wood vs gold after the order is gone. */
   readonly cargoType?: ResourceType
+  readonly canGather?: boolean
+  readonly canBuild?: boolean
+  readonly canRepair?: boolean
+  readonly repairable?: boolean
+  readonly acceptsDeposit?: boolean
+  readonly canHeal?: boolean
+  readonly canAttack?: boolean
 }
 
 export interface SnapshotPlayer {
   readonly id: PlayerId
   readonly defeated: boolean
-  readonly resources: { readonly GOLD: number; readonly WOOD: number }
+  readonly resources: Readonly<PlayerResources>
   readonly usedSupply: number
   readonly reservedSupply?: number
   readonly supplyCap: number
@@ -149,6 +145,8 @@ export interface SnapshotResource {
 export interface SnapshotMessage {
   readonly type: 'snapshot'
   readonly tick: number
+  readonly viewSequence: number
+  readonly viewHash: string
   readonly phase: MatchPhase
   readonly units: readonly SnapshotUnit[]
   readonly buildings: readonly SnapshotBuilding[]
@@ -157,9 +155,13 @@ export interface SnapshotMessage {
   readonly players: readonly SnapshotPlayer[]
   readonly events: readonly SimulationEvent[]
 }
+
 function isPositionedEntity(value: unknown): boolean {
   return (
-    isRecord(value) && isInteger(field(value, 'id')) && isInteger(field(value, 'x')) && isInteger(field(value, 'y'))
+    isRecord(value) &&
+    isNonNegativeInteger(field(value, 'id')) &&
+    isInteger(field(value, 'x')) &&
+    isInteger(field(value, 'y'))
   )
 }
 function isFootprint(value: unknown): boolean {
@@ -171,7 +173,7 @@ function isFootprint(value: unknown): boolean {
     (field(value, 'height') as number) > 0
   )
 }
-function isSnapshotBuilding(value: unknown): boolean {
+export function isSnapshotBuilding(value: unknown): boolean {
   if (!isPositionedEntity(value) || !isRecord(value)) {
     return false
   }
@@ -258,21 +260,14 @@ function isSnapshotProduction(value: unknown): value is SnapshotProduction {
     )
   })
 }
-function isSnapshotResource(value: unknown): boolean {
+export function isSnapshotResource(value: unknown): boolean {
   return (
     isRecord(value) &&
     isNonNegativeInteger(field(value, 'resourceId')) &&
     isNonNegativeInteger(field(value, 'remaining'))
   )
 }
-function isSnapshotResourceCost(value: unknown): boolean {
-  if (!isRecord(value)) {
-    return false
-  }
-  const gold = field(value, 'GOLD')
-  const wood = field(value, 'WOOD')
-  return isNonNegativeInteger(gold) && (wood === undefined || isNonNegativeInteger(wood))
-}
+const isSnapshotResourceCost = (value: unknown): boolean => isResourceCost(value, true)
 function isSnapshotEconomy(value: unknown): boolean {
   if (!isRecord(value)) {
     return false
@@ -298,7 +293,7 @@ function isSnapshotEconomy(value: unknown): boolean {
     progressTicks <= progressMax
   )
 }
-function isSnapshotUnit(value: unknown): boolean {
+export function isSnapshotUnit(value: unknown): boolean {
   if (!isRecord(value)) {
     return false
   }
@@ -308,11 +303,11 @@ function isSnapshotUnit(value: unknown): boolean {
   const carrying = field(value, 'carrying')
   const cargoType = field(value, 'cargoType')
   return (
-    isInteger(field(value, 'id')) &&
+    isNonNegativeInteger(field(value, 'id')) &&
     isInteger(field(value, 'x')) &&
     isInteger(field(value, 'y')) &&
     isPlayerId(field(value, 'owner')) &&
-    (kind === undefined || isOneOf(UNIT_KINDS, kind)) &&
+    isOneOf(UNIT_KINDS, kind) &&
     isOptionalNonNegativeInteger(field(value, 'hp')) &&
     isOptionalNonNegativeInteger(field(value, 'maxHp')) &&
     isOptionalNonNegativeInteger(field(value, 'armor')) &&
@@ -322,6 +317,13 @@ function isSnapshotUnit(value: unknown): boolean {
     isOptionalNonNegativeInteger(field(value, 'repairProgressTicks')) &&
     isOptionalNonNegativeInteger(field(value, 'repairProgressMax')) &&
     isOptionalNonNegativeInteger(field(value, 'healCooldownRemaining')) &&
+    (field(value, 'canGather') === undefined || typeof field(value, 'canGather') === 'boolean') &&
+    (field(value, 'canBuild') === undefined || typeof field(value, 'canBuild') === 'boolean') &&
+    (field(value, 'canRepair') === undefined || typeof field(value, 'canRepair') === 'boolean') &&
+    (field(value, 'repairable') === undefined || typeof field(value, 'repairable') === 'boolean') &&
+    (field(value, 'acceptsDeposit') === undefined || typeof field(value, 'acceptsDeposit') === 'boolean') &&
+    (field(value, 'canHeal') === undefined || typeof field(value, 'canHeal') === 'boolean') &&
+    (field(value, 'canAttack') === undefined || typeof field(value, 'canAttack') === 'boolean') &&
     (field(value, 'lookAtX') === undefined || isInteger(field(value, 'lookAtX'))) &&
     (orderState === undefined || isOneOf(ORDER_STATES, orderState)) &&
     (economy === undefined || isSnapshotEconomy(economy)) &&
@@ -329,47 +331,6 @@ function isSnapshotUnit(value: unknown): boolean {
     (cargoType === undefined || isOneOf(RESOURCE_TYPES, cargoType))
   )
 }
-function isSimulationEvent(value: unknown): boolean {
-  if (!isRecord(value)) {
-    return false
-  }
-  const type = field(value, 'type')
-  if (!isOneOf(SIMULATION_EVENT_TYPES, type)) {
-    return false
-  }
-  switch (type) {
-    case 'attackFired':
-      return isInteger(field(value, 'attackerId')) && isInteger(field(value, 'targetId'))
-    case 'damageDealt':
-      return (
-        isInteger(field(value, 'targetId')) && isInteger(field(value, 'amount')) && isInteger(field(value, 'targetHp'))
-      )
-    case 'healCast':
-      return (
-        isInteger(field(value, 'healerId')) &&
-        isInteger(field(value, 'targetId')) &&
-        isInteger(field(value, 'amount')) &&
-        isInteger(field(value, 'targetHp'))
-      )
-    case 'repairStopped':
-      return (
-        isInteger(field(value, 'workerId')) &&
-        isInteger(field(value, 'targetId')) &&
-        isOneOf(REPAIR_STOP_REASONS, field(value, 'reason'))
-      )
-    case 'unitDied': {
-      const killerId = field(value, 'killerId')
-      return (
-        isInteger(field(value, 'entityId')) &&
-        isPlayerId(field(value, 'owner')) &&
-        (killerId === null || isInteger(killerId))
-      )
-    }
-    default:
-      return false
-  }
-}
-
 /** Type guard for untrusted wire input; the client ignores non-conforming messages. */
 export function isSnapshotMessage(value: unknown): value is SnapshotMessage {
   if (!isRecord(value)) {
@@ -384,17 +345,33 @@ export function isSnapshotMessage(value: unknown): value is SnapshotMessage {
   return (
     field(value, 'type') === 'snapshot' &&
     isInteger(field(value, 'tick')) &&
+    isSnapshotViewSequence(field(value, 'viewSequence')) &&
+    isSnapshotViewHash(field(value, 'viewHash')) &&
     isOneOf(MATCH_PHASES, field(value, 'phase')) &&
     Array.isArray(units) &&
     units.every(isSnapshotUnit) &&
+    hasUniqueFieldValues(units, 'id') &&
     Array.isArray(buildings) &&
     buildings.every(isSnapshotBuilding) &&
+    hasUniqueFieldValues(buildings, 'id') &&
+    hasNoSharedEntityIds(units, buildings) &&
     Array.isArray(resources) &&
     resources.every(isSnapshotResource) &&
+    hasUniqueFieldValues(resources, 'resourceId') &&
     typeof resourcesComplete === 'boolean' &&
     Array.isArray(players) &&
     players.every(isSnapshotPlayer) &&
     Array.isArray(events) &&
     events.every(isSimulationEvent)
   )
+}
+
+export function hasUniqueFieldValues(values: readonly unknown[], key: 'id' | 'resourceId'): boolean {
+  const identities = values.map((value) => (isRecord(value) ? field(value, key) : undefined))
+  return identities.every((identity, index) => isNonNegativeInteger(identity) && identities.indexOf(identity) === index)
+}
+
+export function hasNoSharedEntityIds(units: readonly SnapshotUnit[], buildings: readonly SnapshotBuilding[]): boolean {
+  const buildingIds = new Set(buildings.map((building) => building.id))
+  return units.every((unit) => !buildingIds.has(unit.id))
 }

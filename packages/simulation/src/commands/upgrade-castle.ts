@@ -22,20 +22,24 @@ export function applyUpgradeCastle(state: GameState, command: ScheduledCommand):
   if (state.world.store(Owner).get(castleId)?.owner !== command.playerId) {
     reject(command, 'NOT_OWNER', 'UPGRADE_CASTLE: player does not own Castle')
   }
-  if ((building.tier ?? 1) !== 1 || (building.tierUpgrade !== undefined && building.tierUpgrade !== null)) {
+  const definition = BUILDING_DEFINITIONS.CASTLE
+  const currentTier = building.tier ?? 1
+  if (
+    (definition.maximumCastleTier !== undefined && currentTier >= definition.maximumCastleTier) ||
+    (building.tierUpgrade !== undefined && building.tierUpgrade !== null)
+  ) {
     reject(command, 'INVALID_STATE', 'UPGRADE_CASTLE: Castle cannot upgrade')
   }
   if ((state.world.store(Production).get(castleId)?.queue.length ?? 0) > 0) {
     reject(command, 'INVALID_STATE', 'UPGRADE_CASTLE: Castle Pawn queue must be empty')
   }
-  const definition = BUILDING_DEFINITIONS.CASTLE
   if (!canAfford(player.resources, definition.cost)) {
     reject(command, 'INSUFFICIENT_RESOURCES', 'UPGRADE_CASTLE: insufficient resources')
   }
   applyResourceCost(player.resources, definition.cost, -1)
   state.world.store(Building).set(castleId, {
     ...building,
-    tier: 1,
+    tier: currentTier,
     tierUpgrade: { progressTicks: 0, totalTicks: definition.constructionTicks }
   })
 }

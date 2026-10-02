@@ -61,6 +61,7 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
     mapBounds: options.mapBounds ?? DEFAULT_MAP_BOUNDS,
     resources: createResourceState(options.resources),
     world,
+    pendingCommands: [],
     events: [],
     pendingDamage: new Map()
   }

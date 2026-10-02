@@ -1,4 +1,4 @@
-import type { MatchConfig } from '@rts/protocol'
+import { type MatchConfig, PROTOCOL_VERSION } from '@rts/protocol'
 import type { GameRenderer, RenderFrame } from '@rts/renderer'
 import { describe, expect, it, vi } from 'vitest'
 import { createMatchRendererLifecycle } from '../../../apps/web/src/features/match/services/match-session-renderer'
@@ -35,6 +35,8 @@ function fakeRenderer(mount: () => Promise<void>): GameRenderer & { presented: R
 
 const config: MatchConfig = {
   type: 'match_config',
+  protocolVersion: PROTOCOL_VERSION,
+  resumeToken: 'resume-token',
   map: { width: 2, height: 2, tiles: ['land', 'land', 'land', 'land'] },
   buildings: [],
   production: [],

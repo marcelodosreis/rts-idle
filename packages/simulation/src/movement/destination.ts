@@ -1,5 +1,5 @@
+import { unitDefinitionFor } from '@rts/game-data'
 import { type EntityId, type Fixed, MOVEMENT_SPEED_SCALE } from '@rts/shared'
-import { unitStatsFor } from '../data/unit-stats.js'
 import { Kind, Movement, Position } from '../ecs/components.js'
 import type { GameState } from '../state/state.js'
 
@@ -14,7 +14,8 @@ export function setMovementDestination(state: GameState, id: EntityId, x: Fixed,
     return
   }
   const kind = state.world.store(Kind).get(id)
-  const baseSpeed = kind === undefined ? UNIT_SPEED_TILES_PER_SECOND : unitStatsFor(kind).movementSpeedTilesPerSecond
+  const baseSpeed =
+    kind === undefined ? UNIT_SPEED_TILES_PER_SECOND : unitDefinitionFor(kind).movementSpeedTilesPerSecond
   state.world.store(Movement).set(id, {
     speedTilesPerSecondFixed: baseSpeed * MOVEMENT_SPEED_SCALE,
     destX: x,

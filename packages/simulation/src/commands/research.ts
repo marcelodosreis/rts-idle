@@ -1,4 +1,4 @@
-import { RESEARCH_DEFINITIONS } from '@rts/game-data'
+import { BUILDING_DEFINITIONS, RESEARCH_DEFINITIONS } from '@rts/game-data'
 import { applyResourceCost, canAfford, MAX_PRODUCTION_QUEUE, productionRefund } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { hasCurrentCastleTier } from '../domain/tier-access.js'
@@ -22,16 +22,20 @@ function validateMonastery(state: GameState, command: ScheduledCommand): GameSta
   const player = findPlayer(state, command)
   const { monasteryId, researchType } = command.intent.payload
   const building = state.world.store(Building).get(monasteryId)
-  if (building === undefined || building.status !== 'COMPLETED' || building.buildingType !== 'MONASTERY') {
-    reject(command, 'INVALID_STATE', `RESEARCH: ${monasteryId} is not a completed Monastery`)
+  if (
+    building === undefined ||
+    building.status !== 'COMPLETED' ||
+    !BUILDING_DEFINITIONS[building.buildingType].capabilities.canResearch
+  ) {
+    reject(command, 'INVALID_STATE', `RESEARCH: ${monasteryId} is not a completed research building`)
   }
   if (state.world.store(Owner).get(monasteryId)?.owner !== command.playerId) {
     reject(command, 'NOT_OWNER', `RESEARCH: player ${command.playerId} does not own ${monasteryId}`)
   }
-  if (!hasCurrentCastleTier(state, command.playerId, 2)) {
-    reject(command, 'TECH_REQUIREMENT', 'RESEARCH: Castle II is required')
-  }
   const definition = RESEARCH_DEFINITIONS[researchType]
+  if (!hasCurrentCastleTier(state, command.playerId, definition.minimumCastleTier)) {
+    reject(command, 'TECH_REQUIREMENT', `RESEARCH: Castle ${definition.minimumCastleTier} is required`)
+  }
   const queue = state.world.store(Production).get(monasteryId)?.queue ?? []
   if (queue.length >= MAX_PRODUCTION_QUEUE) {
     reject(command, 'INVALID_STATE', 'RESEARCH: Monastery queue is full')
@@ -53,8 +57,13 @@ function hasQueuedResearch(
   const owners = state.world.store(Owner)
   const buildings = state.world.store(Building)
   const productions = state.world.store(Production)
-  return state.world.aliveIds().some((id) => {
-    if (owners.get(id)?.owner !== ownerId || buildings.get(id)?.buildingType !== 'MONASTERY') {
+  return state.world.query(Building, Owner, Production).some((id) => {
+    const building = buildings.get(id)
+    if (
+      owners.get(id)?.owner !== ownerId ||
+      building === undefined ||
+      !BUILDING_DEFINITIONS[building.buildingType].capabilities.canResearch
+    ) {
       return false
     }
     return (
@@ -97,8 +106,12 @@ function validateCancelResearch(
   const player = findPlayer(state, command)
   const { monasteryId, queueIndex } = command.intent.payload
   const building = state.world.store(Building).get(monasteryId)
-  if (building?.buildingType !== 'MONASTERY' || building.status !== 'COMPLETED') {
-    reject(command, 'INVALID_STATE', 'CANCEL_RESEARCH: target is not a completed Monastery')
+  if (
+    building === undefined ||
+    !BUILDING_DEFINITIONS[building.buildingType].capabilities.canResearch ||
+    building.status !== 'COMPLETED'
+  ) {
+    reject(command, 'INVALID_STATE', 'CANCEL_RESEARCH: target is not a completed research building')
   }
   if (state.world.store(Owner).get(monasteryId)?.owner !== command.playerId) {
     reject(command, 'NOT_OWNER', 'CANCEL_RESEARCH: player does not own Monastery')

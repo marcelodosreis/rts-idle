@@ -13,7 +13,7 @@ import {
   simulationFromSnapshot
 } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
-import { SEEDS, TEST_IDENTITY } from '../../fixtures/index.js'
+import { SEEDS, TEST_IDENTITY, worldWithCombatUnits } from '../../fixtures/index.js'
 
 describe('state serialization roundtrip', () => {
   it('produces identical hashes for identical snapshots', () => {
@@ -50,10 +50,72 @@ describe('state serialization roundtrip', () => {
     }
   })
 
+  it('restores future scheduled commands and continues identically', () => {
+    const original = createSimulation({
+      seed: SEEDS.simulation.snapshotContinue,
+      identity: TEST_IDENTITY,
+      initialWorld: worldWithCombatUnits([0, 1])
+    })
+    original.step([
+      {
+        tick: 10,
+        playerId: 1,
+        sequence: 1,
+        intent: { type: 'SURRENDER', payload: {} }
+      }
+    ])
+    const snapshot = original.exportSnapshot()
+    const restored = simulationFromSnapshot(snapshot)
+
+    expect(restored.inspectState().pendingCommands).toEqual(original.inspectState().pendingCommands)
+    for (let tick = 0; tick < 20; tick += 1) {
+      expect(restored.hashState()).toBe(original.hashState())
+      original.step()
+      restored.step()
+    }
+  })
+
+  it('canonicalizes future command ordering independently of ingress order', () => {
+    const build = () =>
+      createSimulation({
+        seed: SEEDS.simulation.snapshotContinue,
+        identity: TEST_IDENTITY,
+        initialWorld: worldWithCombatUnits([0, 1])
+      })
+    const hold = {
+      tick: 20,
+      playerId: 0 as const,
+      sequence: 1,
+      intent: { type: 'HOLD' as const, payload: { unitIds: [1] } }
+    }
+    const stop = {
+      tick: 20,
+      playerId: 0 as const,
+      sequence: 1,
+      intent: { type: 'STOP' as const, payload: { unitIds: [1] } }
+    }
+    const first = build()
+    const second = build()
+    first.step([hold, stop])
+    second.step([stop, hold])
+
+    expect(first.hashState()).toBe(second.hashState())
+    expect(first.inspectState().pendingCommands).toEqual(second.inspectState().pendingCommands)
+  })
+
   it('rejects truncated or corrupt bytes', () => {
     const sim = createSimulation({ seed: SEEDS.simulation.snapshotCorrupt, identity: TEST_IDENTITY })
     const bytes = sim.exportSnapshot().bytes
     expect(() => deserializeState(bytes.subarray(0, 3))).toThrow()
+    expect(() => deserializeState(Uint8Array.from([...bytes, 0]))).toThrow()
+  })
+
+  it('rejects a snapshot whose envelope metadata does not match canonical state', () => {
+    const simulation = createSimulation({ seed: SEEDS.simulation.snapshotCorrupt, identity: TEST_IDENTITY })
+    const snapshot = simulation.exportSnapshot()
+
+    expect(() => simulationFromSnapshot({ ...snapshot, tick: snapshot.tick + 1 })).toThrow(/envelope tick/)
+    expect(() => simulationFromSnapshot({ ...snapshot, hash: '0'.repeat(64) })).toThrow(/envelope hash/)
   })
 
   it('restores travelling, gathering, and returning economy phases exactly', () => {

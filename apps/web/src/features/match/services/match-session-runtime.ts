@@ -1,4 +1,4 @@
-import type { BuildCatalogEntry, SnapshotBuilding, SnapshotResource } from '@rts/protocol'
+import type { BuildCatalogEntry, SnapshotBuilding, SnapshotMessage, SnapshotResource } from '@rts/protocol'
 import type { GameRenderer, RenderFrame } from '@rts/renderer'
 import type { MapDefinition } from '@rts/shared'
 import { projectSelectionUnits, type RenderedPosition, type SelectionUnitState } from '../lib/selection-projection'
@@ -16,6 +16,7 @@ export interface MatchSessionRuntime {
   pendingFrame: RenderFrame | null
   sessionActive: boolean
   lastTick: number
+  snapshot: SnapshotMessage | null
   matchEnded: boolean
   readonly unitStates: Map<number, SelectionUnitState>
   readonly unitPositions: Map<number, RenderedPosition>
@@ -146,6 +147,7 @@ export function createMatchSessionRuntime(): MatchSessionRuntime {
     pendingFrame: null,
     sessionActive: true,
     lastTick: 0,
+    snapshot: null,
     matchEnded: false,
     unitStates: new Map(),
     unitPositions: new Map(),

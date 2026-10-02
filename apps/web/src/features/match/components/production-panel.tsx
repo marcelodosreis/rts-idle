@@ -81,7 +81,7 @@ export function ProductionPanel({
   const queue = construction.production?.queue ?? []
   const transitions = useProductionTransitions(construction.id, queue)
   const rallyUpdated = useRallyTransition(construction)
-  if (!isProducer(construction.buildingType)) {
+  if (!isProducer(construction)) {
     return null
   }
   const activeItem = queue.find((item) => item.status === 'ACTIVE' || item.status === 'COMPLETED_WAITING')
@@ -132,11 +132,6 @@ export function ProductionPanel({
   )
 }
 
-function isProducer(buildingType: HudConstruction['buildingType']): boolean {
-  return (
-    buildingType === 'CASTLE' ||
-    buildingType === 'BARRACKS' ||
-    buildingType === 'ARCHERY' ||
-    buildingType === 'MONASTERY'
-  )
+function isProducer(construction: HudConstruction): boolean {
+  return construction.production !== undefined
 }

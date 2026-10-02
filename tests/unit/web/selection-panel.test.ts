@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { resourceCostLabel } from '../../../apps/web/src/features/match/lib/resource-cost'
 import {
   canCancelConstruction,
   cancelRefundEstimate,
   constructionStatusLine,
+  productionRefundEstimate,
   resourceRemainingLine
 } from '../../../apps/web/src/features/match/lib/selection-panel-logic'
 
@@ -71,8 +73,24 @@ describe('selection panel labels', () => {
       totalTicks: 100,
       builderId: null
     }
-    expect(cancelRefundEstimate(construction, 100)).toBe(75)
-    expect(cancelRefundEstimate({ ...construction, progressTicks: 50 }, 100)).toBe(37)
-    expect(cancelRefundEstimate({ ...construction, progressTicks: 100, status: 'COMPLETED' }, 100)).toBe(0)
+    expect(cancelRefundEstimate(construction, { GOLD: 100, WOOD: 40 })).toEqual({ GOLD: 75, WOOD: 30 })
+    expect(cancelRefundEstimate({ ...construction, progressTicks: 50 }, { GOLD: 100 })).toEqual({ GOLD: 37 })
+    expect(cancelRefundEstimate({ ...construction, progressTicks: 100, status: 'COMPLETED' }, { GOLD: 100 })).toEqual({
+      GOLD: 0
+    })
+  })
+
+  it('formats every defined resource in cost and refund values', () => {
+    expect(resourceCostLabel({ GOLD: 20, WOOD: 5 })).toBe('20 gold · 5 wood')
+    expect(
+      productionRefundEstimate({
+        unitKind: 'pawn',
+        cost: { GOLD: 20, WOOD: 5 },
+        reservedSupply: 1,
+        progressTicks: 0,
+        totalTicks: 100,
+        status: 'QUEUED'
+      })
+    ).toEqual({ GOLD: 20, WOOD: 5 })
   })
 })

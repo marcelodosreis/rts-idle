@@ -4,9 +4,10 @@ import type {
   ResearchCatalogEntry,
   SnapshotProductionItem
 } from '@rts/protocol'
-import { MAX_PRODUCTION_QUEUE } from '@rts/shared'
+import { MAX_PRODUCTION_QUEUE, type ResourceCost } from '@rts/shared'
 import type { HudFeedbackTarget } from '../components/hud-context-feedback'
 import type { HudConstruction, HudResources, HudSelectionUnit } from '../types/hud-types'
+import { firstResourceShortfall, resourceTypeLabel } from './resource-cost'
 
 export function unitSelectionBlockReason(selection: readonly HudSelectionUnit[]): string | undefined {
   if (selection.length === 0) {
@@ -18,15 +19,27 @@ export function unitSelectionBlockReason(selection: readonly HudSelectionUnit[])
   return undefined
 }
 
+export function isWorkerSelection(selection: readonly HudSelectionUnit[]): boolean {
+  const selectedUnit = selection[0]
+  return (
+    selection.length === 1 &&
+    (selectedUnit?.canGather === true ||
+      selectedUnit?.canBuild === true ||
+      selectedUnit?.canRepair === true ||
+      selectedUnit?.acceptsDeposit === true)
+  )
+}
+
 export function buildBlockReason(entry: BuildCatalogEntry, resources: HudResources | null): string | undefined {
   if (resources === null) {
     return 'Match resources are still loading.'
   }
-  if (entry.type === 'MONASTERY' && resources.castleTier < 2) {
-    return 'Requires Castle II.'
+  if (entry.minimumCastleTier !== undefined && resources.castleTier < entry.minimumCastleTier) {
+    return `Requires Castle ${entry.minimumCastleTier}.`
   }
-  if (resources.resources.GOLD < (entry.cost.GOLD ?? 0)) {
-    return `Requires ${entry.cost.GOLD ?? 0} gold. You have ${resources.resources.GOLD}.`
+  const shortfall = firstResourceShortfall(resources.resources, entry.cost)
+  if (shortfall !== undefined) {
+    return `Requires ${shortfall.amount} ${resourceTypeLabel(shortfall.type)}. You have ${shortfall.available}.`
   }
   return undefined
 }
@@ -42,11 +55,12 @@ export function trainingBlockReason(
   if (queueLength >= MAX_PRODUCTION_QUEUE) {
     return 'The production queue is full.'
   }
-  if ((entry.unitKind === 'lancer' || entry.unitKind === 'monk') && resources.castleTier < 2) {
-    return 'Requires Castle II.'
+  if (entry.minimumCastleTier !== undefined && resources.castleTier < entry.minimumCastleTier) {
+    return `Requires Castle ${entry.minimumCastleTier}.`
   }
-  if (resources.resources.GOLD < (entry.cost.GOLD ?? 0)) {
-    return `Requires ${entry.cost.GOLD ?? 0} gold. You have ${resources.resources.GOLD}.`
+  const shortfall = firstResourceShortfall(resources.resources, entry.cost)
+  if (shortfall !== undefined) {
+    return `Requires ${shortfall.amount} ${resourceTypeLabel(shortfall.type)}. You have ${shortfall.available}.`
   }
   const availableSupply = resources.supplyCap - resources.supply - resources.reservedSupply
   if (availableSupply < entry.supply) {
@@ -69,21 +83,22 @@ export function researchBlockReason(
   if (resources.queuedResearch.includes(entry.researchType)) {
     return 'Already queued in another Monastery.'
   }
-  if (resources.castleTier < 2) {
-    return 'Requires Castle II.'
+  if (entry.minimumCastleTier !== undefined && resources.castleTier < entry.minimumCastleTier) {
+    return `Requires Castle ${entry.minimumCastleTier}.`
   }
   if (queueLength >= MAX_PRODUCTION_QUEUE) {
     return 'The Monastery queue is full.'
   }
-  if (resources.resources.GOLD < (entry.cost.GOLD ?? 0)) {
-    return `Requires ${entry.cost.GOLD ?? 0} gold. You have ${resources.resources.GOLD}.`
+  const shortfall = firstResourceShortfall(resources.resources, entry.cost)
+  if (shortfall !== undefined) {
+    return `Requires ${shortfall.amount} ${resourceTypeLabel(shortfall.type)}. You have ${shortfall.available}.`
   }
   return undefined
 }
 
 export function upgradeBlockReason(
   construction: HudConstruction,
-  cost: number,
+  cost: ResourceCost,
   resources: HudResources | null
 ): string | undefined {
   if ((construction.production?.queue.length ?? 0) > 0) {
@@ -92,8 +107,9 @@ export function upgradeBlockReason(
   if (resources === null) {
     return 'Match resources are still loading.'
   }
-  if (resources.resources.GOLD < cost) {
-    return `Requires ${cost} gold. You have ${resources.resources.GOLD}.`
+  const shortfall = firstResourceShortfall(resources.resources, cost)
+  if (shortfall !== undefined) {
+    return `Requires ${shortfall.amount} ${resourceTypeLabel(shortfall.type)}. You have ${shortfall.available}.`
   }
   return undefined
 }

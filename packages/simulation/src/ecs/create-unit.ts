@@ -1,6 +1,5 @@
+import { unitDefinitionFor } from '@rts/game-data'
 import type { EntityId, PlayerId, UnitKind } from '@rts/shared'
-import { RESOURCE_CARGO_CAPACITY } from '../data/economy-rules.js'
-import { unitStatsFor } from '../data/unit-stats.js'
 import { AbilityCooldown, Cargo, Combat, Health, Kind, Orders, Owner, Position } from './components.js'
 import type { World } from './world.js'
 
@@ -10,12 +9,13 @@ export interface CreateUnitOptions {
   readonly y: number
   readonly owner: PlayerId
   readonly kind: UnitKind
+  /** Legacy fixture input; unit capabilities determine cargo components. */
   readonly worker?: boolean
 }
 
 /** Creates every unit with the complete canonical component set. */
 export function createUnitEntity(world: World, options: CreateUnitOptions): void {
-  const stats = unitStatsFor(options.kind)
+  const stats = unitDefinitionFor(options.kind)
   world.createEntity(options.id)
   world.store(Position).set(options.id, { x: options.x, y: options.y })
   world.store(Owner).set(options.id, { owner: options.owner })
@@ -30,7 +30,11 @@ export function createUnitEntity(world: World, options: CreateUnitOptions): void
   })
   world.store(AbilityCooldown).set(options.id, { healCooldownRemaining: 0 })
   world.store(Orders).set(options.id, { queue: [] })
-  if (options.worker === true) {
-    world.store(Cargo).set(options.id, { amount: 0, capacity: RESOURCE_CARGO_CAPACITY, resourceType: null })
+  if (stats.cargoCapacity !== null) {
+    world.store(Cargo).set(options.id, {
+      amount: 0,
+      capacity: stats.cargoCapacity,
+      resourceType: null
+    })
   }
 }

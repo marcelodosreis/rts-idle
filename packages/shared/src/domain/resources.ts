@@ -1,3 +1,5 @@
+import { field, isNonNegativeInteger, isRecord } from '../primitives/parse.js'
+
 /** Closed economic resource registry shared by simulation, protocol, and UI. */
 export const RESOURCE_TYPES = ['GOLD', 'WOOD'] as const
 
@@ -24,8 +26,34 @@ export function resourceTypeForKind(kind: ResourceKind): ResourceType {
 export type PlayerResources = { [K in ResourceType]: number }
 export type ResourceCost = Readonly<Partial<PlayerResources>>
 
+export function isPlayerResources(value: unknown): value is PlayerResources {
+  if (!isRecord(value)) {
+    return false
+  }
+  return RESOURCE_TYPES.every((type) => isNonNegativeInteger(field(value, type)))
+}
+
+export function isResourceCost(value: unknown, requirePositive = false): value is ResourceCost {
+  if (!isRecord(value)) {
+    return false
+  }
+  let total = 0
+  for (const type of RESOURCE_TYPES) {
+    const amount = field(value, type)
+    if (amount === undefined) {
+      continue
+    }
+    if (!isNonNegativeInteger(amount)) {
+      return false
+    }
+    total += amount
+  }
+  return !requirePositive || total > 0
+}
+
 export function createPlayerResources(initial?: Partial<PlayerResources>): PlayerResources {
-  return { GOLD: initial?.GOLD ?? 0, WOOD: initial?.WOOD ?? 0 }
+  const resources = Object.fromEntries(RESOURCE_TYPES.map((type) => [type, initial?.[type] ?? 0]))
+  return resources as PlayerResources
 }
 
 export function addPlayerResource(resources: PlayerResources, type: ResourceType, amount: number): void {
@@ -56,7 +84,7 @@ export function applyResourceCost(resources: PlayerResources, cost: ResourceCost
  * resource type. Callers must pass a positive `totalTicks`.
  */
 export function partialResourceRefund(cost: ResourceCost, remaining: number, totalTicks: number): ResourceCost {
-  const refund: { GOLD?: number; WOOD?: number } = {}
+  const refund: Partial<PlayerResources> = {}
   for (const type of RESOURCE_TYPES) {
     const amount = cost[type]
     if (amount !== undefined) {

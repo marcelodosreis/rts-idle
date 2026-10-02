@@ -300,9 +300,6 @@ importers:
 
   packages/renderer:
     dependencies:
-      '@rts/protocol':
-        specifier: workspace:*
-        version: link:../protocol
       '@rts/shared':
         specifier: workspace:*
         version: link:../shared
@@ -354,6 +351,19 @@ importers:
         version: 24.13.5
 
   tools/benchmark:
+    dependencies:
+      '@rts/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@rts/simulation':
+        specifier: workspace:*
+        version: link:../../packages/simulation
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.5
+
+  tools/replay:
     dependencies:
       '@rts/shared':
         specifier: workspace:*

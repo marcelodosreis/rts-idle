@@ -1,4 +1,4 @@
-import { MONK_HEAL_RANGE_FIXED } from '@rts/game-data'
+import { MONK_HEAL_RANGE_FIXED, unitDefinitionFor } from '@rts/game-data'
 import { distSquaredFixed, type EntityId } from '@rts/shared'
 import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
 import { Building } from '../ecs/building-component.js'
@@ -33,8 +33,9 @@ function validateTarget(state: GameState, command: ScheduledCommand, targetId: E
 
 function validateMonk(state: GameState, command: ScheduledCommand, monkId: EntityId): void {
   const kinds = state.world.store(Kind)
-  if (kinds.get(monkId) !== 'monk') {
-    reject(command, `HEAL: caster ${monkId} is not a Monk`)
+  const kind = kinds.get(monkId)
+  if (kind === undefined || !unitDefinitionFor(kind).canHeal) {
+    reject(command, `HEAL: caster ${monkId} cannot heal`)
   }
   const cooldown = state.world.store(AbilityCooldown).get(monkId)
   if (cooldown === undefined || cooldown.healCooldownRemaining > 0) {

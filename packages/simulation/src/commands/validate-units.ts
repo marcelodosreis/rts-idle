@@ -1,5 +1,5 @@
+import { unitCanAttack } from '@rts/game-data'
 import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
-import { unitCanAttack } from '../data/unit-stats.js'
 import { Kind, Owner } from '../ecs/components.js'
 import type { GameState } from '../state/state.js'
 import { MAX_UNITS_PER_COMMAND } from './limits.js'
