@@ -28,6 +28,8 @@
     "fuzz": "vitest run tests/fuzz",
     "test:architecture": "vitest run tests/architecture",
     "test:e2e": "tsx tools/e2e/run-e2e.ts",
+    "test:e2e:prepare": "tsx tools/e2e/prepare-plan.ts",
+    "test:e2e:collect": "tsx tools/e2e/collect-timings.ts",
     "test:e2e:all": "corepack pnpm run test:e2e -- --project=chromium --project=firefox --workers=1",
     "test:e2e:fast": "corepack pnpm run test:e2e -- --project=chromium --project=firefox --grep-invert @perf",
     "test:e2e:perf": "corepack pnpm run test:e2e -- --project=chromium --project=firefox --workers=1 --grep @perf",

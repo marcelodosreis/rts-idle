@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 82 |
+| open | 83 |
 | closed | 17 |
-| **total** | **99** |
+| **total** | **100** |
 
 ## Details
 
@@ -113,6 +113,7 @@
 | 2026-10-01-web-rebase-component-export | open | convention | QH.24 | 1 test(s) |
 | 2026-10-01-web-route-transition-starvation | open | completion-gate | QH.26.01 | 1 test(s) |
 | 2026-10-02-castle-tier-unavailable-feedback | open | presentation | QH.26.01 | 1 test(s) |
+| 2026-10-02-e2e-plan-missing-dist | open | environment | QH.27.01 | 1 test(s) |
 | 2026-10-02-firefox-transport-drop-recovery | open | completion-gate | QH.26.01 | 1 test(s) |
 
 ## Legend

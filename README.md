@@ -178,9 +178,15 @@ Useful validation groups:
 | `corepack pnpm run test:simulation` | Deterministic simulation tests |
 | `corepack pnpm run test:e2e:fast` | Chromium and Firefox functional browser tests |
 | `corepack pnpm run test:e2e:perf` | Renderer performance tests |
+| `corepack pnpm run test:e2e:prepare -- --output=tmp/e2e-plan.json` | Generate the category-preserving local E2E shard plan |
 | `corepack pnpm run build` | Topological package and web build |
 | `corepack pnpm run balance -- --games 1000` | Analyze matchup balance |
 | `corepack pnpm run benchmark` | Run simulation and renderer benchmarks |
+
+CI keeps functional and `@perf` E2E tests in separate pools for Chromium and
+Firefox. Each pool is discovered and rebalanced automatically from per-test
+timings; the timing history is stored as a workflow artifact, so adding or
+changing tests does not require maintaining shard lists.
 
 ## Future Direction
 
