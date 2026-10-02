@@ -22,14 +22,14 @@ export interface ToastScope {
 
 interface ScopedToast {
   readonly id: string | number
-  readonly timer: ReturnType<typeof window.setTimeout>
+  readonly timer: number
 }
 
 export interface ToastScopeDependencies {
   readonly create: (options: ToastOptions) => string | number
   readonly dismiss: (id: string | number) => void
-  readonly setTimeout: (callback: () => void, duration: number) => ReturnType<typeof window.setTimeout>
-  readonly clearTimeout: (timer: ReturnType<typeof window.setTimeout>) => void
+  readonly setTimeout: (callback: () => void, duration: number) => number
+  readonly clearTimeout: (timer: number) => void
 }
 
 function toastDuration(options: ToastOptions): number {

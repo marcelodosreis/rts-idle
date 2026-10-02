@@ -6,12 +6,14 @@ import {
   isSnapshotDeltaMessage,
   isSnapshotMessage,
   isSnapshotResyncRequest,
-  PROTOCOL_VERSION
+  PROTOCOL_VERSION,
+  type SnapshotDeltaMessage
 } from '@rts/protocol'
+import type { MapDefinition } from '@rts/shared'
 import { describe, expect, it } from 'vitest'
 
 describe('match bootstrap messages', () => {
-  const map = { width: 2, height: 2, tiles: ['land', 'land', 'land', 'land'], resources: [] }
+  const map: MapDefinition = { width: 2, height: 2, tiles: ['land', 'land', 'land', 'land'], resources: [] }
   it('accepts a valid request and config', () => {
     expect(
       isMatchRequest({
@@ -235,12 +237,12 @@ describe('protocol snapshot message', () => {
       phase: 'RUNNING',
       units: valid.units.slice(0, 1),
       removedUnitIds: [2],
-      buildings: [],
+      buildings: [] as SnapshotDeltaMessage['buildings'],
       removedBuildingIds: [5],
       resources: [{ resourceId: 4, remaining: 2990 }],
       resourcesComplete: false,
       players: [valid.players[0]],
-      events: []
+      events: [] as SnapshotDeltaMessage['events']
     }
     expect(isSnapshotDeltaMessage(delta)).toBe(true)
     expect(isSnapshotDeltaMessage({ ...delta, baseTick: 2 })).toBe(false)
@@ -266,7 +268,7 @@ describe('protocol snapshot message', () => {
         resources: [...valid.resources, { resourceId: 7, remaining: 1500 }],
         resourcesComplete: false,
         players: valid.players,
-        events: []
+        events: [] as SnapshotDeltaMessage['events']
       })
     ).toBe(true)
   })
@@ -283,12 +285,12 @@ describe('protocol snapshot message', () => {
       phase: 'RUNNING',
       units: valid.units.slice(0, 1),
       removedUnitIds: [2],
-      buildings: [],
+      buildings: [] as SnapshotDeltaMessage['buildings'],
       removedBuildingIds: [5],
       resources: valid.resources,
       resourcesComplete: false,
       players: valid.players.slice(0, 1),
-      events: []
+      events: [] as SnapshotDeltaMessage['events']
     }
 
     expect(isSnapshotDeltaMessage({ ...delta, units: [valid.units[0], { ...valid.units[0], x: 128 }] })).toBe(false)

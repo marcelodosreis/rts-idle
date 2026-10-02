@@ -12,6 +12,7 @@ const files = readdirSync(POSTMORTEMS_DIR)
   .filter((f) => f.endsWith('.md') && f !== 'TEMPLATE.md')
   .sort()
 
+const reportDate = new Date().toISOString().split('T')[0] ?? ''
 const data = aggregatePostmortemStatus(
   files.map((file) => ({
     name: file.replace('.md', ''),
@@ -19,6 +20,6 @@ const data = aggregatePostmortemStatus(
   }))
 )
 
-writeFileSync(OUTPUT_PATH, renderPostmortemStatus(data, new Date().toISOString().split('T')[0]))
+writeFileSync(OUTPUT_PATH, renderPostmortemStatus(data, reportDate))
 console.log(`Postmortem status written to ${OUTPUT_PATH}`)
 console.log(`  open: ${data.openCount}, closed: ${data.closedCount}, total: ${data.entries.length}`)

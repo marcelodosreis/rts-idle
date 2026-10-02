@@ -1,4 +1,4 @@
-import { createPlayerResources, createRng, PLAYER_IDS, START_ENTITY_ID } from '@rts/shared'
+import { createPlayerResources, createRng, PLAYER_IDS, type ResearchType, START_ENTITY_ID } from '@rts/shared'
 import type { SimulationOptions } from '../contracts/simulation.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
@@ -17,7 +17,7 @@ function createPlayers(): PlayerState[] {
     usedSupply: 0,
     reservedSupply: 0,
     supplyCap: 0,
-    completedResearch: [],
+    completedResearch: [] as readonly ResearchType[],
     highestCastleTierReached: 1 as const
   }))
 }

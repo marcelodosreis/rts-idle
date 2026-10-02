@@ -13,6 +13,7 @@ import {
   Owner,
   Position,
   Production,
+  type ScheduledCommand,
   simulationFromSnapshot
 } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
@@ -59,7 +60,7 @@ function scenario(
     world.store(Owner).set(blockerId, { owner: 0 })
     world.store(Kind).set(blockerId, 'pawn')
     world.store(Health).set(blockerId, { current: 100, max: 100 })
-    world.store(Combat).set(blockerId, { damage: 10, rangeTiles: 1, cooldownTicks: 20, cooldownRemaining: 0 })
+    world.store(Combat).set(blockerId, { armor: 0, damage: 10, rangeTiles: 1, cooldownTicks: 20, cooldownRemaining: 0 })
   }
   if (options.withEnemy) {
     createUnitEntity(world, {
@@ -90,7 +91,7 @@ function scenario(
       world.store(Owner).set(id, { owner: 0 })
       world.store(Kind).set(id, 'warrior')
       world.store(Health).set(id, { current: 150, max: 150 })
-      world.store(Combat).set(id, { damage: 15, rangeTiles: 1, cooldownTicks: 20, cooldownRemaining: 0 })
+      world.store(Combat).set(id, { armor: 0, damage: 15, rangeTiles: 1, cooldownTicks: 20, cooldownRemaining: 0 })
     }
   }
   return createSimulation({
@@ -106,21 +107,25 @@ function scenario(
   })
 }
 
-const train = (unitKind: 'pawn' | 'warrior' | 'archer', sequence: number, producerId = START_ENTITY_ID + 1) => ({
+const train = (
+  unitKind: 'pawn' | 'warrior' | 'archer',
+  sequence: number,
+  producerId = START_ENTITY_ID + 1
+): ScheduledCommand => ({
   tick: 1,
   playerId: 0,
   sequence,
   intent: { type: 'TRAIN' as const, payload: { producerId, unitKind } }
 })
 
-const rally = (producerId: number, sequence: number, x = tilesToFixed(8), y = tilesToFixed(6)) => ({
+const rally = (producerId: number, sequence: number, x = tilesToFixed(8), y = tilesToFixed(6)): ScheduledCommand => ({
   tick: 1,
   playerId: 0,
   sequence,
   intent: { type: 'RALLY' as const, payload: { producerId, x, y } }
 })
 
-const cancelProduction = (producerId: number, queueIndex: number, sequence: number, tick = 2) => ({
+const cancelProduction = (producerId: number, queueIndex: number, sequence: number, tick = 2): ScheduledCommand => ({
   tick,
   playerId: 0,
   sequence,

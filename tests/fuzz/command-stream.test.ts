@@ -15,39 +15,43 @@ const integer = fc.integer({ min: -512, max: 512 })
 const entityId = fc.nat({ max: 8 })
 const coordinates = fc.record({ x: integer, y: integer })
 
-const intentArbitrary: fc.Arbitrary<CommandIntent> = fc.oneof(
-  coordinates.map(({ x, y }) => ({ type: 'MOVE', payload: { unitIds: [1], x, y } })),
-  fc.constant({ type: 'STOP', payload: { unitIds: [1] } }),
-  fc.constant({ type: 'HOLD', payload: { unitIds: [1] } }),
-  coordinates.map(({ x, y }) => ({ type: 'PATROL', payload: { unitIds: [1], x, y } })),
-  entityId.map((targetId) => ({ type: 'ATTACK', payload: { unitIds: [1], targetId } })),
-  coordinates.map(({ x, y }) => ({ type: 'ATTACK_MOVE', payload: { unitIds: [1], x, y } })),
-  entityId.map((resourceId) => ({ type: 'GATHER', payload: { unitIds: [1], resourceId } })),
-  entityId.map((buildingId) => ({ type: 'DEPOSIT', payload: { unitIds: [1], buildingId } })),
-  entityId.map((targetId) => ({ type: 'REPAIR', payload: { unitIds: [1], targetId } })),
-  entityId.map((targetId) => ({ type: 'HEAL', payload: { unitIds: [1], targetId } })),
-  fc.record({ buildingType: fc.constantFrom(...BUILDING_TYPES), x: integer, y: integer }).map((payload) => ({
-    type: 'BUILD',
-    payload: { unitId: 1, ...payload }
-  })),
-  entityId.map((castleId) => ({ type: 'UPGRADE_CASTLE', payload: { castleId } })),
-  entityId.map((buildingId) => ({ type: 'CANCEL_CONSTRUCTION', payload: { buildingId } })),
-  fc.constantFrom(...TRAINABLE_UNIT_KINDS).map((unitKind) => ({ type: 'TRAIN', payload: { producerId: 1, unitKind } })),
-  fc.record({ producerId: entityId, queueIndex: fc.nat({ max: 3 }) }).map((payload) => ({
-    type: 'CANCEL_PRODUCTION',
-    payload
-  })),
-  fc.constantFrom(...RESEARCH_TYPES).map((researchType) => ({
-    type: 'RESEARCH',
-    payload: { monasteryId: 1, researchType }
-  })),
-  fc.record({ monasteryId: entityId, queueIndex: fc.nat({ max: 3 }) }).map((payload) => ({
-    type: 'CANCEL_RESEARCH',
-    payload
-  })),
-  coordinates.map(({ x, y }) => ({ type: 'RALLY', payload: { producerId: 1, x, y } })),
-  fc.constant({ type: 'SURRENDER', payload: {} })
-)
+const intentArbitrary: fc.Arbitrary<CommandIntent> = fc
+  .oneof(
+    coordinates.map<CommandIntent>(({ x, y }) => ({ type: 'MOVE', payload: { unitIds: [1], x, y } })),
+    fc.constant({ type: 'STOP', payload: { unitIds: [1] } }),
+    fc.constant({ type: 'HOLD', payload: { unitIds: [1] } }),
+    coordinates.map(({ x, y }) => ({ type: 'PATROL', payload: { unitIds: [1], x, y } })),
+    entityId.map((targetId) => ({ type: 'ATTACK', payload: { unitIds: [1], targetId } })),
+    coordinates.map(({ x, y }) => ({ type: 'ATTACK_MOVE', payload: { unitIds: [1], x, y } })),
+    entityId.map((resourceId) => ({ type: 'GATHER', payload: { unitIds: [1], resourceId } })),
+    entityId.map((buildingId) => ({ type: 'DEPOSIT', payload: { unitIds: [1], buildingId } })),
+    entityId.map((targetId) => ({ type: 'REPAIR', payload: { unitIds: [1], targetId } })),
+    entityId.map((targetId) => ({ type: 'HEAL', payload: { unitIds: [1], targetId } })),
+    fc.record({ buildingType: fc.constantFrom(...BUILDING_TYPES), x: integer, y: integer }).map((payload) => ({
+      type: 'BUILD',
+      payload: { unitId: 1, ...payload }
+    })),
+    entityId.map((castleId) => ({ type: 'UPGRADE_CASTLE', payload: { castleId } })),
+    entityId.map((buildingId) => ({ type: 'CANCEL_CONSTRUCTION', payload: { buildingId } })),
+    fc
+      .constantFrom(...TRAINABLE_UNIT_KINDS)
+      .map((unitKind) => ({ type: 'TRAIN', payload: { producerId: 1, unitKind } })),
+    fc.record({ producerId: entityId, queueIndex: fc.nat({ max: 3 }) }).map((payload) => ({
+      type: 'CANCEL_PRODUCTION',
+      payload
+    })),
+    fc.constantFrom(...RESEARCH_TYPES).map((researchType) => ({
+      type: 'RESEARCH',
+      payload: { monasteryId: 1, researchType }
+    })),
+    fc.record({ monasteryId: entityId, queueIndex: fc.nat({ max: 3 }) }).map((payload) => ({
+      type: 'CANCEL_RESEARCH',
+      payload
+    })),
+    coordinates.map(({ x, y }) => ({ type: 'RALLY', payload: { producerId: 1, x, y } })),
+    fc.constant({ type: 'SURRENDER', payload: {} })
+  )
+  .map((intent): CommandIntent => intent as CommandIntent)
 
 const commandArbitrary: fc.Arbitrary<ScheduledCommand> = fc.record({
   tick: fc.integer({ min: 1, max: 12 }),

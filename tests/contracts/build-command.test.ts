@@ -1,17 +1,17 @@
 import { isCommandMessage } from '@rts/protocol'
 import { START_ENTITY_ID } from '@rts/shared'
-import { Building, createSimulation, createWorld, Kind, Owner, Position } from '@rts/simulation'
+import { Building, createSimulation, createWorld, Kind, Owner, Position, type ScheduledCommand } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { TEST_IDENTITY } from '../fixtures/index.js'
 
-const command = (unitId: number, x = 0, y = 0) => ({
+const command = (unitId: number, x = 0, y = 0): ScheduledCommand => ({
   tick: 1,
   playerId: 0,
   sequence: 1,
   intent: { type: 'BUILD' as const, payload: { unitId, buildingType: 'CASTLE' as const, x, y } }
 })
 
-function simulation(kind: 'pawn' | 'warrior' = 'pawn', owner = 0, gold = 100) {
+function simulation(kind: 'pawn' | 'warrior' = 'pawn', owner: 0 | 1 = 0, gold = 100) {
   const world = createWorld()
   world.createEntity(START_ENTITY_ID)
   world.store(Position).set(START_ENTITY_ID, { x: 0, y: 0 })

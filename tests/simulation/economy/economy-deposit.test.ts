@@ -1,4 +1,4 @@
-import { START_ENTITY_ID, tilesToFixed } from '@rts/shared'
+import { type PlayerId, START_ENTITY_ID, tilesToFixed } from '@rts/shared'
 import {
   Building,
   Cargo,
@@ -18,7 +18,7 @@ import { SEEDS, TEST_IDENTITY } from '../../fixtures/index.js'
 interface DepositScenarioOptions {
   readonly workerX?: number
   readonly cargo?: number
-  readonly baseOwner?: number
+  readonly baseOwner?: PlayerId
 }
 
 function depositScenario(options: DepositScenarioOptions = {}) {

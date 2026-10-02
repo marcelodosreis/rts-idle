@@ -1,7 +1,8 @@
 import { validateMapDefinition } from '@rts/game-data'
+import type { MapDefinition } from '@rts/shared'
 import { describe, expect, it } from 'vitest'
 
-const VALID = {
+const VALID: MapDefinition = {
   width: 2,
   height: 2,
   tiles: ['water', 'water', 'water', 'land'],
@@ -17,8 +18,8 @@ describe('validateMapDefinition', () => {
   it('accepts and normalizes a valid definition', () => {
     const result = validateMapDefinition(VALID)
     expect(result.ok).toBe(true)
-    expect(result.map).toEqual(VALID)
-    expect(result.errors).toEqual([])
+    expect('map' in result ? result.map : undefined).toEqual(VALID)
+    expect('errors' in result ? result.errors : undefined).toEqual([])
   })
 
   it('rejects non-objects', () => {
@@ -30,7 +31,7 @@ describe('validateMapDefinition', () => {
   it('rejects a tiles length that does not match width × height', () => {
     const result = validateMapDefinition({ ...VALID, tiles: ['water'] })
     expect(result.ok).toBe(false)
-    expect(result.errors.join(' ')).toContain('4 entries')
+    expect('errors' in result ? result.errors.join(' ') : '').toContain('4 entries')
   })
 
   it('rejects unknown tile kinds', () => {
@@ -45,7 +46,7 @@ describe('validateMapDefinition', () => {
       decorations: [{ x: 0, y: 0, kind: 'dragon' }]
     })
     expect(result.ok).toBe(false)
-    expect(result.errors.join(' ')).toContain('decorations[0]')
+    expect('errors' in result ? result.errors.join(' ') : '').toContain('decorations[0]')
   })
 
   it('rejects malformed decoration counts', () => {
@@ -57,6 +58,6 @@ describe('validateMapDefinition', () => {
   it('omits optional fields that are absent', () => {
     const result = validateMapDefinition({ width: 1, height: 1, tiles: ['land'], resources: [] })
     expect(result.ok).toBe(true)
-    expect(result.map).toEqual({ width: 1, height: 1, tiles: ['land'], resources: [] })
+    expect('map' in result ? result.map : undefined).toEqual({ width: 1, height: 1, tiles: ['land'], resources: [] })
   })
 })

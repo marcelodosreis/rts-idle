@@ -1,5 +1,6 @@
 import { type MatchConfig, PROTOCOL_VERSION } from '@rts/protocol'
 import type { GameRenderer, RenderFrame } from '@rts/renderer'
+import type { MapDefinition } from '@rts/shared'
 import { describe, expect, it, vi } from 'vitest'
 import { createMatchRendererLifecycle } from '../../../apps/web/src/features/match/services/match-session-renderer'
 import { createMatchSessionRuntime } from '../../../apps/web/src/features/match/services/match-session-runtime'
@@ -9,26 +10,47 @@ function fakeRenderer(mount: () => Promise<void>): GameRenderer & { presented: R
     presented: [] as RenderFrame[],
     disposed: 0,
     mount,
-    present(nextFrame: RenderFrame) {
+    present(nextFrame: RenderFrame): void {
       value.presented.push(nextFrame)
     },
-    resize: vi.fn(),
+    resize: vi.fn((_: number, __: number): void => undefined),
     dispose() {
       value.disposed += 1
     },
-    setSelection: vi.fn(),
-    getSelection: () => [],
+    setSelection: vi.fn((_: readonly number[]): void => undefined),
+    getSelection: (): readonly number[] => [],
     getSelectionBoxState: () => ({ visible: false, x: 0, y: 0, width: 0, height: 0 }),
-    getUnitPositions: () => new Map(),
-    getUnitAnimationFrame: () => null,
-    getUnitHealth: () => null,
-    getUnitSpriteState: () => null,
+    getUnitPositions: (): ReadonlyMap<number, { readonly x: number; readonly y: number }> => new Map(),
+    getUnitAnimationFrame: (_: number): number | null => null,
+    getUnitHealth: (_: number): { readonly current: number; readonly max: number } | null => null,
+    getUnitSpriteState: (_: number): null => null,
     getZoom: () => 1,
-    setInputProfile: vi.fn(),
-    getPing: () => null,
-    moveCamera: vi.fn(),
+    setInputProfile: vi.fn((_: 'mouse' | 'trackpad'): void => undefined),
+    getPing: (): { readonly x: number; readonly y: number } | null => null,
+    setSelectedRallyProducer: vi.fn((_: number | null): void => undefined),
+    setSelectedRallyPoint: vi.fn((_: { readonly x: number; readonly y: number } | null): void => undefined),
+    getResourceStats: () => ({
+      definitions: 0,
+      active: 0,
+      depleted: 0,
+      visibleChunks: 0,
+      materializedChunks: 0,
+      activeVisuals: 0,
+      stumps: 0
+    }),
+    moveCamera: vi.fn((_: number, __: number): void => undefined),
     worldToScreen: (x: number, y: number) => ({ x, y }),
-    setBuildPreview: vi.fn()
+    setBuildPreview: vi.fn(
+      (
+        _: null | {
+          readonly x: number
+          readonly y: number
+          readonly width: number
+          readonly height: number
+          readonly valid: boolean
+        }
+      ): void => undefined
+    )
   }
   return value
 }
@@ -37,7 +59,7 @@ const config: MatchConfig = {
   type: 'match_config',
   protocolVersion: PROTOCOL_VERSION,
   resumeToken: 'resume-token',
-  map: { width: 2, height: 2, tiles: ['land', 'land', 'land', 'land'] },
+  map: { width: 2, height: 2, tiles: ['land', 'land', 'land', 'land'], resources: [] } satisfies MapDefinition,
   buildings: [],
   production: [],
   research: [],

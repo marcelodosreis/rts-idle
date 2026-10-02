@@ -10,13 +10,23 @@ const WHITE = 0xffffff
 function fillColors(graphic: Graphics): readonly number[] {
   return graphic.context.instructions
     .filter((instruction) => instruction.action === 'fill')
-    .map((instruction) => instruction.data.style.color)
+    .map((instruction) => {
+      const style = instruction.data.style
+      return typeof style === 'object' && style !== null && 'color' in style && typeof style.color === 'number'
+        ? style.color
+        : 0
+    })
 }
 
 function fillAlphas(graphic: Graphics): readonly number[] {
   return graphic.context.instructions
     .filter((instruction) => instruction.action === 'fill')
-    .map((instruction) => instruction.data.style.alpha)
+    .map((instruction) => {
+      const style = instruction.data.style
+      return typeof style === 'object' && style !== null && 'alpha' in style && typeof style.alpha === 'number'
+        ? style.alpha
+        : 0
+    })
 }
 
 function strokeWidths(graphic: Graphics): readonly number[] {

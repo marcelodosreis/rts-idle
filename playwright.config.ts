@@ -51,7 +51,7 @@ export default defineConfig({
         VITE_E2E_TRANSPORT_HOOK: 'true'
       },
       url: `http://localhost:${WEB_PORT}`,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: process.env.CI !== 'true',
       stdout: 'ignore',
       stderr: 'pipe'
     },
@@ -59,7 +59,7 @@ export default defineConfig({
       command: 'pnpm --filter @rts/server dev',
       env: { ...process.env, PORT: String(SERVER_PORT) },
       url: `http://localhost:${SERVER_PORT}/health`,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: process.env.CI !== 'true',
       stdout: 'ignore',
       stderr: 'pipe'
     }

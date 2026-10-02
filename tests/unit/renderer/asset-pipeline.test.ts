@@ -1,4 +1,5 @@
 import { AssetLibrary, createAnimation, sliceStrip } from '@rts/renderer'
+import { toAssetKey } from '@rts/shared'
 import { Assets, Rectangle, Texture, TextureSource } from 'pixi.js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
@@ -38,7 +39,7 @@ describe('createAnimation', () => {
     const frames = sliceStrip(strip, 192, 192, 4)
     const sprite = createAnimation(
       {
-        key: 'x',
+        key: toAssetKey('x')!,
         file: 'x.png',
         kind: 'strip',
         cellW: 192,

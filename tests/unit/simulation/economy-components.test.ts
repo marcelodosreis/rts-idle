@@ -24,7 +24,7 @@ describe('economy ECS state', () => {
       builderId: null,
       footprint: { x: 0, y: 0, width: 2, height: 2 }
     })
-    world.store(Cargo).set(START_ENTITY_ID, { amount: 4, capacity: 10 })
+    world.store(Cargo).set(START_ENTITY_ID, { amount: 4, capacity: 10, resourceType: null })
     world.store(Orders).set(START_ENTITY_ID, {
       queue: [
         {
@@ -68,7 +68,7 @@ describe('economy ECS state', () => {
       builderId: null,
       footprint: { x: 0, y: 0, width: 2, height: 2 }
     })
-    world.store(Cargo).set(START_ENTITY_ID, { amount: 10, capacity: 10 })
+    world.store(Cargo).set(START_ENTITY_ID, { amount: 10, capacity: 10, resourceType: null })
 
     world.removeEntity(START_ENTITY_ID)
 

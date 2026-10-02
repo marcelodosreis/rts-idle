@@ -4,6 +4,7 @@ import {
   type MapDefinition,
   PLAYER_IDS,
   placementBoundsFromMap,
+  type ResearchType,
   START_ENTITY_ID
 } from '@rts/shared'
 import {
@@ -132,7 +133,7 @@ export function createDemoSession(
       id,
       defeated: false,
       resources: createPlayerResources({ GOLD: id === 0 ? (scenario.startingGold ?? 0) : 0 }),
-      completedResearch: [],
+      completedResearch: [] as readonly ResearchType[],
       highestCastleTierReached: scenario.startingCastleTier ?? 1
     }))
   })

@@ -60,6 +60,6 @@ export function placementFor(query: PlacementQuery): MatchPlacement | null {
     height,
     buildingType,
     valid: result.ok,
-    reason: result.ok ? null : PLACEMENT_REASONS[result.reason]
+    reason: 'reason' in result ? PLACEMENT_REASONS[result.reason] : null
   }
 }

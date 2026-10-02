@@ -38,7 +38,7 @@ function componentExports(source: string): number {
 
 function pageFeatureImports(): readonly string[] {
   return sourceFiles(join(WEB_SOURCE, 'pages'))
-    .flatMap((file) => readFileSync(file, 'utf8').matchAll(/from ['"](@\/features\/[^'"]+)['"]/g))
+    .flatMap((file) => [...readFileSync(file, 'utf8').matchAll(/from ['"](@\/features\/[^'"]+)['"]/g)])
     .map((match) => match[1])
     .filter((specifier): specifier is string => specifier !== undefined)
 }

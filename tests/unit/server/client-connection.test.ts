@@ -2,10 +2,10 @@ import { isMatchConfig, isSnapshotMessage, type MatchConfig, PROTOCOL_VERSION } 
 import { GameSession, MAX_PENDING_COMMANDS_PER_SESSION } from '@rts/server'
 import { createRulesIdentity, deserializeState } from '@rts/simulation'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { WebSocket } from 'ws'
+import type { RawData } from 'ws'
 import { ClientConnection, RECONNECT_GRACE_MS } from '../../../apps/server/src/transport/client-connection.js'
 
-type Listener = (...args: readonly unknown[]) => void
+type Listener = (...args: readonly never[]) => void
 
 class FakeSocket {
   readonly OPEN = 1
@@ -13,6 +13,8 @@ class FakeSocket {
   readonly messages: string[] = []
   private readonly listeners = new Map<string, Listener[]>()
 
+  on(event: 'message', listener: (raw: RawData) => void): this
+  on(event: 'close', listener: () => void): this
   on(event: string, listener: Listener): this {
     this.listeners.set(event, [...(this.listeners.get(event) ?? []), listener])
     return this
@@ -28,7 +30,7 @@ class FakeSocket {
 
   emit(event: string, ...args: readonly unknown[]): void {
     for (const listener of this.listeners.get(event) ?? []) {
-      listener(...args)
+      listener(...(args as never[]))
     }
   }
 }
@@ -65,7 +67,7 @@ describe('client connection reconnect', () => {
   it('keeps advancing while disconnected and resumes from the current full snapshot', () => {
     vi.useFakeTimers()
     const firstSocket = new FakeSocket()
-    const first = new ClientConnection(firstSocket as WebSocket)
+    const first = new ClientConnection(firstSocket)
     first.start()
     firstSocket.emit('message', JSON.stringify(request()))
     const config = latestConfig(firstSocket)
@@ -74,7 +76,7 @@ describe('client connection reconnect', () => {
     vi.advanceTimersByTime(100)
 
     const reconnectSocket = new FakeSocket()
-    const reconnect = new ClientConnection(reconnectSocket as WebSocket)
+    const reconnect = new ClientConnection(reconnectSocket)
     reconnect.start()
     reconnectSocket.emit('message', JSON.stringify({ ...request(), resumeToken: config.resumeToken }))
 
@@ -89,7 +91,7 @@ describe('client connection reconnect', () => {
   it('resends a full snapshot for a metadata-based resync request', () => {
     vi.useFakeTimers()
     const socket = new FakeSocket()
-    const connection = new ClientConnection(socket as WebSocket)
+    const connection = new ClientConnection(socket)
     connection.start()
     socket.emit('message', JSON.stringify(request()))
 
@@ -119,7 +121,7 @@ describe('client connection reconnect', () => {
   it('expires a disconnected match after the reconnect grace window', () => {
     vi.useFakeTimers()
     const firstSocket = new FakeSocket()
-    const first = new ClientConnection(firstSocket as WebSocket)
+    const first = new ClientConnection(firstSocket)
     first.start()
     firstSocket.emit('message', JSON.stringify(request()))
     const config = latestConfig(firstSocket)
@@ -128,7 +130,7 @@ describe('client connection reconnect', () => {
     vi.advanceTimersByTime(RECONNECT_GRACE_MS)
 
     const expiredSocket = new FakeSocket()
-    const expired = new ClientConnection(expiredSocket as WebSocket)
+    const expired = new ClientConnection(expiredSocket)
     expired.start()
     expiredSocket.emit('message', JSON.stringify({ ...request(), resumeToken: config.resumeToken }))
 
@@ -138,14 +140,14 @@ describe('client connection reconnect', () => {
   it('removes command authority from a superseded socket', () => {
     vi.useFakeTimers()
     const firstSocket = new FakeSocket()
-    const first = new ClientConnection(firstSocket as WebSocket)
+    const first = new ClientConnection(firstSocket)
     first.start()
     firstSocket.emit('message', JSON.stringify(request()))
     const config = latestConfig(firstSocket)
     const submit = vi.spyOn(GameSession.prototype, 'submit')
 
     const secondSocket = new FakeSocket()
-    const second = new ClientConnection(secondSocket as WebSocket)
+    const second = new ClientConnection(secondSocket)
     second.start()
     secondSocket.emit('message', JSON.stringify({ ...request(), resumeToken: config.resumeToken }))
 

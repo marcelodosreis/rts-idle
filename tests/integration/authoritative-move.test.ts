@@ -1,9 +1,9 @@
 import { GameSession } from '@rts/server'
-import { tilesToFixed } from '@rts/shared'
+import { type PlayerId, tilesToFixed } from '@rts/shared'
 import { describe, expect, it } from 'vitest'
 import { buildMoveCommand, SEEDS, TEST_IDENTITY, worldWithOwners } from '../fixtures/index.js'
 
-function sessionWithUnits(owners: readonly number[]): GameSession {
+function sessionWithUnits(owners: readonly PlayerId[]): GameSession {
   return GameSession.create({
     seed: SEEDS.integration.session,
     identity: TEST_IDENTITY,

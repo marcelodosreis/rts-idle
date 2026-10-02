@@ -16,7 +16,11 @@ export function parsePostmortemFrontMatter(content: string): PostmortemFrontMatt
     return null
   }
 
-  const lines = match[1].split('\n')
+  const frontMatter = match[1]
+  if (frontMatter === undefined) {
+    return null
+  }
+  const lines = frontMatter.split('\n')
   const fields = new Map<string, unknown>()
   let currentKey = ''
   let inArray = false

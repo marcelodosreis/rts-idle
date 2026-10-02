@@ -1,4 +1,4 @@
-import type { AssetEntry } from '@rts/shared'
+import { type AssetEntry, toAssetKey } from '@rts/shared'
 import { describe, expect, it } from 'vitest'
 import {
   buildCatalog,
@@ -6,9 +6,11 @@ import {
   searchKeys
 } from '../../../apps/web/src/features/laboratory/browser/lib/catalog'
 
-function entry(partial: Partial<AssetEntry>): AssetEntry {
+type AssetOverrides = Omit<Partial<AssetEntry>, 'key'> & { readonly key?: string }
+
+function entry(partial: AssetOverrides): AssetEntry {
   return {
-    key: partial.key ?? 'x',
+    key: toAssetKey(partial.key ?? 'x')!,
     file: partial.file ?? 'x.png',
     kind: partial.kind ?? 'static',
     cellW: partial.cellW ?? 64,

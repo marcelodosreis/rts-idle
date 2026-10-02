@@ -27,7 +27,7 @@ export interface DressingConfig {
   /** Max count per kind; `0` (or absent) disables the kind. */
   readonly counts: Readonly<Partial<Record<DressingKind, number>>>
   /** Variant count per kind (drives the cyclic variant pick). */
-  readonly variants: Readonly<Record<DressingKind, number>>
+  readonly variants: Readonly<Partial<Record<DressingKind, number>>>
 }
 
 export const DEFAULT_DRESSING_VARIANTS: Readonly<Record<DressingKind, number>> = {

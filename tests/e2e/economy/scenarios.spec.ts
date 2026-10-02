@@ -127,14 +127,20 @@ test('offensive default enemies eventually damage a player pawn', async ({ page 
     return entry === undefined ? null : Number(entry[0])
   })
   expect(workerId).not.toBeNull()
+  if (workerId === null) {
+    throw new Error('default scenario did not expose a worker')
+  }
   const initial = await page.evaluate((id) => window.__rtsDebug?.getUnitHealth(id) ?? null, workerId)
   expect(initial).not.toBeNull()
+  if (initial === null) {
+    throw new Error('default scenario worker has no health state')
+  }
 
   await expect
     .poll(() => page.evaluate((id) => window.__rtsDebug?.getUnitHealth(id)?.current ?? 0, workerId), {
       timeout: 15_000
     })
-    .toBeLessThan(initial!.current)
+    .toBeLessThan(initial.current)
 })
 
 test('switching the scenario in the top bar reloads into the new match', async ({ page }) => {

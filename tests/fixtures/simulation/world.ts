@@ -47,6 +47,7 @@ export function worldWithCombatUnits(owners: readonly PlayerId[], options: Comba
     world.store(Owner).set(allocated.id, { owner })
     world.store(Health).set(allocated.id, { current: stats.maxHp, max: stats.maxHp })
     world.store(Combat).set(allocated.id, {
+      armor: stats.armor,
       damage: stats.damage,
       rangeTiles: stats.rangeTiles,
       cooldownTicks: stats.cooldownTicks,

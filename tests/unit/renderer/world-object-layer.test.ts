@@ -1,5 +1,6 @@
 import { BARRACKS_BUILDING, CASTLE_BUILDING } from '@rts/game-data'
 import { BUILDING_GEOMETRY, fixedToRenderPixels } from '@rts/shared'
+import type { Container as ContainerType } from 'pixi.js'
 import { describe, expect, it } from 'vitest'
 import { buildingVisualStyle } from '../../../packages/renderer/src/world/building-visual-style.js'
 
@@ -9,7 +10,7 @@ if (typeof navigator === 'undefined') {
 const { Container } = await import('pixi.js')
 const { WorldObjectLayer } = await import('../../../packages/renderer/src/world/object-layer.js')
 
-function layerContainers(): { readonly worldObjects: Container; readonly interaction: Container } {
+function layerContainers(): { readonly worldObjects: ContainerType; readonly interaction: ContainerType } {
   return { worldObjects: new Container(), interaction: new Container() }
 }
 
@@ -30,7 +31,7 @@ describe('WorldObjectLayer construction anchors', () => {
       totalTicks: 100
     }
 
-    layer.present([construction], [])
+    layer.present([construction])
     const foundation = layers.worldObjects.children[0]!
     const foundationPosition = { x: foundation.position.x, y: foundation.position.y }
     expect(foundationPosition).toEqual({ x: 192, y: 128 })
@@ -56,11 +57,11 @@ describe('WorldObjectLayer construction anchors', () => {
     expect(preview.getLocalBounds().width).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.CASTLE.visualSize.width) + 4)
     expect(preview.getLocalBounds().height).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.CASTLE.visualSize.height) + 4)
 
-    layer.present([construction], [])
+    layer.present([construction])
     expect(layers.interaction.children).toEqual([preview])
 
     layer.setBuildPreview(null)
-    layer.present([{ ...construction, status: 'COMPLETED', progressTicks: 100 }], [])
+    layer.present([{ ...construction, status: 'COMPLETED', progressTicks: 100 }])
     const completed = layers.worldObjects.children[0]!
     expect({ x: completed.position.x, y: completed.position.y }).toEqual(foundationPosition)
     expect(completed.getLocalBounds().width).toBeCloseTo(foundationWidth, 0)
@@ -71,22 +72,19 @@ describe('WorldObjectLayer construction anchors', () => {
   it('uses a tile-aligned Barracks canvas for geometry', () => {
     const layers = layerContainers()
     const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
-    layer.present(
-      [
-        {
-          id: 7,
-          buildingType: 'BARRACKS',
-          x: 0,
-          y: 0,
-          owner: 0,
-          footprint: BARRACKS_BUILDING.footprint,
-          status: 'COMPLETED',
-          progressTicks: 100,
-          totalTicks: 100
-        }
-      ],
-      []
-    )
+    layer.present([
+      {
+        id: 7,
+        buildingType: 'BARRACKS',
+        x: 0,
+        y: 0,
+        owner: 0,
+        footprint: BARRACKS_BUILDING.footprint,
+        status: 'COMPLETED',
+        progressTicks: 100,
+        totalTicks: 100
+      }
+    ])
     const barracks = layers.worldObjects.children[0]!
     expect(barracks.getLocalBounds().width).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BARRACKS.visualSize.width) + 4)
     expect(barracks.getLocalBounds().height).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BARRACKS.visualSize.height) + 4)
@@ -95,34 +93,31 @@ describe('WorldObjectLayer construction anchors', () => {
   it('draws the training progress bar above a completed producer', () => {
     const layers = layerContainers()
     const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
-    layer.present(
-      [
-        {
-          id: 8,
-          buildingType: 'BARRACKS',
-          x: 0,
-          y: 0,
-          owner: 0,
-          footprint: BARRACKS_BUILDING.footprint,
-          status: 'COMPLETED',
-          progressTicks: 100,
-          totalTicks: 100,
-          production: {
-            queue: [
-              {
-                unitKind: 'WARRIOR',
-                cost: { GOLD: 50 },
-                reservedSupply: 1,
-                progressTicks: 30,
-                totalTicks: 60,
-                status: 'ACTIVE'
-              }
-            ]
-          }
+    layer.present([
+      {
+        id: 8,
+        buildingType: 'BARRACKS',
+        x: 0,
+        y: 0,
+        owner: 0,
+        footprint: BARRACKS_BUILDING.footprint,
+        status: 'COMPLETED',
+        progressTicks: 100,
+        totalTicks: 100,
+        production: {
+          queue: [
+            {
+              unitKind: 'warrior',
+              cost: { GOLD: 50 },
+              reservedSupply: 1,
+              progressTicks: 30,
+              totalTicks: 60,
+              status: 'ACTIVE'
+            }
+          ]
         }
-      ],
-      []
-    )
+      }
+    ])
 
     expect(layers.worldObjects.children[0]!.getLocalBounds().y).toBeLessThan(0)
   })
@@ -130,24 +125,21 @@ describe('WorldObjectLayer construction anchors', () => {
   it('draws the construction progress bar above a Castle during tier upgrade', () => {
     const layers = layerContainers()
     const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
-    layer.present(
-      [
-        {
-          id: 10,
-          buildingType: 'CASTLE',
-          x: 0,
-          y: 0,
-          owner: 0,
-          footprint: CASTLE_BUILDING.footprint,
-          status: 'COMPLETED',
-          progressTicks: 100,
-          totalTicks: 100,
-          tier: 1,
-          tierUpgrade: { progressTicks: 40, totalTicks: 100 }
-        }
-      ],
-      []
-    )
+    layer.present([
+      {
+        id: 10,
+        buildingType: 'CASTLE',
+        x: 0,
+        y: 0,
+        owner: 0,
+        footprint: CASTLE_BUILDING.footprint,
+        status: 'COMPLETED',
+        progressTicks: 100,
+        totalTicks: 100,
+        tier: 1,
+        tierUpgrade: { progressTicks: 40, totalTicks: 100 }
+      }
+    ])
 
     expect(layers.worldObjects.children[0]!.getLocalBounds().y).toBeLessThan(0)
   })
@@ -155,24 +147,21 @@ describe('WorldObjectLayer construction anchors', () => {
   it('draws a health bar above a damaged building', () => {
     const layers = layerContainers()
     const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
-    layer.present(
-      [
-        {
-          id: 9,
-          buildingType: 'CASTLE',
-          x: 0,
-          y: 0,
-          owner: 0,
-          footprint: CASTLE_BUILDING.footprint,
-          status: 'COMPLETED',
-          progressTicks: 100,
-          totalTicks: 100,
-          hp: 250,
-          maxHp: 500
-        }
-      ],
-      []
-    )
+    layer.present([
+      {
+        id: 9,
+        buildingType: 'CASTLE',
+        x: 0,
+        y: 0,
+        owner: 0,
+        footprint: CASTLE_BUILDING.footprint,
+        status: 'COMPLETED',
+        progressTicks: 100,
+        totalTicks: 100,
+        hp: 250,
+        maxHp: 500
+      }
+    ])
 
     expect(layers.worldObjects.children[0]!.getLocalBounds().y).toBeLessThan(-10)
   })

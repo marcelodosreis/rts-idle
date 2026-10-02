@@ -1,3 +1,4 @@
+import type { CommandIntent } from '@rts/shared'
 import { Cargo, createSimulation, Kind, type ScheduledCommand } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { buildMoveCommand, SEEDS, TEST_IDENTITY, worldWithOwners } from '../fixtures/index.js'
@@ -46,11 +47,11 @@ describe('command schema (P1.01)', () => {
   })
 
   it('exposes every command type on the intent union', () => {
-    const types = [
-      { type: 'MOVE', payload: { unitIds: [], x: 0, y: 0 } },
-      { type: 'STOP', payload: { unitIds: [] } },
-      { type: 'HOLD', payload: { unitIds: [] } },
-      { type: 'PATROL', payload: { unitIds: [], x: 0, y: 0 } },
+    const types: readonly CommandIntent[] = [
+      { type: 'MOVE', payload: { unitIds: [] as number[], x: 0, y: 0 } },
+      { type: 'STOP', payload: { unitIds: [] as number[] } },
+      { type: 'HOLD', payload: { unitIds: [] as number[] } },
+      { type: 'PATROL', payload: { unitIds: [] as number[], x: 0, y: 0 } },
       { type: 'ATTACK', payload: { unitIds: [], targetId: 1 } },
       { type: 'ATTACK_MOVE', payload: { unitIds: [], x: 0, y: 0 } },
       { type: 'GATHER', payload: { unitIds: [], resourceId: 1 } },

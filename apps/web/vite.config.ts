@@ -4,11 +4,12 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 const developmentPort = Number(process.env.VITE_DEV_PORT ?? '5173')
+const host = process.env.HOST
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    host: process.env.HOST,
+    ...(host === undefined ? {} : { host }),
     port: developmentPort,
     strictPort: true
   },

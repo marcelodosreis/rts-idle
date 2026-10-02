@@ -46,7 +46,8 @@ describe('mapToTerrainSceneInput', () => {
       height: 2,
       tiles: ['water', 'water', 'water', 'land'],
       decorationSeed: 42,
-      decorationCounts: { bush: 3, rock: 1 }
+      decorationCounts: { bush: 3, rock: 1 },
+      resources: []
     }
     expect(mapToTerrainSceneInput(map).dressing).toEqual({
       seed: 42,

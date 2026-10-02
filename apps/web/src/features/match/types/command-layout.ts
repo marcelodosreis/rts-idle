@@ -40,7 +40,7 @@ interface CommandLayoutCatalog {
   readonly construction: CommandLayout
 }
 
-export const COMMAND_LAYOUTS = {
+export const COMMAND_LAYOUTS: CommandLayoutCatalog = {
   empty: [null, null, null, null, null, null, null, null, null],
   unit: ['stop', 'hold', 'patrol', 'attack', 'attack-move', 'contextual', null, null, null],
   worker: ['stop', 'hold', 'patrol', 'attack', 'attack-move', 'gather', 'repair', 'build', 'deposit'],

@@ -44,7 +44,7 @@ type RendererPublicTypeAssertions = [
   Assert<RendererOptions extends { worldWidth: number; worldHeight: number } ? true : false>,
   Assert<RenderFrame extends { tick: number; units: readonly RenderUnit[] } ? true : false>,
   Assert<RenderBuilding extends object ? true : false>,
-  Assert<RenderResource extends { id: number; remaining: number } ? true : false>,
+  Assert<RenderResource extends { resourceId: number; remaining: number } ? true : false>,
   Assert<InputProfile extends string ? true : false>,
   Assert<WorldInteraction extends { type: string } ? true : false>
 ]
