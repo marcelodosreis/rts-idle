@@ -4,7 +4,11 @@ import type { CanonicalWriter } from '../canonical/writer.js'
 import type { Order } from '../contracts/orders.js'
 import { buildingTypeFromTag, buildingTypeTag, kindFromTag, kindTag } from './codecs.js'
 
-export interface ComponentType<T> {
+export interface ComponentKey {
+  readonly name: string
+}
+
+export interface ComponentType<T> extends ComponentKey {
   readonly name: string
   readonly encode: (writer: CanonicalWriter, value: T) => void
   readonly decode: (reader: CanonicalReader) => T

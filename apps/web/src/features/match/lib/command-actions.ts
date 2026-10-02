@@ -36,6 +36,8 @@ import {
   trainingBlockReason,
   upgradeBlockReason
 } from './command-state'
+import { resourceCostLabel } from './resource-cost'
+import { castleTierLabel, castleTierUnavailableLabel, romanTier } from './tier-label'
 
 const BUILDING_ICONS: Readonly<Record<BuildingType, LucideIcon>> = {
   CASTLE: Castle,
@@ -62,8 +64,8 @@ const RESEARCH_LABELS: Readonly<Record<ResearchType, string>> = {
 }
 
 export function commonUnitActions(props: CommandBarProps, blockedReason?: string): readonly HudCommandAction[] {
-  const monksSelected = props.selection.some((unit) => unit.kind === 'monk')
-  const attackReason = blockedReason ?? (monksSelected ? 'Monks cannot attack.' : undefined)
+  const nonAttackersSelected = props.selection.some((unit) => unit.canAttack === false)
+  const attackReason = blockedReason ?? (nonAttackersSelected ? 'Monks cannot attack.' : undefined)
   return [
     {
       id: 'stop',
@@ -168,7 +170,7 @@ export function workerActions(
   ]
 }
 
-export function monkAction(props: CommandBarProps, blockedReason?: string): HudCommandAction {
+export function healAction(props: CommandBarProps, blockedReason?: string): HudCommandAction {
   const cooldown = props.selection[0]?.healCooldownRemaining ?? 0
   return {
     id: 'contextual',
@@ -193,6 +195,7 @@ export function buildingRootActions(
     return []
   }
   const options = props.production.filter((entry) => entry.producer === building.buildingType)
+  const definition = props.buildings.find((entry) => entry.type === building.buildingType)
   const actions: HudCommandAction[] = []
   if (options.length > 0) {
     actions.push({
@@ -203,7 +206,7 @@ export function buildingRootActions(
       onActivate: () => open('train')
     })
   }
-  if (building.buildingType === 'MONASTERY' && props.research.length > 0) {
+  if (definition?.capabilities?.canResearch === true && props.research.length > 0) {
     actions.push({
       id: 'research',
       label: 'Research',
@@ -212,7 +215,7 @@ export function buildingRootActions(
       onActivate: () => open('research')
     })
   }
-  if (building.buildingType === 'CASTLE') {
+  if (definition?.capabilities?.canUpgrade === true) {
     actions.push({
       id: 'upgrade',
       label: 'Upgrade',
@@ -302,7 +305,7 @@ function buildActions(props: CommandBarProps): readonly HudCommandAction[] {
     icon: BUILDING_ICONS[entry.type],
     blockedReason: buildBlockReason(entry, props.resources),
     blockedTarget: blockedFeedbackTarget(buildBlockReason(entry, props.resources)),
-    cost: `${entry.cost.GOLD ?? 0} gold`,
+    cost: resourceCostLabel(entry.cost),
     time: `${Math.ceil(entry.constructionTicks / 20)}s`,
     active: buildingTypeForMode(props.mode) === entry.type,
     feedbackKind: 'arm',
@@ -325,7 +328,7 @@ function trainingActions(props: CommandBarProps): readonly HudCommandAction[] {
       icon: UNIT_ICONS[entry.unitKind],
       blockedReason: trainingBlockReason(entry, props.resources, queueLength),
       blockedTarget: blockedFeedbackTarget(trainingBlockReason(entry, props.resources, queueLength)),
-      cost: `${entry.cost.GOLD ?? 0} gold · ${entry.supply} supply`,
+      cost: `${resourceCostLabel(entry.cost)} · ${entry.supply} supply`,
       time: `${Math.ceil(entry.trainingTicks / 20)}s`,
       feedbackKind: 'submit',
       onActivate: () => props.onTrain(entry.unitKind)
@@ -345,7 +348,7 @@ function researchActions(props: CommandBarProps): readonly HudCommandAction[] {
     icon: BookOpen,
     blockedReason: researchBlockReason(entry, props.resources, queueLength),
     blockedTarget: blockedFeedbackTarget(researchBlockReason(entry, props.resources, queueLength)),
-    cost: `${entry.cost.GOLD ?? 0} gold`,
+    cost: resourceCostLabel(entry.cost),
     time: `${Math.ceil(entry.researchTicks / 20)}s`,
     feedbackKind: 'submit',
     onActivate: () => props.onResearch(building.id, entry.researchType)
@@ -357,22 +360,26 @@ function upgradeActions(props: CommandBarProps): readonly HudCommandAction[] {
   if (building === null) {
     return []
   }
-  const cost = props.buildings.find((entry) => entry.type === 'CASTLE')?.cost.GOLD ?? 0
-  const castleIiiUnavailable = building.tier === 2
+  const definition = props.buildings.find((entry) => entry.type === building.buildingType)
+  const cost = definition?.cost ?? {}
+  const nextTier = (building.tier ?? 1) + 1
+  const maximumTierReached = (definition?.maximumCastleTier ?? Number.POSITIVE_INFINITY) <= (building.tier ?? 1)
   const upgradeInProgress = building.tierUpgrade != null
   const actionBlockReason =
     (upgradeInProgress ? 'Castle upgrade in progress.' : undefined) ??
-    (castleIiiUnavailable ? 'Castle III content is unavailable.' : undefined) ??
+    (maximumTierReached ? castleTierUnavailableLabel(nextTier) : undefined) ??
     upgradeBlockReason(building, cost, props.resources)
   return [
     {
       id: 'upgrade-castle',
-      label: castleIiiUnavailable ? 'Castle III' : 'Castle II',
-      description: castleIiiUnavailable ? 'Castle III content is unavailable.' : 'Upgrade this Castle to tier II.',
+      label: `Castle ${romanTier(nextTier)}`,
+      description: maximumTierReached
+        ? `This ${castleTierLabel(building.tier ?? 1)} has reached its maximum tier.`
+        : `Upgrade this Castle to tier ${romanTier(nextTier)}.`,
       icon: ArrowUpCircle,
       blockedReason: actionBlockReason,
-      blockedTarget: castleIiiUnavailable || upgradeInProgress ? 'command' : blockedFeedbackTarget(actionBlockReason),
-      cost: `${cost} gold`,
+      blockedTarget: maximumTierReached || upgradeInProgress ? 'command' : blockedFeedbackTarget(actionBlockReason),
+      cost: resourceCostLabel(cost),
       feedbackKind: 'submit',
       onActivate: () => props.onUpgradeCastle(building.id)
     }

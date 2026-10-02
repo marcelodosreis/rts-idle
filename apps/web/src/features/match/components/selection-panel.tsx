@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Progress } from '@/shared/ui/progress'
 import { useTimedValue } from '../hooks/use-timed-value'
 import { constructionStatusLine, resourceRemainingLine } from '../lib/selection-panel-logic'
+import { castleTierLabel } from '../lib/tier-label'
 import type { HudConstruction, HudResource, HudSelectionUnit } from '../types/hud-types'
 import type { HudFeedbackTarget } from './hud-context-feedback'
 import { ProductionPanel } from './production-panel'
@@ -26,7 +27,7 @@ function percentage(value: number, maximum: number): number {
 
 function constructionLabel(construction: HudConstruction): string {
   if (construction.buildingType === 'CASTLE') {
-    return `Castle ${construction.tier === 2 ? 'II' : 'I'}`
+    return castleTierLabel(construction.tier ?? 1)
   }
   if (construction.buildingType === 'BARRACKS') {
     return 'Barracks'

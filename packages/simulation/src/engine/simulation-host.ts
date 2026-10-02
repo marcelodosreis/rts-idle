@@ -1,7 +1,10 @@
+import type { EntityId } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import type { RulesIdentity, TickResult } from '../contracts/simulation.js'
+import type { WorldChangeSet } from '../ecs/world.js'
 import type { ResourceAmount } from '../resources/resource-state.js'
 import type { GameState, Phase } from '../state/state.js'
+import type { SimulationObservation } from './observation.js'
 
 /** A full serialized state plus its canonical hash (ADR-002/011). */
 export interface SimulationSnapshot {
@@ -29,4 +32,7 @@ export interface SimulationHost {
    * resources changed since the last `step` (O(changed)).
    */
   resources(complete: boolean): readonly ResourceAmount[]
+  observe(completeResources: boolean, entityIds?: readonly EntityId[]): SimulationObservation
+  changeCursor(): number
+  changesSince(cursor: number): WorldChangeSet
 }

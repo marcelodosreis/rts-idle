@@ -1,4 +1,4 @@
-import type { MatchConfig, SnapshotMessage } from '@rts/protocol'
+import { type MatchConfig, PROTOCOL_VERSION, type SnapshotDeltaMessage, type SnapshotMessage } from '@rts/protocol'
 import { describe, expect, it, vi } from 'vitest'
 import { createMatchSessionHandlers } from '../../../apps/web/src/features/match/services/match-session-handlers'
 import { createMatchSessionRuntime } from '../../../apps/web/src/features/match/services/match-session-runtime'
@@ -7,6 +7,8 @@ function snapshot(overrides: Partial<SnapshotMessage> = {}): SnapshotMessage {
   return {
     type: 'snapshot',
     tick: 4,
+    viewSequence: 1,
+    viewHash: 'a'.repeat(64),
     phase: 'RUNNING',
     units: [{ id: 1, x: 10, y: 20, owner: 0, kind: 'pawn', orderState: 'moving' }],
     buildings: [],
@@ -59,6 +61,95 @@ describe('match session handlers', () => {
     })
     expect(callbacks.appendLog).toHaveBeenCalledWith('event', 'damageDealt: 1 -3 HP (7 left)')
     expect(callbacks.present).toHaveBeenCalledOnce()
+  })
+
+  it('applies entity and resource changes from an authoritative delta', () => {
+    const { runtime, callbacks, handlers } = harness()
+    handlers.onSnapshot(snapshot())
+    const delta: SnapshotDeltaMessage = {
+      type: 'snapshot_delta',
+      baseTick: 4,
+      baseSequence: 1,
+      baseHash: 'a'.repeat(64),
+      tick: 5,
+      viewSequence: 2,
+      viewHash: 'b'.repeat(64),
+      phase: 'RUNNING',
+      units: [{ id: 1, x: 20, y: 30, owner: 0, kind: 'pawn', orderState: 'idle' }],
+      removedUnitIds: [],
+      buildings: [],
+      removedBuildingIds: [],
+      resources: [{ resourceId: 7, remaining: 25 }],
+      resourcesComplete: false,
+      players: [{ id: 0, defeated: false, resources: { GOLD: 11, WOOD: 0 }, usedSupply: 1, supplyCap: 5 }],
+      events: []
+    }
+    handlers.onSnapshotDelta?.(delta)
+    expect(runtime.lastTick).toBe(5)
+    expect(runtime.snapshot?.viewSequence).toBe(2)
+    expect(runtime.snapshot?.viewHash).toBe('b'.repeat(64))
+    expect(runtime.unitPositions.get(1)).toEqual({ x: 20, y: 30 })
+    expect(runtime.resourceAmounts.get(7)).toBe(25)
+    expect(callbacks.present).toHaveBeenCalledTimes(2)
+  })
+
+  it('preserves production merge ordering when reconstructing a delta', () => {
+    const { runtime, handlers } = harness()
+    const first = snapshot({
+      units: [
+        { id: 2, x: 0, y: 0, owner: 0, kind: 'warrior', orderState: 'idle' },
+        { id: 1, x: 10, y: 20, owner: 0, kind: 'pawn', orderState: 'moving' }
+      ]
+    })
+    handlers.onSnapshot(first)
+    handlers.onSnapshotDelta?.({
+      type: 'snapshot_delta',
+      baseTick: 4,
+      baseSequence: 1,
+      baseHash: 'a'.repeat(64),
+      tick: 5,
+      viewSequence: 2,
+      viewHash: 'b'.repeat(64),
+      phase: 'RUNNING',
+      units: [{ id: 1, x: 30, y: 40, owner: 0, kind: 'pawn', orderState: 'idle' }],
+      removedUnitIds: [],
+      buildings: [],
+      removedBuildingIds: [],
+      resources: [],
+      resourcesComplete: false,
+      players: [],
+      events: []
+    })
+
+    expect(runtime.snapshot?.units).toEqual([
+      { id: 2, x: 0, y: 0, owner: 0, kind: 'warrior', orderState: 'idle' },
+      { id: 1, x: 30, y: 40, owner: 0, kind: 'pawn', orderState: 'idle' }
+    ])
+  })
+
+  it('rejects a delta whose sequence or hash is not the accepted baseline', () => {
+    const { callbacks, handlers } = harness()
+    handlers.onSnapshot(snapshot())
+    const accepted = handlers.onSnapshotDelta?.({
+      type: 'snapshot_delta',
+      baseTick: 4,
+      baseSequence: 2,
+      baseHash: 'c'.repeat(64),
+      tick: 5,
+      viewSequence: 3,
+      viewHash: 'b'.repeat(64),
+      phase: 'RUNNING',
+      units: [],
+      removedUnitIds: [],
+      buildings: [],
+      removedBuildingIds: [],
+      resources: [],
+      resourcesComplete: false,
+      players: [],
+      events: []
+    })
+    expect(accepted).toBe(false)
+    expect(callbacks.appendLog).toHaveBeenCalledWith('error', 'snapshot delta base mismatch at tick 5')
   })
 
   it('reports only a human construction that transitions to completed', () => {
@@ -275,6 +366,8 @@ describe('match session handlers', () => {
     const { callbacks, handlers } = harness()
     const config: MatchConfig = {
       type: 'match_config',
+      resumeToken: 'resume-token',
+      protocolVersion: PROTOCOL_VERSION,
       map: { width: 1, height: 1, tiles: ['land'], resources: [] },
       buildings: [],
       production: [],

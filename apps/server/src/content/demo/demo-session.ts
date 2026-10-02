@@ -1,4 +1,11 @@
-import { allocateEntityId, type MapDefinition, PLAYER_IDS, placementBoundsFromMap, START_ENTITY_ID } from '@rts/shared'
+import {
+  allocateEntityId,
+  createPlayerResources,
+  type MapDefinition,
+  PLAYER_IDS,
+  placementBoundsFromMap,
+  START_ENTITY_ID
+} from '@rts/shared'
 import {
   BUILDING_DEFINITIONS,
   Building,
@@ -76,7 +83,7 @@ function seedBuildings(context: SeedContext, buildings: readonly DemoBaseSpawn[]
       },
       rallyPoint: null
     })
-    if (buildingType === 'MONASTERY') {
+    if (definition.capabilities.canProduce || definition.capabilities.canResearch) {
       context.world.store(Production).set(id, { queue: [] })
     }
     const maxHp = definition.maxHp
@@ -124,7 +131,7 @@ export function createDemoSession(
     initialPlayers: PLAYER_IDS.map((id) => ({
       id,
       defeated: false,
-      resources: { GOLD: id === 0 ? (scenario.startingGold ?? 0) : 0, WOOD: 0 },
+      resources: createPlayerResources({ GOLD: id === 0 ? (scenario.startingGold ?? 0) : 0 }),
       completedResearch: [],
       highestCastleTierReached: scenario.startingCastleTier ?? 1
     }))

@@ -5,6 +5,7 @@ import {
   isOneOf,
   isOptionalNonNegativeInteger,
   isPlayerId,
+  isPlayerResources,
   isRecord,
   RESEARCH_TYPES
 } from '@rts/shared'
@@ -35,6 +36,6 @@ export function isSnapshotPlayer(value: unknown): value is SnapshotPlayer {
   )
 }
 
-function isResourceBalances(value: unknown): value is { readonly GOLD: number; readonly WOOD: number } {
-  return isRecord(value) && isNonNegativeInteger(field(value, 'GOLD')) && isNonNegativeInteger(field(value, 'WOOD'))
+function isResourceBalances(value: unknown): boolean {
+  return isPlayerResources(value)
 }

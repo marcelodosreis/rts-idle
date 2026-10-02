@@ -1,9 +1,30 @@
-import type { OrderState, SnapshotBuilding, SnapshotEconomy } from '@rts/protocol'
-import type { BuildingType, MapDefinition, ResourceType, SimulationEvent, UnitKind } from '@rts/shared'
+import type {
+  BuildingStatus,
+  BuildingType,
+  EconomyPhase,
+  MapDefinition,
+  OrderState,
+  ProductionItemStatus,
+  ResearchType,
+  ResourceCost,
+  ResourceType,
+  SimulationEvent,
+  TrainableUnitKind,
+  UnitKind
+} from '@rts/shared'
 import type { PointData } from 'pixi.js'
 import type { InputProfile, WorldInteraction } from '../input/input-types.js'
 
 export type { UnitKind } from '@rts/shared'
+
+export interface RenderEconomy {
+  readonly phase: EconomyPhase
+  readonly cargoAmount: number
+  readonly cargoCapacity: number
+  readonly progressTicks: number
+  readonly progressMax: number
+  readonly resourceId: number
+}
 
 /** A unit as rendered: id, integer fixed-unit position, owner slot, sprite kind. */
 export interface RenderUnit {
@@ -25,14 +46,58 @@ export interface RenderUnit {
   readonly repairProgressTicks?: number
   readonly repairProgressMax?: number
   readonly healCooldownRemaining?: number
-  readonly economy?: SnapshotEconomy
+  readonly economy?: RenderEconomy
   /** True while the worker holds cargo, independent of its current order. */
   readonly carrying?: boolean
   /** Carried resource type; lets the renderer pick wood vs gold sprites. */
   readonly cargoType?: ResourceType
+  readonly canGather?: boolean
+  readonly canBuild?: boolean
+  readonly canRepair?: boolean
+  readonly repairable?: boolean
+  readonly acceptsDeposit?: boolean
+  readonly canHeal?: boolean
 }
 
-export type RenderBuilding = SnapshotBuilding
+export interface RenderBuilding {
+  readonly id: number
+  readonly buildingType: BuildingType
+  readonly x: number
+  readonly y: number
+  readonly owner: number
+  readonly builderId?: number | null
+  readonly footprint: { readonly width: number; readonly height: number }
+  readonly status: BuildingStatus
+  readonly tier?: number
+  readonly tierUpgrade?: { readonly progressTicks: number; readonly totalTicks: number } | null
+  readonly progressTicks: number
+  readonly totalTicks: number
+  readonly hp?: number
+  readonly maxHp?: number
+  readonly rallyPoint?: { readonly x: number; readonly y: number } | null
+  readonly production?: RenderProduction
+}
+
+export interface RenderUnitProductionItem {
+  readonly unitKind: TrainableUnitKind
+  readonly cost: ResourceCost
+  readonly reservedSupply: number
+  readonly progressTicks: number
+  readonly totalTicks: number
+  readonly status: ProductionItemStatus
+}
+
+export interface RenderResearchProductionItem {
+  readonly researchType: ResearchType
+  readonly cost: ResourceCost
+  readonly progressTicks: number
+  readonly totalTicks: number
+  readonly status: ProductionItemStatus
+}
+
+export interface RenderProduction {
+  readonly queue: readonly (RenderUnitProductionItem | RenderResearchProductionItem)[]
+}
 
 /** Closed set of sprite animation states reported by the renderer (debug/E2E). */
 export const SPRITE_ANIMS = [

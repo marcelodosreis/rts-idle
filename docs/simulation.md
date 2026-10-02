@@ -54,8 +54,8 @@ Registered in `createWorld()` in this order (part of the canonical schema):
 - `Orders` — the per-unit order queue.
 - `Health` — current/max hit points.
 - `Combat` — damage, range (tiles), cooldown (ticks), remaining cooldown.
-- `Kind` — unit archetype (`pawn` / `warrior` / `archer` / `lancer` / `monk`), driven by
-  `data/unit-stats.ts` per-role combat stats.
+- `Kind` — unit archetype (`pawn` / `warrior` / `archer` / `lancer` / `monk`),
+  driven by the declarative definitions in `packages/game-data/src/units.ts`.
 - Map-authored resources are not ECS components: `GameState.resources` holds
   the immutable `ResourceCatalog` plus compact remaining amounts (see
   "Economy v0").

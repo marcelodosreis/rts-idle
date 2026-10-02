@@ -16,7 +16,6 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@rts/protocol": "workspace:*",
     "@rts/shared": "workspace:*",
     "pixi.js": "^8.20.1",
     "pixi-viewport": "^6.0.3"

@@ -1,7 +1,6 @@
-import { BUILDING_DEFINITIONS } from '@rts/game-data'
+import { BUILDING_DEFINITIONS, unitDefinitionFor } from '@rts/game-data'
 import type { EntityId } from '@rts/shared'
 import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
-import { unitStatsFor } from '../data/unit-stats.js'
 import { Building } from '../ecs/building-component.js'
 import { Health, Kind, Orders, Owner, Position } from '../ecs/components.js'
 import { clearMovement, setMovementDestination } from '../movement/destination.js'
@@ -15,7 +14,12 @@ function reject(command: ScheduledCommand, message: string): never {
 
 function chooseRepairer(state: GameState, command: ScheduledCommand, unitIds: readonly EntityId[]): EntityId {
   const kinds = state.world.store(Kind)
-  const repairer = [...unitIds].sort((a, b) => a - b).find((id) => kinds.get(id) === 'pawn')
+  const repairer = [...unitIds]
+    .sort((a, b) => a - b)
+    .find((id) => {
+      const kind = kinds.get(id)
+      return kind !== undefined && unitDefinitionFor(kind).canRepair
+    })
   if (repairer === undefined) {
     reject(command, 'REPAIR: selection contains no worker')
   }
@@ -39,13 +43,13 @@ function assertTarget(state: GameState, command: ScheduledCommand): void {
   }
   if (building !== undefined) {
     const definition = BUILDING_DEFINITIONS[building.buildingType]
-    if (building.status !== 'COMPLETED' || !definition.mechanical) {
+    if (building.status !== 'COMPLETED' || !definition.mechanical || definition.repairProfile === null) {
       reject(command, `REPAIR: target ${targetId} is not a completed mechanical building`)
     }
     return
   }
   const kind = state.world.store(Kind).get(targetId)
-  if (kind === undefined || !unitStatsFor(kind).mechanical) {
+  if (kind === undefined || !unitDefinitionFor(kind).repairable || unitDefinitionFor(kind).repairProfile === null) {
     reject(command, `REPAIR: target ${targetId} is not mechanical`)
   }
 }
@@ -55,7 +59,7 @@ function assertNoActiveRepair(state: GameState, command: ScheduledCommand): void
     throw new Error('assertNoActiveRepair: expected a REPAIR command')
   }
   const targetId = command.intent.payload.targetId
-  for (const id of state.world.aliveIds()) {
+  for (const id of state.world.query(Orders)) {
     const front = state.world.store(Orders).get(id)?.queue[0]
     if (front?.type === 'REPAIR' && front.targetId === targetId) {
       reject(command, `REPAIR: target ${targetId} already has an active repairer`)

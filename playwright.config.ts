@@ -20,6 +20,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: process.env.CI === 'true',
   failOnFlakyTests: process.env.CI === 'true',
+  maxFailures: 1,
   retries: 0,
   workers: e2eWorkerCount(process.env.E2E_WORKERS),
   reporter: 'dot',
@@ -44,7 +45,11 @@ export default defineConfig({
   webServer: [
     {
       command: `pnpm --filter @rts/web exec vite --force --port ${WEB_PORT}`,
-      env: { ...process.env, VITE_SERVER_URL: `ws://localhost:${SERVER_PORT}` },
+      env: {
+        ...process.env,
+        VITE_SERVER_URL: `ws://localhost:${SERVER_PORT}`,
+        VITE_E2E_TRANSPORT_HOOK: 'true'
+      },
       url: `http://localhost:${WEB_PORT}`,
       reuseExistingServer: !process.env.CI,
       stdout: 'ignore',

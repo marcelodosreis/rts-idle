@@ -67,15 +67,18 @@ export function intSqrt(n: number): number {
   if (n === 0) {
     return 0
   }
-  // Start from the floating-point square root, then correct integer
-  // rounding deterministically: Math.sqrt may be off by one ulp in either
-  // direction, so adjust while (root+1)^2 <= n or root^2 > n.
-  let root = Math.floor(Math.sqrt(n))
-  while ((root + 1) * (root + 1) <= n) {
-    root += 1
+  let high = 1
+  while (high * high < n) {
+    high *= 2
   }
-  while (root * root > n) {
-    root -= 1
+  let low = Math.floor(high / 2)
+  while (low + 1 < high) {
+    const middle = Math.floor((low + high) / 2)
+    if (middle * middle <= n) {
+      low = middle
+    } else {
+      high = middle
+    }
   }
-  return root
+  return high * high <= n ? high : low
 }

@@ -1,4 +1,10 @@
-import { BARRACKS_BUILDING, BUILDING_FOOTPRINTS, CASTLE_BUILDING, HOUSE_BUILDING } from '@rts/game-data'
+import {
+  BARRACKS_BUILDING,
+  BUILDING_FOOTPRINTS,
+  CASTLE_BUILDING,
+  HOUSE_BUILDING,
+  MECHANICAL_REPAIR
+} from '@rts/game-data'
 import { START_ENTITY_ID } from '@rts/shared'
 import { Building, createSimulation, createWorld, simulationFromSnapshot } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
@@ -14,7 +20,10 @@ describe('base construction data and persistence', () => {
       constructionTicks: 100,
       supplyProvided: 10,
       maxHp: 500,
-      mechanical: true
+      mechanical: true,
+      capabilities: { canProduce: true, canResearch: false, canUpgrade: true },
+      maximumCastleTier: 2,
+      repairProfile: MECHANICAL_REPAIR
     })
   })
 
@@ -27,7 +36,9 @@ describe('base construction data and persistence', () => {
       constructionTicks: 100,
       supplyProvided: 0,
       maxHp: 400,
-      mechanical: true
+      mechanical: true,
+      capabilities: { canProduce: true, canResearch: false, canUpgrade: false },
+      repairProfile: MECHANICAL_REPAIR
     })
   })
 
@@ -40,7 +51,9 @@ describe('base construction data and persistence', () => {
       constructionTicks: 100,
       supplyProvided: 8,
       maxHp: 250,
-      mechanical: true
+      mechanical: true,
+      capabilities: { canProduce: false, canResearch: false, canUpgrade: false },
+      repairProfile: MECHANICAL_REPAIR
     })
   })
 

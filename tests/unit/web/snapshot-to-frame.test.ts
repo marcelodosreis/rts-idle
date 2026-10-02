@@ -6,8 +6,10 @@ describe('snapshot to frame mapping', () => {
     const frame = snapshotToFrame({
       type: 'snapshot',
       tick: 1,
+      viewSequence: 1,
+      viewHash: 'a'.repeat(64),
       phase: 'RUNNING',
-      units: [{ id: 1, x: 0, y: 0, owner: 0, carrying: true, cargoType: 'WOOD' }],
+      units: [{ id: 1, x: 0, y: 0, owner: 0, kind: 'pawn', carrying: true, cargoType: 'WOOD', canAttack: true }],
       buildings: [],
       resources: [],
       resourcesComplete: true,
@@ -16,12 +18,15 @@ describe('snapshot to frame mapping', () => {
     })
     expect(frame.units[0]!.carrying).toBe(true)
     expect(frame.units[0]!.cargoType).toBe('WOOD')
+    expect(frame.units[0]!.canAttack).toBe(true)
   })
 
   it('maps a snapshot message to a render frame', () => {
     const frame = snapshotToFrame({
       type: 'snapshot',
       tick: 3,
+      viewSequence: 1,
+      viewHash: 'a'.repeat(64),
       phase: 'RUNNING',
       units: [
         {
@@ -42,7 +47,7 @@ describe('snapshot to frame mapping', () => {
             resourceId: 4
           }
         },
-        { id: 2, x: 300, y: 400, owner: 1 }
+        { id: 2, x: 300, y: 400, owner: 1, kind: 'pawn' }
       ],
       buildings: [
         {
@@ -96,7 +101,7 @@ describe('snapshot to frame mapping', () => {
           resourceId: 4
         }
       },
-      { id: 2, x: 300, y: 400, owner: 1, kind: 'pawn', hp: undefined, maxHp: undefined, orderState: undefined }
+      { id: 2, x: 300, y: 400, owner: 1, kind: 'pawn' }
     ])
     expect(frame.buildings).toEqual([
       {
@@ -131,6 +136,8 @@ describe('snapshot to frame mapping', () => {
     const frame = snapshotToFrame({
       type: 'snapshot',
       tick: 4,
+      viewSequence: 1,
+      viewHash: 'a'.repeat(64),
       phase: 'RUNNING',
       units: [],
       buildings: [
@@ -165,6 +172,8 @@ describe('snapshot to frame mapping', () => {
       snapshotToFrame({
         type: 'snapshot',
         tick: 0,
+        viewSequence: 1,
+        viewHash: 'a'.repeat(64),
         phase: 'FINISHED',
         units: [],
         buildings: [],

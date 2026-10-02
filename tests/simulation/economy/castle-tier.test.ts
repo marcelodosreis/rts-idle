@@ -59,7 +59,7 @@ function scenario(options: { readonly castleTier?: 1 | 2; readonly pawnQueue?: b
   })
   world.store(Production).set(BARRACKS_ID, { queue: [] })
   world.store(Production).set(MONASTERY_ID, { queue: [] })
-  createUnitEntity(world, { id: PAWN_ID, x: tilesToFixed(12), y: 0, owner: 0, kind: 'pawn', worker: true })
+  createUnitEntity(world, { id: PAWN_ID, x: tilesToFixed(12), y: 0, owner: 0, kind: 'pawn' })
   return createSimulation({
     seed: 1,
     identity: TEST_IDENTITY,

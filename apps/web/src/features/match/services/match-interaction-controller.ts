@@ -1,4 +1,4 @@
-import type { SnapshotBuilding } from '@rts/protocol'
+import type { BuildCatalogEntry, SnapshotBuilding } from '@rts/protocol'
 import type { CommandIntent } from '@rts/shared'
 import type { CommandMode } from '../hooks/use-command-modes'
 import { buildingTypeForMode, isBuildMode, isRallyMode } from '../hooks/use-command-modes'
@@ -16,6 +16,12 @@ export interface SelectedUnitState {
   readonly carrying?: boolean | undefined
   readonly hp?: number
   readonly maxHp?: number
+  readonly canGather?: boolean
+  readonly canBuild?: boolean
+  readonly canRepair?: boolean
+  readonly repairable?: boolean
+  readonly acceptsDeposit?: boolean
+  readonly canHeal?: boolean
 }
 
 export interface MatchInteractionContext {
@@ -25,6 +31,7 @@ export interface MatchInteractionContext {
   readonly mode: () => CommandMode
   readonly unitStates: ReadonlyMap<number, SelectedUnitState>
   readonly buildings: () => readonly SnapshotBuilding[]
+  readonly buildCatalog?: () => readonly BuildCatalogEntry[]
   readonly placementFor: (worldX: number, worldY: number) => PlacementResult | null
   readonly toCommandPoint: (worldX: number, worldY: number) => { readonly x: number; readonly y: number }
   readonly placementToCommandPoint: (placement: PlacementResult) => { readonly x: number; readonly y: number }
@@ -148,9 +155,9 @@ export class MatchInteractionController {
       return
     }
     if (this.context.mode() === 'heal') {
-      const monks = this.selectedMonks()
-      if (target !== undefined && !isEnemy && this.isDamaged(target.hp, target.maxHp) && monks.length === 1) {
-        this.context.sendCommand({ type: 'HEAL', payload: { unitIds: monks, targetId: id } })
+      const healers = this.selectedHealers()
+      if (target !== undefined && !isEnemy && this.isDamaged(target.hp, target.maxHp) && healers.length === 1) {
+        this.context.sendCommand({ type: 'HEAL', payload: { unitIds: healers, targetId: id } })
       }
       this.context.clearMode()
       return
@@ -165,8 +172,8 @@ export class MatchInteractionController {
       this.context.clearMode()
       return
     }
-    if (target !== undefined && this.isDamaged(target.hp, target.maxHp)) {
-      const workers = this.selectedWorkers()
+    if (target !== undefined && target.repairable !== false && this.isDamaged(target.hp, target.maxHp)) {
+      const workers = this.selectedWorkers('canRepair')
       if (workers.length > 0) {
         this.context.sendCommand({ type: 'REPAIR', payload: { unitIds: workers, targetId: id } })
       }
@@ -191,7 +198,10 @@ export class MatchInteractionController {
       return
     }
     if (this.context.mode() === 'deposit' || this.context.mode() === 'repair') {
-      this.workerBuildingCommand(building, ownedPawns)
+      this.workerBuildingCommand(
+        building,
+        this.context.mode() === 'repair' ? this.selectedWorkers('canRepair') : this.selectedWorkers('acceptsDeposit')
+      )
       this.context.clearMode()
       return
     }
@@ -201,14 +211,17 @@ export class MatchInteractionController {
         this.context.clearMode()
         return
       }
-      const carrying = ownedPawns.filter((unitId) => this.context.unitStates.get(unitId)?.carrying === true)
+      const carrying = this.selectedWorkers('acceptsDeposit').filter(
+        (unitId) => this.context.unitStates.get(unitId)?.carrying === true
+      )
       if (building.owner === this.context.humanPlayer && carrying.length > 0) {
         this.context.sendCommand({ type: 'DEPOSIT', payload: { unitIds: carrying, buildingId: id } })
         return
       }
       if (building.owner === this.context.humanPlayer && this.isDamaged(building.hp, building.maxHp)) {
-        if (ownedPawns.length > 0) {
-          this.context.sendCommand({ type: 'REPAIR', payload: { unitIds: ownedPawns, targetId: id } })
+        const repairers = this.selectedWorkers('canRepair')
+        if (repairers.length > 0) {
+          this.context.sendCommand({ type: 'REPAIR', payload: { unitIds: repairers, targetId: id } })
         }
         return
       }
@@ -244,11 +257,18 @@ export class MatchInteractionController {
     this.context.clearMode()
   }
 
-  private selectedWorkers(): number[] {
+  private selectedWorkers(
+    capability: 'canGather' | 'canBuild' | 'canRepair' | 'acceptsDeposit' = 'canBuild'
+  ): number[] {
     return this.context
       .selectedUnitIds()
-      .filter((id) => this.context.unitStates.get(id)?.kind === 'pawn')
+      .filter((id) => this.hasCapability(id, capability))
       .filter((id) => this.context.unitStates.get(id)?.owner === this.context.humanPlayer)
+  }
+
+  private hasCapability(id: number, capability: 'canGather' | 'canBuild' | 'canRepair' | 'acceptsDeposit'): boolean {
+    const unit = this.context.unitStates.get(id)
+    return unit?.[capability] ?? false
   }
 
   private isWorkerTargetMode(): boolean {
@@ -257,10 +277,15 @@ export class MatchInteractionController {
   }
 
   private repairUnitTarget(id: number, target: SelectedUnitState | undefined): void {
-    if (this.context.mode() !== 'repair' || target === undefined || !this.isDamaged(target.hp, target.maxHp)) {
+    if (
+      this.context.mode() !== 'repair' ||
+      target === undefined ||
+      target.repairable === false ||
+      !this.isDamaged(target.hp, target.maxHp)
+    ) {
       return
     }
-    const workers = this.selectedWorkers()
+    const workers = this.selectedWorkers('canRepair')
     if (workers.length > 0) {
       this.context.sendCommand({ type: 'REPAIR', payload: { unitIds: workers, targetId: id } })
     }
@@ -282,10 +307,10 @@ export class MatchInteractionController {
     }
   }
 
-  private selectedMonks(): number[] {
+  private selectedHealers(): number[] {
     return this.context
       .selectedUnitIds()
-      .filter((id) => this.context.unitStates.get(id)?.kind === 'monk')
+      .filter((id) => this.context.unitStates.get(id)?.canHeal === true)
       .filter((id) => this.context.unitStates.get(id)?.owner === this.context.humanPlayer)
   }
 
@@ -293,15 +318,15 @@ export class MatchInteractionController {
     if (this.context.isMatchEnded() || this.context.mode() !== 'idle') {
       return false
     }
-    const monks = this.selectedMonks()
+    const healers = this.selectedHealers()
     const target = this.context.unitStates.get(id)
-    if (monks.length !== 1 || target === undefined || target.owner !== this.context.humanPlayer) {
+    if (healers.length !== 1 || target === undefined || target.owner !== this.context.humanPlayer) {
       return false
     }
     if (!this.isDamaged(target.hp, target.maxHp)) {
       return false
     }
-    this.context.sendCommand({ type: 'HEAL', payload: { unitIds: monks, targetId: id } })
+    this.context.sendCommand({ type: 'HEAL', payload: { unitIds: healers, targetId: id } })
     return true
   }
 
@@ -319,13 +344,20 @@ export class MatchInteractionController {
       building === undefined ||
       building.owner !== this.context.humanPlayer ||
       building.status !== 'COMPLETED' ||
-      (building.buildingType !== 'CASTLE' &&
-        building.buildingType !== 'BARRACKS' &&
-        building.buildingType !== 'ARCHERY' &&
-        building.buildingType !== 'MONASTERY')
+      !this.canProduce(building)
     ) {
       return undefined
     }
     return building
+  }
+
+  private canProduce(building: SnapshotBuilding): boolean {
+    if (this.context.buildCatalog === undefined) {
+      return building.buildingType !== 'HOUSE' && building.buildingType !== 'TOWER'
+    }
+    return (
+      this.context.buildCatalog().find((entry) => entry.type === building.buildingType)?.capabilities?.canProduce ===
+      true
+    )
   }
 }

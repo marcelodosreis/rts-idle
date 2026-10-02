@@ -1,5 +1,12 @@
-import type { BuildingType, ResourceCost } from '@rts/shared'
+import type { BuildingType, CastleTier, ResourceCost } from '@rts/shared'
 import { BUILDING_FOOTPRINTS } from './building-footprints.js'
+import { MECHANICAL_REPAIR, type RepairDefinition } from './repair.js'
+
+export interface BuildingCapabilities {
+  readonly canProduce: boolean
+  readonly canResearch: boolean
+  readonly canUpgrade: boolean
+}
 
 export interface BuildingDefinition {
   readonly type: BuildingType
@@ -10,6 +17,10 @@ export interface BuildingDefinition {
   readonly supplyProvided: number
   readonly maxHp: number
   readonly mechanical: boolean
+  readonly capabilities: BuildingCapabilities
+  readonly minimumCastleTier?: CastleTier
+  readonly maximumCastleTier?: CastleTier
+  readonly repairProfile: RepairDefinition | null
 }
 
 /** Baseline building content values; balance is intentionally deferred. */
@@ -21,7 +32,10 @@ export const CASTLE_BUILDING: BuildingDefinition = Object.freeze({
   constructionTicks: 100,
   supplyProvided: 10,
   maxHp: 500,
-  mechanical: true
+  mechanical: true,
+  capabilities: { canProduce: true, canResearch: false, canUpgrade: true },
+  maximumCastleTier: 2,
+  repairProfile: MECHANICAL_REPAIR
 })
 
 export const BARRACKS_BUILDING: BuildingDefinition = Object.freeze({
@@ -32,7 +46,9 @@ export const BARRACKS_BUILDING: BuildingDefinition = Object.freeze({
   constructionTicks: 100,
   supplyProvided: 0,
   maxHp: 400,
-  mechanical: true
+  mechanical: true,
+  capabilities: { canProduce: true, canResearch: false, canUpgrade: false },
+  repairProfile: MECHANICAL_REPAIR
 })
 
 export const ARCHERY_BUILDING: BuildingDefinition = Object.freeze({
@@ -43,7 +59,9 @@ export const ARCHERY_BUILDING: BuildingDefinition = Object.freeze({
   constructionTicks: 100,
   supplyProvided: 0,
   maxHp: 400,
-  mechanical: true
+  mechanical: true,
+  capabilities: { canProduce: true, canResearch: false, canUpgrade: false },
+  repairProfile: MECHANICAL_REPAIR
 })
 
 export const MONASTERY_BUILDING: BuildingDefinition = Object.freeze({
@@ -54,7 +72,10 @@ export const MONASTERY_BUILDING: BuildingDefinition = Object.freeze({
   constructionTicks: BARRACKS_BUILDING.constructionTicks,
   supplyProvided: 0,
   maxHp: 400,
-  mechanical: true
+  mechanical: true,
+  capabilities: { canProduce: true, canResearch: true, canUpgrade: false },
+  minimumCastleTier: 2,
+  repairProfile: MECHANICAL_REPAIR
 })
 
 export const HOUSE_BUILDING: BuildingDefinition = Object.freeze({
@@ -65,7 +86,9 @@ export const HOUSE_BUILDING: BuildingDefinition = Object.freeze({
   constructionTicks: 100,
   supplyProvided: 8,
   maxHp: 250,
-  mechanical: true
+  mechanical: true,
+  capabilities: { canProduce: false, canResearch: false, canUpgrade: false },
+  repairProfile: MECHANICAL_REPAIR
 })
 
 export const TOWER_BUILDING: BuildingDefinition = Object.freeze({
@@ -76,7 +99,9 @@ export const TOWER_BUILDING: BuildingDefinition = Object.freeze({
   constructionTicks: 100,
   supplyProvided: 0,
   maxHp: 300,
-  mechanical: true
+  mechanical: true,
+  capabilities: { canProduce: false, canResearch: false, canUpgrade: false },
+  repairProfile: MECHANICAL_REPAIR
 })
 
 export const BUILDING_DEFINITIONS = Object.freeze({

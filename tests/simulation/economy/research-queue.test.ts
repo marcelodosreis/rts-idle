@@ -38,7 +38,7 @@ function researchScenario(withSecondMonastery = false, gold = 500) {
     tier: 2,
     footprint: { x: 10, y: 0, width: 5, height: 4 }
   })
-  createUnitEntity(world, { id: START_ENTITY_ID + 3, x: 20, y: 0, owner: 0, kind: 'pawn', worker: true })
+  createUnitEntity(world, { id: START_ENTITY_ID + 3, x: 20, y: 0, owner: 0, kind: 'pawn' })
   if (withSecondMonastery) {
     world.createEntity(START_ENTITY_ID + 2)
     world.store(Position).set(START_ENTITY_ID + 2, { x: 15, y: 0 })

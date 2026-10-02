@@ -1,5 +1,10 @@
-import { RESEARCH_DEFINITIONS, UNIT_PRODUCTION_DEFINITIONS } from '@rts/game-data'
-import type { ProductionItemStatus } from '@rts/shared'
+import {
+  BUILDING_DEFINITIONS,
+  RESEARCH_DEFINITIONS,
+  UNIT_PRODUCTION_DEFINITIONS,
+  unitDefinitionFor
+} from '@rts/game-data'
+import { type ProductionItemStatus, RESOURCE_TYPES, type ResourceCost } from '@rts/shared'
 import { RESOURCE_CARGO_CAPACITY } from '../data/economy-rules.js'
 import { MAX_PRODUCTION_QUEUE } from '../data/production-rules.js'
 import { MAX_SUPPLY_CAPACITY } from '../data/supply-rules.js'
@@ -48,8 +53,8 @@ function fail(invariant: string): never {
   throw new InvariantError(`check-invariants: ${invariant}`)
 }
 
-function costsEqual(first: { readonly GOLD?: number; readonly WOOD?: number }, second: typeof first): boolean {
-  return (first.GOLD ?? 0) === (second.GOLD ?? 0) && (first.WOOD ?? 0) === (second.WOOD ?? 0)
+function costsEqual(first: ResourceCost, second: ResourceCost): boolean {
+  return RESOURCE_TYPES.every((type) => (first[type] ?? 0) === (second[type] ?? 0))
 }
 
 function checkConstruction(state: GameState, id: number): void {
@@ -76,17 +81,17 @@ function checkConstruction(state: GameState, id: number): void {
     fail(`completed building ${id} is incomplete`)
   }
   if (construction.builderId !== null) {
-    if (!state.world.hasEntity(construction.builderId) || kinds.get(construction.builderId) !== 'pawn') {
+    const builderKind = kinds.get(construction.builderId)
+    if (
+      !state.world.hasEntity(construction.builderId) ||
+      builderKind === undefined ||
+      !unitDefinitionFor(builderKind).canBuild
+    ) {
       fail(`construction ${id} references missing worker ${construction.builderId}`)
     }
   }
   if (construction.rallyPoint !== undefined && construction.rallyPoint !== null) {
-    if (
-      construction.buildingType !== 'CASTLE' &&
-      construction.buildingType !== 'BARRACKS' &&
-      construction.buildingType !== 'ARCHERY' &&
-      construction.buildingType !== 'MONASTERY'
-    ) {
+    if (!BUILDING_DEFINITIONS[construction.buildingType].capabilities.canProduce) {
       fail(`construction ${id} has a rally point but cannot produce units`)
     }
     if (!Number.isInteger(construction.rallyPoint.x) || !Number.isInteger(construction.rallyPoint.y)) {
@@ -110,7 +115,11 @@ function checkEconomyEntity(state: GameState, id: number): void {
   ) {
     fail(`entity ${id} has invalid cargo ${cargo.amount}/${cargo.capacity}`)
   }
-  if (cargo !== undefined && (kinds.get(id) !== 'pawn' || owners.get(id) === undefined)) {
+  const kind = kinds.get(id)
+  if (
+    cargo !== undefined &&
+    (kind === undefined || !unitDefinitionFor(kind).acceptsDeposit || owners.get(id) === undefined)
+  ) {
     fail(`entity ${id} has cargo without being an owned worker`)
   }
   if (cargo !== undefined && (cargo.amount === 0) !== (cargo.resourceType === null)) {
@@ -119,13 +128,16 @@ function checkEconomyEntity(state: GameState, id: number): void {
   const frontOrder = state.world.store(Orders).get(id)?.queue[0]
   if (
     frontOrder?.type === 'GATHER' &&
-    (cargo === undefined || kinds.get(id) !== 'pawn' || owners.get(id) === undefined)
+    (cargo === undefined || kind === undefined || !unitDefinitionFor(kind).canGather || owners.get(id) === undefined)
   ) {
     fail(`entity ${id} has gather order without Worker state`)
   }
   if (
     frontOrder?.type === 'DEPOSIT' &&
-    (cargo === undefined || kinds.get(id) !== 'pawn' || owners.get(id) === undefined)
+    (cargo === undefined ||
+      kind === undefined ||
+      !unitDefinitionFor(kind).acceptsDeposit ||
+      owners.get(id) === undefined)
   ) {
     fail(`entity ${id} has deposit order without Worker state`)
   }
@@ -187,10 +199,8 @@ function checkProduction(state: GameState, id: number, reserved: Map<number, num
   const building = state.world.store(Building).get(id)
   const owner = state.world.store(Owner).get(id)?.owner
   if (
-    (building?.buildingType !== 'CASTLE' &&
-      building?.buildingType !== 'BARRACKS' &&
-      building?.buildingType !== 'ARCHERY' &&
-      building?.buildingType !== 'MONASTERY') ||
+    building === undefined ||
+    !BUILDING_DEFINITIONS[building.buildingType].capabilities.canProduce ||
     building.status !== 'COMPLETED' ||
     owner === undefined
   ) {
@@ -201,7 +211,8 @@ function checkProduction(state: GameState, id: number, reserved: Map<number, num
   }
   if (
     production.queue.length > 0 &&
-    building?.buildingType === 'CASTLE' &&
+    building !== undefined &&
+    BUILDING_DEFINITIONS[building.buildingType].capabilities.canUpgrade &&
     building.tierUpgrade !== undefined &&
     building.tierUpgrade !== null
   ) {
@@ -256,18 +267,17 @@ function checkPlayers(state: GameState): void {
   }
   const owners = state.world.store(Owner)
   const aliveOwners = new Set<number>()
-  for (const id of state.world.aliveIds()) {
+  for (const id of state.world.query(Owner)) {
     const owner = owners.get(id)?.owner
     if (owner !== undefined) {
       aliveOwners.add(owner)
     }
   }
   for (const player of state.players) {
-    if (!Number.isInteger(player.resources.GOLD) || player.resources.GOLD < 0) {
-      fail(`player ${player.id} has invalid gold balance ${player.resources.GOLD}`)
-    }
-    if (!Number.isInteger(player.resources.WOOD) || player.resources.WOOD < 0) {
-      fail(`player ${player.id} has invalid wood balance ${player.resources.WOOD}`)
+    for (const type of RESOURCE_TYPES) {
+      if (!Number.isInteger(player.resources[type]) || player.resources[type] < 0) {
+        fail(`player ${player.id} has invalid ${type.toLowerCase()} balance ${player.resources[type]}`)
+      }
     }
     if (!Number.isInteger(player.usedSupply) || player.usedSupply < 0) {
       fail(`player ${player.id} has invalid used supply ${player.usedSupply}`)
@@ -304,7 +314,7 @@ export function checkInvariants(state: GameState): void {
     checkProduction(state, id, reserved)
   }
   const footprints = state.world
-    .aliveIds()
+    .query(Building)
     .map((id) => state.world.store(Building).get(id)?.footprint)
     .filter((footprint): footprint is NonNullable<typeof footprint> => footprint !== undefined)
   checkBuildingFootprints(state.mapBounds, footprints)

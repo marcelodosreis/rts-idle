@@ -63,4 +63,12 @@ export class CanonicalReader {
   readLength(): number {
     return this.readU32()
   }
+
+  assertEOF(): void {
+    if (this.offset !== this.bytes.length) {
+      throw new CanonicalError(
+        `CanonicalReader: trailing bytes at offset ${this.offset} (buffer has ${this.bytes.length} bytes)`
+      )
+    }
+  }
 }

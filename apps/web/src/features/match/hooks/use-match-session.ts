@@ -3,6 +3,7 @@ import type { GameRenderer, InputProfile } from '@rts/renderer'
 import type { MatchResult, ResearchType, TrainableUnitKind } from '@rts/shared'
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
 import { readPlaytestMap } from '../../../shared/config/playtest-map'
+import { clearMatchResumeToken, startNewMatch } from '../../../shared/transport/connection'
 import type { HudNotification } from '../lib/hud-notifications'
 import { parseMatchQuery, updateMatchQuery } from '../lib/match-query'
 import { readInputPreferences, writeInputPreferences } from '../services/input-preferences'
@@ -243,8 +244,9 @@ function useSessionActions(
       }
       owner().send({ type: 'TRAIN', payload: { producerId, unitKind } }, ended())
     },
-    newMatch: () => window.location.reload(),
+    newMatch: () => startNewMatch(() => window.location.reload()),
     changeScenario: (id) => {
+      clearMatchResumeToken()
       window.location.search = updateMatchQuery(window.location.search, { scenario: id })
     },
     setAggression: (value) => {

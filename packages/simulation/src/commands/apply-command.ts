@@ -1,3 +1,4 @@
+import { assertNever, type CommandIntent } from '@rts/shared'
 import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
 import type { GameState } from '../state/state.js'
 import { applyAttack } from './attack.js'
@@ -18,6 +19,15 @@ import { applyStop } from './stop.js'
 import { applySurrender } from './surrender.js'
 import { applyTrain } from './train.js'
 import { applyUpgradeCastle } from './upgrade-castle.js'
+
+type PrimaryIntent = Extract<
+  CommandIntent,
+  {
+    readonly type: 'MOVE' | 'STOP' | 'HOLD' | 'PATROL' | 'ATTACK' | 'ATTACK_MOVE' | 'GATHER' | 'DEPOSIT' | 'HEAL'
+  }
+>
+type SecondaryIntent = Exclude<CommandIntent, PrimaryIntent>
+type SecondaryCommand = Omit<ScheduledCommand, 'intent'> & { readonly intent: SecondaryIntent }
 
 /** Shared admission boundary: handlers only validate command-specific data. */
 function assertCommandAdmissible(state: GameState, command: ScheduledCommand): void {
@@ -45,6 +55,14 @@ export function applyCommand(state: GameState, command: ScheduledCommand): void 
 }
 
 function dispatchCommand(state: GameState, command: ScheduledCommand): void {
+  if (isSecondaryCommand(command)) {
+    dispatchSecondaryCommand(state, command)
+    return
+  }
+  dispatchPrimaryCommand(state, command)
+}
+
+function dispatchPrimaryCommand(state: GameState, command: ScheduledCommand): void {
   switch (command.intent.type) {
     case 'MOVE':
       applyMove(state, command)
@@ -74,11 +92,11 @@ function dispatchCommand(state: GameState, command: ScheduledCommand): void {
       applyDeposit(state, command)
       return
     default:
-      dispatchEconomyCommand(state, command)
+      throw new Error(`applyCommand: invalid primary intent ${command.intent.type}`)
   }
 }
 
-function dispatchEconomyCommand(state: GameState, command: ScheduledCommand): void {
+function dispatchSecondaryCommand(state: GameState, command: SecondaryCommand): void {
   switch (command.intent.type) {
     case 'BUILD':
       applyBuild(state, command)
@@ -111,6 +129,23 @@ function dispatchEconomyCommand(state: GameState, command: ScheduledCommand): vo
       applySurrender(state, command)
       return
     default:
-      throw new Error(`applyCommand: unsupported intent ${command.intent.type}`)
+      assertNever(command.intent, 'applyCommand: unsupported intent')
+  }
+}
+
+function isSecondaryCommand(command: ScheduledCommand): command is SecondaryCommand {
+  switch (command.intent.type) {
+    case 'MOVE':
+    case 'STOP':
+    case 'HOLD':
+    case 'PATROL':
+    case 'ATTACK':
+    case 'ATTACK_MOVE':
+    case 'GATHER':
+    case 'DEPOSIT':
+    case 'HEAL':
+      return false
+    default:
+      return true
   }
 }

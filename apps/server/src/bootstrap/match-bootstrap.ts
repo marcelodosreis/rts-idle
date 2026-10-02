@@ -1,5 +1,6 @@
+import { randomUUID } from 'node:crypto'
 import { createCompetitiveMap } from '@rts/game-data'
-import type { ErrorMessage, MatchConfig, MatchRequest } from '@rts/protocol'
+import { type ErrorMessage, type MatchConfig, type MatchRequest, PROTOCOL_VERSION } from '@rts/protocol'
 import { normalizeMapDefinition } from '@rts/shared'
 import { createDemoSession } from '../content/demo/demo-session.js'
 import { DEMO_SCENARIOS, DEMO_SEED, scenarioById } from '../content/demo/scenarios.js'
@@ -13,6 +14,10 @@ export { SCENARIOS } from './catalog.js'
 export interface AuthoritativeMatch {
   readonly session: GameSession
   readonly config: MatchConfig
+}
+
+function createResumeToken(): string {
+  return randomUUID()
 }
 
 export type MatchBootstrapResult = { readonly match: AuthoritativeMatch } | { readonly error: ErrorMessage }
@@ -34,6 +39,8 @@ export function createAuthoritativeMatch(request: MatchRequest): AuthoritativeMa
     session: createDemoSession(scenario.id, request.aggression, normalized.map, identity),
     config: {
       type: 'match_config',
+      protocolVersion: PROTOCOL_VERSION,
+      resumeToken: createResumeToken(),
       scenario: { id: scenario.id, label: scenario.label },
       scenarios: SCENARIOS,
       map: normalized.map,

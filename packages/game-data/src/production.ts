@@ -5,16 +5,18 @@ import {
   type TrainableUnitKind,
   type UnitKind
 } from '@rts/shared'
+import { BUILDING_DEFINITIONS } from './buildings.js'
 
 export type { TrainableUnitKind }
 export { TRAINABLE_UNIT_KINDS }
 
 export interface UnitProductionDefinition {
   readonly unitKind: TrainableUnitKind
-  readonly producer: Extract<BuildingType, 'CASTLE' | 'BARRACKS' | 'ARCHERY' | 'MONASTERY'>
+  readonly producer: BuildingType
   readonly cost: ResourceCost
   readonly trainingTicks: number
   readonly supply: number
+  readonly minimumCastleTier?: 1 | 2 | 3
 }
 
 /** Centralized initial balance; production tuning changes this table only. */
@@ -46,20 +48,22 @@ export const UNIT_PRODUCTION_DEFINITIONS: Readonly<Record<TrainableUnitKind, Uni
       producer: 'BARRACKS',
       cost: { GOLD: 100 },
       trainingTicks: 200,
-      supply: 1
+      supply: 1,
+      minimumCastleTier: 2
     }),
     monk: Object.freeze({
       unitKind: 'monk',
       producer: 'MONASTERY',
       cost: { GOLD: 125 },
       trainingTicks: 300,
-      supply: 1
+      supply: 1,
+      minimumCastleTier: 2
     })
   }
 )
 
-export function isProductionBuilding(value: BuildingType): value is UnitProductionDefinition['producer'] {
-  return value === 'CASTLE' || value === 'BARRACKS' || value === 'ARCHERY' || value === 'MONASTERY'
+export function isProductionBuilding(value: BuildingType): boolean {
+  return BUILDING_DEFINITIONS[value].capabilities.canProduce
 }
 
 export function isTrainableUnitKind(value: UnitKind): value is TrainableUnitKind {

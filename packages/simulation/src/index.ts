@@ -2,8 +2,14 @@ import { SIMULATION_VERSION } from './contracts/simulation-version.js'
 
 export const version = SIMULATION_VERSION
 
-export { BUILDING_DEFINITIONS } from '@rts/game-data'
+export {
+  BUILDING_DEFINITIONS,
+  UNIT_DEFINITIONS,
+  unitCanAttack,
+  unitDefinitionFor
+} from '@rts/game-data'
 export type { RngState } from '@rts/shared'
+export * from './canonical/resource-codecs.js'
 export * from './commands/limits.js'
 export * from './contracts/commands.js'
 export * from './contracts/orders.js'
@@ -12,7 +18,6 @@ export * from './contracts/simulation.js'
 export * from './data/economy-rules.js'
 export * from './data/production-rules.js'
 export * from './data/supply-rules.js'
-export * from './data/unit-stats.js'
 export * from './domain/building-predicates.js'
 export * from './domain/formation.js'
 export * from './domain/research-effects.js'
@@ -25,6 +30,7 @@ export * from './ecs/create-world.js'
 export * from './ecs/remove-entity.js'
 export * from './ecs/world.js'
 export * from './engine/create-simulation.js'
+export * from './engine/observation.js'
 export * from './engine/simulation-from-snapshot.js'
 export * from './engine/simulation-host.js'
 export * from './invariants/check-invariants.js'

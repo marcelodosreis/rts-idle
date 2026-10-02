@@ -5,6 +5,7 @@ export interface MatchSessionConnectionOwner {
   current(): MatchConnection | null
   set(connection: MatchConnection | null): void
   send(intent: CommandIntent, matchEnded: boolean): boolean
+  reconnect(): boolean
   cleanup(connection: MatchConnection | null): void
 }
 
@@ -21,6 +22,13 @@ export function createMatchSessionConnectionOwner(): MatchSessionConnectionOwner
         return false
       }
       owned.sendCommand(intent)
+      return true
+    },
+    reconnect: () => {
+      if (owned === null) {
+        return false
+      }
+      owned.reconnect()
       return true
     },
     cleanup: (connection) => {

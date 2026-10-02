@@ -160,8 +160,8 @@ What the game consumed in the Phase 1 simulation/visual pass:
   (warrior → `attack`, archer → `shoot`, pawn → `interact_axe` as a temporary
   melee swing). Unit sprites are cloned per unit, flipped by direction, and
   scaled at `SPRITE_SCALE = 0.25`.
-- **Per-role combat stats** — the simulation authors stats per kind
-  (`data/unit-stats.ts`): warrior 150 hp / 15 dmg / melee, archer 60 hp / 8 dmg
+- **Per-role combat stats** — the declarative unit definitions in
+  (`packages/game-data/src/units.ts`) author stats per kind: warrior 150 hp / 15 dmg / melee, archer 60 hp / 8 dmg
   / range 3, pawn 100 hp / 10 dmg / melee. The mixed demo scenario pits melee
   vs ranged to demonstrate range and durability trade-offs.
 - **Combat feedback (V9)** — the renderer consumes the deterministic per-tick

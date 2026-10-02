@@ -20,14 +20,21 @@ export type ProjectedSnapshotUnit = Pick<
   | 'repairProgressTicks'
   | 'repairProgressMax'
   | 'healCooldownRemaining'
+  | 'canGather'
+  | 'canBuild'
+  | 'canRepair'
+  | 'repairable'
+  | 'acceptsDeposit'
+  | 'canHeal'
 > & {
   readonly kind: NonNullable<RenderUnit['kind']>
+  readonly canAttack?: boolean
 }
 
 export function projectSnapshotUnit(unit: SnapshotUnit): ProjectedSnapshotUnit {
   return {
     owner: unit.owner,
-    kind: unit.kind ?? 'pawn',
+    kind: unit.kind,
     ...(unit.orderState === undefined ? {} : { orderState: unit.orderState }),
     ...(unit.economy === undefined ? {} : { economy: unit.economy }),
     ...(unit.carrying === undefined ? {} : { carrying: unit.carrying }),
@@ -41,6 +48,13 @@ export function projectSnapshotUnit(unit: SnapshotUnit): ProjectedSnapshotUnit {
     ...(unit.repairProgressTicks === undefined
       ? {}
       : { repairProgressTicks: unit.repairProgressTicks, repairProgressMax: unit.repairProgressMax }),
-    ...(unit.healCooldownRemaining === undefined ? {} : { healCooldownRemaining: unit.healCooldownRemaining })
+    ...(unit.healCooldownRemaining === undefined ? {} : { healCooldownRemaining: unit.healCooldownRemaining }),
+    ...(unit.canGather === undefined ? {} : { canGather: unit.canGather }),
+    ...(unit.canBuild === undefined ? {} : { canBuild: unit.canBuild }),
+    ...(unit.canRepair === undefined ? {} : { canRepair: unit.canRepair }),
+    ...(unit.repairable === undefined ? {} : { repairable: unit.repairable }),
+    ...(unit.acceptsDeposit === undefined ? {} : { acceptsDeposit: unit.acceptsDeposit }),
+    ...(unit.canHeal === undefined ? {} : { canHeal: unit.canHeal }),
+    ...(unit.canAttack === undefined ? {} : { canAttack: unit.canAttack })
   }
 }

@@ -1,6 +1,7 @@
 import type { SnapshotBuilding } from '@rts/protocol'
 import type { ResearchType } from '@rts/shared'
 import type { HudContextFeedback, HudFeedbackTarget } from '../components/hud-context-feedback'
+import { castleTierLabel } from './tier-label'
 
 export const HUD_NOTIFICATION_KINDS = [
   'RESEARCH_COMPLETED',
@@ -45,7 +46,7 @@ export interface HudNotificationPresentation {
 
 function constructionLabel(construction: SnapshotBuilding): string {
   if (construction.buildingType === 'CASTLE') {
-    return `Castle ${construction.tier === 2 ? 'II' : 'I'}`
+    return castleTierLabel(construction.tier ?? 1)
   }
   if (construction.buildingType === 'BARRACKS') {
     return 'Barracks'

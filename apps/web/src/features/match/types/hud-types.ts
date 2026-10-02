@@ -44,6 +44,13 @@ export interface HudSelectionUnit {
   }
   /** True while the worker holds cargo, independent of its current order. */
   readonly carrying?: boolean
+  readonly canGather?: boolean
+  readonly canBuild?: boolean
+  readonly canRepair?: boolean
+  readonly repairable?: boolean
+  readonly acceptsDeposit?: boolean
+  readonly canHeal?: boolean
+  readonly canAttack?: boolean
 }
 
 export interface HudConstruction {

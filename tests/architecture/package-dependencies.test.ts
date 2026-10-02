@@ -24,7 +24,7 @@ const MODULES: readonly ModuleEntry[] = [
     allowed: ['@rts/shared', '@rts/game-data', '@rts/pathfinding']
   },
   { name: 'ai', root: 'packages/ai/src', allowed: ['@rts/shared', '@rts/game-data', '@rts/simulation'] },
-  { name: 'renderer', root: 'packages/renderer/src', allowed: ['@rts/shared', '@rts/protocol'] },
+  { name: 'renderer', root: 'packages/renderer/src', allowed: ['@rts/shared'] },
   { name: 'audio', root: 'packages/audio/src', allowed: ['@rts/shared'] },
   {
     name: 'server',

@@ -20,5 +20,7 @@
  * natural-resource models; GATHER orders use resourceId and
  * TO_RESOURCE/HARVESTING phases, and player wallets track GOLD and WOOD
  * canonically.
+ * 0.16.0: future ScheduledCommand queue joined canonical snapshots.
+ * 0.17.0: per-tick resource delta bookkeeping stopped affecting canonical state.
  */
-export const SIMULATION_VERSION = '0.15.0'
+export const SIMULATION_VERSION = '0.17.0'

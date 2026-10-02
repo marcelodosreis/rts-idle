@@ -116,6 +116,25 @@ describe('Map-authored resource harvesting', () => {
     expect(state.world.store(Orders).get(setup.workers[1]!)).toBeUndefined()
   })
 
+  it('bounds an oversized authored harvest amount by worker capacity', () => {
+    const setup = scenario(1, 100)
+    const simulation = createSimulation({
+      seed: SEEDS.simulation.fixedTick,
+      identity: TEST_IDENTITY,
+      initialWorld: setup.world,
+      resources: [{ ...setup.resources[0]!, harvestAmount: 25 }]
+    })
+
+    simulation.step([gather(setup.workers)])
+    simulation.step()
+
+    const state = simulation.inspectState()
+    const cargo = state.world.store(Cargo).get(setup.workers[0]!)!
+    expect(cargo.amount).toBe(10)
+    expect(cargo.amount).toBeLessThanOrEqual(cargo.capacity)
+    expect(state.resources.amount(TREE.resourceId)).toBe(90)
+  })
+
   it('restores a worker gathering a tree with an identical continuation hash', () => {
     const setup = scenario()
     const simulation = createSimulation({
@@ -206,5 +225,21 @@ describe('Resource deltas', () => {
 
     simulation.step()
     expect(simulation.resources(false)).toEqual([])
+  })
+
+  it('keeps changed resource bookkeeping bounded to the current tick', () => {
+    const state = createResourceState(treeField(100))
+
+    for (let tick = 0; tick < 100; tick += 1) {
+      state.beginTick()
+      state.harvest(tick, 1)
+
+      expect(state.changedResourceIds).toHaveLength(1)
+      expect(state.changed()).toHaveLength(1)
+    }
+
+    state.beginTick()
+    expect(state.changedResourceIds).toEqual([])
+    expect(state.changed()).toEqual([])
   })
 })

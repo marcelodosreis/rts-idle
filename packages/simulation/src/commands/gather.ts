@@ -1,3 +1,4 @@
+import { unitDefinitionFor } from '@rts/game-data'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { CommandRejectedError } from '../contracts/commands.js'
 import { Cargo, Kind, Orders, Position } from '../ecs/components.js'
@@ -24,7 +25,13 @@ export function applyGather(state: GameState, command: ScheduledCommand): void {
   const kinds = state.world.store(Kind)
   const cargo = state.world.store(Cargo)
   for (const unitId of unitIds) {
-    if (kinds.get(unitId) !== 'pawn' || cargo.get(unitId) === undefined || positions.get(unitId) === undefined) {
+    const kind = kinds.get(unitId)
+    if (
+      kind === undefined ||
+      !unitDefinitionFor(kind).canGather ||
+      cargo.get(unitId) === undefined ||
+      positions.get(unitId) === undefined
+    ) {
       throw new CommandRejectedError(
         'ENTITY_UNAVAILABLE',
         command,

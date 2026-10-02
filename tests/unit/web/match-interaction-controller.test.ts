@@ -13,7 +13,18 @@ function context(overrides: Partial<MatchInteractionContext> = {}): MatchInterac
     selectedConstructionId: () => null,
     mode: () => 'idle',
     unitStates: new Map([
-      [1, { kind: 'pawn', owner: 0, carrying: true }],
+      [
+        1,
+        {
+          kind: 'pawn',
+          owner: 0,
+          carrying: true,
+          canGather: true,
+          canBuild: true,
+          canRepair: true,
+          acceptsDeposit: true
+        }
+      ],
       [2, { kind: 'warrior', owner: 0 }],
       [9, { kind: 'warrior', owner: 1 }]
     ]),
@@ -146,7 +157,7 @@ describe('MatchInteractionController', () => {
     const match = context({
       selectedUnitIds: () => [2, 1],
       unitStates: new Map([
-        [1, { kind: 'pawn', owner: 0 }],
+        [1, { kind: 'pawn', owner: 0, canRepair: true }],
         [2, { kind: 'warrior', owner: 0 }],
         [9, { kind: 'warrior', owner: 0, hp: 40, maxHp: 100 }]
       ])
@@ -159,10 +170,24 @@ describe('MatchInteractionController', () => {
     ])
   })
 
+  it('does not repair a damaged target whose capability is disabled', () => {
+    const match = context({
+      selectedUnitIds: () => [1],
+      unitStates: new Map([
+        [1, { kind: 'pawn', owner: 0, canRepair: true }],
+        [9, { kind: 'monk', owner: 0, hp: 40, maxHp: 60, repairable: false }]
+      ])
+    })
+
+    new MatchInteractionController(match).unitCommand(9)
+
+    expect((match as MatchInteractionContext & { sent: CommandIntent[] }).sent).toEqual([])
+  })
+
   it('repairs a damaged owned completed building with a non-carrying worker', () => {
     const match = context({
       unitStates: new Map([
-        [1, { kind: 'pawn', owner: 0 }],
+        [1, { kind: 'pawn', owner: 0, canRepair: true }],
         [2, { kind: 'warrior', owner: 0 }]
       ]),
       buildings: () => [
