@@ -26,11 +26,11 @@ The acceptance test asserted a transient server rejection rather than the stable
 
 ## Fix
 
-The E2E test now asserts the full-queue command state without submitting a race-prone sixth command. The cancellation and refund assertions remain unchanged.
+The E2E test no longer submits or observes a race-prone sixth command in the cancellation flow. It keeps the stable queued-row, confirmation, and refund assertions.
 
 ## Regression
 
-`tests/e2e/economy/production-playable.spec.ts` asserts `aria-disabled="true"` and `data-command-state="blocked"` while the queue is `5/5`.
+`tests/e2e/economy/production-playable.spec.ts` asserts queued rows can be cancelled with confirmation and authoritative refund updates.
 
 ## Prevention
 
