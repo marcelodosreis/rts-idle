@@ -67,7 +67,7 @@
 | P2.10 | Repair | done | P2.10.02 | shared, game-data, protocol, simulation, server, renderer, web | unit, simulation, contracts, integration, determinism, invariants, e2e |
 | P2.11 | Research and modifiers | done | P2.07, P2.10 | shared, game-data, protocol, simulation, server, renderer, web | unit, simulation, contracts, determinism, invariants, e2e |
 | P2.11.01 | Monk Heal | done | P2.11 | shared, game-data, protocol, simulation, server, renderer, web | unit, simulation, contracts, determinism, invariants, e2e |
-| P2.12 | Economic integration | pending | P2.11 | simulation, server, web | integration, determinism, e2e |
+| P2.12 | Economic integration | done | P2.11 | simulation, server, web | integration, determinism, e2e |
 
 ## Cross-cutting Resource Track
 
@@ -234,6 +234,7 @@ RFC: `docs/rfc/RFC-003-cost-scale-and-architecture-comparison.md` (Proposed).
 | QH.21 | Typed-domain completion (registries + branded AssetKey) | done | QH.19 | shared, protocol, renderer, server, web | typecheck, lint, architecture |
 | QH.22 | Public API and docs sync | done | QH.19, QH.21 | docs, tests | architecture, lint |
 | QH.23 | Session projections and tools coverage | done | QH.19 | server, tools, tests | integration, lint, architecture |
-| QH.27.01 | Deterministic E2E and faster pipeline | in progress | QH.26.01 | quality, e2e, CI, web | verify, e2e |
+| QH.27.01 | Deterministic E2E and faster pipeline | done | QH.26.01 | quality, e2e, CI, web | verify, e2e |
 | QH.26.01 | Deterministic CI and E2E reliability | done | QH.25 | quality, CI, web | verify, e2e, CI |
+| QH.28.01 | Unified regression E2E fixture | done | QH.27.01, P2.12 | server, simulation, web, tests | verify, e2e |
 | QH.24 | Mandatory enforcement (git, CI, governance) | done | QH.19 | root, docs, rules, skills, tests | lint, architecture, verify |

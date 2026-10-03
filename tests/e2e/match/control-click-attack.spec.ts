@@ -39,14 +39,14 @@ async function unitsByOwner(page: Page): Promise<UnitInfo[]> {
 }
 
 test('right-clicking an enemy attacks it and preserves the selection', async ({ page }) => {
-  await page.goto('/?scenario=8v8&aggression=passive')
+  await page.goto('/?scenario=regression&aggression=passive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
   const blueIds = await page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
     const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
     return Object.entries(owners)
-      .filter(([id, owner]) => owner === 0 && kinds[id] !== 'monk')
+      .filter(([id, owner]) => owner === 0 && kinds[id] !== 'monk' && kinds[id] !== 'pawn')
       .map(([id]) => Number(id))
       .slice(0, 6)
   })
@@ -64,6 +64,7 @@ test('right-clicking an enemy attacks it and preserves the selection', async ({ 
   )
 
   const target = (await unitsByOwner(page)).find((unit) => unit.id === red!.id) ?? red!
+  await page.evaluate(({ x, y }) => window.__rtsDebug?.moveCamera(x, y), target)
   const targetScreen = await worldToPage(page, target.x, target.y)
   await page.mouse.click(targetScreen.x, targetScreen.y, { button: 'right' })
 
@@ -79,14 +80,14 @@ test('right-clicking an enemy attacks it and preserves the selection', async ({ 
 })
 
 test('Control+click on an enemy does not change the selection', async ({ page }) => {
-  await page.goto('/?scenario=8v8&aggression=offensive')
+  await page.goto('/?scenario=regression&aggression=offensive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
   const blueIds = await page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
     const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
     return Object.entries(owners)
-      .filter(([id, owner]) => owner === 0 && kinds[id] !== 'monk')
+      .filter(([id, owner]) => owner === 0 && kinds[id] !== 'monk' && kinds[id] !== 'pawn')
       .map(([id]) => Number(id))
       .slice(0, 6)
   })
@@ -100,6 +101,7 @@ test('Control+click on an enemy does not change the selection', async ({ page })
     .toEqual(expect.arrayContaining(blueIds))
 
   const target = (await unitsByOwner(page)).find((unit) => unit.id === red!.id) ?? red!
+  await page.evaluate(({ x, y }) => window.__rtsDebug?.moveCamera(x, y), target)
   const targetScreen = await worldToPage(page, target.x, target.y)
 
   await page.keyboard.down('Control')

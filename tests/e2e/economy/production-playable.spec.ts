@@ -25,8 +25,9 @@ async function focusFixed(page: Page, x: number, y: number) {
 async function workerIds(page: Page): Promise<number[]> {
   return page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
     return Object.entries(owners)
-      .filter(([, owner]) => owner === 0)
+      .filter(([id, owner]) => owner === 0 && kinds[id] === 'pawn')
       .map(([id]) => Number(id))
   })
 }
@@ -133,7 +134,7 @@ test('cancels any queued production row with confirmation and refund feedback', 
     await expect(page.getByTestId('production-queue-count')).toHaveText(/Queue [1-5]\/5/)
   }
   await expect.poll(() => queueLength(page)).toBeGreaterThanOrEqual(2)
-  await expect(page.getByTestId('hud-resource-gold')).toContainText('0')
+  await expect(page.getByTestId('hud-resource-gold')).toContainText('350')
   const queueFitsSelection = await page
     .getByRole('list', { name: 'Production and research queue' })
     .evaluate((queue) => queue.scrollWidth <= queue.clientWidth)

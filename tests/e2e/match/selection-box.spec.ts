@@ -38,7 +38,7 @@ async function dragBox(
 }
 
 async function ready(page: Page): Promise<void> {
-  await page.goto('/?scenario=default&aggression=passive')
+  await page.goto('/?scenario=regression&aggression=passive')
   await waitForMatchReady(page)
 }
 

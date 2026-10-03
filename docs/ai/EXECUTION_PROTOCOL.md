@@ -167,12 +167,24 @@ bar runs at pre-commit (`lint-staged`) and pre-push (`typecheck` + `lint` +
 `test:architecture`); it applies to every package, app, tool, and test.
 
 For browser or protocol changes, run the appropriate E2E gate. Use
-`pnpm run test:e2e:fast` for functional iteration, `pnpm run test:e2e:perf` for
-renderer benchmark changes, and `pnpm run test:e2e:all` for release or complete
-browser validation. CI keeps functional and `@perf` tests in separate pools for
-each browser, then automatically rebalances the shards inside each pool from
-per-test timing artifacts. Together the two pools cover the same tests as
-`test:e2e:all`.
+`pnpm run test:e2e:fast` for functional iteration and `pnpm run test:e2e:perf`
+for renderer benchmark changes. The canonical complete browser gate is the
+CI-equivalent planned matrix:
+
+```bash
+pnpm run test:e2e:prepare -- --output=tmp/e2e-plan.json
+E2E_WORKERS=1 E2E_CATEGORY=functional E2E_BROWSER=chromium \
+  pnpm run test:e2e -- --project=chromium --plan=tmp/e2e-plan.json --group=<group-id>
+```
+
+Run every generated group for both browsers and both categories. CI keeps
+functional and `@perf` tests in separate jobs on isolated runners, then
+automatically rebalances groups from per-test timing artifacts. The union of
+those groups covers the same tests as `test:e2e:all` and is the preferred full
+gate because it finishes faster without sharing renderer/server CPU between
+groups. Never run browser groups in parallel on the same constrained host.
+`pnpm run test:e2e:all` remains a serial local fallback, not the certification
+gate.
 
 Before any focused browser run, enumerate the target first:
 
@@ -285,7 +297,7 @@ Do NOT produce large essays. Keep reports under 30 lines.
 |-------|------|----------|
 | Iteration | After intermediate edits | affected tests + relevant checks |
 | Per-feature | Feature complete | + integration + contracts + orders |
-| Completion | Feature completion; browser/protocol changes add explicit E2E | `pnpm run verify` + `test:e2e:fast` or `test:e2e:perf` as affected; `test:e2e:all` for complete/release validation |
+| Completion | Feature completion; browser/protocol changes add explicit E2E | `pnpm run verify` + affected focused E2E; use the CI-planned functional/performance matrix for complete/release validation |
 | Milestone / release | Phase complete or version bump | Completion gate, plus any task-specific/manual checks |
 
 ## Documentation Rules

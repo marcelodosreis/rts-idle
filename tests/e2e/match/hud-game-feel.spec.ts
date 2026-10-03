@@ -29,13 +29,13 @@ async function selectWorker(page: Page): Promise<number> {
 }
 
 async function startMatch(page: Page): Promise<number> {
-  await page.goto('/?scenario=default')
+  await page.goto('/?scenario=regression')
   await waitForMatchReady(page)
   return selectWorker(page)
 }
 
 test('does not render an empty contextual feedback overlay while idle', async ({ page }) => {
-  await page.goto('/?scenario=default')
+  await page.goto('/?scenario=regression')
   await waitForMatchReady(page)
 
   await expect(page.getByTestId('hud-context-feedback')).toHaveCount(0)

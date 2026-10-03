@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test('input profile is visible and persists across reloads', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?scenario=regression&aggression=passive')
   await page.getByRole('button', { name: 'Open DevTools menu' }).click()
   await page.getByRole('button', { name: 'Toggle Match session' }).click()
   await expect(page.getByLabel('input profile')).toBeVisible()

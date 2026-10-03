@@ -38,7 +38,7 @@ class FakeWebSocket {
 const request: MatchRequest = {
   type: 'match_request',
   protocolVersion: PROTOCOL_VERSION,
-  scenarioId: 'default',
+  scenarioId: 'regression',
   aggression: 'passive',
   map: { source: 'catalog' }
 }
@@ -185,7 +185,7 @@ describe('match transport snapshot resync', () => {
       type: 'match_config',
       protocolVersion: PROTOCOL_VERSION,
       resumeToken: 'resume-token',
-      scenario: { id: 'default', label: 'Default' },
+      scenario: { id: 'regression', label: 'Regression' },
       scenarios: [{ id: 'default', label: 'Default' }],
       map: { width: 2, height: 2, tiles: ['land', 'land', 'land', 'land'], resources: [] },
       buildings: [],

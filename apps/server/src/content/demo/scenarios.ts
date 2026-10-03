@@ -42,13 +42,15 @@ function tile(x: number, y: number): { readonly x: Fixed; readonly y: Fixed } {
 const PAWN: UnitKind = 'pawn'
 const WARRIOR: UnitKind = 'warrior'
 const ARCHER: UnitKind = 'archer'
+const MONK: UnitKind = 'monk'
+const LANCER: UnitKind = 'lancer'
 const [PLAYER_BASE, OPPONENT_BASE] = competitiveBaseLocations()
 
 /** Demo seed — shared with `demo.ts`; keeps every scenario deterministic. */
 export const DEMO_SEED = 123456
 
 /** Eight units per side, including one Monk and one Lancer support pair. */
-const KINDS_PER_SIDE: readonly UnitKind[] = [PAWN, WARRIOR, ARCHER, PAWN, WARRIOR, ARCHER, 'monk', 'lancer']
+const KINDS_PER_SIDE: readonly UnitKind[] = [PAWN, WARRIOR, ARCHER, PAWN, WARRIOR, ARCHER, MONK, LANCER]
 
 /**
  * Eight-versus-eight scenario: eight units per side with two of each core archetype,
@@ -112,32 +114,39 @@ function regressionScenario(): DemoScenario {
   return {
     id: 'regression',
     label: 'Regression',
-    startingGold: 250,
+    startingGold: 600,
     spawns: [
       { owner: 0, kind: PAWN, worker: true, ...tile(8, 11) },
       { owner: 0, kind: PAWN, worker: true, ...tile(9, 11) },
       { owner: 0, kind: PAWN, worker: true, ...tile(10, 11) },
-      { owner: 0, kind: PAWN, worker: true, ...tile(11, 11) }
+      { owner: 0, kind: PAWN, worker: true, ...tile(11, 11) },
+      { owner: 0, kind: WARRIOR, initialHp: 90, ...tile(13, 8) },
+      { owner: 0, kind: ARCHER, ...tile(14, 8) },
+      { owner: 0, kind: MONK, ...tile(15, 8) },
+      { owner: 0, kind: LANCER, ...tile(16, 8) },
+      { owner: 1, kind: PAWN, ...tile(18, 17) },
+      { owner: 1, kind: WARRIOR, ...tile(19, 17) },
+      { owner: 1, kind: ARCHER, ...tile(20, 17) },
+      { owner: 1, kind: PAWN, ...tile(21, 17) },
+      { owner: 1, kind: WARRIOR, ...tile(18, 18) },
+      { owner: 1, kind: ARCHER, ...tile(19, 18) },
+      { owner: 1, kind: MONK, ...tile(20, 18) },
+      { owner: 1, kind: LANCER, ...tile(21, 18) }
     ],
     buildings: [
       { owner: 0, initialHp: 250, ...tile(PLAYER_BASE.x, PLAYER_BASE.y) },
+      { owner: 0, buildingType: 'HOUSE', ...tile(16, 10) },
       { owner: 1, ...tile(OPPONENT_BASE.x, OPPONENT_BASE.y) }
     ],
-    attacks: []
-  }
-}
-
-function researchScenario(): DemoScenario {
-  return {
-    ...regressionScenario(),
-    id: 'research',
-    label: 'Research',
-    startingGold: 500,
-    startingCastleTier: 2,
-    buildings: [
-      { owner: 0, buildingType: 'CASTLE', tier: 2, ...tile(PLAYER_BASE.x, PLAYER_BASE.y) },
-      { owner: 0, buildingType: 'MONASTERY', ...tile(11, 9) },
-      { owner: 1, ...tile(OPPONENT_BASE.x, OPPONENT_BASE.y) }
+    attacks: [
+      [8, 0],
+      [9, 1],
+      [10, 2],
+      [11, 3],
+      [12, 4],
+      [13, 5],
+      [14, 6],
+      [15, 7]
     ]
   }
 }
@@ -148,9 +157,9 @@ function monkHealScenario(): DemoScenario {
     label: 'Monk Heal',
     startingGold: 250,
     spawns: [
-      { owner: 0, kind: 'monk', ...tile(8, 11) },
+      { owner: 0, kind: MONK, ...tile(8, 11) },
       { owner: 0, kind: 'warrior', initialHp: 90, ...tile(9, 11) },
-      { owner: 0, kind: 'monk', ...tile(8, 12) },
+      { owner: 0, kind: MONK, ...tile(8, 12) },
       { owner: 0, kind: 'warrior', initialHp: 90, ...tile(9, 12) }
     ],
     buildings: [{ owner: 1, ...tile(OPPONENT_BASE.x, OPPONENT_BASE.y) }],
@@ -167,7 +176,6 @@ function monkHealScenario(): DemoScenario {
 export const DEMO_SCENARIOS: readonly DemoScenario[] = [
   defaultScenario(),
   regressionScenario(),
-  researchScenario(),
   monkHealScenario(),
   eightVsEightScenario(),
   {

@@ -24,7 +24,7 @@ function intersects(a: Box, b: Box): boolean {
 for (const viewport of VIEWPORTS) {
   test(`HUD does not overlap or overflow at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport)
-    await page.goto('/')
+    await page.goto('/?scenario=regression&aggression=passive')
     await waitForMatchReady(page)
 
     const hud = await page.getByTestId('hud-root').boundingBox()

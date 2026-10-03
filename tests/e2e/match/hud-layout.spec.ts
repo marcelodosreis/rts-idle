@@ -12,7 +12,7 @@ interface UnitCatalog {
 }
 
 async function startMatch(page: Page): Promise<UnitCatalog> {
-  await page.goto('/?scenario=8v8&aggression=passive')
+  await page.goto('/?scenario=regression&aggression=passive')
   await waitForMatchReady(page)
   return page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}

@@ -146,10 +146,23 @@ Gold/Wood wallets, `ResourceCost` unifies construction/training/research
 pricing, and `tests/architecture/legacy-resource-symbols.test.ts` blocks
 reintroduction of the removed symbols.
 
-Quality Hardening remains deferred after the completed QUAL-016 output hygiene
-and QUAL-018 tracking work. The Concept Authority closure (AUTH-005A through
-AUTH-018) is complete; its audit records the authority and validation evidence.
-See `docs/tasks/todo.md` for the remaining quality board.
+P2.12 Economic Integration is complete: the real-server `regression` flow
+proves gather, Gold deposit, Castle II, Monastery construction, Monk production,
+and Economy research without pre-seeded progression. Integration snapshot/hash
+determinism and the Chromium/Firefox browser matrix are green.
+
+QH.27.01 Deterministic E2E and QH.28.01 Unified Regression E2E Fixture are
+complete. The planned CI matrix is the canonical full browser gate: it runs
+functional and performance groups independently for Chromium and Firefox, with
+one worker per isolated runner. Its union covers the same tests as the serial
+`test:e2e:all` fallback. `regression` is the sole automated gameplay fixture,
+while `default`, `8v8`, `ffa`, and `monk-heal` remain available for manual
+selection and `research` remains absent from the catalog.
+
+The remaining quality board is separate from the completed QH.27.01 and
+QH.28.01 tracks. The Concept Authority closure (AUTH-005A through AUTH-018) is
+complete; its audit records the authority and validation evidence. See
+`docs/tasks/todo.md` for the remaining quality board.
 
 WEB-ARCH-001 Web Frontend Architecture Restructure is complete. The old MPA
 entries `/sprites/`, `/det.html`, and `/perf.html` were removed; Laboratory
@@ -206,8 +219,9 @@ pnpm run test:e2e:fast
 # Performance iteration
 pnpm run test:e2e:perf
 
-# Complete browser/release gate: all tests, both browsers, including performance
-pnpm run test:e2e:all
+# Complete browser/release gate: generate and execute every planned matrix group
+pnpm run test:e2e:prepare -- --output=tmp/e2e-plan.json
+# Run each functional/performance group for Chromium and Firefox on isolated runners
 ```
 
 The CI runs functional and `@perf` E2E pools as independent jobs for Chromium

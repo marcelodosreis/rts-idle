@@ -115,8 +115,11 @@ for humans and LLM tooling. Passing tests produce a short progress summary;
 failed tests still print their assertion details and stack traces. The compact
 reporter reduces output volume, not test execution time.
 
-The CI browser gate remains complete and runs both Chromium and Firefox:
+The complete browser gate uses the generated CI matrix. It runs functional and
+performance groups independently for both Chromium and Firefox; use the serial
+command only as a local fallback:
 
 ```bash
-pnpm run test:e2e:all
+pnpm run test:e2e:prepare -- --output=tmp/e2e-plan.json
+# Execute every generated group with E2E_WORKERS=1 on an isolated runner.
 ```

@@ -20,7 +20,7 @@ test('the game remains playable with sprites disabled', async ({ page }) => {
 })
 
 test('fallback circles keep their size after units engage in combat', async ({ page }) => {
-  await page.goto('/?scenario=8v8&aggression=offensive&sprites=off')
+  await page.goto('/?scenario=regression&aggression=offensive&sprites=off')
   await page.getByRole('button', { name: 'Open DevTools menu' }).click()
   await waitForMatchReady(page)
 
@@ -57,7 +57,7 @@ test('fallback circles keep their size after units engage in combat', async ({ p
 })
 
 test('fallback units show kind-specific glyphs and shapes', async ({ page }) => {
-  await page.goto('/?scenario=8v8&aggression=offensive&sprites=off')
+  await page.goto('/?scenario=regression&aggression=offensive&sprites=off')
   await waitForMatchReady(page)
 
   const glyphs = await page.evaluate(() => {
@@ -76,7 +76,7 @@ test('fallback units show kind-specific glyphs and shapes', async ({ page }) => 
     expect(g?.shape).not.toBeNull()
   }
 
-  // The demo 8v8 has the core roster plus Monk and Lancer.
+  // The regression fixture includes the core roster plus Monk and Lancer.
   const letters = new Set(fallbacks.map((g) => g?.glyph))
   expect(letters).toEqual(new Set(['P', 'W', 'A', 'L', 'M']))
 })

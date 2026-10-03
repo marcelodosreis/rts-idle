@@ -22,7 +22,7 @@ test.describe('top HUD', () => {
 
   test('shows the match clock and semantic resource colors on desktop', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
-    await page.goto('/?scenario=default')
+    await page.goto('/?scenario=regression')
     await waitForMatchReady(page)
 
     await expect(page.getByTestId('hud-topbar-time')).toHaveText(/\d{2}:\d{2}/)
@@ -36,7 +36,7 @@ test.describe('top HUD', () => {
 
   test('keeps the brand, resources, clock, and controls in two mobile rows', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 })
-    await page.goto('/?scenario=default')
+    await page.goto('/?scenario=regression')
     await waitForMatchReady(page)
 
     const brand = await page.getByTestId('hud-topbar-brand').boundingBox()
@@ -67,7 +67,7 @@ test.describe('top HUD', () => {
 
   test('wraps the reference 958x910 layout into two clear rows', async ({ page }) => {
     await page.setViewportSize({ width: 958, height: 910 })
-    await page.goto('/?scenario=default')
+    await page.goto('/?scenario=regression')
     await waitForMatchReady(page)
 
     const boxes = await topBarBoxes(page)
