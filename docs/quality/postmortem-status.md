@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 84 |
-| closed | 18 |
-| **total** | **102** |
+| open | 82 |
+| closed | 21 |
+| **total** | **103** |
 
 ## Details
 
@@ -80,7 +80,7 @@
 | 2026-09-28-repair-deposit-precedence | open | coverage | QH.20 | 2 test(s) |
 | 2026-09-28-stale-match-renderer-resources | open | presentation | QH.20 | 1 test(s) |
 | 2026-09-29-asset-list-scroll-jump | open | presentation | QH.17 | 1 test(s) |
-| 2026-09-29-firefox-repair-animation-flake | open | presentation | QH.12 | 1 test(s) |
+| 2026-09-29-firefox-repair-animation-flake | closed | presentation | QH.12 | 1 test(s) |
 | 2026-09-29-functional-e2e-roster-assets | open | coverage | QH.19 | none |
 | 2026-09-29-hud-command-regressions | open | presentation | QH.25 | 2 test(s) |
 | 2026-09-29-terrain-editor-narrow-canvas | open | presentation | QH.17 | 1 test(s) |
@@ -116,7 +116,8 @@
 | 2026-10-02-castle-tier-unavailable-feedback | open | presentation | QH.26.01 | 1 test(s) |
 | 2026-10-02-e2e-plan-missing-dist | open | environment | QH.27.01 | 1 test(s) |
 | 2026-10-02-firefox-transport-drop-recovery | open | completion-gate | QH.26.01 | 1 test(s) |
-| 2026-10-03-production-queue-test-race | open | presentation | QH.28.01 | 1 test(s) |
+| 2026-10-03-production-queue-test-race | closed | presentation | QH.28.02 | 1 test(s) |
+| 2026-10-03-renderer-lifecycle-observation-race | closed | presentation | QH.03 | 1 test(s) |
 
 ## Legend
 

@@ -11,6 +11,22 @@ test('renderer mounts, renders a frame, and disposes cleanly', async ({ page }) 
 
   const positions = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})
   expect(Object.keys(positions).length).toBeGreaterThan(0)
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const ids = Object.keys(window.__rtsDebug?.getPositions() ?? {})
+          return (
+            ids.length > 0 &&
+            ids.every((id) => {
+              const state = window.__rtsDebug?.getSpriteState(Number(id))
+              return state?.inTree === true && state.visible === true
+            })
+          )
+        }),
+      { timeout: 5_000 }
+    )
+    .toBe(true)
 })
 
 test('mounting the renderer twice does not duplicate state', async ({ page }) => {

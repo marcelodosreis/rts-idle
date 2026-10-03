@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
-import { hasArt } from '../support/art.js'
+import { expectAnim, hasArt } from '../support/art.js'
 import { settleUnits, waitForTicks } from '../support/settle.js'
 
 async function canvasPointForFixed(page: import('@playwright/test').Page, x: number, y: number) {
@@ -39,8 +39,8 @@ test('the regression scenario repairs its damaged Base through the browser comma
     .toBe(1)
   if (await hasArt(page)) {
     await expect
-      .poll(() => page.evaluate((id) => window.__rtsDebug?.getSpriteState(id)?.anim, workerId), { timeout: 5_000 })
-      .toMatch(/^repair_(run|interact)$/)
+      .poll(() => expectAnim(page, workerId, ['repair_run', 'repair_interact']), { timeout: 5_000 })
+      .not.toBeNull()
   }
   await expect
     .poll(() => page.evaluate((id) => window.__rtsDebug?.getConstructionStates()[id!]?.hp ?? 0, damagedBase), {
@@ -50,9 +50,7 @@ test('the regression scenario repairs its damaged Base through the browser comma
   await page.mouse.click(basePoint.x, basePoint.y)
   await expect(page.getByTestId('construction-health')).toContainText(/HP\s*\d+\/\d+/)
   if (await hasArt(page)) {
-    await expect
-      .poll(() => page.evaluate((id) => window.__rtsDebug?.getSpriteState(id)?.anim, workerId), { timeout: 10_000 })
-      .toBe('repair_interact')
+    await expect.poll(() => expectAnim(page, workerId, ['repair_interact']), { timeout: 10_000 }).not.toBeNull()
   }
   await expect
     .poll(() => page.evaluate((id) => window.__rtsDebug?.getConstructionStates()[id!]?.hp ?? 0, damagedBase), {

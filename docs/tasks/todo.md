@@ -104,7 +104,7 @@ active and pending packets remain here. See [`docs/tasks/README.md`](README.md).
 ## Phase 2 — Economy and production
 
 Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
-`docs/tasks/P2.11.md` (Castle II research and modifiers).
+`docs/tasks/done/P2.11.md` (Castle II research and modifiers).
 
 ### VS-01 — Economy v0 (P2.01–P2.02)
 
@@ -185,8 +185,8 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
 - [x] P2.10.01 — Persistent unit health bars (`docs/tasks/done/P2.10.01.md`)
 - [x] P2.10.02 — Building health and shared damage (`docs/tasks/done/P2.10.02.md`)
 - [x] P2.10 — Repair (`docs/tasks/done/P2.10.md`)
-- [x] P2.11 — Research and modifiers (`docs/tasks/P2.11.md`): Castle II, Monastery queue, Attack/Defense/Economy/Movement, armor, modifiers, HUD, and E2E
-- [x] P2.11.01 — Monk Heal (`docs/tasks/P2.11.01.md`): self/allied healing, cooldown, HUD, effects, and E2E
+- [x] P2.11 — Research and modifiers (`docs/tasks/done/P2.11.md`): Castle II, Monastery queue, Attack/Defense/Economy/Movement, armor, modifiers, HUD, and E2E
+- [x] P2.11.01 — Monk Heal (`docs/tasks/done/P2.11.01.md`): self/allied healing, cooldown, HUD, effects, and E2E
 - [x] P2.12 — Economic integration (`docs/tasks/done/P2.12.md`)
 
 ## Phase 3 — Navigation, full combat, and fog
@@ -247,30 +247,43 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
 - [x] QH.26.01 Deterministic CI and E2E reliability (deps: QH.25)
 - [x] QH.27.01 Deterministic E2E and faster pipeline (`docs/tasks/done/QH.27.01.md`; deps: QH.26.01)
 - [x] QH.28.01 Unified regression E2E fixture (`docs/tasks/done/QH.28.01.md`; deps: QH.27.01, P2.12)
+- [x] QH.28.02 Deterministic blocked production coverage (`docs/tasks/done/QH.28.02.md`; deps: QH.28.01, P2.12)
 - [x] QH.17 Front-matter + guard + summary (postmortem tracking)
 - [x] QH.18 Board + tracking guard + protocol
 - [x] QH.16 Output hygiene (test output)
 
-> QUAL-016 e QUAL-018 foram concluídas. As demais tasks de Quality Hardening
-> permanecem adiadas até o fechamento das fases principais.
+> QUAL-016 e QUAL-018 foram concluídas. O batch de hardening de 2026-10-03
+> abaixo registra as exceções e tasks adicionais concluídas.
+
+### Quality hardening batch 2026-10-03
+
+Completed in this batch: QH.03 reduced renderer invariants, QH.09 session
+isolation, QH.12 animation convention, and QH.28.02 blocked production
+coverage. P2.11 documentation was reconciled with the current Gold/Wood model.
+
+Deferred or out of scope for this batch: QH.00, QH.01, QH.02, QH.04, QH.05,
+QH.06, QH.07, QH.08, QH.10, QH.13, QH.14, and QH.15; WebKit/touch/mobile
+coverage; ARCH.02.*; DEP.01-DEP.09; SCL.01-SCL.04; and Phase 3 work.
+QH.11 is recorded as complete because the existing CI parallelism already
+satisfied its contract; it was not reimplemented here.
 
 ### Low Effort
 - [ ] QH.04 Input helper (deps: QH.00)
 - [ ] QH.07 Barrier input (deps: QH.04)
-- [ ] QH.12 expectAnim + barrier (deps: QH.00)
+- [x] QH.12 expectAnim + barrier (`docs/tasks/done/QH.12.md`; reduced scope, deps: QH.00)
 - [ ] QH.08 Dynamic geometry (deps: QH.02)
 - [ ] QH.15 Branch baseline (deps: none)
 
 ### Core
 - [ ] QH.01 Structural harness (deps: QH.00)
 - [ ] QH.02 HUD contract (deps: QH.01)
-- [ ] QH.03 Display list invariants (deps: QH.01)
+- [x] QH.03 Display list invariants (`docs/tasks/done/QH.03.md`; reduced scope, deps: QH.01)
 - [ ] QH.05 Gesture matrix (deps: QH.04)
-- [ ] QH.09 Concurrent isolation (deps: QH.00)
+- [x] QH.09 Concurrent isolation (`docs/tasks/done/QH.09.md`; reduced scope, deps: QH.00)
 - [ ] QH.10 Barrier singleton (deps: QH.00)
 
 ### Structural
-- [ ] QH.11 Toggle CI parallelism (deps: QH.09, QH.10)
+- [x] QH.11 Toggle CI parallelism (`docs/tasks/done/QH.11.md`; already satisfied, deps: QH.09, QH.10)
 - [ ] QH.06 WebKit/touch (deps: QH.05)
 
 ### Conditional

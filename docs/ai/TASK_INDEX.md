@@ -213,16 +213,16 @@ RFC: `docs/rfc/RFC-003-cost-scale-and-architecture-comparison.md` (Proposed).
 | QH.00 | Spec + ADR | pending | — | docs | lint |
 | QH.01 | Structural harness | pending | QH.00 | quality | unit |
 | QH.02 | HUD contract | pending | QH.01 | web, quality | unit, e2e |
-| QH.03 | Display list invariants | pending | QH.01 | renderer, quality | unit |
+| QH.03 | Display list invariants | done | QH.01 (reduced scope approved) | renderer, quality | e2e |
 | QH.04 | Input helper | pending | QH.00 | web, quality | unit |
 | QH.05 | Gesture matrix | pending | QH.04 | web, quality | e2e |
 | QH.06 | WebKit/touch | pending | QH.05 | web, quality | e2e |
 | QH.07 | Barrier input | pending | QH.04 | web, quality | unit |
 | QH.08 | Dynamic geometry | pending | QH.02 | renderer, quality | unit |
-| QH.09 | Concurrent isolation | pending | QH.00 | quality | integration |
+| QH.09 | Concurrent isolation | done | QH.00 (reduced scope approved) | quality | integration |
 | QH.10 | Barrier singleton | pending | QH.00 | quality | unit |
-| QH.11 | Toggle CI parallelism | pending | QH.09, QH.10 | quality, infra | CI |
-| QH.12 | expectAnim + barrier | pending | QH.00 | quality | unit, e2e |
+| QH.11 | Toggle CI parallelism | done | QH.09, QH.10 | quality, infra | CI |
+| QH.12 | expectAnim + barrier | done | QH.00 (reduced scope approved) | quality | unit, e2e |
 | QH.13 | Path-based E2E gate | pending | QH.02, QH.05 | quality, CI | e2e |
 | QH.14 | Coverage ratchet | pending | QH.16 | quality | unit |
 | QH.15 | Branch baseline | pending | — | quality, CI | CI |
@@ -237,4 +237,16 @@ RFC: `docs/rfc/RFC-003-cost-scale-and-architecture-comparison.md` (Proposed).
 | QH.27.01 | Deterministic E2E and faster pipeline | done | QH.26.01 | quality, e2e, CI, web | verify, e2e |
 | QH.26.01 | Deterministic CI and E2E reliability | done | QH.25 | quality, CI, web | verify, e2e, CI |
 | QH.28.01 | Unified regression E2E fixture | done | QH.27.01, P2.12 | server, simulation, web, tests | verify, e2e |
+| QH.28.02 | Deterministic blocked production coverage | done | QH.28.01, P2.12 | web, tests, docs | e2e, verify |
 | QH.24 | Mandatory enforcement (git, CI, governance) | done | QH.19 | root, docs, rules, skills, tests | lint, architecture, verify |
+
+### Quality hardening batch 2026-10-03
+
+Completed in this batch: QH.03 reduced renderer invariants, QH.09 session
+isolation, QH.12 animation convention, and QH.28.02 blocked production
+coverage. P2.11 documentation was reconciled with the current Gold/Wood model.
+
+Deferred or out of scope: QH.00, QH.01, QH.02, QH.04, QH.05, QH.06, QH.07,
+QH.08, QH.10, QH.13, QH.14, QH.15, WebKit/touch/mobile coverage, ARCH.02.*,
+DEP.01-DEP.09, SCL.01-SCL.04, and Phase 3 work. QH.11 is already satisfied
+by the existing CI parallelism and is not being reimplemented here.

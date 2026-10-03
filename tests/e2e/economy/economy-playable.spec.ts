@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
-import { hasArt } from '../support/art.js'
+import { expectAnim, hasArt } from '../support/art.js'
 import { waitForMatchReady, waitForTicks } from '../support/settle.js'
 
 /** Economy scenario Gold Mine tile (see packages/game-data/src/maps/competitive.ts). */
@@ -261,15 +261,11 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
   // it, so skip the anim check then (see art.ts / regression-units-visible.spec.ts).
   const art = await hasArt(page)
   if (art) {
-    await expect
-      .poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id))
-      .toBe('gather')
+    await expect.poll(() => expectAnim(page, id, ['gather'])).not.toBeNull()
   }
   await expect(page.getByTestId('economy-status')).toContainText('Returning', { timeout: 30_000 })
   if (art) {
-    await expect
-      .poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id))
-      .toBe('carry_run')
+    await expect.poll(() => expectAnim(page, id, ['carry_run'])).not.toBeNull()
   }
   await expect.poll(() => goldValue(page), { timeout: 20_000 }).toBeGreaterThan(initialGold)
 
@@ -284,7 +280,7 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
   expect(Math.hypot(after.x - stopped.x, after.y - stopped.y)).toBeLessThan(2)
   expect(await goldValue(page)).toBe(stoppedGold)
   if (art) {
-    await expect.poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id)).toBe('idle')
+    await expect.poll(() => expectAnim(page, id, ['idle'])).not.toBeNull()
   }
 })
 
@@ -311,9 +307,7 @@ test('an interrupted carrying worker shows cargo and deposits by right-clicking 
   await expect(page.getByTestId('economy-status')).toContainText('Carrying cargo')
   const art = await hasArt(page)
   if (art) {
-    await expect
-      .poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id))
-      .toBe('carry_idle')
+    await expect.poll(() => expectAnim(page, id, ['carry_idle'])).not.toBeNull()
   }
 
   const basePoint = await focusFixed(page, tilesToFixed(7), tilesToFixed(9))
@@ -321,7 +315,7 @@ test('an interrupted carrying worker shows cargo and deposits by right-clicking 
   await expect.poll(() => goldValue(page), { timeout: 15_000 }).toBeGreaterThan(initialGold)
   await expect(page.getByTestId('economy-status')).toBeEmpty()
   if (art) {
-    await expect.poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id)).toBe('idle')
+    await expect.poll(() => expectAnim(page, id, ['idle'])).not.toBeNull()
   }
 })
 
@@ -385,9 +379,7 @@ test('a group harvests the same gold mine concurrently through the browser comma
 
   if (await hasArt(page)) {
     for (const id of group) {
-      await expect
-        .poll(() => page.evaluate((unitId) => window.__rtsDebug?.getSpriteState(unitId)?.anim, id))
-        .toBe('gather')
+      await expect.poll(() => expectAnim(page, id, ['gather'])).not.toBeNull()
     }
   }
 })

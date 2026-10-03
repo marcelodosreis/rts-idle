@@ -1,7 +1,7 @@
 ---
-status: open
+status: closed
 classe: presentation
-barreira: QH.28.01
+barreira: QH.28.02
 regressao:
   - tests/e2e/economy/production-playable.spec.ts
 ---
@@ -26,16 +26,26 @@ The acceptance test asserted a transient server rejection rather than the stable
 
 ## Fix
 
-The E2E test no longer submits or observes a race-prone sixth command in the cancellation flow. It keeps the stable queued-row, confirmation, and refund assertions.
+The E2E coverage now seeds an authoritative Pawn at the Castle spawn exit,
+fills the queue through the real HUD, and observes the stable blocked command
+and `Queue is full` feedback. Cancellation remains a separate assertion with
+authoritative queue reduction and Gold refund updates.
 
 ## Regression
 
-`tests/e2e/economy/production-playable.spec.ts` asserts queued rows can be cancelled with confirmation and authoritative refund updates.
+`tests/e2e/economy/production-playable.spec.ts` asserts both the full blocked
+queue and queued-row cancellation with confirmation and authoritative refund
+updates.
 
 ## Prevention
 
-Browser tests for temporal gameplay state must observe stable UI state instead of forcing commands whose validity can change during the assertion window.
+Browser tests for temporal gameplay state must observe stable UI state instead
+of forcing commands whose validity can change during the assertion window. The
+blocked-queue fixture now holds the authoritative spawn tile so queue progress
+cannot invalidate the blocked-state assertion.
 
 ## Verification
 
-The focused Chromium test and the full E2E matrix must pass after this change.
+The focused production suite passed in Chromium and Firefox. The full
+functional gate passed 243 tests with one expected skip, and the performance
+gate passed 6 tests.

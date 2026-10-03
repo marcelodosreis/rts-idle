@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { FIXED_SCALE, tilesToFixed } from '@rts/shared'
+import { BUILDING_FOOTPRINTS, FIXED_SCALE, tilesToFixed } from '@rts/shared'
 import { waitForMatchReady } from '../support/settle.js'
 
 async function canvasPoint(page: Page, x: number, y: number) {
@@ -49,13 +49,40 @@ async function constructionAt(page: Page, target: { readonly x: number; readonly
   )
 }
 
-async function selectEconomyBase(page: Page): Promise<void> {
-  const origin = await page.evaluate(() => {
+async function economyBaseOrigin(page: Page) {
+  return page.evaluate(() => {
     const buildings = Object.values(window.__rtsDebug?.getConstructionStates() ?? {})
     return buildings.sort((left, right) => left.x - right.x)[0]!
   })
+}
+
+async function selectEconomyBase(page: Page): Promise<void> {
+  const origin = await economyBaseOrigin(page)
   const base = await canvasPoint(page, origin.x + tilesToFixed(2.5), origin.y + tilesToFixed(2))
   await page.mouse.click(base.x, base.y)
+}
+
+async function blockEconomyBaseExit(page: Page): Promise<void> {
+  const origin = await economyBaseOrigin(page)
+  const exit = { x: origin.x + tilesToFixed(BUILDING_FOOTPRINTS.CASTLE.width), y: origin.y }
+  const before = await workerIds(page)
+  await selectEconomyBase(page)
+  await train(page, 'pawn')
+  await expect.poll(() => workerIds(page), { timeout: 15_000 }).toHaveLength(before.length + 1)
+  const blocker = (await workerIds(page)).find((id) => !before.includes(id))!
+  await expect
+    .poll(() => page.evaluate((id) => window.__rtsDebug!.getPositions()[String(id)]!, blocker), { timeout: 5_000 })
+    .toEqual(exit)
+  await selectEconomyBase(page)
+}
+
+async function fillBlockedEconomyBaseQueue(page: Page): Promise<void> {
+  await blockEconomyBaseExit(page)
+  for (let count = 1; count <= 5; count += 1) {
+    await train(page, 'pawn')
+    await expect(page.getByTestId('production-queue-count')).toHaveText(`Queue ${count}/5`)
+  }
+  await expect.poll(() => queueLength(page)).toBe(5)
 }
 
 async function queueLength(page: Page): Promise<number> {
@@ -124,17 +151,12 @@ test('production buttons stay inside the completed construction panel', async ({
 })
 
 test('cancels any queued production row with confirmation and refund feedback', async ({ page }) => {
-  test.setTimeout(30_000)
+  test.setTimeout(45_000)
   await page.goto('/?scenario=regression')
   await waitForMatchReady(page)
 
-  await selectEconomyBase(page)
-  for (let count = 1; count <= 5; count += 1) {
-    await train(page, 'pawn')
-    await expect(page.getByTestId('production-queue-count')).toHaveText(/Queue [1-5]\/5/)
-  }
-  await expect.poll(() => queueLength(page)).toBeGreaterThanOrEqual(2)
-  await expect(page.getByTestId('hud-resource-gold')).toContainText('350')
+  await fillBlockedEconomyBaseQueue(page)
+  await expect(page.getByTestId('hud-resource-gold')).toContainText('300')
   const queueFitsSelection = await page
     .getByRole('list', { name: 'Production and research queue' })
     .evaluate((queue) => queue.scrollWidth <= queue.clientWidth)
@@ -151,6 +173,23 @@ test('cancels any queued production row with confirmation and refund feedback', 
   await cancelFirstQueuedProduction(page)
   await expect.poll(() => queueLength(page)).toBeLessThan(beforeSecondCancel)
   await expect.poll(() => goldValue(page)).toBeGreaterThan(firstRefund)
+})
+
+test('blocks a full production queue while a pawn holds the spawn exit', async ({ page }) => {
+  test.setTimeout(45_000)
+  await page.goto('/?scenario=regression')
+  await waitForMatchReady(page)
+
+  await fillBlockedEconomyBaseQueue(page)
+  const trainPawn = page.getByTestId('train-pawn')
+  await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 5/5')
+  await expect(trainPawn).toHaveAttribute('aria-disabled', 'true')
+  await expect(trainPawn).toHaveAttribute('data-command-state', 'blocked')
+  const buttonBox = await trainPawn.boundingBox()
+  expect(buttonBox).not.toBeNull()
+  await page.mouse.click(buttonBox!.x + buttonBox!.width / 2, buttonBox!.y + buttonBox!.height / 2)
+  await expect(page.getByTestId('hud-context-feedback')).toHaveText('Queue is full')
+  await expect(page.getByTestId('hud-context-feedback')).toHaveAttribute('data-feedback-target', 'queue')
 })
 
 test('sets a rally point and sends a trained unit toward it', async ({ page }) => {
