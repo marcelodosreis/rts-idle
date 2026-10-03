@@ -1,10 +1,31 @@
 import { BUILDING_DEFINITIONS, unitDefinitionFor } from '@rts/game-data'
 import { advanceTimedProgress } from '@rts/shared'
 import { isActiveConstruction } from '../domain/building-predicates.js'
-import { Building } from '../ecs/building-component.js'
-import { Health, Kind, Movement, Orders, Owner, Position } from '../ecs/components.js'
+import { Building, type BuildingData } from '../ecs/building-component.js'
+import { Health, Kind, Movement, Orders, Owner, Position, Production } from '../ecs/components.js'
 import { removeFrontOrder } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
+
+function completeConstruction(
+  state: GameState,
+  buildingId: number,
+  construction: BuildingData,
+  builderId: number
+): void {
+  const buildings = state.world.store(Building)
+  const definition = BUILDING_DEFINITIONS[construction.buildingType]
+  buildings.set(buildingId, {
+    ...construction,
+    status: 'COMPLETED',
+    progressTicks: construction.totalTicks,
+    builderId: null
+  })
+  state.world.store(Health).set(buildingId, { current: definition.maxHp, max: definition.maxHp })
+  if (definition.capabilities.canProduce || definition.capabilities.canResearch) {
+    state.world.store(Production).set(buildingId, { queue: [] })
+  }
+  removeFrontOrder(state, builderId)
+}
 
 /** Advances only constructions whose assigned builder is at its work point. */
 export function constructionSystem(state: GameState): void {
@@ -47,15 +68,7 @@ export function constructionSystem(state: GameState): void {
     }
     const progress = advanceTimedProgress(construction)
     if (progress.completed) {
-      buildings.set(buildingId, {
-        ...construction,
-        status: 'COMPLETED',
-        progressTicks: progress.progressTicks,
-        builderId: null
-      })
-      const maxHp = BUILDING_DEFINITIONS[construction.buildingType].maxHp
-      state.world.store(Health).set(buildingId, { current: maxHp, max: maxHp })
-      removeFrontOrder(state, builderId!)
+      completeConstruction(state, buildingId, construction, builderId!)
     } else {
       buildings.set(buildingId, {
         ...construction,

@@ -19,7 +19,7 @@ describe('match bootstrap messages', () => {
       isMatchRequest({
         type: 'match_request',
         protocolVersion: PROTOCOL_VERSION,
-        scenarioId: '8v8',
+        scenarioId: 'regression',
         aggression: 'offensive',
         map: { source: 'local', definition: map }
       })
@@ -29,7 +29,7 @@ describe('match bootstrap messages', () => {
         type: 'match_config',
         protocolVersion: PROTOCOL_VERSION,
         resumeToken: 'resume-token',
-        scenario: { id: '8v8', label: '8v8' },
+        scenario: { id: 'regression', label: 'Regression' },
         scenarios: [{ id: '8v8', label: '8v8' }],
         map,
         buildings: [
@@ -70,7 +70,7 @@ describe('match bootstrap messages', () => {
         type: 'match_config',
         protocolVersion: PROTOCOL_VERSION,
         resumeToken: 'resume-token',
-        scenario: { id: '8v8', label: '8v8' },
+        scenario: { id: 'regression', label: 'Regression' },
         scenarios: [{ id: '8v8', label: '8v8' }],
         map,
         buildings: [
@@ -91,7 +91,7 @@ describe('match bootstrap messages', () => {
       isMatchRequest({
         type: 'match_request',
         protocolVersion: PROTOCOL_VERSION,
-        scenarioId: '8v8',
+        scenarioId: 'regression',
         aggression: 'offensive',
         map: { source: 'local', definition: { width: 999, height: 1, tiles: [], resources: [] } }
       })
@@ -103,7 +103,7 @@ describe('match bootstrap messages', () => {
       isMatchRequest({
         type: 'match_request',
         protocolVersion: '0.0.0',
-        scenarioId: '8v8',
+        scenarioId: 'regression',
         aggression: 'offensive',
         map: { source: 'catalog' }
       })
@@ -113,7 +113,7 @@ describe('match bootstrap messages', () => {
         type: 'match_config',
         protocolVersion: '0.0.0',
         resumeToken: 'resume-token',
-        scenario: { id: '8v8', label: '8v8' },
+        scenario: { id: 'regression', label: 'Regression' },
         scenarios: [],
         map,
         buildings: [],

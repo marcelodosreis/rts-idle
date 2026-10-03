@@ -259,7 +259,7 @@ export function useTerrainPlaytest(
       return
     }
     writePlaytestMap(window.localStorage, controller.exportMapDefinition())
-    window.open('/?map=local&scenario=ffa', '_blank')
+    window.open('/?map=local&scenario=regression', '_blank')
   }, [controllerRef])
   return { handlePlaytest }
 }

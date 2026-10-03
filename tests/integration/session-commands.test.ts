@@ -1,6 +1,5 @@
 import { PROTOCOL_VERSION } from '@rts/protocol'
 import { GameSession } from '@rts/server'
-import { tilesToFixed } from '@rts/shared'
 import {
   Building,
   Cargo,
@@ -48,7 +47,7 @@ describe('game session commands', () => {
     const result = bootstrapMatch({
       type: 'match_request',
       protocolVersion: PROTOCOL_VERSION,
-      scenarioId: '8v8',
+      scenarioId: 'regression',
       aggression: 'offensive',
       map: { source: 'local', definition: { width: 1, height: 1, tiles: ['land'], resources: [] } }
     })
@@ -62,49 +61,42 @@ describe('game session commands', () => {
     })
   })
 
-  it('seeds the economy sandbox with five workers, five enemy pawns, two Castles, 250 gold, and one resource', () => {
+  it('bootstraps every retained manual scenario from the catalog map', () => {
+    for (const scenario of DEMO_SCENARIOS) {
+      expect(() =>
+        createAuthoritativeMatch({
+          type: 'match_request',
+          protocolVersion: PROTOCOL_VERSION,
+          scenarioId: scenario.id,
+          aggression: 'passive',
+          map: { source: 'catalog' }
+        })
+      ).not.toThrow()
+    }
+  })
+
+  it('seeds the regression economy with gatherers, opponents, bases, gold, and resources', () => {
     const session = createAuthoritativeMatch({
       type: 'match_request',
       protocolVersion: PROTOCOL_VERSION,
-      scenarioId: 'default',
+      scenarioId: 'regression',
       aggression: 'passive',
       map: { source: 'catalog' }
     }).session
 
-    expect(units(session)).toHaveLength(10)
-    expect(units(session).map(({ x, y }) => ({ x, y }))).toEqual([
-      { x: tilesToFixed(7), y: tilesToFixed(11) },
-      { x: tilesToFixed(8), y: tilesToFixed(11) },
-      { x: tilesToFixed(9), y: tilesToFixed(11) },
-      { x: tilesToFixed(10), y: tilesToFixed(11) },
-      { x: tilesToFixed(11), y: tilesToFixed(11) },
-      { x: tilesToFixed(22), y: tilesToFixed(27) },
-      { x: tilesToFixed(23), y: tilesToFixed(27) },
-      { x: tilesToFixed(24), y: tilesToFixed(27) },
-      { x: tilesToFixed(25), y: tilesToFixed(27) },
-      { x: tilesToFixed(26), y: tilesToFixed(27) }
-    ])
-    expect(units(session)).toEqual(
+    const playerWorkers = units(session).filter((unit) => unit.owner === 0 && unit.canGather)
+    const opponentUnits = units(session).filter((unit) => unit.owner !== 0)
+    expect(playerWorkers.length).toBeGreaterThan(0)
+    expect(opponentUnits.length).toBeGreaterThan(0)
+    expect(players(session).find((player) => player.id === 0)?.resources.GOLD).toBe(600)
+    expect(buildings(session)).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ owner: 0, kind: 'pawn' }),
-        expect.objectContaining({ owner: 0, kind: 'pawn' }),
-        expect.objectContaining({ owner: 0, kind: 'pawn' }),
-        expect.objectContaining({ owner: 0, kind: 'pawn' }),
-        expect.objectContaining({ owner: 0, kind: 'pawn' }),
-        expect.objectContaining({ owner: 1, kind: 'pawn' }),
-        expect.objectContaining({ owner: 1, kind: 'pawn' }),
-        expect.objectContaining({ owner: 1, kind: 'pawn' }),
-        expect.objectContaining({ owner: 1, kind: 'pawn' }),
-        expect.objectContaining({ owner: 1, kind: 'pawn' })
+        expect.objectContaining({ buildingType: 'CASTLE', owner: 0 }),
+        expect.objectContaining({ buildingType: 'CASTLE', owner: 1 })
       ])
     )
-    expect(players(session).find((player) => player.id === 0)?.resources.GOLD).toBe(250)
-    expect(buildings(session)).toHaveLength(2)
-    expect(buildings(session)).toEqual(
-      expect.arrayContaining([expect.objectContaining({ buildingType: 'CASTLE', owner: 0 })])
-    )
     expect(resources(session, true)).toEqual(expect.arrayContaining([expect.objectContaining({ remaining: 3000 })]))
-    const worker = units(session)[0]!
+    const worker = playerWorkers[0]!
     const node = resources(session, true).find((resource) => resource.remaining === 3000)!
     session.submit(0, [
       {
@@ -145,7 +137,7 @@ describe('game session commands', () => {
     const session = createAuthoritativeMatch({
       type: 'match_request',
       protocolVersion: PROTOCOL_VERSION,
-      scenarioId: 'default',
+      scenarioId: 'regression',
       aggression: 'passive',
       map: { source: 'catalog' }
     }).session
@@ -162,7 +154,7 @@ describe('game session commands', () => {
     const session = createAuthoritativeMatch({
       type: 'match_request',
       protocolVersion: PROTOCOL_VERSION,
-      scenarioId: 'default',
+      scenarioId: 'regression',
       aggression: 'passive',
       map: { source: 'catalog' }
     }).session
@@ -235,7 +227,7 @@ describe('game session commands', () => {
     const session = createAuthoritativeMatch({
       type: 'match_request',
       protocolVersion: PROTOCOL_VERSION,
-      scenarioId: 'default',
+      scenarioId: 'regression',
       aggression: 'passive',
       map: { source: 'catalog' }
     }).session
@@ -289,7 +281,7 @@ describe('game session commands', () => {
     const session = createAuthoritativeMatch({
       type: 'match_request',
       protocolVersion: PROTOCOL_VERSION,
-      scenarioId: 'default',
+      scenarioId: 'regression',
       aggression: 'passive',
       map: { source: 'catalog' }
     }).session

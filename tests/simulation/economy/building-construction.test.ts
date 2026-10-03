@@ -8,6 +8,7 @@ import {
   Orders,
   Owner,
   Position,
+  Production,
   type ScheduledCommand,
   simulationFromSnapshot
 } from '@rts/simulation'
@@ -16,7 +17,8 @@ import { TEST_IDENTITY } from '../../fixtures/index.js'
 
 function scenario(
   gold = 100,
-  workerPositions: Readonly<Record<number, { readonly x: number; readonly y: number }>> = {}
+  workerPositions: Readonly<Record<number, { readonly x: number; readonly y: number }>> = {},
+  withTierTwoCastle = false
 ) {
   const world = createWorld()
   for (const id of [START_ENTITY_ID, START_ENTITY_ID + 1, START_ENTITY_ID + 2]) {
@@ -24,6 +26,23 @@ function scenario(
     world.store(Position).set(id, workerPositions[id] ?? { x: 0, y: 0 })
     world.store(Owner).set(id, { owner: (id === START_ENTITY_ID + 2 ? 1 : 0) as PlayerId })
     world.store(Kind).set(id, id === START_ENTITY_ID + 2 ? 'warrior' : 'pawn')
+  }
+  if (withTierTwoCastle) {
+    const castleId = START_ENTITY_ID + 3
+    world.createEntity(castleId)
+    world.store(Position).set(castleId, { x: 8 * 256, y: 8 * 256 })
+    world.store(Owner).set(castleId, { owner: 0 })
+    world.store(Building).set(castleId, {
+      buildingType: 'CASTLE',
+      status: 'COMPLETED',
+      progressTicks: 100,
+      totalTicks: 100,
+      builderId: null,
+      tier: 2,
+      footprint: { x: 8, y: 8, width: 5, height: 4 },
+      rallyPoint: null
+    })
+    world.store(Health).set(castleId, { current: 500, max: 500 })
   }
   return createSimulation({
     seed: 7,
@@ -49,6 +68,13 @@ const buildBarracks = (workerId: number, sequence: number): ScheduledCommand => 
   playerId: 0,
   sequence,
   intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'BARRACKS' as const, x: 0, y: 0 } }
+})
+
+const buildMonastery = (workerId: number, sequence: number): ScheduledCommand => ({
+  tick: 1,
+  playerId: 0,
+  sequence,
+  intent: { type: 'BUILD' as const, payload: { unitId: workerId, buildingType: 'MONASTERY' as const, x: 0, y: 0 } }
 })
 
 const buildDepot = (workerId: number, sequence: number): ScheduledCommand => ({
@@ -142,6 +168,21 @@ describe('BUILD simulation lifecycle', () => {
     expect(state.world.store(Building).has(buildingId)).toBe(true)
     expect(state.world.store(Building).get(buildingId)?.buildingType).toBe('BARRACKS')
     expect(state.world.store(Orders).get(START_ENTITY_ID)).toBeUndefined()
+  })
+
+  it('initializes a production queue when a Monastery is completed', () => {
+    const sim = scenario(150, {}, true)
+    sim.step([buildMonastery(START_ENTITY_ID, 1)])
+    const buildingId = START_ENTITY_ID + 4
+    for (let i = 0; i < 150; i += 1) {
+      sim.step()
+    }
+    const state = sim.inspectState()
+    expect(state.world.store(Building).get(buildingId)).toMatchObject({
+      buildingType: 'MONASTERY',
+      status: 'COMPLETED'
+    })
+    expect(state.world.store(Production).get(buildingId)).toEqual({ queue: [] })
   })
 
   it('sends the worker to the nearest construction edge and only progresses there', () => {

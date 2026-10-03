@@ -88,7 +88,7 @@ test('terrain: playtest opens the authored map in the game', async ({ page }) =>
   await page.getByRole('button', { name: 'Playtest' }).click()
   const game = await popupPromise
   await game.waitForURL(/map=local/)
-  await expect.poll(() => new URL(game.url()).searchParams.get('scenario')).toBe('ffa')
+  await expect.poll(() => new URL(game.url()).searchParams.get('scenario')).toBe('regression')
   await game.waitForFunction(() => window.__rtsDebug !== undefined, null, { timeout: 20000 })
   const info = await game.evaluate(() => window.__rtsDebug!.getMapInfo())
   expect(info.isPlaytest).toBe(true)

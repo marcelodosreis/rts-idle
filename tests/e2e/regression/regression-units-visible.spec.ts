@@ -7,7 +7,7 @@ import { waitForMatchReady } from '../support/settle.js'
 // See docs/postmortems/2026-09-16-invisible-units.md
 
 async function openWithUnits(page: Page) {
-  await page.goto('/')
+  await page.goto('/?scenario=regression&aggression=passive')
   await waitForMatchReady(page)
   const positions = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})
   expect(Object.keys(positions).length).toBeGreaterThan(0)

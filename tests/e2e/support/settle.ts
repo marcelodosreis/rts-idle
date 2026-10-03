@@ -84,7 +84,7 @@ export async function waitForTicks(page: Page, ticks: number, timeout = 30_000):
  */
 export async function settleUnits(page: Page): Promise<Record<string, { readonly x: number; readonly y: number }>> {
   if (page.url() === 'about:blank') {
-    await page.goto('/')
+    await page.goto('/?scenario=regression&aggression=passive')
   }
   await waitForMatchReady(page)
   let previous = await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})

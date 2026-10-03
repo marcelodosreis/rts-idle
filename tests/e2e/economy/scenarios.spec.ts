@@ -18,26 +18,6 @@ async function canvasPointForFixed(page: import('@playwright/test').Page, x: num
   )
 }
 
-test('the default scenario spawns five workers and five enemy pawns', async ({ page }) => {
-  await page.goto('/')
-  const positions = await settleUnits(page)
-  expect(Object.keys(positions).length).toBe(10)
-})
-
-test('the optional 8v8 scenario spawns sixteen units', async ({ page }) => {
-  await page.goto('/?scenario=8v8&aggression=passive')
-  const positions = await settleUnits(page)
-  expect(Object.keys(positions).length).toBe(16)
-})
-
-test('the regression scenario preserves four economy workers', async ({ page }) => {
-  await page.goto('/?scenario=regression')
-  await settleUnits(page)
-  const owners = await page.evaluate(() => window.__rtsDebug?.getUnitOwners() ?? {})
-  expect(Object.values(owners).filter((owner) => owner === 0)).toHaveLength(4)
-  expect(Object.values(owners).filter((owner) => owner === 1)).toHaveLength(0)
-})
-
 test('the regression scenario repairs its damaged Base through the browser command path', async ({ page }) => {
   test.setTimeout(55_000)
   await page.goto('/?scenario=regression')
@@ -81,14 +61,8 @@ test('the regression scenario repairs its damaged Base through the browser comma
     .toBe(500)
 })
 
-test('the ffa scenario spawns one unit per faction', async ({ page }) => {
-  await page.goto('/?scenario=ffa')
-  const positions = await settleUnits(page)
-  expect(Object.keys(positions).length).toBe(4)
-})
-
-test('default passive enemies never damage the player', async ({ page }) => {
-  await page.goto('/')
+test('passive regression enemies never damage the player', async ({ page }) => {
+  await page.goto('/?scenario=regression&aggression=passive')
   await settleUnits(page)
   const owners = await page.evaluate(() => window.__rtsDebug?.getUnitOwners() ?? {})
   const blueId = Number(Object.entries(owners).find(([, owner]) => owner === 0)![0])
@@ -102,8 +76,8 @@ test('default passive enemies never damage the player', async ({ page }) => {
   expect(hp!.current).toBe(hp!.max)
 })
 
-test('default scenario projects completed building health', async ({ page }) => {
-  await page.goto('/?aggression=passive')
+test('regression projects completed building health', async ({ page }) => {
+  await page.goto('/?scenario=regression&aggression=passive')
   await settleUnits(page)
 
   const buildings = await page.evaluate(() => window.__rtsDebug?.getConstructionStates() ?? {})
@@ -111,14 +85,13 @@ test('default scenario projects completed building health', async ({ page }) => 
     .map((building) => ({ hp: building.hp, maxHp: building.maxHp }))
     .filter((building): building is { hp: number; maxHp: number } => building.hp !== undefined)
 
-  expect(healthValues).toEqual([
-    { hp: 500, maxHp: 500 },
-    { hp: 500, maxHp: 500 }
-  ])
+  expect(healthValues).toHaveLength(3)
+  expect(healthValues.map((building) => building.maxHp).sort((left, right) => left - right)).toEqual([250, 500, 500])
+  expect(healthValues.map((building) => building.hp).sort((left, right) => left - right)).toEqual([250, 250, 500])
 })
 
-test('offensive default enemies eventually damage a player pawn', async ({ page }) => {
-  await page.goto('/?scenario=default&aggression=offensive')
+test('offensive regression enemies eventually damage a player pawn', async ({ page }) => {
+  await page.goto('/?scenario=regression&aggression=offensive')
   expect(page.url()).toContain('aggression=offensive')
   await settleUnits(page)
   const workerId = await page.evaluate(() => {
@@ -128,12 +101,12 @@ test('offensive default enemies eventually damage a player pawn', async ({ page 
   })
   expect(workerId).not.toBeNull()
   if (workerId === null) {
-    throw new Error('default scenario did not expose a worker')
+    throw new Error('regression scenario did not expose a worker')
   }
   const initial = await page.evaluate((id) => window.__rtsDebug?.getUnitHealth(id) ?? null, workerId)
   expect(initial).not.toBeNull()
   if (initial === null) {
-    throw new Error('default scenario worker has no health state')
+    throw new Error('regression scenario worker has no health state')
   }
 
   await expect
@@ -141,41 +114,4 @@ test('offensive default enemies eventually damage a player pawn', async ({ page 
       timeout: 15_000
     })
     .toBeLessThan(initial.current)
-})
-
-test('switching the scenario in the top bar reloads into the new match', async ({ page }) => {
-  await page.goto('/')
-  await settleUnits(page)
-  expect(Object.keys(await page.evaluate(() => window.__rtsDebug?.getPositions() ?? {})).length).toBe(10)
-
-  await page.getByRole('button', { name: 'Open DevTools menu' }).click()
-  await page.getByRole('button', { name: 'Toggle Match session' }).click()
-  await page.getByRole('combobox', { name: 'scenario' }).click()
-  await page.getByRole('option', { name: 'ffa' }).click()
-
-  await expect.poll(() => page.url()).toContain('scenario=ffa')
-  await expect.poll(() => page.evaluate(() => Object.keys(window.__rtsDebug?.getPositions() ?? {}).length)).toBe(4)
-  const positions = await settleUnits(page)
-  expect(Object.keys(positions).length).toBe(4)
-})
-
-test('a failed local map keeps the server-provided scenario selector available', async ({ page }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem(
-      'rts.playtestMap',
-      JSON.stringify({ width: 1, height: 1, tiles: ['land'], resources: [] })
-    )
-  })
-  await page.goto('/?map=local')
-
-  await page.getByRole('button', { name: 'Open DevTools menu' }).click()
-  await page.getByRole('button', { name: 'Toggle Server Log' }).click()
-  await page.getByRole('button', { name: 'Toggle Match session' }).click()
-  await expect(page.getByRole('alert')).toContainText('scenario spawn is outside or on invalid terrain')
-  await page.getByRole('combobox', { name: 'scenario' }).click()
-  await expect(page.getByRole('option', { name: 'ffa' })).toBeVisible()
-  await page.getByRole('option', { name: 'ffa' }).click()
-
-  await expect.poll(() => new URL(page.url()).searchParams.get('map')).toBe('local')
-  await expect.poll(() => new URL(page.url()).searchParams.get('scenario')).toBe('ffa')
 })

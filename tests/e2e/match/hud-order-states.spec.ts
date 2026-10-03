@@ -39,7 +39,7 @@ async function rightClickGround(page: Page, point: { readonly x: number; readonl
 }
 
 async function startMatch(page: Page): Promise<number> {
-  await page.goto('/?scenario=default')
+  await page.goto('/?scenario=regression')
   await waitForMatchReady(page)
   const workers = await page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}

@@ -21,8 +21,9 @@ async function canvasPointForFixed(page: import('@playwright/test').Page, x: num
 async function workerIds(page: import('@playwright/test').Page): Promise<number[]> {
   return page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
     return Object.entries(owners)
-      .filter(([, owner]) => owner === 0)
+      .filter(([id, owner]) => owner === 0 && kinds[id] === 'pawn')
       .map(([id]) => Number(id))
   })
 }
@@ -124,7 +125,7 @@ test('House capacity activates only after construction completes', async ({ page
   await startMatch(page)
   const workerId = (await workerIds(page))[0]!
   await selectWorker(page, workerId)
-  await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 10')
+  await expect(page.getByTestId('hud-resource-supply')).toContainText('8 / 18')
   await armBuild(page, 'HOUSE')
   await expect(page.getByTestId('build')).toHaveAttribute('aria-pressed', 'true')
 
@@ -132,9 +133,9 @@ test('House capacity activates only after construction completes', async ({ page
   const point = await canvasPointForFixed(page, target.x + FIXED_SCALE / 2, target.y + FIXED_SCALE / 2)
   await page.mouse.click(point.x, point.y)
   await expect.poll(() => constructionAt(page, target)).toMatchObject({ status: 'FOUNDATION' })
-  await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 10')
+  await expect(page.getByTestId('hud-resource-supply')).toContainText('8 / 18')
   await expect.poll(() => constructionAt(page, target), { timeout: 20_000 }).toMatchObject({ status: 'COMPLETED' })
-  await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 18')
+  await expect(page.getByTestId('hud-resource-supply')).toContainText('8 / 26')
   const completionToast = page.getByRole('status').filter({ hasText: 'Construction complete' })
   await expect(completionToast).toContainText('House')
   await expect(completionToast).toHaveClass(/border-zinc-600/)

@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { settleUnits } from '../support/settle.js'
+import { settleUnits, waitForStableCamera } from '../support/settle.js'
 
 // Regression: moving several units to one point stacked them at identical
 // coordinates, so they looked like a single unit. Destinations must be
@@ -35,8 +35,11 @@ async function visibleUnitIds(page: Page) {
     }
     const r = canvas.getBoundingClientRect()
     const positions = window.__rtsDebug?.getPositions() ?? {}
+    const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
     return Object.keys(positions)
       .map(Number)
+      .filter((id) => owners[String(id)] === 0 && kinds[String(id)] !== 'pawn')
       .filter((id) => {
         const p = positions[String(id)]
         const s = window.__rtsDebug!.worldToScreen(p.x, p.y)
@@ -49,10 +52,30 @@ async function visibleUnitIds(page: Page) {
 }
 
 test('box-selected units arrive spread out instead of stacked', async ({ page }) => {
-  // Use passive FFA so the units settle into stable clusters without enemy
-  // movement interfering with the formation regression.
-  await page.goto('/?scenario=ffa&aggression=passive')
+  // Use passive regression so the units settle into stable clusters without
+  // enemy movement interfering with the formation regression.
+  await page.goto('/?scenario=regression&aggression=passive')
   const positions = await waitForUnits(page)
+  const focus = await page.evaluate(() => {
+    const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
+    const combatPositions = Object.keys(owners)
+      .filter((unitId) => owners[unitId] === 0 && kinds[unitId] !== 'pawn')
+      .map((unitId) => window.__rtsDebug?.getPositions()[unitId])
+      .filter((position): position is { readonly x: number; readonly y: number } => position !== undefined)
+    if (combatPositions.length === 0) {
+      return null
+    }
+    return {
+      x: combatPositions.reduce((total, position) => total + position.x, 0) / combatPositions.length,
+      y: combatPositions.reduce((total, position) => total + position.y, 0) / combatPositions.length
+    }
+  })
+  if (focus === null) {
+    throw new Error('regression fixture has no player combat cluster')
+  }
+  await page.evaluate(({ x, y }) => window.__rtsDebug?.moveCamera(x, y), focus)
+  await waitForStableCamera(page, focus.x, focus.y)
   const ids = await visibleUnitIds(page)
   expect(ids.length).toBeGreaterThanOrEqual(2)
 

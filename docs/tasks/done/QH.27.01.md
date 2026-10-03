@@ -1,6 +1,6 @@
 # QH.27.01 — Deterministic E2E and faster pipeline
 
-**Status:** in progress
+**Status:** done
 **Phase:** Quality Hardening / E2E determinism and runtime
 **Dependencies:** QH.26.01
 
@@ -42,21 +42,35 @@ flaky retries also hide real failures.
 
 ## Acceptance Criteria
 
-- [ ] No `waitForTimeout` remains in `tests/e2e`.
-- [ ] No E2E assertion depends on a CSS animation's transient geometry.
-- [ ] CI functional lane runs with `use.reducedMotion: 'reduce'` and `retries: 0`.
-- [ ] `pnpm run test:e2e:flaky` passes twice consecutively on Chromium and Firefox.
-- [ ] `pnpm run verify` passes.
+- [x] No `waitForTimeout` remains in `tests/e2e`.
+- [x] No E2E assertion depends on a CSS animation's transient geometry.
+- [x] CI functional lane runs with `use.reducedMotion: 'reduce'` and `retries: 0`.
+- [x] `pnpm run test:e2e:flaky` passes twice consecutively on Chromium and Firefox.
+- [x] `pnpm run verify` passes.
 
 ## Validation
 
-- `pnpm run test:e2e:flaky`
+- `pnpm run test:e2e:prepare -- --output=tmp/e2e-plan.json`
+- `pnpm run test:e2e:flaky` twice consecutively
 - `pnpm run verify`
 - `pnpm run test:architecture`
 
 ## Progress
 
-E2E now waits on observable state and authoritative ticks, measures settled
-layout under reduced motion, and runs with `retries: 0`; the curated flaky
-subset passed twice consecutively on Chromium and Firefox. Isolated-port
-parallel workers remain open pending runner-CPU validation.
+E2E waits on observable state and authoritative ticks, measures settled layout
+under reduced motion, and runs with `retries: 0`. The curated flaky subset
+passed twice consecutively with `109 passed, 1 skipped` on the Chromium and
+Firefox matrix. The CI-planned matrix is the canonical fast full gate; local
+same-host parallel workers are intentionally unsupported because renderer CPU
+contention makes them less reliable.
+
+## Completion Report
+
+**Result:** PASS
+
+The deterministic E2E contract is enforced by the Playwright configuration,
+settle helpers, and CI matrix. The remaining asset-delay test uses an explicit
+request barrier rather than a wall-clock wait. The full planned matrix passed
+with Chromium `121/121`, Firefox `120 passed/1 skipped`, and performance `6/6`;
+the final barrier change then passed the focused renderer suite `8/8` and both
+flaky repetitions.

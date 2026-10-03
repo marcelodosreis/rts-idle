@@ -187,7 +187,7 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
 - [x] P2.10 — Repair (`docs/tasks/done/P2.10.md`)
 - [x] P2.11 — Research and modifiers (`docs/tasks/P2.11.md`): Castle II, Monastery queue, Attack/Defense/Economy/Movement, armor, modifiers, HUD, and E2E
 - [x] P2.11.01 — Monk Heal (`docs/tasks/P2.11.01.md`): self/allied healing, cooldown, HUD, effects, and E2E
-- [ ] P2.12 — Economic integration
+- [x] P2.12 — Economic integration (`docs/tasks/done/P2.12.md`)
 
 ## Phase 3 — Navigation, full combat, and fog
 - [ ] P3.01–P3.12 (see `docs/master-plan.md`)
@@ -245,7 +245,8 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
 - [x] QH.23 Session projections and tools coverage
 - [x] QH.24 Mandatory enforcement (git, CI, governance)
 - [x] QH.26.01 Deterministic CI and E2E reliability (deps: QH.25)
-- [ ] QH.27.01 Deterministic E2E and faster pipeline (deps: QH.26.01)
+- [x] QH.27.01 Deterministic E2E and faster pipeline (`docs/tasks/done/QH.27.01.md`; deps: QH.26.01)
+- [x] QH.28.01 Unified regression E2E fixture (`docs/tasks/done/QH.28.01.md`; deps: QH.27.01, P2.12)
 - [x] QH.17 Front-matter + guard + summary (postmortem tracking)
 - [x] QH.18 Board + tracking guard + protocol
 - [x] QH.16 Output hygiene (test output)

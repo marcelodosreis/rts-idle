@@ -83,14 +83,14 @@ async function healthiestRed(page: Page): Promise<{ readonly x: number; readonly
 test('STOP cancels an issued order and an armed ATTACK re-engages the target', async ({ page }) => {
   // Passive enemies keep the squads stable: the test drives the orders itself
   // instead of racing the auto-battle and dying mid-assertion.
-  await page.goto('/?scenario=8v8&aggression=passive')
+  await page.goto('/?scenario=regression&aggression=passive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
   const blueIds = await page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
     const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
     return Object.entries(owners)
-      .filter(([id, owner]) => owner === 0 && kinds[id] !== 'monk')
+      .filter(([id, owner]) => owner === 0 && kinds[id] !== 'monk' && kinds[id] !== 'pawn')
       .map(([id]) => Number(id))
       .slice(0, 6)
   })
@@ -110,6 +110,7 @@ test('STOP cancels an issued order and an armed ATTACK re-engages the target', a
   await page.getByRole('button', { name: 'Attack', exact: true }).click()
   const firstTarget = reds[0]!
   const healthBefore = await healths(page, redIds)
+  await page.evaluate(({ x, y }) => window.__rtsDebug?.moveCamera(x, y), firstTarget)
   const firstPoint = await worldToPage(page, firstTarget.x, firstTarget.y)
   await page.mouse.click(firstPoint.x, firstPoint.y, { button: 'right' })
   await expect.poll(() => anyHealthBelow(page, healthBefore), { timeout: 15_000 }).toBe(true)
@@ -122,7 +123,7 @@ test('STOP cancels an issued order and an armed ATTACK re-engages the target', a
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
     const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
     return Object.entries(owners)
-      .filter(([id, owner]) => owner === 0 && kinds[id] !== 'monk')
+      .filter(([id, owner]) => owner === 0 && kinds[id] !== 'monk' && kinds[id] !== 'pawn')
       .map(([id]) => Number(id))
   })
   await page.evaluate((ids) => window.__rtsDebug!.setSelection(ids), aliveBlues)
@@ -130,16 +131,19 @@ test('STOP cancels an issued order and an armed ATTACK re-engages the target', a
   // Re-arm ATTACK and right-click the healthiest red: blue must re-engage, so
   // some red unit's health drops below the frozen baseline.
   const target = await healthiestRed(page)
-  expect(target).not.toBeNull()
+  if (target === null) {
+    throw new Error('regression fixture has no living enemy target')
+  }
   await page.getByRole('button', { name: 'Attack', exact: true }).click()
-  const targetScreen = await worldToPage(page, target!.x, target!.y)
+  await page.evaluate(({ x, y }) => window.__rtsDebug?.moveCamera(x, y), target)
+  const targetScreen = await worldToPage(page, target.x, target.y)
   await page.mouse.click(targetScreen.x, targetScreen.y, { button: 'right' })
 
   await expect.poll(() => anyHealthBelow(page, baselines), { timeout: 15_000 }).toBe(true)
 })
 
 test('left-clicking empty ground cancels an armed attack-move mode', async ({ page }) => {
-  await page.goto('/?scenario=8v8&aggression=passive')
+  await page.goto('/?scenario=regression&aggression=passive')
   await settleUnits(page)
   const units = await unitsByOwner(page)
   const worker = units.find((unit) => unit.owner === 0)
@@ -158,7 +162,7 @@ test('left-clicking empty ground cancels an armed attack-move mode', async ({ pa
 })
 
 test('SURRENDER requires confirmation before ending the match', async ({ page }) => {
-  await page.goto('/?scenario=8v8&aggression=offensive')
+  await page.goto('/?scenario=regression&aggression=offensive')
   await settleUnits(page)
   await page.getByRole('button', { name: 'Surrender' }).click()
 

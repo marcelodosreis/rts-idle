@@ -107,9 +107,12 @@ guards file length and the typed-domain policy (see `typed-domain.test.ts`).
 - Run the smallest affected test first. Use `verify:fast`,
   `verify:simulation`, or a focused E2E during iteration.
 - Run `pnpm run verify` at feature completion. Use `pnpm run test:e2e:fast` for
-  functional browser iteration, `pnpm run test:e2e:perf` for renderer benchmark
-  changes, and `pnpm run test:e2e:all` for the complete Chromium + Firefox gate,
-  release, or CI-equivalent validation.
+  functional browser iteration and `pnpm run test:e2e:perf` for renderer
+  benchmark changes. For the complete browser/release gate, generate and run
+  the CI-planned functional/performance matrix for both browsers. Its union is
+  equivalent to `pnpm run test:e2e:all`, but isolated runners finish faster and
+  avoid same-host renderer contention. The serial command is a local fallback,
+  not the preferred certification path.
 - A gameplay capability is incomplete until the player can reach it through the
   intended screen, perform the natural interaction, see its progress/result and
   blocked states, and complete the real-server flow in Playwright. Simulation,

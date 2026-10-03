@@ -36,8 +36,9 @@ async function focusFixed(page: Page, x: number, y: number) {
 async function workerIds(page: Page): Promise<number[]> {
   return page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
     return Object.entries(owners)
-      .filter(([, owner]) => owner === 0)
+      .filter(([id, owner]) => owner === 0 && kinds[id] === 'pawn')
       .map(([id]) => Number(id))
   })
 }
@@ -106,7 +107,7 @@ async function resourcePixels(page: Page): Promise<readonly string[]> {
 test('economy HUD shows authoritative starting supply', async ({ page }) => {
   await page.goto('/?scenario=regression&aggression=passive&sprites=off')
   await waitForMatchReady(page)
-  await expect(page.getByTestId('hud-resource-supply')).toContainText('4 / 10')
+  await expect(page.getByTestId('hud-resource-supply')).toContainText('8 / 18')
 })
 
 test('a worker selects, cuts, carries, and deposits wood from a tree', async ({ page }) => {
@@ -237,7 +238,7 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
   await waitForMatchReady(page)
 
   const initialGold = await goldValue(page)
-  expect(initialGold).toBe(250)
+  expect(initialGold).toBe(600)
 
   const workers = await workerIds(page)
   expect(workers).toHaveLength(4)

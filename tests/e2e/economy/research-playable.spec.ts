@@ -1,8 +1,8 @@
 import { expect, type Page, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
-import { waitForMatchReady } from '../support/settle.js'
+import { waitForMatchReady, waitForStableCamera } from '../support/settle.js'
 
-const MONASTERY_TARGET = { x: tilesToFixed(11), y: tilesToFixed(9) }
+const MONASTERY_TARGET = { x: tilesToFixed(11), y: tilesToFixed(10) }
 
 async function canvasPoint(page: Page, x: number, y: number) {
   return page.evaluate(
@@ -21,19 +21,21 @@ async function canvasPoint(page: Page, x: number, y: number) {
 
 async function focusFixed(page: Page, x: number, y: number) {
   await page.evaluate(([fixedX, fixedY]) => window.__rtsDebug?.moveCamera(fixedX, fixedY), [x, y] as const)
+  await waitForStableCamera(page, x, y)
   return canvasPoint(page, x, y)
 }
 
 async function startResearchScenario(page: Page): Promise<void> {
-  await page.goto('/?scenario=research')
+  await page.goto('/?scenario=regression&aggression=passive')
   await waitForMatchReady(page)
 }
 
 async function workerIds(page: Page): Promise<number[]> {
   return page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
     return Object.entries(owners)
-      .filter(([, owner]) => owner === 0)
+      .filter(([id, owner]) => owner === 0 && kinds[id] === 'pawn')
       .map(([id]) => Number(id))
   })
 }
@@ -52,15 +54,53 @@ async function selectEconomyBase(page: Page): Promise<void> {
   })
   const point = await canvasPoint(page, origin.x + tilesToFixed(2.5), origin.y + tilesToFixed(2))
   await page.mouse.click(point.x, point.y)
-  await expect(page.getByTestId('construction-panel')).toContainText('Castle II')
-  await expect(page.getByTestId('construction-panel').getByText('Ready', { exact: true }).first()).toBeVisible()
+  await expect(page.getByTestId('construction-panel')).toContainText('Castle I')
+}
+
+async function upgradeCastle(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Upgrade', exact: true }).click()
+  await page.getByTestId('upgrade-castle').click()
+  const panel = page.getByTestId('construction-panel')
+  await expect(panel).toContainText('Castle II')
+  await expect(panel.getByText('Ready', { exact: true }).first()).toBeVisible({ timeout: 20_000 })
+}
+
+async function constructionAt(page: Page, target: { readonly x: number; readonly y: number }): Promise<void> {
+  await expect
+    .poll(
+      () =>
+        page.evaluate(({ x, y }) => {
+          const states = Object.values(window.__rtsDebug?.getConstructionStates() ?? {})
+          return states.find((construction) => construction.x === x && construction.y === y) ?? null
+        }, target),
+      { timeout: 20_000 }
+    )
+    .toMatchObject({ status: 'COMPLETED' })
+}
+
+async function buildMonastery(page: Page): Promise<void> {
+  const worker = (await workerIds(page))[0]
+  if (worker === undefined) {
+    throw new Error('regression scenario has no worker for Monastery construction')
+  }
+  await selectWorker(page, worker)
+  await page.getByRole('button', { name: 'Build', exact: true }).click()
+  await page.getByTestId('build-monastery').click()
+  const targetPoint = await focusFixed(
+    page,
+    MONASTERY_TARGET.x + tilesToFixed(0.5),
+    MONASTERY_TARGET.y + tilesToFixed(0.5)
+  )
+  await page.mouse.click(targetPoint.x, targetPoint.y)
+  await constructionAt(page, MONASTERY_TARGET)
+  await page.getByRole('button', { name: 'Stop', exact: true }).click()
 }
 
 async function selectMonastery(page: Page): Promise<void> {
   const monasteryPoint = await focusFixed(
     page,
-    MONASTERY_TARGET.x + tilesToFixed(1.5),
-    MONASTERY_TARGET.y + tilesToFixed(2.5)
+    MONASTERY_TARGET.x + tilesToFixed(0.5),
+    MONASTERY_TARGET.y + tilesToFixed(0.5)
   )
   await page.mouse.click(monasteryPoint.x, monasteryPoint.y)
   await expect(page.getByTestId('production-panel')).toBeVisible()
@@ -69,9 +109,17 @@ async function selectMonastery(page: Page): Promise<void> {
 async function prepareResearch(page: Page): Promise<void> {
   await startResearchScenario(page)
   await selectEconomyBase(page)
+  await upgradeCastle(page)
+  await buildMonastery(page)
   await selectMonastery(page)
   await expect(page.getByRole('button', { name: 'Train', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Research', exact: true })).toBeVisible()
+}
+
+async function prepareCastleII(page: Page): Promise<void> {
+  await startResearchScenario(page)
+  await selectEconomyBase(page)
+  await upgradeCastle(page)
 }
 
 async function openRoot(page: Page): Promise<void> {
@@ -112,9 +160,9 @@ test('starts with Castle II and Monastery research, then cancels a queued topic'
 })
 
 test('shows the unavailable Castle III upgrade after reaching Castle II', async ({ page }) => {
-  await startResearchScenario(page)
-  await selectEconomyBase(page)
+  await prepareCastleII(page)
 
+  await selectEconomyBase(page)
   await page.getByRole('button', { name: 'Upgrade', exact: true }).click()
   const castleIii = page.getByTestId('upgrade-castle')
   await expect(castleIii).toHaveText('Castle III')

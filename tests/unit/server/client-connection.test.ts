@@ -39,7 +39,7 @@ function request() {
   return {
     type: 'match_request' as const,
     protocolVersion: PROTOCOL_VERSION,
-    scenarioId: 'default',
+    scenarioId: 'regression',
     aggression: 'passive' as const,
     map: { source: 'catalog' as const }
   }

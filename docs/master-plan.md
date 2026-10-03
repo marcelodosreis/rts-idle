@@ -2162,8 +2162,13 @@ pnpm run test:determinism
 pnpm run test:invariants
 pnpm run test:architecture
 pnpm run build
-pnpm run test:e2e:all
+pnpm run test:e2e:prepare -- --output=tmp/e2e-plan.json
 ```
+
+The complete browser gate executes every generated functional and performance
+group for Chromium and Firefox on isolated CI runners. The union covers the
+same tests as the serial local `test:e2e:all` fallback and is preferred for
+release validation because it avoids same-host renderer contention.
 
 Focused tests:
 

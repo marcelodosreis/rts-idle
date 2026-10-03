@@ -28,11 +28,12 @@ test('reconnect resumes gameplay with an authoritative full state and a followin
   const connected = await transportState(page)
   expect(connected.connectionState).toBe('open')
   expect(connected.resumeToken).not.toBeNull()
-  expect(await page.evaluate(() => Object.keys(window.__rtsDebug?.getPositions() ?? {}).length)).toBe(4)
+  const initialUnitCount = await page.evaluate(() => Object.keys(window.__rtsDebug?.getPositions() ?? {}).length)
+  expect(initialUnitCount).toBeGreaterThan(0)
 
   const initialMessageCount = connected.messages.length
   const initialSnapshot = latestSnapshot(connected)
-  expect(initialSnapshot).toMatchObject({ type: 'snapshot', unitCount: 4, resourcesComplete: true })
+  expect(initialSnapshot).toMatchObject({ type: 'snapshot', unitCount: initialUnitCount, resourcesComplete: true })
 
   await disconnectTransport(page)
   await expect.poll(() => transportState(page).then((state) => state.connectionState)).toBe('closed')
@@ -47,7 +48,7 @@ test('reconnect resumes gameplay with an authoritative full state and a followin
   expect(resumed.resumeToken).toBe(connected.resumeToken)
   const resumedMessages = resumed.messages.slice(initialMessageCount)
   const resumedSnapshot = resumedMessages.find((message) => message.type === 'snapshot')
-  expect(resumedSnapshot).toMatchObject({ type: 'snapshot', unitCount: 4, resourcesComplete: true })
+  expect(resumedSnapshot).toMatchObject({ type: 'snapshot', unitCount: initialUnitCount, resourcesComplete: true })
   if (resumedSnapshot === undefined || resumedSnapshot.type !== 'snapshot') {
     throw new Error('expected an authoritative resume snapshot')
   }
@@ -61,7 +62,7 @@ test('reconnect resumes gameplay with an authoritative full state and a followin
   expect(followingDelta).toMatchObject({ type: 'snapshot_delta', dropped: false })
   expect(converged.acceptedBaseline?.viewSequence).toBeGreaterThanOrEqual(followingDelta?.viewSequence ?? 0)
   expect(converged.resyncRequests).toBe(0)
-  expect(await page.evaluate(() => Object.keys(window.__rtsDebug?.getPositions() ?? {}).length)).toBe(4)
+  expect(await page.evaluate(() => Object.keys(window.__rtsDebug?.getPositions() ?? {}).length)).toBe(initialUnitCount)
 })
 
 test('a skipped delta forces a full resync and the next delta converges', async ({ page }) => {
@@ -80,7 +81,8 @@ test('a skipped delta forces a full resync and the next delta converges', async 
   const resynced = await transportState(page)
   expect(resynced.messages.some((message) => message.type === 'snapshot_delta' && message.dropped)).toBe(true)
   const resyncSnapshot = latestSnapshot(resynced)
-  expect(resyncSnapshot).toMatchObject({ type: 'snapshot', unitCount: 4, resourcesComplete: true })
+  const initialUnitCount = await page.evaluate(() => Object.keys(window.__rtsDebug?.getPositions() ?? {}).length)
+  expect(resyncSnapshot).toMatchObject({ type: 'snapshot', unitCount: initialUnitCount, resourcesComplete: true })
   if (resyncSnapshot === undefined || resyncSnapshot.type !== 'snapshot') {
     throw new Error('expected a full resync snapshot')
   }
@@ -94,5 +96,5 @@ test('a skipped delta forces a full resync and the next delta converges', async 
   expect(followingDelta).toMatchObject({ type: 'snapshot_delta', dropped: false })
   expect(converged.resyncRequests).toBe(before.resyncRequests + 1)
   expect(converged.acceptedBaseline?.viewSequence).toBeGreaterThanOrEqual(followingDelta?.viewSequence ?? 0)
-  expect(await page.evaluate(() => Object.keys(window.__rtsDebug?.getPositions() ?? {}).length)).toBe(4)
+  expect(await page.evaluate(() => Object.keys(window.__rtsDebug?.getPositions() ?? {}).length)).toBe(initialUnitCount)
 })

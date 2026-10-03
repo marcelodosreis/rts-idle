@@ -183,10 +183,14 @@ Useful validation groups:
 | `corepack pnpm run balance -- --games 1000` | Analyze matchup balance |
 | `corepack pnpm run benchmark` | Run simulation and renderer benchmarks |
 
+The complete browser gate is the CI-planned matrix, not a single local process:
 CI keeps functional and `@perf` E2E tests in separate pools for Chromium and
-Firefox. Each pool is discovered and rebalanced automatically from per-test
-timings; the timing history is stored as a workflow artifact, so adding or
-changing tests does not require maintaining shard lists.
+Firefox, with one worker per isolated runner. Each pool is discovered and
+rebalanced automatically from per-test timings; the timing history is stored
+as a workflow artifact, so adding or changing tests does not require maintaining
+shard lists. The union covers the same tests as `test:e2e:all`; the latter is a
+serial local fallback. Do not run browser groups in parallel on the same
+constrained host because renderer CPU contention can create false failures.
 
 ## Future Direction
 

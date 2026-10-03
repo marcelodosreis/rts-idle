@@ -24,7 +24,7 @@ for (const [route, heading] of laboratoryRoutes) {
 
 test('the match exposes laboratory navigation in the top bar', async ({ page }) => {
   test.setTimeout(90000)
-  await page.goto('/')
+  await page.goto('/?scenario=regression&aggression=passive')
   await page.getByRole('button', { name: 'Open DevTools menu' }).click()
   await page.getByRole('link', { name: 'Open Laboratory' }).click()
   await expect(page).toHaveURL(/\/laboratory$/)
@@ -37,7 +37,7 @@ test('laboratory navigation commits while the match is updating under load', asy
   test.skip(browserName !== 'chromium', 'CPU throttling uses the Chromium DevTools protocol')
   test.setTimeout(120000)
   const client = await page.context().newCDPSession(page)
-  await page.goto('/')
+  await page.goto('/?scenario=regression&aggression=passive')
   await page.getByRole('button', { name: 'Open DevTools menu' }).click()
   await client.send('Emulation.setCPUThrottlingRate', { rate: 20 })
   await page.getByRole('link', { name: 'Open Laboratory' }).click()
@@ -46,7 +46,7 @@ test('laboratory navigation commits while the match is updating under load', asy
 })
 
 test('laboratory menu groups match settings and keeps laboratory as its final action', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?scenario=regression&aggression=passive')
   const devTools = page.getByRole('button', { name: 'Open DevTools menu' })
   await devTools.click()
 
@@ -71,7 +71,7 @@ test('laboratory menu groups match settings and keeps laboratory as its final ac
 })
 
 test('match popovers stay open until their own trigger is clicked again', async ({ page }) => {
-  await page.goto('/')
+  await page.goto('/?scenario=regression&aggression=passive')
 
   const gameDevTools = page.getByRole('button', { name: 'Open DevTools menu' })
   await gameDevTools.click()

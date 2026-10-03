@@ -26,7 +26,7 @@ function session(): GameSession {
   return createAuthoritativeMatch({
     type: 'match_request',
     protocolVersion: PROTOCOL_VERSION,
-    scenarioId: 'default',
+    scenarioId: 'regression',
     aggression: 'passive',
     map: { source: 'catalog' }
   }).session
@@ -192,12 +192,16 @@ describe('authoritative snapshot sender', () => {
     const socket = new FakeSocket()
     const sender = new SnapshotSender(socket)
     sender.sendSnapshot(game, [])
+    const expectedRemovedUnitIds = game
+      .observe(true)
+      .units.filter((unit) => unit.owner === 0)
+      .map((unit) => unit.id)
     game.submit(0, [{ tick: 1, playerId: 0, sequence: 1, intent: { type: 'SURRENDER', payload: {} } }])
     game.advance()
     sender.sendSnapshot(game, [])
 
     const delta = message(socket)
-    expect(delta.type === 'snapshot_delta' ? delta.removedUnitIds : []).toEqual([1, 2, 3, 4, 5])
+    expect(delta.type === 'snapshot_delta' ? delta.removedUnitIds : []).toEqual(expectedRemovedUnitIds)
   })
 
   it('supports a dropped or out-of-order delta by resending current authority', () => {
