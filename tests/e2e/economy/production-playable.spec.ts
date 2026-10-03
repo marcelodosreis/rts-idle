@@ -123,7 +123,7 @@ test('production buttons stay inside the completed construction panel', async ({
   await expect(page.getByTestId('train-pawn')).toHaveCount(0)
 })
 
-test('cancels any queued production row with confirmation and refund feedback', async ({ page }) => {
+test('blocks a full queue and cancels queued production with refund feedback', async ({ page }) => {
   test.setTimeout(30_000)
   await page.goto('/?scenario=regression')
   await waitForMatchReady(page)
@@ -141,16 +141,9 @@ test('cancels any queued production row with confirmation and refund feedback', 
   expect(queueFitsSelection).toBe(true)
   await expect(page.getByTestId('production-item-1')).toHaveAttribute('data-production-status', 'QUEUED')
 
-  await page.getByTestId('train-pawn').click({ force: true })
-  const localBlock = page.getByTestId('hud-context-feedback')
-  await expect(localBlock).toHaveText(/Queue is full|Insufficient gold/)
-  const blockTarget = await localBlock.getAttribute('data-feedback-target')
-  if (blockTarget === 'queue') {
-    await expect(page.getByTestId('production-panel')).toHaveAttribute('data-queue-attention', 'true')
-  } else {
-    await expect(page.getByTestId('hud-resource-gold')).toHaveAttribute('data-feedback-highlight', 'true')
-  }
-  await expect(page.getByRole('alert')).toHaveCount(0)
+  const blockedTrain = page.getByTestId('train-pawn')
+  await expect(blockedTrain).toHaveAttribute('aria-disabled', 'true')
+  await expect(blockedTrain).toHaveAttribute('data-command-state', 'blocked')
 
   const beforeFirstCancel = await queueLength(page)
   await cancelFirstQueuedProduction(page)

@@ -7,9 +7,9 @@
 
 | Status | Quantidade |
 |--------|------------|
-| open | 83 |
+| open | 84 |
 | closed | 18 |
-| **total** | **101** |
+| **total** | **102** |
 
 ## Details
 
@@ -116,6 +116,7 @@
 | 2026-10-02-castle-tier-unavailable-feedback | open | presentation | QH.26.01 | 1 test(s) |
 | 2026-10-02-e2e-plan-missing-dist | open | environment | QH.27.01 | 1 test(s) |
 | 2026-10-02-firefox-transport-drop-recovery | open | completion-gate | QH.26.01 | 1 test(s) |
+| 2026-10-03-production-queue-test-race | open | presentation | QH.28.01 | 1 test(s) |
 
 ## Legend
 
