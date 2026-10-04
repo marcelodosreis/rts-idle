@@ -13,7 +13,7 @@ import {
   routeArrived,
   segmentHitsStaticObstacle
 } from '../movement/routing.js'
-import { createWorldSpatialIndex } from '../spatial/world-spatial-index.js'
+import { createWorldSpatialIndex, UNIT_COLLISION_RADIUS_FIXED } from '../spatial/world-spatial-index.js'
 import type { GameState } from '../state/state.js'
 import { type MovementStepResult, movementStep } from './movement-step.js'
 
@@ -23,6 +23,7 @@ interface MovementCandidate {
 }
 
 type SpatialIndexes = ReturnType<typeof createWorldSpatialIndex>
+const BUILD_WORK_AREA_RADIUS_FIXED = UNIT_COLLISION_RADIUS_FIXED * 4
 
 interface StepCandidateOptions {
   readonly state: GameState
@@ -121,15 +122,16 @@ function cooperativeUnitIds(state: GameState, id: EntityId, movement: MovementDa
           Math.abs(candidatePosition.y - movement.destY) === FORMATION_SPACING) ||
         (Math.abs(candidatePosition.x - movement.destX) === FORMATION_SPACING &&
           Math.abs(candidatePosition.y - movement.destY) === FORMATION_SPACING))
-    const buildDestination =
+    const buildWorkArea =
       currentOrder?.type === 'BUILD' &&
       candidateOrder === undefined &&
       candidateMovement === undefined &&
-      candidatePosition?.x === movement.destX &&
-      candidatePosition?.y === movement.destY &&
+      candidatePosition !== undefined &&
+      (candidatePosition.x - movement.destX) ** 2 + (candidatePosition.y - movement.destY) ** 2 <=
+        BUILD_WORK_AREA_RADIUS_FIXED ** 2 &&
       currentOwner !== undefined &&
       owners.get(candidateId)?.owner === currentOwner
-    if (sharedDestination || formationMovement || formationDestination || buildDestination) {
+    if (sharedDestination || formationMovement || formationDestination || buildWorkArea) {
       shared.add(candidateId)
     }
   }

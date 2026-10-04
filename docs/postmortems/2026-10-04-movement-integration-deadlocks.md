@@ -17,18 +17,20 @@ regressao:
 The first collision and navigation integration caused existing gather, build,
 and formation flows to stop progressing. Workers treated resource tiles as
 walls, units starting on a building footprint could not leave it, selected
-formation units deadlocked against units that had already arrived, and a builder
-could oscillate inside the initial worker group instead of reaching its
-construction work point. The failures were deterministic and affected both
-simulation integration tests and the real match path.
+formation units deadlocked against units that had already arrived, and a
+replacement builder could remain in `FOUNDATION` when the previous builder had
+been stopped near the shared construction work point. The failures were
+deterministic and affected both simulation integration tests and the real match
+path.
 
 ## Symptom
 
-Gather workers remained in `TO_RESOURCE`, builders remained in `moving`, and
-multi-unit MOVE commands did not clear their `Movement` components within the
-existing test limits. The isolated browser collision scenario could pass
-independently, which initially obscured the integration regressions and did not
-exercise the four-worker `regression` composition.
+Gather workers remained in `TO_RESOURCE`, builders remained in `moving`,
+replacement builders remained assigned with zero progress, and multi-unit MOVE
+commands did not clear their `Movement` components within the existing test
+limits. The isolated browser collision scenario could pass independently, which
+initially obscured the integration regressions and did not exercise the
+four-worker `regression` composition.
 
 ## Root cause
 
@@ -38,8 +40,10 @@ routing therefore tried to enter a blocked resource tile. Collision checks also
 treated a unit beginning on a building edge as blocked, formation avoidance
 continued checking teammates after their movement components had been cleared,
 and local avoidance accepted the first clear offset even when it moved farther
-from the target. The latter made a builder oscillate around its starting group
-without a persistent route.
+from the target. Construction handoff still treated a stopped friendly builder
+near the work point as a normal collision, so the replacement could never reach
+the exact point required to start progress. The latter cases made a builder
+oscillate around its starting group without a persistent route.
 
 ## What we missed
 
@@ -62,7 +66,8 @@ canonical movement change.
   footprint it starts on, treats tangent unit bounds as non-overlapping, and
   includes deterministic southward avoidance candidates.
 - `packages/simulation/src/systems/movement-system.ts` keeps deterministic
-  cooperative formation/work-point handling, chooses the clear local step that
+  cooperative formation/work-point handling, treats the construction work area
+  as cooperative during builder handoff, chooses the clear local step that
   makes the most progress toward the target, and uses local avoidance steps for
   blocked movement.
 - Out-of-bounds direct movement remains compatible with existing command
@@ -80,6 +85,8 @@ The existing integration tests now cover the affected producers:
   movement and preserves distinct destinations.
 - `tests/integration/economy-chain.test.ts` verifies that the first worker in
   the four-worker regression fixture reaches a new House construction point.
+- `tests/integration/economy-chain.test.ts` verifies that a replacement worker
+  completes a Castle after the previous worker is stopped beside its work point.
 - `tests/simulation/collision.test.ts` verifies that a unit starting on a
   building edge can leave the footprint.
 

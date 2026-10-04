@@ -165,6 +165,46 @@ describe('economic integration chain (P2.12)', () => {
     )
   })
 
+  it('lets a replacement regression worker complete a Castle beside its starting group', () => {
+    const session = createRegressionSession()
+    const workers = session.observe(true).units.filter((unit) => unit.owner === 0 && unit.canGather)
+    const firstWorker = workers[0]
+    const replacementWorker = workers[1]
+    const target = { x: 10, y: 10 }
+    if (firstWorker === undefined || replacementWorker === undefined) {
+      throw new Error('regression session is missing the replacement workers')
+    }
+
+    issue(session, { type: 'BUILD', payload: { unitId: firstWorker.id, buildingType: 'CASTLE', ...target } }, 1)
+    advanceUntil(
+      session,
+      (observation) => {
+        const position = observation.units.find((unit) => unit.id === firstWorker.id)
+        return (
+          position !== undefined &&
+          Math.abs(position.x - tilesToFixed(target.x)) <= 128 &&
+          Math.abs(position.y - tilesToFixed(target.y + 2)) <= 128
+        )
+      },
+      500
+    )
+    issue(session, { type: 'STOP', payload: { unitIds: [firstWorker.id] } }, 2)
+    issue(session, { type: 'BUILD', payload: { unitId: replacementWorker.id, buildingType: 'CASTLE', ...target } }, 3)
+    advanceUntil(
+      session,
+      (observation) =>
+        observation.buildings.some(
+          (building) =>
+            building.owner === 0 &&
+            building.buildingType === 'CASTLE' &&
+            building.x === tilesToFixed(target.x) &&
+            building.y === tilesToFixed(target.y) &&
+            building.status === 'COMPLETED'
+        ),
+      500
+    )
+  })
+
   it('replays gather through production and research with identical snapshot hashes', () => {
     const first = createRegressionSession()
     const second = createRegressionSession()
