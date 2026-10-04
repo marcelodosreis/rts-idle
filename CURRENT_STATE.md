@@ -8,7 +8,8 @@ Browser-first competitive RTS with deterministic simulation, server authority, a
 
 ## Current Milestone
 
-**Phase 2 in progress.** Economy v0 is implemented and exposed through a dedicated browser scenario.
+**Phase 3 in progress.** Phase 2 economy and production are complete. The active
+milestone is navigation, collision, complete combat, and fog of war.
 
 See `docs/tasks/todo.md` for full phase list.
 
@@ -59,34 +60,50 @@ See `docs/tasks/todo.md` for full phase list.
   `assertNever` exhaustive dispatch, canonical tag codecs, hardened tsconfig
   (`verbatimModuleSyntax`, `noImplicitReturns`, `noPropertyAccessFromIndexSignature`),
   and an AST typed-domain guard (`tests/architecture/typed-domain.test.ts`)
+- Deterministic navigation foundation: grid, A*, serializable incremental
+  searches, four-search admission, fixed per-tick expansion budget, canonical
+  grid/search snapshots, and restore-equivalent availability ticks
+- Deterministic spatial index and collision-aware movement: persisted routes,
+  building segment collision, unit avoidance, shared work/formation destinations,
+  `movementBlocked` feedback, HUD presentation, and real-server Chromium/Firefox
+  coverage
 
 ## Current Gameplay
 
 Player connects → gets isolated match → selects units → issues commands → fights
 pre-scripted enemies, or opens the regression scenario to gather and deposit
-resources through the authoritative command path. In the regression scenario, the player
-can also place Castle/Barracks/Monastery/House construction, pause it by stopping the
-worker, and resume it by assigning another worker through the construction HUD.
+resources through the authoritative command path. Units can now route around
+buildings, avoid mobile-unit collisions, and show blocked/unreachable feedback.
+In the regression scenario, the player can also place Castle/Barracks/Monastery/House
+construction, pause it by stopping the worker, and resume it by assigning another
+worker through the construction HUD.
 The top bar shows authoritative `used / cap` supply and updates on House completion.
 Completed Castle/Barracks/Monastery producers accept rally points; trained units wait at a
 blocked exit without overlap and follow the latest authoritative rally point
 after spawning.
 
-No real AI, pathfinding, fog of war, or multiplayer.
-Resource tiles remain permanently reserved for construction; physical
-movement blocking is deferred with pathfinding/collision.
+No real AI, vision/fog of war, or multiplayer. Resource tiles remain permanently
+reserved for construction; resources marked as non-blocking remain traversable.
 
 ## Current Limitations
 
 - No AI (enemies are pre-scripted)
-- No pathfinding (straight-line movement)
-- No collision/avoidance
 - No fog of war
 - No minimap
 - No multiplayer rooms
 - No audio
 
 ## Active Task
+
+The project has returned to Phase 3. Quality Hardening remains a deferred
+backlog and is not blocking gameplay work. `P3.01.01` through `P3.06.01` are
+complete, including the spatial index and collision/avoidance player slice.
+Their packets are archived in `docs/tasks/done/`. The next task is `P3.07.01`
+Vision and Memory; do not start it in this slice.
+
+The first navigation/collision slice is complete: navigation is integrated with
+authoritative movement, visible blocked/unreachable feedback, and real-server
+browser coverage. Later Phase 3 work begins with player-specific vision.
 
 The repository physical reorganization is complete. Server transport, match
 bootstrap, session projections, quality tooling, fixtures, unit tests,
@@ -161,10 +178,10 @@ one worker per isolated runner. Its union covers the same tests as the serial
 while `default`, `8v8`, `ffa`, and `monk-heal` remain available for manual
 selection and `research` remains absent from the catalog.
 
-The remaining quality board is separate from the completed QH.27.01 and
-QH.28.01 tracks. The Concept Authority closure (AUTH-005A through AUTH-018) is
-complete; its audit records the authority and validation evidence. See
-`docs/tasks/todo.md` for the remaining quality board.
+The remaining quality board is intentionally deferred while Phase 3 is active.
+The Concept Authority closure (AUTH-005A through AUTH-018) is complete; its
+audit records the authority and validation evidence. See `docs/tasks/todo.md`
+and `docs/tasks/P3-phase-plan.md` for the current priorities.
 
 WEB-ARCH-001 Web Frontend Architecture Restructure is complete. The old MPA
 entries `/sprites/`, `/det.html`, and `/perf.html` were removed; Laboratory

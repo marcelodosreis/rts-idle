@@ -49,8 +49,26 @@ describe('ECS query membership', () => {
     world.store(Position).set(9, { x: 0, y: 0 })
     world.store(Position).set(2, { x: 0, y: 0 })
     world.store(Position).set(7, { x: 0, y: 0 })
-    world.store(Movement).set(7, { speedTilesPerSecondFixed: 1, destX: 0, destY: 0, remainderX: 0, remainderY: 0 })
-    world.store(Movement).set(2, { speedTilesPerSecondFixed: 1, destX: 0, destY: 0, remainderX: 0, remainderY: 0 })
+    world.store(Movement).set(7, {
+      speedTilesPerSecondFixed: 1,
+      destX: 0,
+      destY: 0,
+      remainderX: 0,
+      remainderY: 0,
+      path: null,
+      pathIndex: 0,
+      blockedTicks: 0
+    })
+    world.store(Movement).set(2, {
+      speedTilesPerSecondFixed: 1,
+      destX: 0,
+      destY: 0,
+      remainderX: 0,
+      remainderY: 0,
+      path: null,
+      pathIndex: 0,
+      blockedTicks: 0
+    })
 
     expect(world.query(Position)).toEqual([2, 7, 9])
     expect(world.query(Position, Movement)).toEqual([2, 7])

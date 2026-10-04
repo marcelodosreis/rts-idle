@@ -293,7 +293,11 @@ importers:
         specifier: workspace:*
         version: link:../shared
 
-  packages/pathfinding: {}
+  packages/pathfinding:
+    dependencies:
+      '@rts/shared':
+        specifier: workspace:*
+        version: link:../shared
 
   packages/protocol:
     dependencies:

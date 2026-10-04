@@ -24,7 +24,13 @@ Open `http://localhost:5173`. The top bar shows
 
 ## Regression scenario (the main playable flow)
 
-Open `http://localhost:5173/?scenario=regression&aggression=passive`.
+Open `http://localhost:5173/?scenario=regression&aggression=passive&sprites=off`.
+
+`regression` is the sole automated gameplay fixture. Every player-facing
+gameplay E2E, including navigation and collision, starts from this scenario;
+the other demo scenarios remain available for manual exploration only. Unit,
+integration, simulation, and determinism tests use deterministic fixtures and
+do not load browser demo scenarios.
 
 In this scenario the player owns four pawns, a Castle (250/500 HP), a House, a
 Warrior/Archer/Monk/Lancer squad, and 600 gold. The enemy squad is stationary
@@ -57,6 +63,15 @@ unless `aggression=offensive`.
 | 23 | Middle-drag / wheel | Camera pans / zooms within the configured limits. |
 | 24 | Top bar **Sprites** switch | Turning it off reloads the match with fallback circles/markers; commands and simulation remain active. |
 
+### Navigation and collision
+
+Select one of the owned pawns near the lower side of the map and right-click
+open ground beyond the owned House at approximately tile `(16, 10)`. The unit
+must route around the building through the real server without crossing its
+footprint, teleporting, or overlapping another unit. If the destination is
+unreachable or movement remains blocked, the match HUD displays the blocked or
+unreachable feedback.
+
 ### Other scenarios
 
 - `?scenario=default` — hostile demo: both squads march and fight automatically.
@@ -88,7 +103,6 @@ pnpm benchmark   # simulation/render benchmarks
 
 ## Not implemented yet (do not expect)
 
-- Pathfinding, collision/avoidance, and physical movement blocking.
 - Fog of war, minimap, hotkeys/control groups, and audio.
 - Multiplayer rooms and reconnection UX across tab reloads (Phase 6).
 - AI opponents — all enemies are pre-scripted.

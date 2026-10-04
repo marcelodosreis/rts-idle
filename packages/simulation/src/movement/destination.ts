@@ -21,7 +21,10 @@ export function setMovementDestination(state: GameState, id: EntityId, x: Fixed,
     destX: x,
     destY: y,
     remainderX: 0,
-    remainderY: 0
+    remainderY: 0,
+    path: null,
+    pathIndex: 0,
+    blockedTicks: 0
   })
 }
 

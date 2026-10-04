@@ -8,9 +8,18 @@ import type { PlayerId } from '../primitives/players.js'
  * simulation (producer), the protocol (wire), and the renderer (feedback).
  * The union is frozen; adding a variant is a deliberate protocol change.
  */
-export const SIMULATION_EVENT_TYPES = ['attackFired', 'damageDealt', 'healCast', 'repairStopped', 'unitDied'] as const
+export const SIMULATION_EVENT_TYPES = [
+  'attackFired',
+  'damageDealt',
+  'healCast',
+  'repairStopped',
+  'unitDied',
+  'movementBlocked'
+] as const
 export const REPAIR_STOP_REASONS = ['NO_GOLD'] as const
+export const MOVEMENT_BLOCK_REASONS = ['COLLISION', 'UNREACHABLE'] as const
 export type RepairStopReason = (typeof REPAIR_STOP_REASONS)[number]
+export type MovementBlockReason = (typeof MOVEMENT_BLOCK_REASONS)[number]
 
 export type SimulationEventType = (typeof SIMULATION_EVENT_TYPES)[number]
 
@@ -44,4 +53,11 @@ export type SimulationEvent =
       readonly entityId: EntityId
       readonly owner: PlayerId
       readonly killerId: EntityId | null
+    }
+  | {
+      readonly type: 'movementBlocked'
+      readonly unitId: EntityId
+      readonly destinationX: number
+      readonly destinationY: number
+      readonly reason: MovementBlockReason
     }

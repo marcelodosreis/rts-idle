@@ -21,6 +21,7 @@ import { describe, expect, it } from 'vitest'
 //   RenderResource, RendererOptions, RendererCallbacks, InputProfile, WorldInteraction,
 //   SpriteAnim, SpriteShape, FrameAnim, UnitSpriteState, BuildingVisualKind
 
+import * as pathfinding from '@rts/pathfinding'
 import * as protocol from '@rts/protocol'
 import type {
   GameRenderer,
@@ -142,6 +143,13 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'hashState',
       'GATHER_TICKS_PER_RESOURCE',
       'RESOURCE_CARGO_CAPACITY',
+      'MAX_ACTIVE_NAVIGATION_SEARCHES',
+      'NAVIGATION_EXPANSION_BUDGET',
+      'NAVIGATION_SEARCH_SLICE',
+      'formationTileOffset',
+      'resolveGroupDestinations',
+      'createWorldSpatialIndex',
+      'UNIT_COLLISION_RADIUS_FIXED',
       'SYSTEM_PIPELINE',
       'runSystems',
       'checkInvariants',
@@ -167,6 +175,21 @@ const VALUE_EXPORTS: readonly (readonly [string, readonly string[]])[] = [
       'FRAME_ANIMS',
       'BUILDING_VISUAL_KINDS'
     ]
+  ],
+  [
+    'pathfinding',
+    [
+      'version',
+      'createNavigationGrid',
+      'createNavigationGridFromMap',
+      'findPath',
+      'createIncrementalSearch',
+      'advanceIncrementalSearch',
+      'invalidateIncrementalSearch',
+      'createSpatialIndex',
+      'NAVIGATION_DIRECTIONS',
+      'INCREMENTAL_SEARCH_RESULTS'
+    ]
   ]
 ]
 
@@ -174,7 +197,8 @@ const NAMESPACES: Record<string, Record<string, unknown>> = {
   shared: shared as unknown as Record<string, unknown>,
   protocol: protocol as unknown as Record<string, unknown>,
   simulation: simulation as unknown as Record<string, unknown>,
-  renderer: renderer as unknown as Record<string, unknown>
+  renderer: renderer as unknown as Record<string, unknown>,
+  pathfinding: pathfinding as unknown as Record<string, unknown>
 }
 
 describe('public API surface', () => {

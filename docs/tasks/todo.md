@@ -101,10 +101,10 @@ active and pending packets remain here. See [`docs/tasks/README.md`](README.md).
 > Phase 1 dependency (master plan): Phase 0 approved. Full command contracts,
 > order queue, and complete combat rules. Visual track runs in parallel (ADR-015).
 
-## Phase 2 — Economy and production
+## Phase 2 — Economy and production (complete)
 
-Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
-`docs/tasks/done/P2.11.md` (Castle II research and modifiers).
+Execution plan: `docs/tasks/done/VS-01-plan.md`. All planned Phase 2
+deliverables through `P2.12` are complete.
 
 ### VS-01 — Economy v0 (P2.01–P2.02)
 
@@ -190,7 +190,28 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
 - [x] P2.12 — Economic integration (`docs/tasks/done/P2.12.md`)
 
 ## Phase 3 — Navigation, full combat, and fog
-- [ ] P3.01–P3.12 (see `docs/master-plan.md`)
+
+Execution plan: `docs/tasks/P3-phase-plan.md`. `P3.05.01` and `P3.06.01` are
+complete. Stop before `P3.07.01`.
+
+- [x] P3.01.01 — Navigation grid (`docs/tasks/done/P3.01.01.md`)
+- [x] P3.01.02 — A* pathfinding (`docs/tasks/done/P3.01.02.md`)
+- [x] P3.02.01 — Serializable incremental search (`docs/tasks/done/P3.02.01.md`)
+- [x] P3.03.01 — Footprint navigation invalidation (`docs/tasks/done/P3.03.01.md`)
+- [x] P3.04.01 — Group destinations (`docs/tasks/done/P3.04.01.md`)
+- [x] P3.05.01 — Spatial index (`docs/tasks/done/P3.05.01.md`)
+- [x] P3.06.01 — Collision and avoidance (`docs/tasks/done/P3.06.01.md`)
+- [ ] P3.07.01 — Vision and memory
+- [ ] P3.08.01 — Filtered observations and events
+- [ ] P3.08.02 — Fog rendering
+- [ ] P3.09.01 — Targeting and pursuit
+- [ ] P3.10.01 — Projectiles
+- [ ] P3.11.01 — Area damage
+- [ ] P3.12.01 — Combined army/chokepoint stress
+
+The first technical slice is the pathfinding package. The first complete
+player-facing navigation slice is only complete after A*, authoritative MOVE
+integration, blocked/unreachable feedback, and real-server browser E2E.
 
 ## Phase 4A — M1 content
 - [ ] P4.01–P4.07 (see `docs/master-plan.md`)
@@ -215,6 +236,9 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
 - [ ] P9.01–P9.07 (see `docs/master-plan.md`)
 
 ## Quality Hardening
+
+> Deprioritized in favor of Phase 3. These tasks remain pending backlog and do
+> not block the current gameplay milestone.
 
 ## Concept Authority
 
@@ -266,6 +290,9 @@ QH.06, QH.07, QH.08, QH.10, QH.13, QH.14, and QH.15; WebKit/touch/mobile
 coverage; ARCH.02.*; DEP.01-DEP.09; SCL.01-SCL.04; and Phase 3 work.
 QH.11 is recorded as complete because the existing CI parallelism already
 satisfied its contract; it was not reimplemented here.
+
+The batch deferral is now an explicit priority decision: Phase 3 has resumed,
+and the remaining Quality Hardening tasks stay pending without blocking it.
 
 ### Low Effort
 - [ ] QH.04 Input helper (deps: QH.00)

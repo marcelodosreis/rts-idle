@@ -145,7 +145,10 @@ function buildScenarioWorld(scenario: EcsQueryScenario, instrumentation?: WorldI
         destX: FAR_TARGET,
         destY: FAR_TARGET,
         remainderX: 0,
-        remainderY: 0
+        remainderY: 0,
+        path: null,
+        pathIndex: 0,
+        blockedTicks: 0
       })
     }
     if (index >= definition.combatants) {

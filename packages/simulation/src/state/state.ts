@@ -2,6 +2,7 @@ import type { EntityId, PlayerId, PlayerResources, ResearchType, RngState } from
 import type { ScheduledCommand } from '../contracts/commands.js'
 import type { RulesIdentity } from '../contracts/simulation.js'
 import type { World } from '../ecs/world.js'
+import type { NavigationState } from '../navigation/navigation-state.js'
 import type { PlacementMapBounds } from '../placement/building-placement.js'
 import type { ResourceState } from '../resources/resource-state.js'
 import type { SimulationEvent } from '../systems/events.js'
@@ -44,6 +45,8 @@ export interface GameState {
   readonly mapBounds: PlacementMapBounds
   /** Compact state for map-authored resources; passive resources never enter World. */
   readonly resources: ResourceState
+  /** Canonical grid definition and bounded path searches. */
+  readonly navigation: NavigationState
   readonly world: World
   /** Future commands are authoritative state and survive snapshot/restore. */
   readonly pendingCommands: ScheduledCommand[]

@@ -1,5 +1,6 @@
 import { Movement, Orders } from '../ecs/components.js'
 import { setMovementDestination } from '../movement/destination.js'
+import { navigationSystem } from '../navigation/navigation-system.js'
 import { setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
 
@@ -12,6 +13,7 @@ import type { GameState } from '../state/state.js'
  * inert.
  */
 export function ordersSystem(state: GameState): void {
+  navigationSystem(state)
   const orders = state.world.store(Orders)
   const movements = state.world.store(Movement)
   for (const id of state.world.query(Orders)) {

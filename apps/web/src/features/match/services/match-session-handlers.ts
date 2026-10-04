@@ -167,6 +167,14 @@ function logSnapshotEvents(
       }
     } else if (event.type === 'unitDied') {
       appendLog('event', `unitDied: ${event.entityId} (P${event.owner}) killed by ${event.killerId ?? 'unknown'}`)
+    } else if (event.type === 'movementBlocked') {
+      appendLog(
+        'event',
+        `movementBlocked: ${event.unitId} → ${event.destinationX},${event.destinationY} (${event.reason})`
+      )
+      if (runtime.unitStates.get(event.unitId)?.owner === HUMAN_PLAYER) {
+        setHudNotification({ kind: 'MOVEMENT_BLOCKED', reason: event.reason })
+      }
     }
   }
 }

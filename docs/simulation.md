@@ -13,8 +13,9 @@ The deterministic core. This document is the operational reference for
 - The canonical byte format and the state hash are pinned by
   `tests/simulation/hash-golden.test.ts` and the determinism suites. Changing
   the format is a deliberate act (regen the golden).
-- `SIMULATION_VERSION` is `0.13.0` (Castle II, Research, modifiers, and
-  fixed-point movement joined the canonical snapshot stream).
+- `SIMULATION_VERSION` is `0.21.0`; canonical state includes the static/current
+  navigation definitions, bounded searches, building-footprint invalidation, and
+  persisted movement routes.
 
 ## Single writer
 
@@ -29,17 +30,18 @@ The pipeline order is part of the deterministic contract:
 
 | Step | System | Responsibility |
 |---|---|---|
-| 1 | `orders` | Advance the per-unit order queue (PATROL leg rotation) |
+| 1 | `orders` | Synchronize building footprints, run the bounded navigation budget, and advance the per-unit order queue (PATROL leg rotation) |
 | 2 | `movement` | Advance units toward their destination (integer remainder) |
 | 3 | `economy` | Gather resources, return cargo, and deposit using post-movement positions |
-| 4 | `tier` | Complete Castle tier upgrades and unlock current Tier II access |
-| 5 | `research` | Advance Monastery queues and apply completed modifiers |
-| 6 | `combat` | Resolve attack intent; accumulate damage in the per-tick buffer |
-| 7 | `death` | Apply the damage buffer simultaneously; remove the dead, clear refs |
-| 8 | `supply` | Recompute used/capacity supply from the live world |
-| 9 | `production` | Advance Castle/producer queues and spawn completed units |
-| 10 | `victory` | Decide win/draw/tick-limit; mark losers defeated |
-| 11 | `invariants` | Validate the state (never mutates, throws on violation) |
+| 4 | `heal` | Resolve Monk healing orders and cooldowns |
+| 5 | `tier` | Complete Castle tier upgrades and unlock current Tier II access |
+| 6 | `research` | Advance Monastery queues and apply completed modifiers |
+| 7 | `combat` | Resolve attack intent; accumulate damage in the per-tick buffer |
+| 8 | `death` | Apply the damage buffer simultaneously; remove the dead, clear refs |
+| 9 | `supply` | Recompute used/capacity supply from the live world |
+| 10 | `production` | Advance Castle/producer queues and spawn completed units |
+| 11 | `victory` | Decide win/draw/tick-limit; mark losers defeated |
+| 12 | `invariants` | Validate the state (never mutates, throws on violation) |
 
 Appending a step is a deliberate change; reordering is forbidden
 (`tests/simulation/lifecycle/pipeline-order.test.ts`).
@@ -50,7 +52,8 @@ Registered in `createWorld()` in this order (part of the canonical schema):
 
 - `Position` — fixed-unit x/y.
 - `Owner` — competitive slot 0-3.
-- `Movement` — speed, destination, integer remainder accumulator.
+- `Movement` — speed, destination, integer remainder accumulator, route, and
+  deterministic blockage counter.
 - `Orders` — the per-unit order queue.
 - `Health` — current/max hit points.
 - `Combat` — damage, range (tiles), cooldown (ticks), remaining cooldown.
@@ -79,6 +82,8 @@ client as `events[]` in the snapshot message (master plan §23.2):
 - `attackFired` — a unit attacked.
 - `damageDealt` — a target took damage (with its resulting health).
 - `unitDied` — a unit was removed (with owner and killer).
+- `movementBlocked` — a unit remained blocked or unreachable for the notification
+  threshold.
 
 ## Players and victory
 

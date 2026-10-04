@@ -177,7 +177,10 @@ describe('central invariants (P1.08)', () => {
       destX: 10_000,
       destY: 0,
       remainderX: 0,
-      remainderY: 0
+      remainderY: 0,
+      path: null,
+      pathIndex: 0,
+      blockedTicks: 0
     })
     const sim = createSimulation({
       seed: SEEDS.integration.moveOwn,
@@ -213,7 +216,10 @@ describe('central invariants (P1.08)', () => {
       destX: 10_000,
       destY: 0,
       remainderX: 0,
-      remainderY: 0
+      remainderY: 0,
+      path: null,
+      pathIndex: 0,
+      blockedTicks: 0
     })
     const sim = createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
 

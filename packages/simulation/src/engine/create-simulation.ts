@@ -1,7 +1,15 @@
-import { createPlayerResources, createRng, PLAYER_IDS, type ResearchType, START_ENTITY_ID } from '@rts/shared'
+import {
+  createPlayerResources,
+  createRng,
+  FIXED_SCALE,
+  PLAYER_IDS,
+  type ResearchType,
+  START_ENTITY_ID
+} from '@rts/shared'
 import type { SimulationOptions } from '../contracts/simulation.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
+import { createNavigationState } from '../navigation/navigation-state.js'
 import { createResourceState } from '../resources/resource-state.js'
 import { cloneWorld } from '../state/clone-state.js'
 import type { GameState, PlayerState } from '../state/state.js'
@@ -59,6 +67,14 @@ function resolveNextEntityId(world: World): number {
 export function createSimulation(options: SimulationOptions): SimulationHost {
   const rng = createRng(options.seed)
   const world = options.initialWorld === undefined ? createWorld() : cloneWorld(options.initialWorld)
+  const mapBounds = options.mapBounds === undefined ? { ...DEFAULT_MAP_BOUNDS } : cloneMapBounds(options.mapBounds)
+  const resourceTiles = (options.resources ?? [])
+    .filter((resource) => !resource.blocksNavigation)
+    .map((resource) => ({ x: Math.floor(resource.x / FIXED_SCALE), y: Math.floor(resource.y / FIXED_SCALE) }))
+  const navigation = {
+    ...(options.navigation ?? {}),
+    excludedTiles: [...(options.navigation?.excludedTiles ?? []), ...resourceTiles]
+  }
   const state: GameState = {
     tick: 0,
     phase: 'RUNNING',
@@ -67,8 +83,9 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
     rng,
     nextEntityId: resolveNextEntityId(world),
     players: options.initialPlayers === undefined ? createPlayers() : clonePlayers(options.initialPlayers),
-    mapBounds: options.mapBounds === undefined ? { ...DEFAULT_MAP_BOUNDS } : cloneMapBounds(options.mapBounds),
+    mapBounds,
     resources: createResourceState(options.resources),
+    navigation: createNavigationState(mapBounds, navigation),
     world,
     pendingCommands: [],
     events: [],
