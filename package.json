@@ -1,6 +1,6 @@
 {
   "name": "rts-idle",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "private": true,
   "description": "Competitive browser-first RTS. Build small. Engineer large.",
   "type": "module",
