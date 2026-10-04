@@ -1,9 +1,20 @@
-import { isMatchConfig, isSnapshotMessage, type MatchConfig, PROTOCOL_VERSION } from '@rts/protocol'
+import {
+  isMatchConfig,
+  isSnapshotDeltaMessage,
+  isSnapshotMessage,
+  type MatchConfig,
+  PROTOCOL_VERSION
+} from '@rts/protocol'
 import { GameSession, MAX_PENDING_COMMANDS_PER_SESSION } from '@rts/server'
 import { createRulesIdentity, deserializeState } from '@rts/simulation'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { RawData } from 'ws'
-import { ClientConnection, RECONNECT_GRACE_MS } from '../../../apps/server/src/transport/client-connection.js'
+import {
+  ClientConnection,
+  RECONNECT_GRACE_MS,
+  TERMINAL_RETENTION_MS,
+  TICK_MS
+} from '../../../apps/server/src/transport/client-connection.js'
 
 type Listener = (...args: readonly never[]) => void
 
@@ -47,6 +58,12 @@ function request() {
 
 function messages(socket: FakeSocket): readonly unknown[] {
   return socket.messages.map((message) => JSON.parse(message))
+}
+
+function lastPhase(socket: FakeSocket): string | undefined {
+  return messages(socket)
+    .filter((message) => isSnapshotMessage(message) || isSnapshotDeltaMessage(message))
+    .at(-1)?.phase
 }
 
 function latestConfig(socket: FakeSocket): MatchConfig {
@@ -135,6 +152,202 @@ describe('client connection reconnect', () => {
     expiredSocket.emit('message', JSON.stringify({ ...request(), resumeToken: config.resumeToken }))
 
     expect(messages(expiredSocket)).toContainEqual({ type: 'error', message: 'unknown resume token' })
+  })
+
+  it('publishes one terminal snapshot, freezes the session, and expires it while connected', () => {
+    vi.useFakeTimers()
+    const socket = new FakeSocket()
+    const connection = new ClientConnection(socket)
+    connection.start()
+    socket.emit('message', JSON.stringify(request()))
+    const config = latestConfig(socket)
+    const advance = vi.spyOn(GameSession.prototype, 'advance')
+
+    socket.emit('message', JSON.stringify({ type: 'command', intent: { type: 'SURRENDER', payload: {} } }))
+    vi.advanceTimersByTime(TICK_MS)
+
+    expect(lastPhase(socket)).toBe('FINISHED')
+    expect(advance).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(TICK_MS * 4)
+    expect(advance).toHaveBeenCalledTimes(1)
+
+    const reconnectSocket = new FakeSocket()
+    const reconnect = new ClientConnection(reconnectSocket)
+    reconnect.start()
+    reconnectSocket.emit('message', JSON.stringify({ ...request(), resumeToken: config.resumeToken }))
+    expect(lastPhase(reconnectSocket)).toBe('FINISHED')
+
+    vi.advanceTimersByTime(TERMINAL_RETENTION_MS)
+    const expiredSocket = new FakeSocket()
+    const expired = new ClientConnection(expiredSocket)
+    expired.start()
+    expiredSocket.emit('message', JSON.stringify({ ...request(), resumeToken: config.resumeToken }))
+    expect(messages(expiredSocket)).toContainEqual({ type: 'error', message: 'unknown resume token' })
+  })
+
+  it('releases a connected terminal runtime at retention expiry', () => {
+    vi.useFakeTimers()
+    const socket = new FakeSocket()
+    const connection = new ClientConnection(socket)
+    connection.start()
+    socket.emit('message', JSON.stringify(request()))
+    socket.emit('message', JSON.stringify({ type: 'command', intent: { type: 'SURRENDER', payload: {} } }))
+    vi.advanceTimersByTime(TICK_MS)
+    expect(lastPhase(socket)).toBe('FINISHED')
+
+    const submit = vi.spyOn(GameSession.prototype, 'submit')
+    const messagesBeforeExpiry = socket.messages.length
+    vi.advanceTimersByTime(TERMINAL_RETENTION_MS)
+
+    const snapshot = messages(socket).filter(isSnapshotMessage).at(-1)
+    socket.emit(
+      'message',
+      JSON.stringify({
+        type: 'snapshot_resync_request',
+        baseSequence: snapshot?.viewSequence ?? 1,
+        baseHash: snapshot?.viewHash ?? 'a'.repeat(64)
+      })
+    )
+    socket.emit('message', JSON.stringify({ type: 'command', intent: { type: 'STOP', payload: { unitIds: [1] } } }))
+
+    expect(socket.messages).toHaveLength(messagesBeforeExpiry)
+    expect(submit).not.toHaveBeenCalled()
+    expect(lastPhase(socket)).toBe('FINISHED')
+  })
+
+  it('disposes a connected terminal runtime idempotently', () => {
+    vi.useFakeTimers()
+    const socket = new FakeSocket()
+    const connection = new ClientConnection(socket)
+    connection.start()
+    socket.emit('message', JSON.stringify(request()))
+    const advance = vi.spyOn(GameSession.prototype, 'advance')
+    socket.emit('message', JSON.stringify({ type: 'command', intent: { type: 'SURRENDER', payload: {} } }))
+    vi.advanceTimersByTime(TICK_MS)
+
+    vi.advanceTimersByTime(TERMINAL_RETENTION_MS)
+    vi.advanceTimersByTime(TERMINAL_RETENTION_MS * 2)
+    socket.emit('close')
+    vi.advanceTimersByTime(RECONNECT_GRACE_MS)
+
+    expect(advance).toHaveBeenCalledTimes(1)
+    expect(lastPhase(socket)).toBe('FINISHED')
+  })
+
+  it('keeps terminal retention when the match finishes while disconnected', () => {
+    vi.useFakeTimers()
+    const firstSocket = new FakeSocket()
+    const first = new ClientConnection(firstSocket)
+    first.start()
+    firstSocket.emit('message', JSON.stringify(request()))
+    const config = latestConfig(firstSocket)
+    const advance = vi.spyOn(GameSession.prototype, 'advance')
+    const submit = vi.spyOn(GameSession.prototype, 'submit')
+
+    firstSocket.emit('message', JSON.stringify({ type: 'command', intent: { type: 'SURRENDER', payload: {} } }))
+    firstSocket.emit('close')
+    vi.advanceTimersByTime(TICK_MS)
+
+    expect(advance).toHaveBeenCalledTimes(1)
+    expect(submit).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(RECONNECT_GRACE_MS - TICK_MS)
+    const reconnectSocket = new FakeSocket()
+    const reconnect = new ClientConnection(reconnectSocket)
+    reconnect.start()
+    reconnectSocket.emit('message', JSON.stringify({ ...request(), resumeToken: config.resumeToken }))
+
+    expect(lastPhase(reconnectSocket)).toBe('FINISHED')
+    expect(submit).toHaveBeenCalledTimes(1)
+    expect(advance).toHaveBeenCalledTimes(1)
+
+    vi.advanceTimersByTime(TICK_MS * 2)
+    const expiredSocket = new FakeSocket()
+    const expired = new ClientConnection(expiredSocket)
+    expired.start()
+    expiredSocket.emit('message', JSON.stringify({ ...request(), resumeToken: config.resumeToken }))
+    expect(messages(expiredSocket)).toContainEqual({ type: 'error', message: 'unknown resume token' })
+  })
+
+  it('rejects a resume token presented with a different aggression', () => {
+    vi.useFakeTimers()
+    const socket = new FakeSocket()
+    const connection = new ClientConnection(socket)
+    connection.start()
+    socket.emit('message', JSON.stringify(request()))
+    const config = latestConfig(socket)
+    socket.emit('close')
+
+    const mismatchSocket = new FakeSocket()
+    const mismatch = new ClientConnection(mismatchSocket)
+    mismatch.start()
+    mismatchSocket.emit(
+      'message',
+      JSON.stringify({ ...request(), aggression: 'offensive', resumeToken: config.resumeToken })
+    )
+    expect(messages(mismatchSocket)).toContainEqual({
+      type: 'error',
+      message: 'resume configuration mismatch'
+    })
+
+    const correctSocket = new FakeSocket()
+    const correct = new ClientConnection(correctSocket)
+    correct.start()
+    correctSocket.emit('message', JSON.stringify({ ...request(), resumeToken: config.resumeToken }))
+    expect(messages(correctSocket).some(isMatchConfig)).toBe(true)
+
+    mismatchSocket.emit('close')
+    correctSocket.emit('close')
+  })
+
+  it('rejects a resume token presented with a different scenario', () => {
+    vi.useFakeTimers()
+    const socket = new FakeSocket()
+    const connection = new ClientConnection(socket)
+    connection.start()
+    socket.emit('message', JSON.stringify(request()))
+    const config = latestConfig(socket)
+    socket.emit('close')
+
+    const mismatchSocket = new FakeSocket()
+    const mismatch = new ClientConnection(mismatchSocket)
+    mismatch.start()
+    mismatchSocket.emit(
+      'message',
+      JSON.stringify({ ...request(), scenarioId: 'default', resumeToken: config.resumeToken })
+    )
+    expect(messages(mismatchSocket)).toContainEqual({
+      type: 'error',
+      message: 'resume configuration mismatch'
+    })
+    mismatchSocket.emit('close')
+  })
+
+  it('rejects a resume token presented with a different map', () => {
+    vi.useFakeTimers()
+    const socket = new FakeSocket()
+    const connection = new ClientConnection(socket)
+    connection.start()
+    socket.emit('message', JSON.stringify(request()))
+    const config = latestConfig(socket)
+    socket.emit('close')
+
+    const mismatchSocket = new FakeSocket()
+    const mismatch = new ClientConnection(mismatchSocket)
+    mismatch.start()
+    mismatchSocket.emit(
+      'message',
+      JSON.stringify({
+        ...request(),
+        map: { source: 'local', definition: { width: 1, height: 1, tiles: ['land'], resources: [] } },
+        resumeToken: config.resumeToken
+      })
+    )
+    expect(messages(mismatchSocket)).toContainEqual({
+      type: 'error',
+      message: 'resume configuration mismatch'
+    })
+    mismatchSocket.emit('close')
   })
 
   it('removes command authority from a superseded socket', () => {

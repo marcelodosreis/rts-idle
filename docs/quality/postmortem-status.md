@@ -5,8 +5,8 @@
 
 ## Summary
 
-| Status | Quantidade |
-|--------|------------|
+| Status | Count |
+|--------|-------|
 | open | 82 |
 | closed | 21 |
 | **total** | **103** |
@@ -121,7 +121,7 @@
 
 ## Legend
 
-- **open** = bug fixed, but it may happen again (no class barrier)
-- **closed** = bug fixed AND a class barrier exists (does not return)
-- **Barrier** = the quality gate that provides the class barrier
+- **open** = bug recorded; the fix, its regression, or the class-level review is still incomplete
+- **closed** = bug fixed with at least one permanent regression test (Bug Response Protocol)
+- **Barrier** = named quality gate that prevents the whole bug class, when one was identified
 - **Regression** = permanent test(s) that validate the fix

@@ -1,3 +1,4 @@
+import { assertInt32, assertUint32 } from '@rts/shared'
 import { utf8Encode } from './utf8.js'
 
 /**
@@ -12,6 +13,7 @@ export class CanonicalWriter {
   }
 
   writeU32(value: number): void {
+    assertUint32(value, 'CanonicalWriter.writeU32')
     this.writeU8(value >>> 24)
     this.writeU8(value >>> 16)
     this.writeU8(value >>> 8)
@@ -19,6 +21,7 @@ export class CanonicalWriter {
   }
 
   writeI32(value: number): void {
+    assertInt32(value, 'CanonicalWriter.writeI32')
     this.writeU32(value >>> 0)
   }
 

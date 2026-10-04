@@ -1,4 +1,4 @@
-import { type ResourceDefinition, START_ENTITY_ID } from '@rts/shared'
+import { type ResourceDefinition, START_ENTITY_ID, UINT32_MAX } from '@rts/shared'
 import {
   Building,
   Cargo,
@@ -149,6 +149,29 @@ describe('Map-authored resource harvesting', () => {
     simulation.step()
     restored.step()
     expect(restored.hashState()).toBe(simulation.hashState())
+  })
+
+  it('round-trips a resource id at the canonical u32 boundary', () => {
+    const simulation = createSimulation({
+      seed: SEEDS.simulation.fixedTick,
+      identity: TEST_IDENTITY,
+      resources: [{ ...TREE, resourceId: UINT32_MAX }]
+    })
+
+    const restored = simulationFromSnapshot(simulation.exportSnapshot())
+
+    expect(restored.inspectState().resources.amount(UINT32_MAX)).toBe(TREE.initialAmount)
+    expect(restored.hashState()).toBe(simulation.hashState())
+  })
+
+  it('rejects resource ids that would truncate in canonical serialization', () => {
+    expect(() =>
+      createSimulation({
+        seed: SEEDS.simulation.fixedTick,
+        identity: TEST_IDENTITY,
+        resources: [{ ...TREE, resourceId: UINT32_MAX + 1 }]
+      })
+    ).toThrow(/unsigned 32-bit integer/)
   })
 
   for (const count of [100, 1_000, 10_000, 50_000]) {

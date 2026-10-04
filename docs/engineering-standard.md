@@ -126,6 +126,15 @@ guards file length and the typed-domain policy (see `typed-domain.test.ts`).
 - The browser gate runs with CI `retries: 0` so a retry pass cannot hide a
   flake. Prove stability by repeating only the curated subset with
   `pnpm run test:e2e:flaky`, not the whole suite.
+- E2E planning is fail-closed over structured discovery
+  (`playwright test --list --reporter=json`): every discovered Playwright test
+  case belongs to exactly one `file:line` execution unit per category/browser
+  scope, and running a unit runs every case it contains. The planner rejects
+  empty scopes, missing or duplicated units, assigned-once violations,
+  case-count drift, and any source location that mixes `@perf` and functional
+  cases. Execution re-derives the category grep from the validated group, so a
+  corrupted artifact cannot leak cases across lanes. CI must never publish an
+  empty or partial browser matrix.
 - Every task ID must expose its phase or cross-cutting track and stage, using
   `P<phase>.<stage>[.<substage>]` or `<TRACK>.<stage>[.<substage>]`.
 

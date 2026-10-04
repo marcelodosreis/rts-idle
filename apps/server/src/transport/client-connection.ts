@@ -2,12 +2,14 @@ import { isCommandMessage, isMatchRequest, isSnapshotResyncRequest, type MatchCo
 import type { CommandIntent } from '@rts/shared'
 import type { RawData } from 'ws'
 import { bootstrapMatch } from '../bootstrap/match-bootstrap.js'
+import { requestConfigurationFingerprint } from '../bootstrap/match-fingerprint.js'
 import type { GameSession } from '../sessions/session.js'
 import { decodeMessage } from './message-decoder.js'
 import { SnapshotSender, type SnapshotSocket } from './snapshot-sender.js'
 
 export const TICK_MS = 50
 export const RECONNECT_GRACE_MS = 60_000
+export const TERMINAL_RETENTION_MS = 60_000
 
 interface ClientSocket extends SnapshotSocket {
   on(event: 'message', listener: (raw: RawData) => void): this
@@ -20,10 +22,13 @@ type ConnectionLifecycle = 'awaiting_request' | 'running' | 'closed'
 interface MatchRuntime {
   readonly session: GameSession
   readonly config: MatchConfig
+  readonly configurationFingerprint: string
   timer: ReturnType<typeof setInterval> | null
-  expirationTimer: ReturnType<typeof setTimeout> | null
+  disconnectTimer: ReturnType<typeof setTimeout> | null
+  terminalTimer: ReturnType<typeof setTimeout> | null
   nextSequence: number
   client: ClientConnection | null
+  disposed: boolean
 }
 
 const MATCHES = new Map<string, MatchRuntime>()
@@ -44,7 +49,7 @@ export class ClientConnection {
   }
 
   private schedule(intent: CommandIntent): void {
-    if (this.runtime === null || this.runtime.client !== this) {
+    if (this.runtime === null || this.runtime.client !== this || this.runtime.disposed) {
       return
     }
     this.runtime.session.submit(0, [
@@ -65,8 +70,15 @@ export class ClientConnection {
   }
 
   private tickRuntime(runtime: MatchRuntime): void {
+    if (runtime.session.phase() === 'FINISHED') {
+      this.freezeTerminalRuntime(runtime)
+      return
+    }
     const result = runtime.session.advance()
     runtime.client?.sendTickResult(result)
+    if (runtime.session.phase() === 'FINISHED') {
+      this.freezeTerminalRuntime(runtime)
+    }
   }
 
   private sendTickResult(result: ReturnType<GameSession['advance']>): void {
@@ -92,11 +104,14 @@ export class ClientConnection {
   }
 
   private handleParsed(parsed: unknown): void {
-    if (this.lifecycle === 'closed' || (this.runtime !== null && this.runtime.client !== this)) {
+    if (this.lifecycle === 'closed') {
       return
     }
     if (this.lifecycle === 'awaiting_request') {
       this.acceptRequest(parsed)
+      return
+    }
+    if (this.runtime === null || this.runtime.client !== this || this.runtime.disposed) {
       return
     }
     if (isMatchRequest(parsed)) {
@@ -104,9 +119,6 @@ export class ClientConnection {
       return
     }
     if (isSnapshotResyncRequest(parsed)) {
-      if (this.runtime === null) {
-        return
-      }
       this.sender.reset()
       this.sender.sendSnapshot(this.runtime.session, [])
       return
@@ -125,8 +137,12 @@ export class ClientConnection {
     }
     if (parsed.resumeToken !== undefined) {
       const runtime = MATCHES.get(parsed.resumeToken)
-      if (runtime === undefined) {
+      if (runtime === undefined || runtime.disposed) {
         this.sender.sendError('unknown resume token')
+        return
+      }
+      if (runtime.configurationFingerprint !== requestConfigurationFingerprint(parsed)) {
+        this.sender.sendError('resume configuration mismatch')
         return
       }
       this.attach(runtime)
@@ -140,14 +156,19 @@ export class ClientConnection {
     const runtime: MatchRuntime = {
       session: result.match.session,
       config: result.match.config,
+      configurationFingerprint: requestConfigurationFingerprint(parsed),
       timer: null,
-      expirationTimer: null,
+      disconnectTimer: null,
+      terminalTimer: null,
       nextSequence: 1,
-      client: null
+      client: null,
+      disposed: false
     }
     MATCHES.set(result.match.config.resumeToken, runtime)
     this.attach(runtime)
-    this.startTicker(runtime)
+    if (runtime.session.phase() === 'RUNNING') {
+      this.startTicker(runtime)
+    }
   }
 
   private attach(runtime: MatchRuntime): void {
@@ -156,9 +177,9 @@ export class ClientConnection {
     }
     runtime.client = this
     this.runtime = runtime
-    if (runtime.expirationTimer !== null) {
-      clearTimeout(runtime.expirationTimer)
-      runtime.expirationTimer = null
+    if (runtime.disconnectTimer !== null) {
+      clearTimeout(runtime.disconnectTimer)
+      runtime.disconnectTimer = null
     }
     this.sender.reset()
     this.sender.sendMatchConfig(runtime.config)
@@ -174,14 +195,19 @@ export class ClientConnection {
 
   private close(): void {
     this.lifecycle = 'closed'
-    if (this.runtime?.client === this) {
-      this.runtime.client = null
-      const runtime = this.runtime
-      runtime.expirationTimer = setTimeout(() => this.expireRuntime(runtime), RECONNECT_GRACE_MS)
+    const runtime = this.runtime
+    if (runtime !== null && runtime.client === this && !runtime.disposed) {
+      runtime.client = null
+      if (runtime.session.phase() === 'RUNNING') {
+        runtime.disconnectTimer = setTimeout(() => this.expireDisconnectedRuntime(runtime), RECONNECT_GRACE_MS)
+      }
     }
   }
 
-  private expireRuntime(runtime: MatchRuntime): void {
+  private expireDisconnectedRuntime(runtime: MatchRuntime): void {
+    if (runtime.disposed || runtime.session.phase() !== 'RUNNING') {
+      return
+    }
     if (runtime.client !== null || MATCHES.get(runtime.config.resumeToken) !== runtime) {
       return
     }
@@ -194,10 +220,63 @@ export class ClientConnection {
       }
     ])
     runtime.session.advance()
+    this.disposeRuntime(runtime)
+  }
+
+  private freezeTerminalRuntime(runtime: MatchRuntime): void {
+    if (runtime.disposed || MATCHES.get(runtime.config.resumeToken) !== runtime) {
+      return
+    }
     if (runtime.timer !== null) {
       clearInterval(runtime.timer)
       runtime.timer = null
     }
+    // The terminal policy owns the runtime lifetime from this point on; a
+    // disconnect timer armed before the session finished must not expire it.
+    if (runtime.disconnectTimer !== null) {
+      clearTimeout(runtime.disconnectTimer)
+      runtime.disconnectTimer = null
+    }
+    if (runtime.terminalTimer === null) {
+      runtime.terminalTimer = setTimeout(() => this.disposeRuntime(runtime), TERMINAL_RETENTION_MS)
+    }
+  }
+
+  /** Detaches this connection from a runtime that no longer exists operationally. */
+  private detachRuntime(runtime: MatchRuntime): void {
+    if (this.runtime !== runtime) {
+      return
+    }
+    this.runtime = null
+    this.lifecycle = 'closed'
+    this.sender.reset()
+  }
+
+  /**
+   * Terminal disposal: removes the runtime from the registry, cancels every
+   * timer, detaches the connected socket, and leaves no partially live state.
+   * Idempotent: later calls observe the missing registry entry and return.
+   */
+  private disposeRuntime(runtime: MatchRuntime): void {
+    if (runtime.disposed || MATCHES.get(runtime.config.resumeToken) !== runtime) {
+      return
+    }
+    runtime.disposed = true
+    if (runtime.timer !== null) {
+      clearInterval(runtime.timer)
+      runtime.timer = null
+    }
+    if (runtime.disconnectTimer !== null) {
+      clearTimeout(runtime.disconnectTimer)
+      runtime.disconnectTimer = null
+    }
+    if (runtime.terminalTimer !== null) {
+      clearTimeout(runtime.terminalTimer)
+      runtime.terminalTimer = null
+    }
+    const client = runtime.client
+    runtime.client = null
     MATCHES.delete(runtime.config.resumeToken)
+    client?.detachRuntime(runtime)
   }
 }

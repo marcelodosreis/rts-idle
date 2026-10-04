@@ -54,3 +54,8 @@ must remain part of the focused web test suite and the full verification gate.
 
 `pnpm exec vitest run tests/unit/web/match-session-handlers.test.ts tests/unit/web/selection-panel.test.ts tests/unit/web/match-session-runtime.test.ts`
 passed with 18 tests. `pnpm --filter @rts/web typecheck` also passed.
+
+> Follow-up (2026-10-03): the historical `highestCastleTierReached` projection
+> was removed end-to-end as unused state (SIMULATION_VERSION 0.18.0). Tier access
+> is authorized only by live completed Castles, and `match-session-handlers`
+> still derives the HUD tier from the snapshot's completed buildings.

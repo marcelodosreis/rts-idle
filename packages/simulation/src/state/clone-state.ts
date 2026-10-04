@@ -17,8 +17,9 @@ function normalizeComponent<T>(type: ComponentType<T>, value: T): T {
   return type.decode(new CanonicalReader(writer.toBytes()))
 }
 
-function cloneWorld(world: World): World {
-  const copy = new World()
+/** Independent ECS copy for simulation ownership and external observations. */
+export function cloneWorld(world: World): World {
+  const copy = new World({}, world.changeHistoryCapacity())
   for (const type of world.componentTypes()) {
     copy.registerComponent(type)
   }

@@ -98,7 +98,6 @@ export interface ObservationPlayer {
   readonly usedSupply: number
   readonly reservedSupply: number
   readonly supplyCap: number
-  readonly highestCastleTierReached: number
   readonly completedResearch: readonly PlayerState['completedResearch'][number][]
   readonly queuedResearch: readonly PlayerState['completedResearch'][number][]
 }
@@ -297,7 +296,6 @@ function projectPlayer(state: GameState, player: PlayerState): ObservationPlayer
     usedSupply: player.usedSupply,
     reservedSupply: player.reservedSupply,
     supplyCap: player.supplyCap,
-    highestCastleTierReached: player.highestCastleTierReached,
     completedResearch: [...player.completedResearch],
     queuedResearch: [...queuedResearch]
   }

@@ -17,32 +17,34 @@ See `docs/tasks/todo.md` for full phase list.
 - ECS engine (10 components, custom, Map-based stores)
 - Fixed timestep (20 ticks/s, single-writer `step()`)
 - Deterministic simulation (xoshiro128**, fixed-point, SHA-256 hashes)
-- Authoritative commands include MOVE, STOP, HOLD, PATROL, ATTACK, ATTACK_MOVE, GATHER, DEPOSIT, REPAIR, BUILD, CANCEL_CONSTRUCTION, TRAIN, CANCEL_PRODUCTION, RALLY, and SURRENDER
-- 8 pipeline systems: orders → movement → economy → combat → death → supply → victory → invariants
-- 3 unit types: pawn (100hp/10dmg), warrior (150hp/15dmg), archer (60hp/8dmg/range 3)
+- Authoritative commands include MOVE, STOP, HOLD, PATROL, ATTACK, ATTACK_MOVE, GATHER, DEPOSIT, REPAIR, HEAL, BUILD, UPGRADE_CASTLE, CANCEL_CONSTRUCTION, TRAIN, CANCEL_PRODUCTION, RESEARCH, CANCEL_RESEARCH, RALLY, and SURRENDER
+- 12 pipeline systems in frozen order: orders → movement → economy → heal → tier → research → combat → death → supply → production → victory → invariants
+- 5 unit types: pawn (100hp/10dmg), warrior (150hp/15dmg), archer (60hp/8dmg/range 3), lancer (120hp/range 2/speed 5), monk (60hp/8dmg/heal)
 - Combat with simultaneous death, victory/draw/tick-limit
 - Economy v0: Worker → Resource (tree → Wood, gold mine → Gold) → cargo → owned Castle → wallet deposit
+- Unit commands only accept controllable units (`Kind` present); buildings reject movement/order commands
 - Map-authored resources unified under one domain: compact catalog/state, deterministic gather/deposit into Gold/Wood wallets, snapshot deltas, chunked renderer presentation, minimal geometric resource/stump markers, and Gold/Wood HUD
 - Snapshot/hash/export/restore
 - PixiJS renderer (animated sprites, terrain autotile, combat effects, HP bars)
 - Centralized renderer input adapter with Mouse/Trackpad camera profiles, shared
   camera setup, target precedence, pointer capture, and focus-loss cleanup
 - Unit selection (click + box), command bar, match overlay
-- Playable regression scenario with four controllable workers and no enemies,
-   250 starting gold, contextual GATHER, pickaxe/carry animations, progress
-   feedback, live Gold/Wood HUD, and a player Base starting at 250/500 HP
+- Playable regression scenario with four controllable workers, enemy units,
+   600 starting gold, contextual GATHER, pickaxe/carry animations, progress
+   feedback, live Gold/Wood HUD, and a player Castle starting at 250/500 HP
 - Manual DEPOSIT: a worker that keeps cargo after a manual move shows the carry
-  pose and deposits when the player right-clicks an owned completed Base
+  pose and deposits when the player right-clicks an owned completed Castle
 - Unified Building construction with HUD placement feedback, shared selection,
   pause/resume, worker reassignment, and completion status
-- Authoritative supply accounting: Base capacity, unit usage, completed Supply
-  Depot capacity, over-cap handling, canonical snapshots, and Supply HUD
-- Producer production: Base trains Pawn; Barracks trains Warrior/Archer with
-  TRAIN queues, resource/supply reservations, deterministic production state,
-  blocked-exit waiting, production snapshots, player-facing HUD flow, and
-  per-item cancellation with authoritative refunds and reservation cleanup
-- Persistent troop health bars, plus authoritative health for completed Base,
-  Barracks, and Supply Depot buildings using the shared damage/death path
+- Authoritative supply accounting: Castle capacity, unit usage, completed House
+  capacity, over-cap handling, canonical snapshots, and Supply HUD
+- Producer production: Castle trains Pawn; Barracks trains Warrior/Archer/Lancer;
+  Monastery trains Monk; with TRAIN queues, resource/supply reservations,
+  deterministic production state, blocked-exit waiting, production snapshots,
+  player-facing HUD flow, and per-item cancellation with authoritative refunds
+  and reservation cleanup
+- Persistent troop health bars, plus authoritative health for completed Castle,
+  Barracks, House, and Monastery buildings using the shared damage/death path
 - Authoritative pawn repair for explicitly mechanical units and completed
   buildings, with centralized cadence/cost/healing rules and browser coverage
 - WebSocket server (isolated per-connection sessions)
@@ -61,12 +63,12 @@ See `docs/tasks/todo.md` for full phase list.
 ## Current Gameplay
 
 Player connects → gets isolated match → selects units → issues commands → fights
-pre-scripted enemies, or opens the default scenario to gather and deposit
-resources through the authoritative command path. In the economy scenario, the player
-can also place Base/Barracks/Supply Depot construction, pause it by stopping the
+pre-scripted enemies, or opens the regression scenario to gather and deposit
+resources through the authoritative command path. In the regression scenario, the player
+can also place Castle/Barracks/Monastery/House construction, pause it by stopping the
 worker, and resume it by assigning another worker through the construction HUD.
-The top bar shows authoritative `used / cap` supply and updates on Depot completion.
-Completed Base/Barracks producers accept rally points; trained units wait at a
+The top bar shows authoritative `used / cap` supply and updates on House completion.
+Completed Castle/Barracks/Monastery producers accept rally points; trained units wait at a
 blocked exit without overlap and follow the latest authoritative rally point
 after spawning.
 
@@ -111,10 +113,10 @@ only the curated flaky subset; it passed twice consecutively on Chromium and
 Firefox. Rules are documented in `docs/engineering-standard.md`.
 
 P2.07 Production Queue and Unit Training is complete for the target roster:
-Base trains Pawn and Barracks trains Warrior/Archer. P2.08 Blocked Spawn and
-Rally is complete: producer rally points are authoritative, blocked exits retain
-completed items and reservations, and the browser flow covers setting rally,
-training, waiting, and recovery.
+Castle trains Pawn, Barracks trains Warrior/Archer/Lancer, and Monastery trains
+Monk. P2.08 Blocked Spawn and Rally is complete: producer rally points are
+authoritative, blocked exits retain completed items and reservations, and the
+browser flow covers setting rally, training, waiting, and recovery.
 
 P2.09.01 Production Cancellation and Producer Cleanup is complete: any queue
 item can be canceled through the authoritative command path, refunds follow
@@ -135,8 +137,8 @@ trees are not ECS entities, active trees and depleted stumps render as minimal
 geometric markers without loading tree art assets, resource tiles are validated as land/elevated and reserved
 for construction, and the real-server regression flow covers Wood gathering,
 depletion, stump persistence, and construction rejection. Unit, integration,
-simulation, architecture, verification, benchmark, performance, and full
-Chromium/Firefox E2E gates are green.
+simulation, architecture, verification, benchmark, performance-telemetry, and
+full Chromium/Firefox E2E gates are green.
 
 RESOURCE.02 Unified Resource Domain is complete: one canonical `Resource` model
 replaced the removed mineral-node and natural-resource paths across shared,

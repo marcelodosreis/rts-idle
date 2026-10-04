@@ -34,6 +34,41 @@ test.describe('top HUD', () => {
     await expect(page.getByRole('button', { name: 'Open DevTools menu' })).toBeVisible()
   })
 
+  test('changing aggression starts a fresh match instead of resuming the old one', async ({ page }) => {
+    await page.goto('/?scenario=regression&aggression=passive')
+    await waitForMatchReady(page)
+    await expect.poll(() => page.evaluate(() => sessionStorage.getItem('rts-idle.resume-token'))).not.toBeNull()
+    const passiveToken = await page.evaluate(() => sessionStorage.getItem('rts-idle.resume-token'))
+
+    await page.getByRole('button', { name: 'Open DevTools menu' }).click()
+    await page.getByRole('button', { name: 'Match options' }).click()
+    await page.getByLabel('toggle enemy aggression').click()
+
+    await expect.poll(() => new URL(page.url()).searchParams.get('aggression')).toBe('offensive')
+    await waitForMatchReady(page)
+    // The cleared token must not resume the passive runtime: the new handshake
+    // creates a fresh match and stores a different resume token.
+    const offensiveToken = await page.evaluate(() => sessionStorage.getItem('rts-idle.resume-token'))
+    expect(offensiveToken).not.toBeNull()
+    expect(offensiveToken).not.toBe(passiveToken)
+  })
+
+  test('a manually changed match URL starts a fresh match instead of resuming', async ({ page }) => {
+    await page.goto('/?scenario=regression&aggression=passive')
+    await waitForMatchReady(page)
+    const passiveToken = await page.evaluate(() => sessionStorage.getItem('rts-idle.resume-token'))
+    expect(passiveToken).not.toBeNull()
+
+    // A manual URL change (or browser Back/Forward) keeps the stored token;
+    // the server must reject the configuration mismatch and the client must
+    // perform a fresh handshake instead of resuming the passive runtime.
+    await page.goto('/?scenario=regression&aggression=offensive')
+    await waitForMatchReady(page)
+    const offensiveToken = await page.evaluate(() => sessionStorage.getItem('rts-idle.resume-token'))
+    expect(offensiveToken).not.toBeNull()
+    expect(offensiveToken).not.toBe(passiveToken)
+  })
+
   test('keeps the brand, resources, clock, and controls in two mobile rows', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 })
     await page.goto('/?scenario=regression')

@@ -250,6 +250,7 @@ function useSessionActions(
       window.location.search = updateMatchQuery(window.location.search, { scenario: id })
     },
     setAggression: (value) => {
+      clearMatchResumeToken()
       window.location.search = updateMatchQuery(window.location.search, { aggression: value })
     },
     setSpritesEnabled: (value) => {

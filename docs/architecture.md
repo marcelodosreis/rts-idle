@@ -155,7 +155,10 @@ Within `features/`, cross-slice imports go through a slice public API using the
 `@/` alias; local implementation imports stay relative. `services/` owns
 stateful orchestration, runtime objects, controllers, and I/O; `types/` owns
 types and closed registries; `lib/` owns pure helpers. Generated
-`shared/ui/**` is exempt from these conventions.
+`shared/ui/**` is exempt from these conventions. A large feature may own an
+internal shared segment (for example `features/laboratory/shared/`); its
+sub-areas import that segment relatively, because it is not a separate slice and
+must not be reached from other features.
 
 ## Shared reusable modules
 

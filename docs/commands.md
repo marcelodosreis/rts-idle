@@ -49,7 +49,7 @@ be integer fixed units.
 | `TRAIN` | `producerId, unitKind` | Queue the unit allowed by the selected owned completed producer, reserving resources and supply. |
 | `RESEARCH` | `monasteryId, researchType` | Queue one of the four Tier II researches at an owned completed Monastery. |
 | `CANCEL_RESEARCH` | `monasteryId, queueIndex` | Cancel a research item and refund according to its authoritative queue state. |
-| `CANCEL_PRODUCTION` | `producerId, queueIndex` | Cancel any item in an owned producer queue, refunding according to its state and releasing its reserved supply. |
+| `CANCEL_PRODUCTION` | `producerId, queueIndex` | Cancel a `QUEUED` item in an owned producer queue, refunding it according to its state and releasing its reserved supply. |
 | `CANCEL_CONSTRUCTION` | `buildingId` | Cancel an owned not-yet-completed construction: refund part of the cost and free its footprint (see below). |
 | `SURRENDER` | — | The issuing player concedes: marked defeated, their units disband. |
 
@@ -94,8 +94,7 @@ front order each tick (see `docs/simulation.md`).
 
 The browser transport (`packages/protocol`) validates incoming messages before
 they reach the server: a generic `command` message carries the shared
-`CommandIntent` (`isCommandMessage`); the legacy `MOVE` message is still
-accepted. The server projects snapshots back with `hp/maxHp`, `kind`,
+`CommandIntent` (`isCommandMessage`). The server projects snapshots back with `hp/maxHp`, `kind`,
 `orderState`, optional Worker economy phase/progress/cargo, separate
 `buildings[]` and `resources[]` observations, `players`, `phase`, and per-tick
 `events[]`.
@@ -104,9 +103,9 @@ The command intent type lives in
 
 ## Production (P2.07)
 
-The current production contract accepts Pawn at Castle, Warrior/Lancer at
-Barracks, Archer at Archery, and Monk at Monastery. Lancer and Monk require the
-player's Tier II unlock.
+The current production contract accepts Pawn at Castle, Warrior/Archer/Lancer at
+Barracks, and Monk at Monastery. Lancer and Monk require the player's Tier II
+unlock.
 The queue holds at most five items and reserves the resource cost and one supply
 per item at acceptance. The authoritative production definitions, including the
 balance for all three trainable unit kinds, live in `@rts/game-data` and are
@@ -124,7 +123,7 @@ receives the existing movement destination when the point is configured.
 ## Production cancellation (P2.09)
 
 `CANCEL_PRODUCTION { producerId, queueIndex }` is valid only for an owned,
-completed Base or Barracks and a `QUEUED` item. Active and
+completed production building and a `QUEUED` item. Active and
 `COMPLETED_WAITING` items reject cancellation. The index is resolved against
 the canonical queue at command application time; removing a queued item
 preserves the relative order of the remaining items.

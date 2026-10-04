@@ -83,7 +83,6 @@ export interface SnapshotPlayer {
   readonly usedSupply: number
   readonly reservedSupply?: number
   readonly supplyCap: number
-  readonly highestCastleTierReached?: number
   readonly completedResearch?: readonly ResearchType[]
   readonly queuedResearch?: readonly ResearchType[]
 }

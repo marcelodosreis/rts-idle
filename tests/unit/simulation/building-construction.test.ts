@@ -60,7 +60,6 @@ describe('base construction data and persistence', () => {
   it('round-trips construction status, progress, builder, and footprint', () => {
     const world = createWorld()
     world.createEntity(START_ENTITY_ID)
-    const sim = createSimulation({ seed: 1, identity: TEST_IDENTITY, initialWorld: world })
     world.store(Building).set(START_ENTITY_ID, {
       buildingType: 'CASTLE',
       status: 'UNDER_CONSTRUCTION',
@@ -72,6 +71,7 @@ describe('base construction data and persistence', () => {
       footprint: { x: 2, y: 3, ...BUILDING_FOOTPRINTS.CASTLE },
       rallyPoint: null
     })
+    const sim = createSimulation({ seed: 1, identity: TEST_IDENTITY, initialWorld: world })
     const restored = simulationFromSnapshot(sim.exportSnapshot()).inspectState()
     expect(restored.world.store(Building).get(START_ENTITY_ID)).toEqual({
       buildingType: 'CASTLE',
@@ -89,7 +89,6 @@ describe('base construction data and persistence', () => {
   it('round-trips BARRACKS construction state', () => {
     const world = createWorld()
     world.createEntity(START_ENTITY_ID)
-    const sim = createSimulation({ seed: 1, identity: TEST_IDENTITY, initialWorld: world })
     world.store(Building).set(START_ENTITY_ID, {
       buildingType: 'BARRACKS',
       status: 'FOUNDATION',
@@ -101,6 +100,7 @@ describe('base construction data and persistence', () => {
       footprint: { x: 4, y: 5, ...BUILDING_FOOTPRINTS.BARRACKS },
       rallyPoint: null
     })
+    const sim = createSimulation({ seed: 1, identity: TEST_IDENTITY, initialWorld: world })
     const restored = simulationFromSnapshot(sim.exportSnapshot()).inspectState()
     expect(restored.world.store(Building).get(START_ENTITY_ID)).toEqual({
       buildingType: 'BARRACKS',

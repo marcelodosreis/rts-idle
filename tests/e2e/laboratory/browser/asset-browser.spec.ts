@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { watchAbortedModuleImports } from '../../support/aborted-module-imports.js'
 import { hasArt } from '../../support/art.js'
 
 async function openLaboratory(page: Page): Promise<void> {
@@ -114,6 +115,29 @@ test('browse: multi-frame strips expose a slices grid with file + selected slice
   await expect(page.getByRole('complementary', { name: 'Asset inspector' })).toContainText('8 slices')
   await expect(page.getByRole('complementary', { name: 'Asset inspector' })).toContainText('file:')
   await expect(page.getByRole('complementary', { name: 'Asset inspector' })).toContainText('selected: slice 1/8')
+})
+
+test('browse: rapid selection followed by navigation leaves the lab healthy', async ({ page }) => {
+  const abortedImports = watchAbortedModuleImports(page)
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+  await openAssetBrowser(page)
+  await page.getByPlaceholder('Search…').fill('units.blue.pawn')
+  await expect(page.getByRole('option').first()).toBeVisible()
+  await page.evaluate(() => {
+    const options = [...document.querySelectorAll('[role="option"]')]
+    for (const option of options.slice(0, 6)) {
+      if (option instanceof HTMLElement) {
+        option.click()
+      }
+    }
+  })
+  await page.goto('/laboratory')
+  await expect(page.getByTestId('laboratory-page-title')).toHaveText('Asset Browser', { timeout: 20000 })
+  // Only the module import the browser actually aborted during navigation is a
+  // harness artifact; a broken lazy import or missing chunk must still fail.
+  const unexpected = pageErrors.filter((message) => !abortedImports.isKnownAbort(message))
+  expect(unexpected).toEqual([])
 })
 
 test('browse: asset list shows nested sub-headers within groups', async ({ page }) => {

@@ -6,6 +6,7 @@ import {
   createSimulation,
   Health,
   hashState,
+  Kind,
   Orders,
   Owner,
   Position,
@@ -205,6 +206,7 @@ describe('Economy v0 edge cases', () => {
     scenario.world.createEntity(enemy)
     scenario.world.store(Position).set(enemy, { x: 0, y: 0 })
     scenario.world.store(Owner).set(enemy, { owner: 1 })
+    scenario.world.store(Kind).set(enemy, 'pawn')
     scenario.world.store(Health).set(enemy, { current: 100, max: 100 })
     scenario.world
       .store(Combat)

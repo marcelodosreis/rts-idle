@@ -9,8 +9,8 @@ export function renderPostmortemStatus(data: PostmortemStatusData, updatedOn: st
     '',
     '## Summary',
     '',
-    '| Status | Quantidade |',
-    '|--------|------------|',
+    '| Status | Count |',
+    '|--------|-------|',
     `| open | ${data.openCount} |`,
     `| closed | ${data.closedCount} |`,
     `| **total** | **${data.entries.length}** |`,
@@ -31,9 +31,9 @@ export function renderPostmortemStatus(data: PostmortemStatusData, updatedOn: st
   lines.push('')
   lines.push('## Legend')
   lines.push('')
-  lines.push('- **open** = bug fixed, but it may happen again (no class barrier)')
-  lines.push('- **closed** = bug fixed AND a class barrier exists (does not return)')
-  lines.push('- **Barrier** = the quality gate that provides the class barrier')
+  lines.push('- **open** = bug recorded; the fix, its regression, or the class-level review is still incomplete')
+  lines.push('- **closed** = bug fixed with at least one permanent regression test (Bug Response Protocol)')
+  lines.push('- **Barrier** = named quality gate that prevents the whole bug class, when one was identified')
   lines.push('- **Regression** = permanent test(s) that validate the fix')
   lines.push('')
 

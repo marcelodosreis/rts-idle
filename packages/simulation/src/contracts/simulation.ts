@@ -5,11 +5,9 @@ import type { PlayerState } from '../state/state.js'
 
 export type InitialPlayerState = Omit<
   PlayerState,
-  'usedSupply' | 'reservedSupply' | 'supplyCap' | 'completedResearch' | 'highestCastleTierReached'
+  'usedSupply' | 'reservedSupply' | 'supplyCap' | 'completedResearch'
 > &
-  Partial<
-    Pick<PlayerState, 'usedSupply' | 'reservedSupply' | 'supplyCap' | 'completedResearch' | 'highestCastleTierReached'>
-  >
+  Partial<Pick<PlayerState, 'usedSupply' | 'reservedSupply' | 'supplyCap' | 'completedResearch'>>
 
 import type { SimulationEvent } from '../systems/events.js'
 import type { CommandRejectedError } from './commands.js'

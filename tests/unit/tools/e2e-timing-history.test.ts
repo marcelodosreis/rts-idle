@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { estimateTests, mergeTimings, readTimingHistory } from '../../../tools/e2e/timing-history.js'
+import type { E2eTestUnit } from '../../../tools/e2e/plan-types.js'
+import { estimateUnits, mergeTimings, readTimingHistory } from '../../../tools/e2e/timing-history.js'
+
+const unit = (id: string): E2eTestUnit => ({
+  id,
+  file: `${id}.spec.ts`,
+  line: 1,
+  cases: [{ id: `${id}-case`, titlePath: [id] }],
+  category: 'functional',
+  browser: 'chromium'
+})
 
 describe('E2E timing history', () => {
   it('fails closed for invalid history', () => {
@@ -7,17 +17,6 @@ describe('E2E timing history', () => {
   })
 
   it('uses matching category and browser timings', () => {
-    const tests = [
-      {
-        id: 'a',
-        file: 'a.spec.ts',
-        line: 1,
-        title: 'a',
-        category: 'functional' as const,
-        browser: 'chromium' as const
-      },
-      { id: 'b', file: 'b.spec.ts', line: 1, title: 'b', category: 'functional' as const, browser: 'chromium' as const }
-    ]
     const history = readTimingHistory({
       version: 1,
       timings: [
@@ -26,10 +25,12 @@ describe('E2E timing history', () => {
       ]
     })
 
-    expect(estimateTests(tests, history).map((test) => test.estimatedDurationMs)).toEqual([123, 60_000])
+    expect(estimateUnits([unit('a'), unit('b')], history).map((value) => value.estimatedDurationMs)).toEqual([
+      123, 60_000
+    ])
   })
 
-  it('keeps the latest timing for each test identity', () => {
+  it('keeps the latest timing for each unit identity', () => {
     const history = mergeTimings([
       {
         version: 1,

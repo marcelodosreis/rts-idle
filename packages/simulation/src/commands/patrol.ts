@@ -3,7 +3,7 @@ import { Position } from '../ecs/components.js'
 import { setMovementDestination } from '../movement/destination.js'
 import { setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
-import { validateIntegerTarget, validateOwnedUnits } from './validate-units.js'
+import { validateControllableUnits, validateIntegerTarget } from './validate-units.js'
 
 /**
  * PATROL sets each selected unit to walk back and forth between its current
@@ -16,7 +16,7 @@ export function applyPatrol(state: GameState, command: ScheduledCommand): void {
     throw new Error('applyPatrol: expected a PATROL command')
   }
   const payload = command.intent.payload
-  validateOwnedUnits(state, command, payload.unitIds)
+  validateControllableUnits(state, command, payload.unitIds)
   validateIntegerTarget(command, payload.x, payload.y)
   const positions = state.world.store(Position)
   for (const unitId of payload.unitIds) {

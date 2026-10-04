@@ -15,7 +15,6 @@ export function isSnapshotPlayer(value: unknown): value is SnapshotPlayer {
   if (!isRecord(value)) {
     return false
   }
-  const highestTier = field(value, 'highestCastleTierReached')
   const completedResearch = field(value, 'completedResearch')
   const queuedResearch = field(value, 'queuedResearch')
   return (
@@ -26,7 +25,6 @@ export function isSnapshotPlayer(value: unknown): value is SnapshotPlayer {
     isNonNegativeInteger(field(value, 'usedSupply')) &&
     isOptionalNonNegativeInteger(field(value, 'reservedSupply')) &&
     isNonNegativeInteger(field(value, 'supplyCap')) &&
-    (highestTier === undefined || (isInteger(highestTier) && highestTier >= 1 && highestTier <= 3)) &&
     (completedResearch === undefined ||
       (Array.isArray(completedResearch) &&
         completedResearch.every((item: unknown) => isOneOf(RESEARCH_TYPES, item)))) &&

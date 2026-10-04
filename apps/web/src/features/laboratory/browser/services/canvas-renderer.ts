@@ -22,10 +22,27 @@ export interface CanvasRendererHandle {
   readonly destroy: () => void
 }
 
+/** One render generation with a detached container; nothing commits until current. */
+interface RenderTarget {
+  readonly container: Container
+  sliceTextures: readonly Texture[]
+  sliceActive: number
+}
+
+interface RebuildOutcome {
+  readonly result: CanvasResult
+  readonly active: Active | null
+  readonly sliceTextures: readonly Texture[]
+  readonly sliceActive: number
+}
+
 /**
  * Imperative browser canvas: renders one asset with the lab standard (crop to
  * visible pixels, `0.5/0.5` anchor, 1:1 native) and keeps a single `StripPlayer`
  * for strips. With the `slices` option it shows every frame/tile in a grid.
+ *
+ * Renders build into a detached container and commit only if their generation
+ * is still current, so a fast browse sequence or an unmount cannot mix scenes.
  */
 export class SpriteBrowserCanvas implements CanvasRendererHandle {
   private active: Active | null = null
@@ -34,8 +51,8 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
   private lastKey = ''
   private lastOptions: RenderOptions = { ...DEFAULT_OPTIONS }
   private renderSeq = 0
+  private destroyed = false
   private readonly content = new Container()
-  private readonly buildCtx: BuildContext
 
   private constructor(
     private readonly app: Awaited<ReturnType<typeof createSectionApp>>,
@@ -44,15 +61,6 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
     private readonly onSlice: (index: number) => void
   ) {
     app.stage.addChild(this.content)
-    this.buildCtx = {
-      app,
-      ctx,
-      content: this.content,
-      setSliceTextures: (textures, activeSlice) => {
-        this.sliceTextures = textures
-        this.sliceActive = activeSlice
-      }
-    }
   }
 
   static async create(
@@ -65,6 +73,18 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
     const app = await createSectionApp(host, CANVAS_H, () => renderer?.onHostResize())
     renderer = new SpriteBrowserCanvas(app, ctx, onSummary, onSlice)
     return renderer
+  }
+
+  private buildContextFor(target: RenderTarget): BuildContext {
+    return {
+      app: this.app,
+      ctx: this.ctx,
+      content: target.container,
+      setSliceTextures: (textures, activeSlice) => {
+        target.sliceTextures = textures
+        target.sliceActive = activeSlice
+      }
+    }
   }
 
   private clear(): void {
@@ -94,7 +114,7 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
   }
 
   selectSlice(index: number): void {
-    if (index < 0 || index >= this.sliceTextures.length) {
+    if (this.destroyed || index < 0 || index >= this.sliceTextures.length) {
       return
     }
     this.sliceActive = index
@@ -128,71 +148,103 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
     )
   }
 
-  private async build(key: string, entryKind: AssetKind, kind: BuildKind, options: RenderOptions): Promise<Active> {
+  private async build(
+    context: BuildContext,
+    key: string,
+    entryKind: AssetKind,
+    kind: BuildKind,
+    options: RenderOptions
+  ): Promise<Active> {
     if (kind === 'unit') {
-      return buildUnit(this.buildCtx, key, options)
+      return buildUnit(context, key, options)
     }
     if (kind === 'tileset') {
-      return buildTileset(this.buildCtx, key, options)
+      return buildTileset(context, key, options)
     }
     if (kind === 'grid') {
-      return buildGrid(this.buildCtx, key)
+      return buildGrid(context, key)
     }
     if (entryKind === 'strip') {
-      return buildStrip(this.buildCtx, key, options, buildKindOf(key, entryKind))
+      return buildStrip(context, key, options, buildKindOf(key, entryKind))
     }
-    return buildStatic(this.buildCtx, key, options)
+    return buildStatic(context, key, options)
   }
 
-  private addGridOverlay(): void {
+  private addGridOverlay(target: Container): void {
     const grid = new Graphics()
     drawGridLines(grid, this.app.screen.width, CANVAS_H)
-    this.content.addChild(grid)
+    target.addChild(grid)
   }
 
   private async rebuildSlices(
+    context: BuildContext,
+    target: RenderTarget,
     key: string,
     entry: { file: string; kind: AssetKind; cellW: number; cellH: number },
-    options: RenderOptions,
-    kind: BuildKind
-  ): Promise<CanvasResult> {
+    options: RenderOptions
+  ): Promise<RebuildOutcome> {
     const slices = await this.loadSlices(key)
-    this.sliceTextures = slices
-    this.sliceActive = Math.min(options.variant, Math.max(0, slices.length - 1))
-    this.active = await buildSlicesGrid(this.buildCtx, slices, this.sliceActive, (index) => this.selectSlice(index))
+    target.sliceTextures = slices
+    target.sliceActive = Math.min(options.variant, Math.max(0, slices.length - 1))
+    const active = await buildSlicesGrid(context, slices, target.sliceActive, (index) => this.selectSlice(index))
     if (options.gridLines) {
-      this.addGridOverlay()
+      this.addGridOverlay(target.container)
     }
+    const kind = buildKindOf(key, entry.kind)
     const summary =
       `${key}\nfile: ${entry.file}\n${entry.kind} ${entry.cellW}×${entry.cellH}px` +
       (slices.length > 1 ? ` · ${slices.length} slices` : '') +
-      `\nselected: slice ${this.sliceActive + 1}/${slices.length}`
-    return { kind, summary, slices: slices.length, active: this.sliceActive }
+      `\nselected: slice ${target.sliceActive + 1}/${slices.length}`
+    return {
+      result: { kind, summary, slices: slices.length, active: target.sliceActive },
+      active,
+      sliceTextures: slices,
+      sliceActive: target.sliceActive
+    }
   }
 
-  private async rebuild(key: string, options: RenderOptions): Promise<CanvasResult> {
+  private async rebuild(
+    context: BuildContext,
+    target: RenderTarget,
+    key: string,
+    options: RenderOptions
+  ): Promise<RebuildOutcome> {
     const entry = this.ctx.assets.entry(key)
     if (entry === null) {
-      return { kind: 'static', summary: `${key}\nno entry for ${key}`, slices: 0, active: 0 }
+      return {
+        result: { kind: 'static', summary: `${key}\nno entry for ${key}`, slices: 0, active: 0 },
+        active: null,
+        sliceTextures: [],
+        sliceActive: 0
+      }
     }
     const kind = buildKindOf(key, entry.kind)
     if (options.slices) {
-      return this.rebuildSlices(key, entry, options, kind)
+      return this.rebuildSlices(context, target, key, entry, options)
     }
-    this.active = await this.build(key, entry.kind, kind, options)
+    const active = await this.build(context, key, entry.kind, kind, options)
     if (options.gridLines) {
-      this.addGridOverlay()
+      this.addGridOverlay(target.container)
     }
+    const slices = target.sliceTextures
     const summary =
       `${key} · ${entry.kind} ${entry.cellW}×${entry.cellH}px` +
       (entry.kind === 'strip' ? ` · ${entry.frames} frames` : '') +
-      (this.sliceTextures.length > 1 ? ` · slice ${this.sliceActive + 1}/${this.sliceTextures.length}` : '')
-    return { kind, summary: `${key}\n${summary}`, slices: this.sliceTextures.length, active: this.sliceActive }
+      (slices.length > 1 ? ` · slice ${target.sliceActive + 1}/${slices.length}` : '')
+    return {
+      result: { kind, summary: `${key}\n${summary}`, slices: slices.length, active: target.sliceActive },
+      active,
+      sliceTextures: slices,
+      sliceActive: target.sliceActive
+    }
   }
 
   async render(key: string, options: RenderOptions): Promise<CanvasResult> {
     this.lastKey = key
     this.lastOptions = options
+    if (this.destroyed) {
+      return { kind: 'static', summary: `${key}\nrenderer disposed`, slices: 0, active: 0 }
+    }
     const seq = ++this.renderSeq
     // Preserve a manual strip selection across re-renders (fps/overlay toggles);
     // tilesets drive the active slice from the variant option.
@@ -200,17 +252,32 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
     if (isTileset || this.sliceTextures.length === 0) {
       this.sliceActive = options.variant
     }
-    this.clear()
+    const target: RenderTarget = {
+      container: new Container(),
+      sliceTextures: this.sliceTextures,
+      sliceActive: this.sliceActive
+    }
+    const context = this.buildContextFor(target)
     if (options.checker) {
-      this.content.addChild(checkerboard(this.app.screen.width, CANVAS_H))
+      target.container.addChild(checkerboard(this.app.screen.width, CANVAS_H))
     }
-    const result = await this.rebuild(key, options)
-    // Only the most recent render may publish its summary; stale async renders
-    // (e.g. fast browse hook right after mount) are discarded.
-    if (seq === this.renderSeq) {
-      this.onSummary(result.summary)
+    const outcome = await this.rebuild(context, target, key, options)
+    if (seq !== this.renderSeq || this.destroyed) {
+      outcome.active?.destroy()
+      target.container.destroy({ children: true })
+      return outcome.result
     }
-    return result
+    this.clear()
+    for (const child of [...target.container.children]) {
+      target.container.removeChild(child)
+      this.content.addChild(child)
+    }
+    target.container.destroy()
+    this.active = outcome.active
+    this.sliceTextures = outcome.sliceTextures
+    this.sliceActive = outcome.sliceActive
+    this.onSummary(outcome.result.summary)
+    return outcome.result
   }
 
   /** Re-renders the current asset when the host box changes. */
@@ -221,6 +288,8 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
   }
 
   destroy(): void {
+    this.destroyed = true
+    this.renderSeq += 1
     this.clear()
     disposeSectionApp(this.app)
     this.app.destroy()

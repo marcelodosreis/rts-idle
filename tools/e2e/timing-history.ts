@@ -1,4 +1,4 @@
-import type { E2eBrowser, E2eCategory, E2eTestCase, E2eTiming, E2eTimingHistory } from './plan-types.js'
+import type { E2eBrowser, E2eCategory, E2ePlannedUnit, E2eTestUnit, E2eTiming, E2eTimingHistory } from './plan-types.js'
 import { estimateDuration } from './planner.js'
 
 const HISTORY_VERSION = 1
@@ -13,16 +13,13 @@ export function readTimingHistory(value: unknown): E2eTimingHistory {
   return { version: HISTORY_VERSION, timings: timings.filter(isTiming) }
 }
 
-export function estimateTests(
-  tests: readonly Omit<E2eTestCase, 'estimatedDurationMs'>[],
-  history: E2eTimingHistory
-): readonly E2eTestCase[] {
-  return tests.map((test) => {
+export function estimateUnits(units: readonly E2eTestUnit[], history: E2eTimingHistory): readonly E2ePlannedUnit[] {
+  return units.map((unit) => {
     const timing = history.timings.find(
       (candidate) =>
-        candidate.id === test.id && candidate.category === test.category && candidate.browser === test.browser
+        candidate.id === unit.id && candidate.category === unit.category && candidate.browser === unit.browser
     )
-    return { ...test, estimatedDurationMs: estimateDuration(timing?.durationMs) }
+    return { ...unit, estimatedDurationMs: estimateDuration(timing?.durationMs) }
   })
 }
 

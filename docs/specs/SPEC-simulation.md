@@ -46,6 +46,22 @@ Integer/fixed-point; xoshiro128** RNG; monotonic IDs; single writer; system orde
 
 See master plan (sections 22, 23). Each system has behavioral tests; invariants run during simulations; determinism tests equivalent streams.
 
+## Initialization ownership
+
+`createSimulation(options)` takes ownership of every mutable input:
+
+- `initialWorld` is deep-cloned (component values are normalized through their
+  canonical codecs) and the copy preserves the world's change-history capacity.
+- `initialPlayers` entries, their `resources` wallets, and
+  `completedResearch` arrays are copied; defaults fill absent supply fields.
+- `mapBounds.invalidTiles` is copied element by element.
+- `resources` definitions are validated once and converted into compact
+  `ResourceState`; the caller's array is not retained.
+
+After construction, mutating any caller-owned object passed to
+`createSimulation` must not affect the running simulation. Only `step()` and
+the systems it invokes may mutate authoritative state.
+
 ## Boundaries
 
 - **Never imports** React, Phaser, DOM, Canvas, WebSocket, browser APIs, Node APIs, renderer, or UI.

@@ -72,6 +72,8 @@ export class TerrainEditorController implements TerrainController {
   private minZoom: number
   private maxZoom: number
   private hoveredCell: Cell | null = null
+  private paletteSeq = 0
+  private destroyed = false
   private readonly onReadout: (text: string) => void
   private readonly onCursor: (cell: Cell | null) => void
   private readonly onChange: () => void
@@ -194,7 +196,10 @@ export class TerrainEditorController implements TerrainController {
     this.minZoom = this.fitScale
     this.maxZoom = this.fitScale * 8
     this.viewport.clampZoom({ minScale: this.minZoom, maxScale: this.maxZoom })
-    const matrix = this.state.matrixKind
+    this.resizeForView(this.state.matrixKind, width, height)
+  }
+
+  private resizeForView(matrix: MatrixMode | null, width: number, height: number): void {
     const renderHeight = matrix === null ? height : Math.round(MATRIX_HEIGHT * this.fitScale)
     this.app.renderer.resize(width, renderHeight)
     this.viewport.resize(width, renderHeight)
@@ -240,16 +245,7 @@ export class TerrainEditorController implements TerrainController {
     if (!visible) {
       this.onCursor(null)
     }
-    const height = matrixKind === null ? this.hostHeight : Math.round(MATRIX_HEIGHT * this.fitScale)
-    this.app.renderer.resize(this.app.screen.width, height)
-    this.viewport.resize(this.app.screen.width, height)
-    if (matrixKind !== null) {
-      renderMatrixInto(this.matrixContainer, this.scene, matrixKind, this.onReadout)
-      this.viewport.setZoom(this.fitScale)
-      this.viewport.moveCenter(this.worldContainer.x + MATRIX_SIZE / 2, this.worldContainer.y + MATRIX_SIZE / 2)
-    } else {
-      this.resetCamera()
-    }
+    this.resizeForView(matrixKind, this.app.screen.width, this.hostHeight)
   }
 
   private cellReadout(x: number, y: number): string {
@@ -261,6 +257,9 @@ export class TerrainEditorController implements TerrainController {
   }
 
   private renderGrid(): void {
+    if (this.destroyed) {
+      return
+    }
     this.scene.render(
       this.grid,
       this.stairs,
@@ -281,10 +280,20 @@ export class TerrainEditorController implements TerrainController {
     const paletteChanged = next.palette !== this.state.palette
     this.state = next
     if (paletteChanged) {
-      void this.scene.setPalette(next.palette).then(() => this.renderGrid())
+      this.applyPalette(next.palette)
       return
     }
     this.renderGrid()
+  }
+
+  /** Applies a palette asynchronously; only the latest, live request re-renders. */
+  private applyPalette(palette: string): void {
+    const seq = ++this.paletteSeq
+    void this.scene.setPalette(palette).then(() => {
+      if (seq === this.paletteSeq && !this.destroyed) {
+        this.renderGrid()
+      }
+    })
   }
 
   reset(): void {
@@ -324,7 +333,7 @@ export class TerrainEditorController implements TerrainController {
   }): void {
     if (options.palette !== undefined) {
       this.state = { ...this.state, palette: options.palette }
-      void this.scene.setPalette(options.palette)
+      this.applyPalette(options.palette)
     }
     if (options.decorationSeed !== undefined) {
       this.state = { ...this.state, dressingSeed: options.decorationSeed }
@@ -381,6 +390,8 @@ export class TerrainEditorController implements TerrainController {
   }
 
   destroy(): void {
+    this.destroyed = true
+    this.paletteSeq += 1
     this.camera.dispose()
     this.scene.destroy()
     disposeSectionApp(this.app)

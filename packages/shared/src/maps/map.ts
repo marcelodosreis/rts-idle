@@ -1,6 +1,6 @@
 import { RESOURCE_KINDS, type ResourceId, type ResourceKind } from '../domain/resources.js'
 import { FIXED_SCALE, type Fixed } from '../primitives/fixed.js'
-import { field, isInteger, isRecord } from '../primitives/parse.js'
+import { field, isInt32, isInteger, isRecord, isUint32 } from '../primitives/parse.js'
 
 export const MAP_TILE_KINDS = ['water', 'land', 'elevated'] as const
 export type MapTileKind = (typeof MAP_TILE_KINDS)[number]
@@ -162,16 +162,15 @@ function validateResources(value: Record<string, unknown>, width: number, height
     const x = field(entry, 'x')
     const y = field(entry, 'y')
     if (
-      !isInteger(resourceId) ||
-      resourceId < 0 ||
+      !isUint32(resourceId) ||
       ids.has(resourceId) ||
       !isResourceKind(field(entry, 'kind')) ||
-      !isInteger(x) ||
-      !isInteger(y) ||
-      !isInteger(field(entry, 'variant')) ||
-      !isInteger(initialAmount) ||
-      !isInteger(harvestAmount) ||
-      !isInteger(harvestTicks) ||
+      !isInt32(x) ||
+      !isInt32(y) ||
+      !isInt32(field(entry, 'variant')) ||
+      !isInt32(initialAmount) ||
+      !isInt32(harvestAmount) ||
+      !isInt32(harvestTicks) ||
       initialAmount < harvestAmount ||
       harvestAmount <= 0 ||
       harvestTicks <= 0 ||

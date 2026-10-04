@@ -3,7 +3,7 @@ import { formationOffset } from '../domain/formation.js'
 import { setMovementDestination } from '../movement/destination.js'
 import { clearOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
-import { validateIntegerTarget, validateOwnedUnits } from './validate-units.js'
+import { validateControllableUnits, validateIntegerTarget } from './validate-units.js'
 
 export { UNIT_SPEED_TILES_PER_SECOND } from '../movement/destination.js'
 
@@ -20,7 +20,7 @@ export function applyMove(state: GameState, command: ScheduledCommand): void {
     throw new Error('applyMove: expected a MOVE command')
   }
   const payload = command.intent.payload
-  validateOwnedUnits(state, command, payload.unitIds)
+  validateControllableUnits(state, command, payload.unitIds)
   validateIntegerTarget(command, payload.x, payload.y)
   const sorted = [...payload.unitIds].sort((a, b) => a - b)
   sorted.forEach((unitId, index) => {

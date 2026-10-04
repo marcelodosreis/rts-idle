@@ -22,5 +22,7 @@
  * canonically.
  * 0.16.0: future ScheduledCommand queue joined canonical snapshots.
  * 0.17.0: per-tick resource delta bookkeeping stopped affecting canonical state.
+ * 0.18.0: removed the unused historical highestCastleTierReached player field;
+ * Castle tier requirements are authorized by live completed Castles only.
  */
-export const SIMULATION_VERSION = '0.17.0'
+export const SIMULATION_VERSION = '0.18.0'

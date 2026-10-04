@@ -9,7 +9,7 @@ import { SelectionController } from '../effects/selection.js'
 import { createCameraController } from '../input/camera-controller.js'
 import type { WorldInteraction } from '../input/input-types.js'
 import { createWorldHitTester } from '../input/world-hit-tester.js'
-import { WorldInputAdapter } from '../input/world-input-adapter.js'
+import { inputCanvasFrom, WorldInputAdapter } from '../input/world-input-adapter.js'
 import { createResourceFallbackTextures } from '../resources/resource-fallback.js'
 import { ResourceLayer } from '../resources/resource-layer.js'
 import { TerrainLayer } from '../terrain/layer.js'
@@ -147,7 +147,7 @@ export class PixiRenderer implements GameRenderer {
       resourceAt: (x, y) => resources.resourceAt(x, y)
     })
     const input = new WorldInputAdapter({
-      canvas: app.canvas,
+      canvas: inputCanvasFrom(app.canvas),
       viewport,
       hitTester,
       onInteraction: (interaction) => this.handleInteraction(interaction, selection),

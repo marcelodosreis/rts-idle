@@ -17,6 +17,8 @@ export class StressScene {
   private readonly pool: readonly string[]
   private world: Container | null = null
   private tickHandler: (() => void) | null = null
+  private spawnSeq = 0
+  private disposed = false
 
   private constructor(
     private readonly app: AppHandle,
@@ -93,6 +95,7 @@ export class StressScene {
   }
 
   async spawn(count: number): Promise<void> {
+    const seq = ++this.spawnSeq
     for (const sprite of this.sprites) {
       sprite.destroy()
     }
@@ -105,6 +108,9 @@ export class StressScene {
     for (let index = 0; index < count; index += 1) {
       const key = this.pool[Math.floor(Math.random() * this.pool.length)] ?? ''
       const frames = await this.loadFrames(key)
+      if (seq !== this.spawnSeq || this.disposed || this.world === null) {
+        return
+      }
       if (frames !== null && frames.length > 0) {
         this.addSprite(key, frames, index, cell, perRow)
       }
@@ -142,6 +148,9 @@ export class StressScene {
   }
 
   dispose(): void {
+    this.disposed = true
+    this.spawnSeq += 1
+    this.world = null
     if (this.tickHandler !== null) {
       this.app.ticker.remove(this.tickHandler)
     }

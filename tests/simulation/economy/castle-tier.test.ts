@@ -31,7 +31,7 @@ function completedBuilding(buildingType: 'CASTLE' | 'BARRACKS' | 'MONASTERY', x:
   }
 }
 
-function scenario(options: { readonly castleTier?: 1 | 2; readonly pawnQueue?: boolean } = {}) {
+function scenario(options: { readonly pawnQueue?: boolean } = {}) {
   const world = createWorld()
   for (const [id, buildingType, x] of [
     [CASTLE_ID, 'CASTLE', 0],
@@ -68,8 +68,7 @@ function scenario(options: { readonly castleTier?: 1 | 2; readonly pawnQueue?: b
       id: id as 0 | 1 | 2 | 3,
       defeated: false,
       resources: { GOLD: id === 0 ? 500 : 0, WOOD: 0 },
-      reservedSupply: options.pawnQueue && id === 0 ? 1 : 0,
-      highestCastleTierReached: options.castleTier ?? 2
+      reservedSupply: options.pawnQueue && id === 0 ? 1 : 0
     }))
   })
 }
@@ -79,7 +78,7 @@ function command<T extends { readonly type: string }>(intent: T, sequence: numbe
 }
 
 describe('Castle tier authority', () => {
-  it('requires a current owned Castle II instead of historical tier access', () => {
+  it('requires a current owned Castle II for tier-gated training and research', () => {
     const simulation = scenario()
     const result = simulation.step([
       command({ type: 'TRAIN', payload: { producerId: BARRACKS_ID, unitKind: 'lancer' } }, 1),
@@ -91,7 +90,7 @@ describe('Castle tier authority', () => {
   })
 
   it('rejects Castle II upgrade while the Pawn queue is occupied', () => {
-    const simulation = scenario({ castleTier: 1, pawnQueue: true })
+    const simulation = scenario({ pawnQueue: true })
     const result = simulation.step([command({ type: 'UPGRADE_CASTLE', payload: { castleId: CASTLE_ID } }, 1)])
 
     expect(result.rejected[0]?.code).toBe('INVALID_STATE')
@@ -100,7 +99,7 @@ describe('Castle tier authority', () => {
   })
 
   it('blocks Pawn training after an exclusive Castle upgrade starts', () => {
-    const simulation = scenario({ castleTier: 1 })
+    const simulation = scenario()
     const result = simulation.step([
       command({ type: 'UPGRADE_CASTLE', payload: { castleId: CASTLE_ID } }, 1),
       command({ type: 'TRAIN', payload: { producerId: CASTLE_ID, unitKind: 'pawn' } }, 2)
