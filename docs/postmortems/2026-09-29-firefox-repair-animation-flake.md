@@ -1,5 +1,5 @@
 ---
-status: open
+status: closed
 classe: presentation
 barreira: QH.12
 regressao:
@@ -61,4 +61,6 @@ tests continue to cover the deterministic `repairing + moving` and
 Commands run:
 
 - `corepack pnpm run test:e2e -- --project=firefox --workers=1 tests/e2e/economy/scenarios.spec.ts --grep "repairs its damaged Base" --repeat-each=5` reproduced the timing flake before the fix.
-- Focused Chromium and Firefox E2E verification passed after the fix.
+- Focused Chromium and Firefox E2E verification passed after the fix. The
+  animation convention barrier now prevents direct literal animation
+  assertions, and the complete functional and performance browser gates passed.

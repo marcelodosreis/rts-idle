@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { hasArt } from '../support/art.js'
+import { expectAnim, hasArt } from '../support/art.js'
 import { waitForMatchReady, waitForStableCamera } from '../support/settle.js'
 
 async function screenPoint(page: Page, id: number) {
@@ -80,9 +80,7 @@ test('Monk heals an allied unit with a right-click while left-click selects', as
     })
     .toBe(115)
   if (await hasArt(page)) {
-    await expect
-      .poll(() => page.evaluate((id) => window.__rtsDebug?.getSpriteState(id)?.anim ?? null, monkId))
-      .not.toBe('fallback')
+    await expect.poll(() => expectAnim(page, monkId)).not.toBeNull()
   }
   await expect(healButton).toBeDisabled()
   await expect(healButton).toHaveAttribute('aria-disabled', 'true')

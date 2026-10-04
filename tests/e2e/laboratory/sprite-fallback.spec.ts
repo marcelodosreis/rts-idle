@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { expectAnim } from '../support/art.js'
 import { settleUnits, waitForMatchReady } from '../support/settle.js'
 
 test('the game remains playable with sprites disabled', async ({ page }) => {
@@ -8,12 +9,11 @@ test('the game remains playable with sprites disabled', async ({ page }) => {
   await page.getByRole('button', { name: 'Open DevTools menu' }).click()
   await page.getByRole('button', { name: 'Toggle Match options' }).click()
   await expect(page.getByRole('switch', { name: 'toggle sprites' })).not.toBeChecked()
-  const spriteState = await page.evaluate(() => {
+  const firstId = await page.evaluate(() => {
     const positions = window.__rtsDebug?.getPositions() ?? {}
-    const firstId = Number(Object.keys(positions)[0])
-    return window.__rtsDebug?.getSpriteState(firstId)
+    return Number(Object.keys(positions)[0])
   })
-  expect(spriteState?.anim).toBe('fallback')
+  await expect.poll(() => expectAnim(page, firstId, ['fallback'])).not.toBeNull()
 
   await page.getByRole('switch', { name: 'toggle sprites' }).click()
   await expect.poll(() => new URL(page.url()).searchParams.has('sprites')).toBe(false)
