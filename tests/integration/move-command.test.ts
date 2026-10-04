@@ -1,9 +1,39 @@
 import { tilesToFixed } from '@rts/shared'
-import { createSimulation, Position } from '@rts/simulation'
+import { Building, createSimulation, createWorld, Kind, Owner, Position } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { buildMoveCommand, runUntilArrived, SEEDS, TEST_IDENTITY, worldWithOwners } from '../fixtures/index.js'
 
 describe('MOVE command validation', () => {
+  it('rejects a building in a mixed unit selection without moving either entity', () => {
+    const createScenario = () => {
+      const world = createWorld()
+      world.createEntity(1)
+      world.store(Position).set(1, { x: 0, y: 0 })
+      world.store(Owner).set(1, { owner: 0 })
+      world.store(Kind).set(1, 'pawn')
+      world.createEntity(2)
+      world.store(Position).set(2, { x: tilesToFixed(4), y: tilesToFixed(4) })
+      world.store(Owner).set(2, { owner: 0 })
+      world.store(Building).set(2, {
+        buildingType: 'CASTLE',
+        status: 'COMPLETED',
+        progressTicks: 1,
+        totalTicks: 1,
+        builderId: null,
+        footprint: { x: 4, y: 4, width: 5, height: 4 }
+      })
+      return createSimulation({ seed: SEEDS.integration.moveOwn, identity: TEST_IDENTITY, initialWorld: world })
+    }
+    const simulation = createScenario()
+    const control = createScenario()
+
+    const result = simulation.step([buildMoveCommand([1, 2], 100, 100)])
+    control.step([])
+
+    expect(result.rejected).toHaveLength(1)
+    expect(result.rejected[0]!.code).toBe('ENTITY_UNAVAILABLE')
+    expect(simulation.hashState()).toBe(control.hashState())
+  })
   it('moves own units with the first unit exactly on the target', () => {
     const sim = createSimulation({
       seed: SEEDS.integration.moveOwn,
@@ -107,6 +137,27 @@ describe('MOVE command validation', () => {
     expect(result.rejected[0]!.code).toBe('INVALID_PAYLOAD')
     expect(sim.hashState()).toBe(control.hashState())
     expect(sim.inspectState().world.store(Position).get(unit)).toEqual({ x: 0, y: 0 })
+  })
+
+  it('rejects coordinates outside canonical i32 range without mutating state', () => {
+    const simulation = createSimulation({
+      seed: SEEDS.integration.moveOwn,
+      identity: TEST_IDENTITY,
+      initialWorld: worldWithOwners([0])
+    })
+    const control = createSimulation({
+      seed: SEEDS.integration.moveOwn,
+      identity: TEST_IDENTITY,
+      initialWorld: worldWithOwners([0])
+    })
+    const unit = simulation.inspectState().world.aliveIds()[0]!
+
+    const result = simulation.step([buildMoveCommand([unit], 2_147_483_648, 0)])
+    control.step([])
+
+    expect(result.rejected).toHaveLength(1)
+    expect(result.rejected[0]!.code).toBe('INVALID_PAYLOAD')
+    expect(simulation.hashState()).toBe(control.hashState())
   })
 
   it('is deterministic: same seed + commands produce the same hash', () => {

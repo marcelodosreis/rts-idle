@@ -10,6 +10,7 @@ import {
   type SnapshotMessage
 } from '@rts/protocol'
 import type { CommandIntent } from '@rts/shared'
+import { clearMatchResumeToken, saveResumeToken, storedResumeToken } from './resume-token.js'
 import { createTransportDiagnostics, type TransportDiagnostics } from './transport-diagnostics'
 
 export type { SnapshotMessage }
@@ -75,18 +76,7 @@ declare global {
   }
 }
 
-const RESUME_TOKEN_KEY = 'rts-idle.resume-token'
-
-export function clearMatchResumeToken(): void {
-  if (typeof sessionStorage !== 'undefined') {
-    sessionStorage.removeItem(RESUME_TOKEN_KEY)
-  }
-}
-
-export function startNewMatch(reload: () => void): void {
-  clearMatchResumeToken()
-  reload()
-}
+export { clearMatchResumeToken, startNewMatch } from './resume-token.js'
 
 function e2eTransportHookEnabled(): boolean {
   const { DEV, VITE_E2E_TRANSPORT_HOOK } = import.meta.env
@@ -107,19 +97,6 @@ function resyncRequest(baseline: SnapshotBaseline | null, delta: SnapshotDeltaMe
   })
 }
 
-function storedResumeToken(): string | undefined {
-  if (typeof sessionStorage === 'undefined') {
-    return undefined
-  }
-  return sessionStorage.getItem(RESUME_TOKEN_KEY) ?? undefined
-}
-
-function saveResumeToken(token: string): void {
-  if (typeof sessionStorage !== 'undefined') {
-    sessionStorage.setItem(RESUME_TOKEN_KEY, token)
-  }
-}
-
 interface IncomingMessageOptions {
   readonly parsed: unknown
   readonly diagnostics: TransportDiagnostics
@@ -136,7 +113,7 @@ type RecoveryState = 'ready' | 'resync_pending'
 
 function isStaleResumeTokenError(error: ErrorMessage): boolean {
   const message = error.message.toLowerCase()
-  return message.includes('unknown resume token') || message.includes('expired resume token')
+  return message.includes('unknown resume token') || message.includes('resume configuration mismatch')
 }
 
 function handleIncomingMessage(options: IncomingMessageOptions): SnapshotBaseline | null {
@@ -197,49 +174,39 @@ interface SocketOpenerOptions {
   readonly setBaseline: (baseline: SnapshotBaseline | null) => void
   readonly setSocket: (socket: WebSocket) => void
   readonly isCurrentSocket: (socket: WebSocket) => boolean
-  readonly isSuppressedSocket: (socket: WebSocket) => boolean
   readonly getRecoveryState: () => RecoveryState
   readonly setRecoveryState: (state: RecoveryState) => void
   readonly onResumeTokenError: () => boolean
 }
 
 function createSocketOpener(options: SocketOpenerOptions): () => void {
-  const {
-    url,
-    handlers,
-    diagnostics,
-    send,
-    setRequest,
-    getBaseline,
-    setBaseline,
-    setSocket,
-    isCurrentSocket,
-    getRecoveryState,
-    setRecoveryState,
-    onResumeTokenError
-  } = options
   return () => {
-    diagnostics.setConnectionState('connecting')
-    const next = new WebSocket(url)
-    setSocket(next)
+    options.diagnostics.setConnectionState('connecting')
+    const next = new WebSocket(options.url)
+    options.setSocket(next)
     next.addEventListener('open', () => {
-      diagnostics.setConnectionState('open')
+      if (!options.isCurrentSocket(next)) {
+        return
+      }
+      options.diagnostics.setConnectionState('open')
       next.send(JSON.stringify(options.request()))
-      handlers.onOpen?.()
+      options.handlers.onOpen?.()
     })
     next.addEventListener('error', () => {
-      handlers.onTransportError?.({ type: 'error', message: `failed to connect to ${url}` })
+      if (!options.isCurrentSocket(next)) {
+        return
+      }
+      options.handlers.onTransportError?.({ type: 'error', message: `failed to connect to ${options.url}` })
     })
     next.addEventListener('close', () => {
-      if (isCurrentSocket(next)) {
-        diagnostics.setConnectionState('closed')
+      if (!options.isCurrentSocket(next)) {
+        return
       }
-      if (!options.isSuppressedSocket(next)) {
-        handlers.onClose?.()
-      }
+      options.diagnostics.setConnectionState('closed')
+      options.handlers.onClose?.()
     })
     next.addEventListener('message', (event) => {
-      if (!isCurrentSocket(next)) {
+      if (!options.isCurrentSocket(next)) {
         return
       }
       let parsed: unknown
@@ -248,19 +215,22 @@ function createSocketOpener(options: SocketOpenerOptions): () => void {
       } catch {
         return // ignore malformed messages
       }
-      setBaseline(
-        handleIncomingMessage({
-          parsed,
-          diagnostics,
-          snapshotBaseline: getBaseline(),
-          handlers,
-          send,
-          onMatchConfig: setRequest,
-          recoveryState: getRecoveryState(),
-          setRecoveryState,
-          onResumeTokenError
-        })
-      )
+      const baseline = handleIncomingMessage({
+        parsed,
+        diagnostics: options.diagnostics,
+        snapshotBaseline: options.getBaseline(),
+        handlers: options.handlers,
+        send: options.send,
+        onMatchConfig: options.setRequest,
+        recoveryState: options.getRecoveryState(),
+        setRecoveryState: options.setRecoveryState,
+        onResumeTokenError: options.onResumeTokenError
+      })
+      // A stale-token error restarts the handshake inside the handler; the
+      // retired baseline must not be written back onto the fresh socket.
+      if (options.isCurrentSocket(next)) {
+        options.setBaseline(baseline)
+      }
     })
   }
 }
@@ -270,8 +240,8 @@ interface MatchConnectionRuntime {
   currentRequest: MatchRequest
   recoveryState: RecoveryState
   freshHandshakeRetried: boolean
-  suppressedCloseSockets: Set<WebSocket>
   snapshotBaseline: SnapshotBaseline | null
+  disposed: boolean
   openSocket: () => void
 }
 
@@ -282,13 +252,16 @@ function createMatchConnectionRuntime(request: MatchRequest): MatchConnectionRun
     currentRequest: storedToken === undefined ? request : { ...request, resumeToken: storedToken },
     recoveryState: 'ready',
     freshHandshakeRetried: false,
-    suppressedCloseSockets: new Set<WebSocket>(),
     snapshotBaseline: null,
+    disposed: false,
     openSocket: () => undefined
   }
 }
 
 function sendPayload(runtime: MatchConnectionRuntime, payload: string): void {
+  if (runtime.disposed) {
+    return
+  }
   if (runtime.ws?.readyState === WebSocket.OPEN) {
     runtime.ws.send(payload)
   }
@@ -299,6 +272,9 @@ function updateCurrentRequest(
   config: MatchConfig,
   diagnostics: TransportDiagnostics
 ): void {
+  if (runtime.disposed) {
+    return
+  }
   runtime.currentRequest = { ...runtime.currentRequest, resumeToken: config.resumeToken }
   diagnostics.setResumeToken(config.resumeToken)
   saveResumeToken(config.resumeToken)
@@ -307,10 +283,7 @@ function updateCurrentRequest(
 function restartFreshHandshake(runtime: MatchConnectionRuntime): void {
   runtime.recoveryState = 'ready'
   runtime.snapshotBaseline = null
-  if (runtime.ws !== null) {
-    runtime.suppressedCloseSockets.add(runtime.ws)
-    runtime.ws.close()
-  }
+  runtime.ws?.close()
   runtime.openSocket()
 }
 
@@ -352,8 +325,7 @@ function configureSocket(
     setSocket: (socket) => {
       runtime.ws = socket
     },
-    isCurrentSocket: (socket) => runtime.ws === socket,
-    isSuppressedSocket: (socket) => runtime.suppressedCloseSockets.delete(socket),
+    isCurrentSocket: (socket) => runtime.ws === socket && !runtime.disposed,
     getRecoveryState: () => runtime.recoveryState,
     setRecoveryState: (state) => {
       runtime.recoveryState = state
@@ -371,7 +343,16 @@ function createMatchConnection(runtime: MatchConnectionRuntime, diagnostics: Tra
       diagnostics.debug.reconnect()
     },
     close() {
-      runtime.ws?.close()
+      if (runtime.disposed) {
+        return
+      }
+      runtime.disposed = true
+      const socket = runtime.ws
+      runtime.ws = null
+      runtime.snapshotBaseline = null
+      runtime.recoveryState = 'ready'
+      runtime.openSocket = () => undefined
+      socket?.close()
     }
   }
 }
@@ -383,10 +364,10 @@ export function connectMatch(url: string, request: MatchRequest, handlers: Conne
     debugEnabled,
     () => runtime.ws?.close(),
     () => {
-      if (runtime.ws !== null) {
-        runtime.suppressedCloseSockets.add(runtime.ws)
-        runtime.ws.close()
+      if (runtime.disposed) {
+        return
       }
+      runtime.ws?.close()
       runtime.openSocket()
     },
     runtime.currentRequest.resumeToken

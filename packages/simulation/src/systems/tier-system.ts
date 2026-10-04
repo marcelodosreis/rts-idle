@@ -26,9 +26,5 @@ export function tierSystem(state: GameState): void {
       continue
     }
     buildings.set(id, { ...building, tier: 2, tierUpgrade: null })
-    const player = state.players.find((candidate) => candidate.id === ownerId)
-    if (player !== undefined) {
-      player.highestCastleTierReached = Math.max(player.highestCastleTierReached, 2) as 1 | 2 | 3
-    }
   }
 }

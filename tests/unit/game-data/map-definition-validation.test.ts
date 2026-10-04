@@ -1,5 +1,6 @@
 import { validateMapDefinition } from '@rts/game-data'
 import type { MapDefinition } from '@rts/shared'
+import { UINT32_MAX } from '@rts/shared'
 import { describe, expect, it } from 'vitest'
 
 const VALID: MapDefinition = {
@@ -53,6 +54,75 @@ describe('validateMapDefinition', () => {
     const result = validateMapDefinition({ ...VALID, decorationCounts: { bush: -1 } })
     expect(result.ok).toBe(false)
     expect(result.errors.join(' ')).toContain('decorationCounts.bush')
+  })
+
+  it('rejects resource values outside canonical i32 range', () => {
+    const result = validateMapDefinition({
+      ...VALID,
+      resources: [
+        {
+          resourceId: 1,
+          kind: 'GOLD_MINE',
+          x: 0,
+          y: 0,
+          variant: 0,
+          initialAmount: 2_147_483_648,
+          harvestAmount: 1,
+          harvestTicks: 1,
+          blocksNavigation: false
+        }
+      ]
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.errors.join(' ')).toContain('resources[0]')
+  })
+
+  it('accepts the canonical u32 resource id boundary values', () => {
+    for (const resourceId of [0, UINT32_MAX]) {
+      const result = validateMapDefinition({
+        ...VALID,
+        tiles: ['land', 'water', 'water', 'land'],
+        resources: [
+          {
+            resourceId,
+            kind: 'TREE',
+            x: 0,
+            y: 0,
+            variant: 0,
+            initialAmount: 10,
+            harvestAmount: 1,
+            harvestTicks: 1,
+            blocksNavigation: false
+          }
+        ]
+      })
+      expect(result.ok).toBe(true)
+    }
+  })
+
+  it('rejects resource ids outside the canonical u32 range', () => {
+    for (const resourceId of [-1, UINT32_MAX + 1, 2 ** 40, 1.5]) {
+      const result = validateMapDefinition({
+        ...VALID,
+        tiles: ['land', 'water', 'water', 'land'],
+        resources: [
+          {
+            resourceId,
+            kind: 'TREE',
+            x: 0,
+            y: 0,
+            variant: 0,
+            initialAmount: 10,
+            harvestAmount: 1,
+            harvestTicks: 1,
+            blocksNavigation: false
+          }
+        ]
+      })
+      expect(result.ok).toBe(false)
+      expect('errors' in result ? result.errors.join(' ') : '').toContain('resources[0]')
+    }
   })
 
   it('omits optional fields that are absent', () => {

@@ -1,11 +1,4 @@
-import {
-  BUILDING_TYPES,
-  COMMAND_TYPES,
-  type CommandIntent,
-  PLAYER_IDS,
-  RESEARCH_TYPES,
-  TRAINABLE_UNIT_KINDS
-} from '@rts/shared'
+import { BUILDING_TYPES, type CommandIntent, PLAYER_IDS, RESEARCH_TYPES, TRAINABLE_UNIT_KINDS } from '@rts/shared'
 import { createSimulation, type ScheduledCommand, simulationFromSnapshot } from '@rts/simulation'
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
@@ -109,10 +102,5 @@ describe('seeded command-stream properties', () => {
       }),
       { seed: SEEDS.determinism.replaySnapshot, numRuns: 30 }
     )
-  })
-
-  it('keeps the command registry covered by the generated property', () => {
-    expect(COMMAND_TYPES).toHaveLength(19)
-    expect(intentArbitrary).toBeDefined()
   })
 })

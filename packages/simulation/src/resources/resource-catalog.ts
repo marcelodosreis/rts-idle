@@ -1,4 +1,10 @@
-import type { ResourceDefinition, ResourceId, ResourceKind, ResourceType } from '@rts/shared'
+import {
+  assertUint32,
+  type ResourceDefinition,
+  type ResourceId,
+  type ResourceKind,
+  type ResourceType
+} from '@rts/shared'
 
 export interface ResourceSearch {
   readonly x: number
@@ -20,6 +26,7 @@ export class ResourceCatalog {
     const sorted = [...definitions].sort((left, right) => left.resourceId - right.resourceId)
     this.entries = sorted.map((definition, index) => ({ ...definition, index }))
     for (const entry of this.entries) {
+      assertUint32(entry.resourceId, 'ResourceCatalog')
       if (this.indexesById.has(entry.resourceId)) {
         throw new Error(`ResourceCatalog: duplicate resource id ${entry.resourceId}`)
       }

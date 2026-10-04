@@ -7,7 +7,7 @@ import { Cargo, Kind, Owner, Position } from '../ecs/components.js'
 import { setMovementDestination } from '../movement/destination.js'
 import { setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
-import { validateOwnedUnits } from './validate-units.js'
+import { validateControllableUnits } from './validate-units.js'
 
 /**
  * Applies a DEPOSIT command: owned workers walk to an owned completed Base and
@@ -21,7 +21,7 @@ export function applyDeposit(state: GameState, command: ScheduledCommand): void 
     throw new Error('applyDeposit: expected a DEPOSIT command')
   }
   const { unitIds, buildingId } = command.intent.payload
-  validateOwnedUnits(state, command, unitIds)
+  validateControllableUnits(state, command, unitIds)
   const buildings = state.world.store(Building)
   const positions = state.world.store(Position)
   const basePosition = positions.get(buildingId)

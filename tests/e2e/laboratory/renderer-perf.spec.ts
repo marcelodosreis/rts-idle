@@ -1,8 +1,11 @@
 import { expect, type Page, test } from '@playwright/test'
 
 // Spike C (§21.3), minimal scope: the renderer must present N units and
-// produce a finite, measurable frame time. This is a measurement harness, not
-// a hard FPS gate (headless SwiftShader is not representative of real GPU).
+// produce a finite, measurable frame time. This lane is telemetry and smoke
+// coverage only; it does not assert a performance budget and must not be
+// described as regression protection. Headless SwiftShader is not
+// representative of a real GPU, so an FPS gate here would be noise. A future
+// performance contract needs a dedicated environment and budget first.
 
 test('renderer presents 100 units and reports frame time @perf', async ({ page }) => {
   await expectRendererMeasurement(page, 100)

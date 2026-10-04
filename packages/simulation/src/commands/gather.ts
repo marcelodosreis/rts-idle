@@ -4,7 +4,7 @@ import { CommandRejectedError } from '../contracts/commands.js'
 import { Cargo, Kind, Orders, Position } from '../ecs/components.js'
 import { setMovementDestination } from '../movement/destination.js'
 import type { GameState } from '../state/state.js'
-import { validateOwnedUnits } from './validate-units.js'
+import { validateControllableUnits } from './validate-units.js'
 
 /** Validates and applies a GATHER command without partially mutating a selection. */
 export function applyGather(state: GameState, command: ScheduledCommand): void {
@@ -12,7 +12,7 @@ export function applyGather(state: GameState, command: ScheduledCommand): void {
     throw new Error('applyGather: expected a GATHER command')
   }
   const { unitIds, resourceId } = command.intent.payload
-  validateOwnedUnits(state, command, unitIds)
+  validateControllableUnits(state, command, unitIds)
   const resource = state.resources.catalog.entry(resourceId)
   if (
     resource === undefined ||

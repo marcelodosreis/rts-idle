@@ -6,7 +6,7 @@ import { Health, Kind, Orders, Owner, Position } from '../ecs/components.js'
 import { clearMovement, setMovementDestination } from '../movement/destination.js'
 import { setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
-import { validateOwnedUnits } from './validate-units.js'
+import { validateControllableUnits } from './validate-units.js'
 
 function reject(command: ScheduledCommand, message: string): never {
   throw new CommandRejectedError('ENTITY_UNAVAILABLE', command, message)
@@ -71,7 +71,7 @@ export function applyRepair(state: GameState, command: ScheduledCommand): void {
   if (command.intent.type !== 'REPAIR') {
     throw new Error('applyRepair: expected a REPAIR command')
   }
-  validateOwnedUnits(state, command, command.intent.payload.unitIds)
+  validateControllableUnits(state, command, command.intent.payload.unitIds)
   const repairerId = chooseRepairer(state, command, command.intent.payload.unitIds)
   const position = state.world.store(Position).get(repairerId)
   const targetPosition = state.world.store(Position).get(command.intent.payload.targetId)

@@ -1,4 +1,4 @@
-import type { CastleTier, EntityId, PlayerId, PlayerResources, ResearchType, RngState } from '@rts/shared'
+import type { EntityId, PlayerId, PlayerResources, ResearchType, RngState } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import type { RulesIdentity } from '../contracts/simulation.js'
 import type { World } from '../ecs/world.js'
@@ -21,7 +21,6 @@ export interface PlayerState {
   reservedSupply: number
   supplyCap: number
   completedResearch: readonly ResearchType[]
-  highestCastleTierReached: CastleTier
 }
 
 /**

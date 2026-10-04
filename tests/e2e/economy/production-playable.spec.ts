@@ -62,7 +62,7 @@ async function selectEconomyBase(page: Page): Promise<void> {
   await page.mouse.click(base.x, base.y)
 }
 
-async function blockEconomyBaseExit(page: Page): Promise<void> {
+async function blockEconomyBaseExit(page: Page): Promise<number> {
   const origin = await economyBaseOrigin(page)
   const exit = { x: origin.x + tilesToFixed(BUILDING_FOOTPRINTS.CASTLE.width), y: origin.y }
   const before = await workerIds(page)
@@ -74,15 +74,17 @@ async function blockEconomyBaseExit(page: Page): Promise<void> {
     .poll(() => page.evaluate((id) => window.__rtsDebug!.getPositions()[String(id)]!, blocker), { timeout: 5_000 })
     .toEqual(exit)
   await selectEconomyBase(page)
+  return blocker
 }
 
-async function fillBlockedEconomyBaseQueue(page: Page): Promise<void> {
-  await blockEconomyBaseExit(page)
+async function fillBlockedEconomyBaseQueue(page: Page): Promise<number> {
+  const blocker = await blockEconomyBaseExit(page)
   for (let count = 1; count <= 5; count += 1) {
     await train(page, 'pawn')
     await expect(page.getByTestId('production-queue-count')).toHaveText(`Queue ${count}/5`)
   }
   await expect.poll(() => queueLength(page)).toBe(5)
+  return blocker
 }
 
 async function queueLength(page: Page): Promise<number> {
@@ -175,12 +177,12 @@ test('cancels any queued production row with confirmation and refund feedback', 
   await expect.poll(() => goldValue(page)).toBeGreaterThan(firstRefund)
 })
 
-test('blocks a full production queue while a pawn holds the spawn exit', async ({ page }) => {
-  test.setTimeout(45_000)
+test('retains a completed-waiting full queue and recovers in order after the exit clears', async ({ page }) => {
+  test.setTimeout(60_000)
   await page.goto('/?scenario=regression')
   await waitForMatchReady(page)
 
-  await fillBlockedEconomyBaseQueue(page)
+  const blocker = await fillBlockedEconomyBaseQueue(page)
   const trainPawn = page.getByTestId('train-pawn')
   await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 5/5')
   await expect(trainPawn).toHaveAttribute('aria-disabled', 'true')
@@ -190,6 +192,27 @@ test('blocks a full production queue while a pawn holds the spawn exit', async (
   await page.mouse.click(buttonBox!.x + buttonBox!.width / 2, buttonBox!.y + buttonBox!.height / 2)
   await expect(page.getByTestId('hud-context-feedback')).toHaveText('Queue is full')
   await expect(page.getByTestId('hud-context-feedback')).toHaveAttribute('data-feedback-target', 'queue')
+
+  await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'COMPLETED_WAITING', {
+    timeout: 15_000
+  })
+  await expect(page.getByTestId('production-status-0')).toHaveText('Waiting for exit')
+  await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 5/5')
+  await expect(trainPawn).toHaveAttribute('aria-disabled', 'true')
+  const reservedGold = await goldValue(page)
+
+  const beforeRelease = await workerIds(page)
+  await selectWorker(page, blocker)
+  const release = await canvasPoint(page, tilesToFixed(9), tilesToFixed(10))
+  await page.mouse.click(release.x, release.y, { button: 'right' })
+
+  await expect.poll(() => workerIds(page), { timeout: 20_000 }).toHaveLength(beforeRelease.length + 1)
+  await selectEconomyBase(page)
+  await expect(page.getByTestId('production-queue-count')).toHaveText('Queue 4/5')
+  await expect(page.getByTestId('production-item-0')).toHaveAttribute('data-production-status', 'ACTIVE', {
+    timeout: 15_000
+  })
+  expect(await goldValue(page)).toBe(reservedGold)
 })
 
 test('sets a rally point and sends a trained unit toward it', async ({ page }) => {

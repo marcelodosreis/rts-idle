@@ -1,6 +1,6 @@
 import { type UnitDefinition, unitDefinitionFor } from '@rts/game-data'
 import { allocateEntityId, type PlayerId, START_ENTITY_ID } from '@rts/shared'
-import { Combat, createWorld, Health, Owner, Position, type World } from '@rts/simulation'
+import { Combat, createWorld, Health, Kind, Owner, Position, type World } from '@rts/simulation'
 
 /**
  * Builds a world with one unit per owner entry, ids allocated from
@@ -15,6 +15,7 @@ export function worldWithOwners(owners: readonly PlayerId[]): World {
     world.createEntity(allocated.id)
     world.store(Position).set(allocated.id, { x: 0, y: 0 })
     world.store(Owner).set(allocated.id, { owner })
+    world.store(Kind).set(allocated.id, 'pawn')
   }
   return world
 }
@@ -45,6 +46,7 @@ export function worldWithCombatUnits(owners: readonly PlayerId[], options: Comba
     world.createEntity(allocated.id)
     world.store(Position).set(allocated.id, options.position ?? { x: 0, y: 0 })
     world.store(Owner).set(allocated.id, { owner })
+    world.store(Kind).set(allocated.id, stats.kind)
     world.store(Health).set(allocated.id, { current: stats.maxHp, max: stats.maxHp })
     world.store(Combat).set(allocated.id, {
       armor: stats.armor,

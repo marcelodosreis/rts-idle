@@ -3,6 +3,7 @@ import type { SimulationOptions } from '../contracts/simulation.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
 import { createResourceState } from '../resources/resource-state.js'
+import { cloneWorld } from '../state/clone-state.js'
 import type { GameState, PlayerState } from '../state/state.js'
 import { updateSupply } from '../systems/supply-system.js'
 import { Simulation } from './simulation.js'
@@ -17,12 +18,30 @@ function createPlayers(): PlayerState[] {
     usedSupply: 0,
     reservedSupply: 0,
     supplyCap: 0,
-    completedResearch: [] as readonly ResearchType[],
-    highestCastleTierReached: 1 as const
+    completedResearch: [] as readonly ResearchType[]
   }))
 }
 
 const DEFAULT_MAP_BOUNDS = { width: 32, height: 32 } as const
+
+function clonePlayers(players: NonNullable<SimulationOptions['initialPlayers']>): PlayerState[] {
+  return players.map((player) => ({
+    ...player,
+    resources: { ...player.resources },
+    usedSupply: player.usedSupply ?? 0,
+    reservedSupply: player.reservedSupply ?? 0,
+    supplyCap: player.supplyCap ?? 0,
+    completedResearch: [...(player.completedResearch ?? [])]
+  }))
+}
+
+function cloneMapBounds(
+  bounds: NonNullable<SimulationOptions['mapBounds']>
+): NonNullable<SimulationOptions['mapBounds']> {
+  return bounds.invalidTiles === undefined
+    ? { width: bounds.width, height: bounds.height }
+    : { width: bounds.width, height: bounds.height, invalidTiles: bounds.invalidTiles.map((tile) => ({ ...tile })) }
+}
 
 /**
  * Resolves the next free entity id from an initial world.
@@ -39,7 +58,7 @@ function resolveNextEntityId(world: World): number {
 
 export function createSimulation(options: SimulationOptions): SimulationHost {
   const rng = createRng(options.seed)
-  const world = options.initialWorld ?? createWorld()
+  const world = options.initialWorld === undefined ? createWorld() : cloneWorld(options.initialWorld)
   const state: GameState = {
     tick: 0,
     phase: 'RUNNING',
@@ -47,18 +66,8 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
     seed: options.seed,
     rng,
     nextEntityId: resolveNextEntityId(world),
-    players:
-      options.initialPlayers === undefined
-        ? createPlayers()
-        : options.initialPlayers.map((player) => ({
-            ...player,
-            usedSupply: player.usedSupply ?? 0,
-            reservedSupply: player.reservedSupply ?? 0,
-            supplyCap: player.supplyCap ?? 0,
-            completedResearch: player.completedResearch ?? [],
-            highestCastleTierReached: player.highestCastleTierReached ?? 1
-          })),
-    mapBounds: options.mapBounds ?? DEFAULT_MAP_BOUNDS,
+    players: options.initialPlayers === undefined ? createPlayers() : clonePlayers(options.initialPlayers),
+    mapBounds: options.mapBounds === undefined ? { ...DEFAULT_MAP_BOUNDS } : cloneMapBounds(options.mapBounds),
     resources: createResourceState(options.resources),
     world,
     pendingCommands: [],

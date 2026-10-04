@@ -160,6 +160,11 @@ export class World {
     return this.changeLogStartCursor + this.changeLog.length
   }
 
+  /** Configured retained change history; cloning a world must preserve it. */
+  changeHistoryCapacity(): number {
+    return this.changeHistoryLimit
+  }
+
   changesSince(cursor: number): WorldChangeSet {
     const currentCursor = this.changeCursor()
     if (!Number.isInteger(cursor) || cursor < 0 || cursor > currentCursor) {

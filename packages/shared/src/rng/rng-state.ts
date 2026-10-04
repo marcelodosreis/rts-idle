@@ -20,4 +20,4 @@ export interface RngResult {
 /** Result of a bounded integer draw (same shape as {@link RngResult}). */
 export type RngIntResult = RngResult
 
-export const UINT32_MAX = 0xffffffff
+export { UINT32_MAX } from '../primitives/parse.js'

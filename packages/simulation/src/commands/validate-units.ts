@@ -1,4 +1,5 @@
 import { unitCanAttack } from '@rts/game-data'
+import { isInt32 } from '@rts/shared'
 import { CommandRejectedError, type ScheduledCommand } from '../contracts/commands.js'
 import { Kind, Owner } from '../ecs/components.js'
 import type { GameState } from '../state/state.js'
@@ -45,13 +46,32 @@ export function validateOwnedUnits(state: GameState, command: ScheduledCommand, 
   }
 }
 
+/** Validates the owned entities used by unit commands before any mutation occurs. */
+export function validateControllableUnits(
+  state: GameState,
+  command: ScheduledCommand,
+  unitIds: readonly number[]
+): void {
+  validateOwnedUnits(state, command, unitIds)
+  const kinds = state.world.store(Kind)
+  for (const unitId of unitIds) {
+    if (kinds.get(unitId) === undefined) {
+      throw new CommandRejectedError(
+        'ENTITY_UNAVAILABLE',
+        command,
+        `${command.intent.type}: entity ${unitId} is not a controllable unit`
+      )
+    }
+  }
+}
+
 /** Rejects offensive orders that include a support-only Monk. */
 export function validateAttackCapableUnits(
   state: GameState,
   command: ScheduledCommand,
   unitIds: readonly number[]
 ): void {
-  validateOwnedUnits(state, command, unitIds)
+  validateControllableUnits(state, command, unitIds)
   const kinds = state.world.store(Kind)
   for (const unitId of unitIds) {
     if (!unitCanAttack(kinds.get(unitId))) {
@@ -66,7 +86,7 @@ export function validateAttackCapableUnits(
  * units, master plan §15).
  */
 export function validateIntegerTarget(command: ScheduledCommand, x: number, y: number): void {
-  if (!Number.isInteger(x) || !Number.isInteger(y)) {
+  if (!isInt32(x) || !isInt32(y)) {
     throw new CommandRejectedError(
       'INVALID_PAYLOAD',
       command,

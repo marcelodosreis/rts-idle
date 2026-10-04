@@ -6,7 +6,7 @@ import { AbilityCooldown, Health, Kind, Owner, Position } from '../ecs/component
 import { setMovementDestination } from '../movement/destination.js'
 import { setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
-import { validateOwnedUnits } from './validate-units.js'
+import { validateControllableUnits } from './validate-units.js'
 
 function reject(command: ScheduledCommand, message: string): never {
   throw new CommandRejectedError('INVALID_STATE', command, message)
@@ -48,7 +48,7 @@ export function applyHeal(state: GameState, command: ScheduledCommand): void {
     throw new Error('applyHeal: expected a HEAL command')
   }
   const { unitIds, targetId } = command.intent.payload
-  validateOwnedUnits(state, command, unitIds)
+  validateControllableUnits(state, command, unitIds)
   if (unitIds.length !== 1) {
     reject(command, 'HEAL: exactly one Monk must be selected')
   }

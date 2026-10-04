@@ -39,9 +39,14 @@ test('visual base: HUD reacts to selection and units animate without teleporting
   // (Deterministic check: sprite is an animated one. Frame-advance assertions
   // are flaky under a throttled headless ticker — owned by the animation agent.)
   const artAvailable = await hasArt(page)
-  const frameA = await page.evaluate((id) => window.__rtsDebug?.getAnimationFrame(id) ?? null, selectedId)
   if (artAvailable) {
-    expect(frameA).not.toBeNull()
+    // Frame swaps happen when a unit kind's preload resolves, which can trail
+    // the first art-ready unit; poll the selected unit instead of racing it.
+    await expect
+      .poll(() => page.evaluate((id) => window.__rtsDebug?.getAnimationFrame(id) ?? null, selectedId), {
+        timeout: 10_000
+      })
+      .not.toBeNull()
   }
 
   // A MOVE animates the unit across the tilemap (position must change over time,

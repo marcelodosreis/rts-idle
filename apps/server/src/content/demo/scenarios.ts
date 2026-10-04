@@ -23,7 +23,6 @@ export interface DemoScenario {
   readonly id: string
   readonly label: string
   readonly startingGold?: number
-  readonly startingCastleTier?: CastleTier
   readonly spawns: readonly DemoSpawn[]
   readonly buildings?: readonly DemoBaseSpawn[]
   /** Engagement pairs: index of the attacking spawn → index of its target. */

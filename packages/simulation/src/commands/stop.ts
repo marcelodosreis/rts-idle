@@ -2,7 +2,7 @@ import type { ScheduledCommand } from '../contracts/commands.js'
 import { clearMovement } from '../movement/destination.js'
 import { clearOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
-import { validateOwnedUnits } from './validate-units.js'
+import { validateControllableUnits } from './validate-units.js'
 
 /**
  * STOP cancels every order and any movement for the selected units (order
@@ -14,7 +14,7 @@ export function applyStop(state: GameState, command: ScheduledCommand): void {
     throw new Error('applyStop: expected a STOP command')
   }
   const unitIds = command.intent.payload.unitIds
-  validateOwnedUnits(state, command, unitIds)
+  validateControllableUnits(state, command, unitIds)
   for (const unitId of unitIds) {
     clearOrders(state, unitId)
     clearMovement(state, unitId)

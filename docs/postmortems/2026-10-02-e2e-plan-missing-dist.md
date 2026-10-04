@@ -3,7 +3,7 @@ status: open
 classe: environment
 barreira: QH.27.01
 regressao:
-  - tests/architecture/e2e-ci-artifacts.test.ts
+  - tests/unit/tools/e2e-discovery.test.ts
 ---
 
 # E2E plan missing build artifacts
@@ -41,8 +41,9 @@ workflow-level preparation artifact check.
 
 ## Regression
 
-`tests/architecture/e2e-ci-artifacts.test.ts` asserts that the preparation job
-downloads `dist` before the `Generate E2E plan` step.
+`tests/unit/tools/e2e-discovery.test.ts` protects fail-closed discovery and plan
+completeness: if the built packages are missing, Playwright listing fails and
+plan preparation aborts instead of emitting an empty green matrix.
 
 ## Prevention
 

@@ -1,4 +1,4 @@
-import type { ResourceDefinition, ResourceId } from '@rts/shared'
+import { isInt32, isUint32, type ResourceDefinition, type ResourceId } from '@rts/shared'
 import { ResourceCatalog, type ResourceCatalogEntry, type ResourceSearch } from './resource-catalog.js'
 import { ResourceSpatialIndex } from './resource-spatial-index.js'
 
@@ -28,6 +28,13 @@ export class ResourceState {
       // pass known-good amounts and skip the O(total) definition pass.
       for (const definition of catalog.definitions()) {
         if (
+          !isUint32(definition.resourceId) ||
+          !isInt32(definition.x) ||
+          !isInt32(definition.y) ||
+          !isInt32(definition.variant) ||
+          !isInt32(definition.initialAmount) ||
+          !isInt32(definition.harvestAmount) ||
+          !isInt32(definition.harvestTicks) ||
           definition.initialAmount < 0 ||
           definition.harvestAmount <= 0 ||
           definition.harvestTicks <= 0 ||

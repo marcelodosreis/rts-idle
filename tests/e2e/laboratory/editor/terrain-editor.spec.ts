@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { watchAbortedModuleImports } from '../../support/aborted-module-imports.js'
 
 async function openLaboratory(page: Page): Promise<void> {
   await page.goto('/laboratory')
@@ -43,6 +44,24 @@ test('terrain: status bar reports the hovered cell', async ({ page }) => {
   }
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 10 })
   await expect(cell).not.toHaveText('—')
+})
+
+test('terrain: rapid palette changes followed by navigation do not touch a destroyed scene', async ({ page }) => {
+  const abortedImports = watchAbortedModuleImports(page)
+  const pageErrors: string[] = []
+  page.on('pageerror', (error) => pageErrors.push(error.message))
+  await openLaboratory(page)
+  await openEditor(page)
+  for (const palette of ['color2', 'color3', 'color4']) {
+    await page.getByRole('combobox').first().click()
+    await page.getByRole('option', { name: palette }).click()
+  }
+  await page.goto('/laboratory')
+  await expect(page.getByTestId('laboratory-page-title')).toHaveText('Asset Browser', { timeout: 20000 })
+  // Only the module import the browser actually aborted during navigation is a
+  // harness artifact; a broken lazy import or missing chunk must still fail.
+  const unexpected = pageErrors.filter((message) => !abortedImports.isKnownAbort(message))
+  expect(unexpected).toEqual([])
 })
 
 test('terrain: decoration palette enables every kind', async ({ page }) => {
@@ -93,6 +112,32 @@ test('terrain: playtest opens the authored map in the game', async ({ page }) =>
   const info = await game.evaluate(() => window.__rtsDebug!.getMapInfo())
   expect(info.isPlaytest).toBe(true)
   expect(info.decorations).toBe(1)
+})
+
+test('terrain: playtest with a stale resume token opens the authored map', async ({ page }) => {
+  await openLaboratory(page)
+  await openEditor(page)
+  await page.getByRole('tab', { name: 'Decor' }).click()
+  await page.getByRole('button', { name: /trees/ }).click()
+  const host = page.getByTestId('terrain-canvas-host')
+  const box = await host.boundingBox()
+  if (box === null) {
+    throw new Error('terrain canvas host has no bounding box')
+  }
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+  // Guarantee the popup starts with a token from a previous match; the server
+  // must reject the map mismatch and the client must fall back to the authored
+  // local map instead of silently resuming the catalog match.
+  await page.context().addInitScript(() => sessionStorage.setItem('rts-idle.resume-token', 'stale-token'))
+  const popupPromise = page.waitForEvent('popup')
+  await page.getByRole('button', { name: 'Playtest' }).click()
+  const game = await popupPromise
+  await game.waitForURL(/map=local/)
+  await game.waitForFunction(() => window.__rtsDebug !== undefined, null, { timeout: 20000 })
+  const info = await game.evaluate(() => window.__rtsDebug!.getMapInfo())
+  expect(info.isPlaytest).toBe(true)
+  expect(info.decorations).toBe(1)
+  await expect.poll(() => game.evaluate(() => sessionStorage.getItem('rts-idle.resume-token'))).not.toBe('stale-token')
 })
 
 test('terrain: autosave restores the map after reload', async ({ page }) => {

@@ -133,8 +133,7 @@ export function createDemoSession(
       id,
       defeated: false,
       resources: createPlayerResources({ GOLD: id === 0 ? (scenario.startingGold ?? 0) : 0 }),
-      completedResearch: [] as readonly ResearchType[],
-      highestCastleTierReached: scenario.startingCastleTier ?? 1
+      completedResearch: [] as readonly ResearchType[]
     }))
   })
 }

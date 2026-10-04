@@ -1,4 +1,4 @@
-import { START_ENTITY_ID } from '@rts/shared'
+import { START_ENTITY_ID, tilesToFixed } from '@rts/shared'
 import {
   Building,
   Cargo,
@@ -27,7 +27,7 @@ function researchScenario(withSecondMonastery = false, gold = 500) {
   })
   world.store(Production).set(START_ENTITY_ID, { queue: [] })
   world.createEntity(START_ENTITY_ID + 1)
-  world.store(Position).set(START_ENTITY_ID + 1, { x: 10, y: 0 })
+  world.store(Position).set(START_ENTITY_ID + 1, { x: tilesToFixed(10), y: 0 })
   world.store(Owner).set(START_ENTITY_ID + 1, { owner: 0 })
   world.store(Building).set(START_ENTITY_ID + 1, {
     buildingType: 'CASTLE',
@@ -41,7 +41,7 @@ function researchScenario(withSecondMonastery = false, gold = 500) {
   createUnitEntity(world, { id: START_ENTITY_ID + 3, x: 20, y: 0, owner: 0, kind: 'pawn' })
   if (withSecondMonastery) {
     world.createEntity(START_ENTITY_ID + 2)
-    world.store(Position).set(START_ENTITY_ID + 2, { x: 15, y: 0 })
+    world.store(Position).set(START_ENTITY_ID + 2, { x: tilesToFixed(15), y: 0 })
     world.store(Owner).set(START_ENTITY_ID + 2, { owner: 0 })
     world.store(Building).set(START_ENTITY_ID + 2, {
       buildingType: 'MONASTERY',
@@ -58,7 +58,7 @@ function researchScenario(withSecondMonastery = false, gold = 500) {
     identity: TEST_IDENTITY,
     initialWorld: world,
     initialPlayers: [
-      { id: 0, defeated: false, resources: { GOLD: gold, WOOD: 0 }, highestCastleTierReached: 2 },
+      { id: 0, defeated: false, resources: { GOLD: gold, WOOD: 0 } },
       { id: 1, defeated: false, resources: { GOLD: 0, WOOD: 0 } },
       { id: 2, defeated: false, resources: { GOLD: 0, WOOD: 0 } },
       { id: 3, defeated: false, resources: { GOLD: 0, WOOD: 0 } }

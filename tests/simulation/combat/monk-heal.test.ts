@@ -45,7 +45,7 @@ function healWorld(
       progressTicks: 1,
       totalTicks: 1,
       builderId: null,
-      footprint: { x: 0, y: 0, width: 1, height: 1 }
+      footprint: { x: options.targetDistanceTiles ?? 2, y: 0, width: 1, height: 1 }
     })
   }
   return createSimulation({ seed: SEEDS.simulation.fixedTick, identity: TEST_IDENTITY, initialWorld: world })

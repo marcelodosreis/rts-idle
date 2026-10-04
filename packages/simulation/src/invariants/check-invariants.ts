@@ -4,7 +4,7 @@ import {
   UNIT_PRODUCTION_DEFINITIONS,
   unitDefinitionFor
 } from '@rts/game-data'
-import { type ProductionItemStatus, RESOURCE_TYPES, type ResourceCost } from '@rts/shared'
+import { FIXED_SCALE, type ProductionItemStatus, RESOURCE_TYPES, type ResourceCost } from '@rts/shared'
 import { RESOURCE_CARGO_CAPACITY } from '../data/economy-rules.js'
 import { MAX_PRODUCTION_QUEUE } from '../data/production-rules.js'
 import { MAX_SUPPLY_CAPACITY } from '../data/supply-rules.js'
@@ -66,6 +66,14 @@ function checkConstruction(state: GameState, id: number): void {
   }
   if (owners.get(id) === undefined) {
     fail(`construction ${id} has no owner`)
+  }
+  const position = state.world.store(Position).get(id)
+  if (
+    position === undefined ||
+    position.x !== construction.footprint.x * FIXED_SCALE ||
+    position.y !== construction.footprint.y * FIXED_SCALE
+  ) {
+    fail(`construction ${id} position does not match footprint origin`)
   }
   if (
     !Number.isInteger(construction.progressTicks) ||

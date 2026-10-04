@@ -252,8 +252,8 @@ Execution plan: `docs/tasks/done/VS-01-plan.md`. Current packet:
 - [x] QH.18 Board + tracking guard + protocol
 - [x] QH.16 Output hygiene (test output)
 
-> QUAL-016 e QUAL-018 foram concluídas. O batch de hardening de 2026-10-03
-> abaixo registra as exceções e tasks adicionais concluídas.
+> QUAL-016 and QUAL-018 are complete. The 2026-10-03 hardening batch below
+> records the exceptions and additional completed tasks.
 
 ### Quality hardening batch 2026-10-03
 
@@ -291,4 +291,4 @@ satisfied its contract; it was not reimplemented here.
 - [ ] QH.14 Coverage ratchet (deps: QH.16)
 
 ### Browser Validation
-- [x] Browser gate stratification: complete, functional, and performance gates
+- [x] Browser gate stratification: complete, functional, and performance-telemetry jobs

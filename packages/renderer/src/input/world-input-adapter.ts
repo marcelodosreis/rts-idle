@@ -1,19 +1,58 @@
-import type { Viewport } from 'pixi-viewport'
 import type { CancelReason, ScreenPoint, WorldInteraction, WorldPoint } from './input-types.js'
 import type { WorldHitTester } from './world-hit-tester.js'
 
+/**
+ * Structural subset of the host canvas used by the adapter. Keeping the
+ * dependency narrow lets tests drive pointer lifecycle without a DOM.
+ */
+type InputListener = (...args: readonly never[]) => void
+
+export interface InputCanvas {
+  addEventListener(type: string, listener: InputListener): void
+  removeEventListener(type: string, listener: InputListener): void
+  getBoundingClientRect(): { readonly left: number; readonly top: number }
+  setPointerCapture(pointerId: number): void
+  hasPointerCapture(pointerId: number): boolean
+  releasePointerCapture(pointerId: number): void
+}
+
+/** Structural subset of the viewport projection used by the adapter. */
+export interface InputViewport {
+  toWorld(x: number, y: number): { readonly x: number; readonly y: number }
+}
+
 export interface WorldInputAdapterOptions {
-  readonly canvas: HTMLCanvasElement
-  readonly viewport: Viewport
+  readonly canvas: InputCanvas
+  readonly viewport: InputViewport
   readonly hitTester: WorldHitTester
   readonly onInteraction: (interaction: WorldInteraction) => void
   readonly dragThresholdPx?: number
 }
 
+/** Adapts a DOM canvas to the narrow input port without leaking DOM event types. */
+export function inputCanvasFrom(canvas: HTMLCanvasElement): InputCanvas {
+  return {
+    addEventListener: (type, listener) => {
+      canvas.addEventListener(type, (event) => listener(event as never))
+    },
+    removeEventListener: (type, listener) => {
+      canvas.removeEventListener(type, (event) => listener(event as never))
+    },
+    getBoundingClientRect: () => canvas.getBoundingClientRect(),
+    setPointerCapture: (pointerId) => {
+      canvas.setPointerCapture(pointerId)
+    },
+    hasPointerCapture: (pointerId) => canvas.hasPointerCapture(pointerId),
+    releasePointerCapture: (pointerId) => {
+      canvas.releasePointerCapture(pointerId)
+    }
+  }
+}
+
 /** Normalizes browser/Pixi input into gameplay-independent world interactions. */
 export class WorldInputAdapter {
-  private readonly canvas: HTMLCanvasElement
-  private readonly viewport: Viewport
+  private readonly canvas: InputCanvas
+  private readonly viewport: InputViewport
   private readonly hitTester: WorldHitTester
   private readonly onInteraction: (interaction: WorldInteraction) => void
   private readonly dragThreshold: number
@@ -85,22 +124,24 @@ export class WorldInputAdapter {
   }
 
   private readonly onDomPointerMove = (event: PointerEvent): void => {
-    const current = this.worldPoint(event.clientX, event.clientY)
     if (this.activePointerId === null || this.selectionStart === null) {
-      this.onInteraction({ type: 'pointer-move', position: current, target: this.hitTester.targetAt(current) })
-      return
-    }
-    if (this.distanceSquared(this.selectionStart, current) < this.dragThreshold ** 2) {
+      const position = this.worldPoint(event.clientX, event.clientY)
+      this.onInteraction({ type: 'pointer-move', position, target: this.hitTester.targetAt(position) })
       return
     }
     const screen = this.screenPoint(event.clientX, event.clientY)
-    if (this.selectionStartScreen !== null) {
-      if (!this.selectionStarted) {
-        this.selectionStarted = true
-        this.onInteraction({ type: 'selection-start', screen: this.selectionStartScreen })
-      }
-      this.onInteraction({ type: 'selection-update', screen })
+    if (
+      this.selectionStartScreen === null ||
+      this.distanceSquared(this.selectionStartScreen, screen) < this.dragThreshold ** 2
+    ) {
+      return
     }
+    const current = this.worldPoint(event.clientX, event.clientY)
+    if (!this.selectionStarted) {
+      this.selectionStarted = true
+      this.onInteraction({ type: 'selection-start', screen: this.selectionStartScreen })
+    }
+    this.onInteraction({ type: 'selection-update', screen })
     this.onInteraction({ type: 'pointer-move', position: current, target: this.hitTester.targetAt(current) })
   }
 
@@ -112,7 +153,7 @@ export class WorldInputAdapter {
     const screenStart = this.selectionStartScreen
     const end = this.worldPoint(event.clientX, event.clientY)
     const screenEnd = this.screenPoint(event.clientX, event.clientY)
-    const dragged = this.distanceSquared(start, end) >= this.dragThreshold ** 2
+    const dragged = screenStart !== null && this.distanceSquared(screenStart, screenEnd) >= this.dragThreshold ** 2
     this.releasePointer()
     this.selectionStart = null
     this.selectionStartScreen = null
@@ -167,9 +208,14 @@ export class WorldInputAdapter {
     this.activePointerId = null
   }
 
-  private distanceSquared(a: WorldPoint, b: WorldPoint): number {
+  private distanceSquared(a: Point, b: Point): number {
     const dx = a.x - b.x
     const dy = a.y - b.y
     return dx * dx + dy * dy
   }
+}
+
+interface Point {
+  readonly x: number
+  readonly y: number
 }

@@ -198,7 +198,6 @@ describe('match session handlers', () => {
             resources: { GOLD: 40, WOOD: 0 },
             usedSupply: 2,
             supplyCap: 8,
-            highestCastleTierReached: 2,
             completedResearch: ['ATTACK'],
             queuedResearch: ['MOVEMENT']
           }
@@ -226,8 +225,7 @@ describe('match session handlers', () => {
             defeated: false,
             resources: { GOLD: 40, WOOD: 0 },
             usedSupply: 2,
-            supplyCap: 8,
-            highestCastleTierReached: 2
+            supplyCap: 8
           }
         ]
       })

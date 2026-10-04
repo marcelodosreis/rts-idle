@@ -43,6 +43,18 @@ const request: MatchRequest = {
   map: { source: 'catalog' }
 }
 
+const matchConfig: MatchConfig = {
+  type: 'match_config',
+  protocolVersion: PROTOCOL_VERSION,
+  resumeToken: 'resume-token',
+  scenario: { id: 'regression', label: 'Regression' },
+  scenarios: [{ id: 'default', label: 'Default' }],
+  map: { width: 2, height: 2, tiles: ['land', 'land', 'land', 'land'], resources: [] },
+  buildings: [],
+  production: [],
+  research: []
+}
+
 describe('match transport snapshot resync', () => {
   it('requests an authoritative full snapshot when a delta is rejected', () => {
     const socket = new FakeWebSocket()
@@ -228,6 +240,34 @@ describe('match transport snapshot resync', () => {
     vi.unstubAllGlobals()
   })
 
+  it('ignores every lifecycle event from a replaced socket', () => {
+    const sockets: FakeWebSocket[] = []
+    const onOpen = vi.fn()
+    const onClose = vi.fn()
+    const onTransportError = vi.fn()
+    vi.stubGlobal(
+      'WebSocket',
+      class extends FakeWebSocket {
+        constructor() {
+          super()
+          sockets.push(this)
+        }
+      }
+    )
+    const connection = connectMatch('ws://test', request, { onSnapshot: vi.fn(), onOpen, onClose, onTransportError })
+
+    connection.reconnect()
+    sockets[0]!.emit('open')
+    sockets[0]!.emit('error')
+    sockets[0]!.emit('close')
+
+    expect(sockets[0]!.sent).toEqual([])
+    expect(onOpen).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+    expect(onTransportError).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
   it('retries an expired resume token with one fresh handshake', () => {
     const sockets: FakeWebSocket[] = []
     vi.stubGlobal(
@@ -260,6 +300,135 @@ describe('match transport snapshot resync', () => {
 
     expect(removeItem).toHaveBeenCalledOnce()
     expect(reload).toHaveBeenCalledOnce()
+    vi.unstubAllGlobals()
+  })
+
+  it('invalidates the connection after close', () => {
+    const sockets: FakeWebSocket[] = []
+    vi.stubGlobal(
+      'WebSocket',
+      class extends FakeWebSocket {
+        constructor() {
+          super()
+          sockets.push(this)
+        }
+      }
+    )
+    const setItem = vi.fn()
+    vi.stubGlobal('sessionStorage', { getItem: () => null, setItem, removeItem: vi.fn() })
+    const onOpen = vi.fn()
+    const onClose = vi.fn()
+    const onTransportError = vi.fn()
+    const onSnapshot = vi.fn()
+    const connection = connectMatch('ws://test', request, { onSnapshot, onOpen, onClose, onTransportError })
+    sockets[0]!.emit('open')
+    const sentBeforeClose = sockets[0]!.sent.length
+
+    connection.close()
+    sockets[0]!.emit('open')
+    sockets[0]!.emit('error')
+    sockets[0]!.emit('close')
+    sockets[0]!.emit('message', JSON.stringify(matchConfig))
+    connection.sendCommand({ type: 'STOP', payload: { unitIds: [1] } })
+    connection.reconnect()
+
+    expect(onOpen).toHaveBeenCalledOnce()
+    expect(onClose).not.toHaveBeenCalled()
+    expect(onTransportError).not.toHaveBeenCalled()
+    expect(onSnapshot).not.toHaveBeenCalled()
+    expect(setItem).not.toHaveBeenCalled()
+    expect(sockets[0]!.sent).toHaveLength(sentBeforeClose)
+    expect(sockets).toHaveLength(1)
+    vi.unstubAllGlobals()
+  })
+
+  it('never reports stale socket closes across repeated reconnects', () => {
+    const sockets: FakeWebSocket[] = []
+    vi.stubGlobal(
+      'WebSocket',
+      class extends FakeWebSocket {
+        constructor() {
+          super()
+          sockets.push(this)
+        }
+      }
+    )
+    const onClose = vi.fn()
+    const connection = connectMatch('ws://test', request, { onSnapshot: vi.fn(), onClose })
+
+    connection.reconnect()
+    connection.reconnect()
+    sockets[0]!.emit('close')
+    sockets[1]!.emit('close')
+    expect(onClose).not.toHaveBeenCalled()
+
+    sockets[2]!.emit('close')
+    expect(onClose).toHaveBeenCalledOnce()
+    vi.unstubAllGlobals()
+  })
+
+  it('starts the fresh handshake without the retired baseline', () => {
+    const sockets: FakeWebSocket[] = []
+    vi.stubGlobal(
+      'WebSocket',
+      class extends FakeWebSocket {
+        constructor() {
+          super()
+          sockets.push(this)
+        }
+      }
+    )
+    const onSnapshot = vi.fn()
+    const onSnapshotDelta = vi.fn(() => false)
+    connectMatch('ws://test', { ...request, resumeToken: 'stale-token' }, { onSnapshot, onSnapshotDelta })
+
+    sockets[0]!.emit('open')
+    sockets[0]!.emit(
+      'message',
+      JSON.stringify({
+        type: 'snapshot',
+        tick: 3,
+        viewSequence: 1,
+        viewHash: 'a'.repeat(64),
+        phase: 'RUNNING',
+        units: [],
+        buildings: [],
+        resources: [],
+        resourcesComplete: true,
+        players: [],
+        events: []
+      })
+    )
+    sockets[0]!.emit('message', JSON.stringify({ type: 'error', message: 'resume configuration mismatch' }))
+
+    expect(sockets).toHaveLength(2)
+    sockets[1]!.emit('open')
+    sockets[1]!.emit(
+      'message',
+      JSON.stringify({
+        type: 'snapshot_delta',
+        baseTick: 3,
+        baseSequence: 1,
+        baseHash: 'a'.repeat(64),
+        tick: 4,
+        viewSequence: 2,
+        viewHash: 'b'.repeat(64),
+        phase: 'RUNNING',
+        units: [],
+        removedUnitIds: [],
+        buildings: [],
+        removedBuildingIds: [],
+        resources: [],
+        resourcesComplete: false,
+        players: [],
+        events: []
+      })
+    )
+
+    const resync = sockets[1]!.sent
+      .map((payload) => JSON.parse(payload))
+      .find((payload) => payload.type === 'snapshot_resync_request')
+    expect(resync).toEqual({ type: 'snapshot_resync_request', baseSequence: 2, baseHash: 'b'.repeat(64) })
     vi.unstubAllGlobals()
   })
 })
