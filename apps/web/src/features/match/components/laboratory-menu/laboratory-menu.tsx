@@ -66,15 +66,23 @@ function DevToolsHeader({ status }: { readonly status: string }) {
 function LaboratoryLink() {
   return (
     <div className="border-t p-3">
-      <Link
-        className="flex items-center justify-center rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-        to="/laboratory"
-        onClick={preloadLaboratoryPage}
-        onFocus={preloadLaboratoryPage}
-        onPointerEnter={preloadLaboratoryPage}
-      >
-        Open Laboratory
-      </Link>
+      <div className="flex flex-col gap-2">
+        <Link
+          className="flex items-center justify-center rounded-md border border-border/70 px-3 py-2 text-xs font-medium transition-colors hover:bg-muted"
+          to="/"
+        >
+          Back to start
+        </Link>
+        <Link
+          className="flex items-center justify-center rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          to="/laboratory"
+          onClick={preloadLaboratoryPage}
+          onFocus={preloadLaboratoryPage}
+          onPointerEnter={preloadLaboratoryPage}
+        >
+          Open Laboratory
+        </Link>
+      </div>
     </div>
   )
 }

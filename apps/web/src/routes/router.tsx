@@ -3,6 +3,7 @@ import { Route, Routes } from 'react-router-dom'
 import { AssetBrowserPage } from '@/pages/laboratory/browser/asset-browser-page'
 import { RouteLoading } from '../app/loading'
 
+const HomePage = lazy(() => import('@/pages/home/home-page').then((module) => ({ default: module.HomePage })))
 const MatchPage = lazy(() => import('@/pages/match/match-page').then((module) => ({ default: module.MatchPage })))
 const MapEditorPage = lazy(() =>
   import('@/pages/laboratory/editor/map-editor-page').then((module) => ({ default: module.MapEditorPage }))
@@ -19,7 +20,8 @@ export function AppRouter() {
   return (
     <Suspense fallback={<RouteLoading />}>
       <Routes>
-        <Route path="/" element={<MatchPage />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/match" element={<MatchPage />} />
         <Route path="/laboratory" element={<AssetBrowserPage />} />
         <Route path="/laboratory/editor" element={<MapEditorPage />} />
         <Route path="/laboratory/diagnostics" element={<DiagnosticsPage />} />

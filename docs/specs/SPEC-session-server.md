@@ -43,8 +43,10 @@ one runtime per match and enforces:
 
 - A running match advances one authoritative tick every `TICK_MS` (50 ms) and
   publishes snapshots/deltas through `SnapshotSender`.
-- Disconnecting a running match starts a `RECONNECT_GRACE_MS` (60 s) expiry;
-  reconnecting with the resume token before then rebinds the runtime.
+- Disconnecting a running match keeps its authoritative ticker and runtime alive
+  indefinitely by default (`DISCONNECTED_MATCH_RETENTION_MS = null`); reconnecting
+  with the resume token rebinds the runtime. Deployments may configure a finite
+  disconnected retention policy.
 - A resume request must present the same canonical configuration fingerprint
   (scenario id, aggression, and map identity) that created the runtime.
   A mismatch is rejected with `resume configuration mismatch`; the client
@@ -59,6 +61,9 @@ one runtime per match and enforces:
   can no longer request resyncs or submit commands, and its resume token is
   rejected. Disposal is idempotent.
 - An expired or unknown resume token is rejected with `unknown resume token`.
+- A valid `match_release` request disposes the matching runtime immediately and
+  returns `match_release_result`; releasing an unknown token is idempotent and
+  returns `released: false`.
 
 ## Boundaries
 

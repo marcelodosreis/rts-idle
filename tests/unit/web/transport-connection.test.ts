@@ -8,6 +8,7 @@ import {
 } from '@rts/protocol'
 import { describe, expect, it, vi } from 'vitest'
 import { connectMatch, startNewMatch } from '../../../apps/web/src/shared/transport/connection'
+import { releaseMatch } from '../../../apps/web/src/shared/transport/match-release'
 
 class FakeWebSocket {
   static readonly OPEN = 1
@@ -298,8 +299,29 @@ describe('match transport snapshot resync', () => {
 
     startNewMatch(reload)
 
-    expect(removeItem).toHaveBeenCalledOnce()
+    expect(removeItem).toHaveBeenCalledTimes(2)
     expect(reload).toHaveBeenCalledOnce()
+    vi.unstubAllGlobals()
+  })
+
+  it('releases a stored match through the lifecycle socket', async () => {
+    const socket = new FakeWebSocket()
+    vi.stubGlobal(
+      'WebSocket',
+      class extends FakeWebSocket {
+        constructor() {
+          super()
+          Object.assign(this, socket)
+        }
+      }
+    )
+
+    const outcome = releaseMatch('ws://test', 'resume-token')
+    socket.emit('open')
+    expect(socket.sent).toContain(JSON.stringify({ type: 'match_release', resumeToken: 'resume-token' }))
+    socket.emit('message', JSON.stringify({ type: 'match_release_result', released: true }))
+
+    await expect(outcome).resolves.toBe('released')
     vi.unstubAllGlobals()
   })
 

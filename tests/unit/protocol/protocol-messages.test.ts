@@ -2,6 +2,8 @@ import {
   isCommandMessage,
   isErrorMessage,
   isMatchConfig,
+  isMatchReleaseRequest,
+  isMatchReleaseResult,
   isMatchRequest,
   isSnapshotDeltaMessage,
   isSnapshotMessage,
@@ -121,6 +123,21 @@ describe('match bootstrap messages', () => {
         research: []
       })
     ).toBe(false)
+  })
+})
+
+describe('match release messages', () => {
+  it('accepts release requests and results', () => {
+    expect(isMatchReleaseRequest({ type: 'match_release', resumeToken: 'resume-token' })).toBe(true)
+    expect(isMatchReleaseResult({ type: 'match_release_result', released: true })).toBe(true)
+    expect(isMatchReleaseResult({ type: 'match_release_result', released: false })).toBe(true)
+  })
+
+  it('rejects malformed release messages', () => {
+    expect(isMatchReleaseRequest({ type: 'match_release', resumeToken: '' })).toBe(false)
+    expect(isMatchReleaseRequest({ type: 'match_release', resumeToken: 1 })).toBe(false)
+    expect(isMatchReleaseResult({ type: 'match_release_result', released: 'true' })).toBe(false)
+    expect(isMatchReleaseResult(null)).toBe(false)
   })
 })
 

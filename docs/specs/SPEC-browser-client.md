@@ -4,7 +4,7 @@ Module id: `browser-client`
 
 ## Objective
 
-Filtered replica of the state, RTS input, PixiJS + pixi-viewport renderer, HUD, minimap, audio, and screens (menu/room). React UI outside the world's visual tree.
+Filtered replica of the state, RTS input, PixiJS + pixi-viewport renderer, HUD, minimap, audio, and screens (start/match). React UI outside the world's visual tree.
 
 ## Commands
 
@@ -34,7 +34,19 @@ The renderer only observes; gameplay rules never run live in the browser. The ti
 
 ## Testing Strategy
 
-Playwright E2E (room-entry, selection, control-groups, context-orders, build-input, macro-ui, minimap, client-timeline, match-result, full-match, first-match). See master plan (phase 8).
+Playwright E2E covers start-screen entry, continuation, explicit replacement,
+resume recovery, selection, control-groups, context-orders, build-input,
+macro-ui, minimap, client-timeline, match-result, full-match, and first-match.
+
+## Match Entry
+
+- `/` renders the start screen without opening gameplay transport.
+- `/match` resumes the stored browser session or redirects to `/?notice=match-required`.
+- `/match?new=1` explicitly creates a new match after releasing any stored session.
+- Legacy gameplay query parameters on `/` redirect to the explicit `/match?new=1`
+  flow without changing their scenario, aggression, sprite, or local-map meaning.
+- A successful handshake stores the versioned session record and removes the
+  transient `new=1` marker so refresh cannot create an accidental replacement.
 
 ## Boundaries
 

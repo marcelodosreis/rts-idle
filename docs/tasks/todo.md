@@ -260,6 +260,12 @@ integration, blocked/unreachable feedback, and real-server browser E2E.
 | ARCH.03.14 | done | ARCH.03.10 | protocol, simulation | contracts, simulation, architecture |
 | ARCH.03.15 | done | ARCH.03.01–14 | docs, quality | verify, browser |
 
+## Architecture Track 04 — Web feature organization
+
+| Packet | Status | Dependencies | Packages | Validation |
+|--------|--------|--------------|----------|------------|
+| ARCH.04.08 | done | ARCH.04.07 | protocol, server, web, tests | verify, browser |
+
 ### Fundação
 - [ ] QH.00 Spec + ADR
 - [x] QH.19 Clean code, SOLID, and strong-typing baseline

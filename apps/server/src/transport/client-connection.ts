@@ -1,4 +1,11 @@
-import { isCommandMessage, isMatchRequest, isSnapshotResyncRequest, type MatchConfig } from '@rts/protocol'
+import {
+  isCommandMessage,
+  isMatchReleaseRequest,
+  isMatchRequest,
+  isSnapshotResyncRequest,
+  type MatchConfig,
+  type MatchReleaseResult
+} from '@rts/protocol'
 import type { CommandIntent } from '@rts/shared'
 import type { RawData } from 'ws'
 import { bootstrapMatch } from '../bootstrap/match-bootstrap.js'
@@ -8,7 +15,7 @@ import { decodeMessage } from './message-decoder.js'
 import { SnapshotSender, type SnapshotSocket } from './snapshot-sender.js'
 
 export const TICK_MS = 50
-export const RECONNECT_GRACE_MS = 60_000
+export const DISCONNECTED_MATCH_RETENTION_MS: number | null = null
 export const TERMINAL_RETENTION_MS = 60_000
 
 interface ClientSocket extends SnapshotSocket {
@@ -23,6 +30,7 @@ interface MatchRuntime {
   readonly session: GameSession
   readonly config: MatchConfig
   readonly configurationFingerprint: string
+  readonly release: () => void
   timer: ReturnType<typeof setInterval> | null
   disconnectTimer: ReturnType<typeof setTimeout> | null
   terminalTimer: ReturnType<typeof setTimeout> | null
@@ -32,6 +40,15 @@ interface MatchRuntime {
 }
 
 const MATCHES = new Map<string, MatchRuntime>()
+
+export function releaseMatchRuntime(resumeToken: string): boolean {
+  const runtime = MATCHES.get(resumeToken)
+  if (runtime === undefined || runtime.disposed) {
+    return false
+  }
+  runtime.release()
+  return true
+}
 
 /** One isolated match per socket, mirroring the future rooms architecture. */
 export class ClientConnection {
@@ -131,6 +148,10 @@ export class ClientConnection {
   }
 
   private acceptRequest(parsed: unknown): void {
+    if (isMatchReleaseRequest(parsed)) {
+      this.releaseMatch(parsed.resumeToken)
+      return
+    }
     if (!isMatchRequest(parsed)) {
       this.sender.sendError('expected one valid match_request before commands')
       return
@@ -157,6 +178,7 @@ export class ClientConnection {
       session: result.match.session,
       config: result.match.config,
       configurationFingerprint: requestConfigurationFingerprint(parsed),
+      release: () => this.disposeRuntime(runtime),
       timer: null,
       disconnectTimer: null,
       terminalTimer: null,
@@ -169,6 +191,16 @@ export class ClientConnection {
     if (runtime.session.phase() === 'RUNNING') {
       this.startTicker(runtime)
     }
+  }
+
+  private releaseMatch(resumeToken: string): void {
+    const result: MatchReleaseResult = {
+      type: 'match_release_result',
+      released: releaseMatchRuntime(resumeToken)
+    }
+    this.ws.send(JSON.stringify(result))
+    this.lifecycle = 'closed'
+    this.ws.close()
   }
 
   private attach(runtime: MatchRuntime): void {
@@ -198,8 +230,9 @@ export class ClientConnection {
     const runtime = this.runtime
     if (runtime !== null && runtime.client === this && !runtime.disposed) {
       runtime.client = null
-      if (runtime.session.phase() === 'RUNNING') {
-        runtime.disconnectTimer = setTimeout(() => this.expireDisconnectedRuntime(runtime), RECONNECT_GRACE_MS)
+      const retention = DISCONNECTED_MATCH_RETENTION_MS
+      if (runtime.session.phase() === 'RUNNING' && retention !== null) {
+        runtime.disconnectTimer = setTimeout(() => this.expireDisconnectedRuntime(runtime), retention)
       }
     }
   }
