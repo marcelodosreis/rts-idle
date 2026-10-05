@@ -265,6 +265,7 @@ integration, blocked/unreachable feedback, and real-server browser E2E.
 | Packet | Status | Dependencies | Packages | Validation |
 |--------|--------|--------------|----------|------------|
 | ARCH.04.08 | done | ARCH.04.07 | protocol, server, web, tests | verify, browser |
+| ARCH.04.09 | done | ARCH.04.08 | web, tests, docs | unit, e2e, verify |
 
 ### Fundação
 - [ ] QH.00 Spec + ADR

@@ -38,6 +38,7 @@
 | ARCH.04.06 | Laboratory diagnostics and report organization | done | ARCH.04.05 | web | verify:fast |
 | ARCH.04.07 | Web convention enforcement | done | ARCH.04.06 | web, tests | verify, browser |
 | ARCH.04.08 | Explicit match entry and session lifecycle | done | ARCH.04.07 | protocol, server, web, tests | verify, browser |
+| ARCH.04.09 | Match route entry guard and refresh behavior | done | ARCH.04.08 | web, tests, docs | unit, e2e, verify |
 
 | ID | Title | Status | Dependencies | Packages | Validation |
 |----|-------|--------|-------------|----------|------------|

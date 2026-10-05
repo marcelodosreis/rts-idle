@@ -41,12 +41,21 @@ macro-ui, minimap, client-timeline, match-result, full-match, and first-match.
 ## Match Entry
 
 - `/` renders the start screen without opening gameplay transport.
-- `/match` resumes the stored browser session or redirects to `/?notice=match-required`.
-- `/match?new=1` explicitly creates a new match after releasing any stored session.
+- Home is the only valid producer of the one-shot match-entry navigation state.
+- `/match` accepts that state once, consumes it with a replace navigation, and
+  resumes the stored browser session or redirects to `/?notice=match-required`.
+- `/match` without the entry state redirects to `/` without opening gameplay
+  transport. This includes a direct URL and a browser refresh after the state
+  was consumed.
+- `/match?new=1` explicitly creates a new match after releasing any stored
+  session, but only when entered through Home navigation.
 - Legacy gameplay query parameters on `/` redirect to the explicit `/match?new=1`
   flow without changing their scenario, aggression, sprite, or local-map meaning.
 - A successful handshake stores the versioned session record and removes the
   transient `new=1` marker so refresh cannot create an accidental replacement.
+- The entry state contains no resume token and is not an authentication
+  boundary. Do not remove it without replacing this route contract and its
+  browser regression coverage.
 
 ## Boundaries
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { newMatchQuery } from '@/shared/lib/match-query'
+import { matchEntryState } from '@/shared/transport/match-entry-state'
 import { releaseMatch } from '@/shared/transport/match-release'
 import { clearMatchResumeState, readStoredMatchSession, type StoredMatchSession } from '@/shared/transport/resume-token'
 import { MATCH_SERVER_URL } from '@/shared/transport/server-url'
@@ -48,7 +49,7 @@ function useLegacyMatchRedirect(): void {
     const params = new URLSearchParams(location.search)
     if (params.has('scenario') || params.has('aggression') || params.has('sprites') || params.has('map')) {
       params.delete('notice')
-      navigate(`/match?${newMatchQuery(params.toString())}`, { replace: true })
+      navigate(`/match?${newMatchQuery(params.toString())}`, { replace: true, state: matchEntryState() })
     }
   }, [location.search, navigate])
 }
@@ -142,7 +143,7 @@ export function HomePage() {
 
   const startNewMatch = (): void => {
     if (session === null) {
-      navigate(newMatchPath(null))
+      navigate(newMatchPath(null), { state: matchEntryState() })
       return
     }
     setReleaseError(null)
@@ -151,7 +152,7 @@ export function HomePage() {
 
   const confirmNewMatch = async (): Promise<void> => {
     if (session === null) {
-      navigate(newMatchPath(null))
+      navigate(newMatchPath(null), { state: matchEntryState() })
       return
     }
     setReleasing(true)
@@ -162,7 +163,7 @@ export function HomePage() {
       return
     }
     clearMatchResumeState()
-    navigate(newMatchPath(session))
+    navigate(newMatchPath(session), { state: matchEntryState() })
   }
 
   return (
@@ -192,7 +193,7 @@ export function HomePage() {
         <HomeSessionCard
           session={session}
           releaseError={releaseError}
-          onContinue={() => navigate('/match')}
+          onContinue={() => navigate('/match', { state: matchEntryState() })}
           onNewMatch={startNewMatch}
         />
       </div>

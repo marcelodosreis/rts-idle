@@ -9,8 +9,10 @@ import {
 import type { GameRenderer, InputProfile } from '@rts/renderer'
 import type { MapDefinition, MatchResult, ResearchType, TrainableUnitKind } from '@rts/shared'
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import { type NavigateFunction, useNavigate } from 'react-router-dom'
 import { readPlaytestMap } from '../../../shared/config/playtest-map'
 import { clearMatchResumeState } from '../../../shared/transport/connection'
+import { matchEntryState } from '../../../shared/transport/match-entry-state'
 import { type MatchReleaseOutcome, releaseMatch } from '../../../shared/transport/match-release'
 import { readStoredMatchSession, saveMatchSession } from '../../../shared/transport/resume-token'
 import { MATCH_SERVER_URL } from '../../../shared/transport/server-url'
@@ -195,21 +197,21 @@ function newMatchPath(launch: MatchLaunch, updates: Partial<ReturnType<typeof qu
   return `/match?${params.toString()}`
 }
 
-function replaceCurrentMatch(destination: string): void {
+function replaceCurrentMatch(destination: string, navigate: NavigateFunction): void {
   const stored = readStoredMatchSession()
-  const navigate = (outcome: MatchReleaseOutcome): void => {
+  const finish = (outcome: MatchReleaseOutcome): void => {
     if (outcome === 'failed') {
       return
     }
     clearMatchResumeState()
-    window.location.assign(destination)
+    navigate(destination, { replace: true, state: matchEntryState() })
   }
   if (stored === null) {
     clearMatchResumeState()
-    window.location.assign(destination)
+    navigate(destination, { replace: true, state: matchEntryState() })
     return
   }
-  void releaseMatch(MATCH_SERVER_URL, stored.resumeToken).then(navigate)
+  void releaseMatch(MATCH_SERVER_URL, stored.resumeToken).then(finish)
 }
 
 function useSessionConnection(
@@ -277,6 +279,7 @@ function useSessionActions(
   | 'setSpritesEnabled'
   | 'setInputProfile'
 > {
+  const navigate = useNavigate()
   const owner = (): ReturnType<typeof createMatchSessionConnectionOwner> => refs.connectionOwnerRef.current
   const ended = (): boolean => refs.matchEndedRef.current
   return {
@@ -312,15 +315,18 @@ function useSessionActions(
       }
       owner().send({ type: 'TRAIN', payload: { producerId, unitKind } }, ended())
     },
-    newMatch: () => replaceCurrentMatch(newMatchPath(launch)),
-    changeScenario: (id) => replaceCurrentMatch(newMatchPath(launch, { scenario: id })),
-    setAggression: (value) => replaceCurrentMatch(newMatchPath(launch, { aggression: value })),
+    newMatch: () => replaceCurrentMatch(newMatchPath(launch), navigate),
+    changeScenario: (id) => replaceCurrentMatch(newMatchPath(launch, { scenario: id }), navigate),
+    setAggression: (value) => replaceCurrentMatch(newMatchPath(launch, { aggression: value }), navigate),
     setSpritesEnabled: (value) => {
       const stored = readStoredMatchSession()
       if (stored !== null) {
         saveMatchSession({ ...stored, spritesEnabled: value })
       }
-      window.location.search = updateMatchQuery(window.location.search, { spritesEnabled: value })
+      navigate(
+        { search: updateMatchQuery(window.location.search, { spritesEnabled: value }) },
+        { replace: true, state: matchEntryState() }
+      )
     },
     setInputProfile: (value) => {
       refs.inputProfileRef.current = value
