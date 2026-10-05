@@ -119,7 +119,7 @@
 | 2026-10-03-production-queue-test-race | closed | presentation | QH.28.02 | 1 test(s) |
 | 2026-10-03-renderer-lifecycle-observation-race | closed | presentation | QH.03 | 1 test(s) |
 | 2026-10-04-formation-negative-zero | open | serialization | — | 1 test(s) |
-| 2026-10-04-match-entry-guard | open | presentation | — | 1 test(s) |
+| 2026-10-04-match-entry-guard | open | presentation | — | 3 test(s) |
 | 2026-10-04-movement-integration-deadlocks | open | coverage | — | 5 test(s) |
 | 2026-10-04-navigation-runtime-grid-observation | open | serialization | — | 1 test(s) |
 | 2026-10-04-navigation-snapshot-codec-desync | open | serialization | — | 1 test(s) |

@@ -4,6 +4,8 @@ classe: presentation
 barreira: null
 regressao:
   - tests/e2e/match/session-entry.spec.ts
+  - tests/e2e/laboratory/renderer-lifecycle.spec.ts
+  - tests/e2e/match/input-controls.spec.ts
 ---
 
 # Match Refresh Bypassed the Start Screen
@@ -30,25 +32,32 @@ identify whether the current route transition came from the Home screen.
 
 Session-entry coverage verified stored-session continuation and replacement, but
 did not require a one-shot route-entry contract for direct navigation or refresh.
+Two other browser tests also retained the old assumption that a refresh remained
+inside the match, which the remote functional gate exposed.
 
 ## Fix
 
 `apps/web/src/shared/transport/match-entry-state.ts` defines a typed one-shot
 Home entry state. `HomePage` creates it, `MatchPage` consumes it, and direct or
 refreshed `/match` routes redirect to `/` without opening gameplay transport.
-Internal match transitions use the same navigation contract.
+Internal match transitions use the same navigation contract. Renderer and input
+profile reload tests now return through Home and Continue before asserting the
+match is mounted again.
 
 ## Regression
 
 `tests/e2e/match/session-entry.spec.ts` verifies direct `/match` navigation,
 refresh redirection, Home Continue, and reconnection to the original stored
-session. `tests/unit/web/match-entry-state.test.ts` verifies the boundary guard.
+session. `tests/e2e/laboratory/renderer-lifecycle.spec.ts` and
+`tests/e2e/match/input-controls.spec.ts` verify reload consumers return through
+Home. `tests/unit/web/match-entry-state.test.ts` verifies the boundary guard.
 
 ## Prevention
 
 The route contract and manual smoke flow document the one-shot entry state. The
 task packet explicitly forbids removing the marker without replacing its E2E
-coverage and equivalent route-entry protection.
+coverage and equivalent route-entry protection. Browser tests that reload a
+match must assert the Home/Continue flow rather than assuming implicit resume.
 
 ## Verification
 
