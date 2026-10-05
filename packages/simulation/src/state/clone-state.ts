@@ -2,6 +2,7 @@ import { CanonicalReader } from '../canonical/reader.js'
 import { CanonicalWriter } from '../canonical/writer.js'
 import type { ComponentType } from '../ecs/components.js'
 import { World } from '../ecs/world.js'
+import { cloneNavigationState } from '../navigation/navigation-state.js'
 import { decodeScheduledCommand, encodeScheduledCommand } from '../snapshot/commands.js'
 import type { GameState, PlayerState } from './state.js'
 
@@ -75,6 +76,7 @@ export function cloneGameState(state: GameState): GameState {
             invalidTiles: bounds.invalidTiles.map((tile) => ({ x: tile.x, y: tile.y }))
           },
     resources: state.resources.clone(),
+    navigation: cloneNavigationState(state.navigation),
     world: cloneWorld(state.world),
     pendingCommands: state.pendingCommands.map(cloneCommand),
     events: [],

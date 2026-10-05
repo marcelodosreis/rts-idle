@@ -24,5 +24,11 @@
  * 0.17.0: per-tick resource delta bookkeeping stopped affecting canonical state.
  * 0.18.0: removed the unused historical highestCastleTierReached player field;
  * Castle tier requirements are authorized by live completed Castles only.
+ * 0.19.0: canonical navigation grid definition and bounded search state joined
+ * snapshots.
+ * 0.20.0: static/current navigation definitions and dynamic building footprint
+ * invalidation joined canonical snapshots.
+ * 0.21.0: movement routes and deterministic blockage state joined canonical
+ * movement snapshots.
  */
-export const SIMULATION_VERSION = '0.18.0'
+export const SIMULATION_VERSION = '0.21.0'

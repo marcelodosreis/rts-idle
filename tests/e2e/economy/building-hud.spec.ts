@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { FIXED_SCALE, tilesToFixed } from '@rts/shared'
 import { expectAnim, hasArt } from '../support/art.js'
-import { waitForMatchReady } from '../support/settle.js'
+import { selectByIds, waitForMatchReady } from '../support/settle.js'
 
 async function canvasPointForFixed(page: import('@playwright/test').Page, x: number, y: number) {
   return page.evaluate(
@@ -257,22 +257,20 @@ test('a construction can pause and resume with another worker through the HUD', 
   await expect(page.getByTestId('construction-panel')).toContainText('Paused')
   await expect(page.getByTestId('construction-panel')).toContainText('No worker assigned')
   await expect(page.getByTestId('construction-progress-bar')).toBeVisible()
-  const pausedProgress = await page.getByTestId('construction-status').textContent()
 
-  await selectWorker(page, replacement)
-  await page.mouse.click(constructionPoint.x, constructionPoint.y, { button: 'right' })
-  if (!(await page.getByTestId('current-context-card').textContent())?.includes('Building')) {
-    await page.mouse.click(targetPoint.x, targetPoint.y, { button: 'right' })
-  }
-  await expect(page.getByTestId('current-context-card')).toContainText('Building')
+  await selectByIds(page, [replacement])
+  await expect.poll(() => page.evaluate(() => window.__rtsDebug!.getSelection())).toEqual([replacement])
+  await page.mouse.click(targetPoint.x, targetPoint.y, { button: 'right' })
+  await expect.poll(() => constructionAt(page, target)).toMatchObject({ builderId: replacement })
   await page.mouse.click(constructionPoint.x, constructionPoint.y)
   if ((await page.getByTestId('construction-panel').count()) === 0) {
     await page.mouse.click(targetPoint.x, targetPoint.y)
   }
   await expect(page.getByTestId('construction-panel')).toContainText(`Worker #${replacement}`)
   await expect(page.getByTestId('construction-panel')).not.toContainText('Paused')
-
-  await expect.poll(() => page.getByTestId('construction-status').textContent()).not.toBe(pausedProgress)
+  await expect
+    .poll(() => constructionAt(page, target), { timeout: 15_000 })
+    .toMatchObject({ status: 'COMPLETED', builderId: null })
   await expect(page.getByTestId('construction-panel')).toContainText('Castle I', { timeout: 15_000 })
   await expect(page.getByTestId('construction-panel').getByText('Ready', { exact: true }).first()).toBeVisible({
     timeout: 15_000

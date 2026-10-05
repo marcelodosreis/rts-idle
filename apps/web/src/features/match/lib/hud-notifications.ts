@@ -1,5 +1,5 @@
 import type { SnapshotBuilding } from '@rts/protocol'
-import type { ResearchType } from '@rts/shared'
+import type { MovementBlockReason, ResearchType } from '@rts/shared'
 import type { HudContextFeedback, HudFeedbackTarget } from '../components/hud-context-feedback'
 import { castleTierLabel } from './tier-label'
 
@@ -11,6 +11,7 @@ export const HUD_NOTIFICATION_KINDS = [
   'COMMAND_BLOCKED_SUPPLY',
   'COMMAND_BLOCKED_QUEUE',
   'REPAIR_STOPPED_NO_GOLD',
+  'MOVEMENT_BLOCKED',
   'CONNECTION_LOST',
   'CONNECTION_CLOSED',
   'MATCH_CONFIG_ERROR',
@@ -26,6 +27,7 @@ export type HudNotification =
   | { readonly kind: 'COMMAND_BLOCKED_SUPPLY' }
   | { readonly kind: 'COMMAND_BLOCKED_QUEUE' }
   | { readonly kind: 'REPAIR_STOPPED_NO_GOLD' }
+  | { readonly kind: 'MOVEMENT_BLOCKED'; readonly reason: MovementBlockReason }
   | { readonly kind: 'CONNECTION_LOST'; readonly message?: string }
   | { readonly kind: 'CONNECTION_CLOSED' }
   | { readonly kind: 'MATCH_CONFIG_ERROR'; readonly message: string }
@@ -165,6 +167,14 @@ export function notificationPresentation(notification: HudNotification): HudNoti
   }
   if (notification.kind === 'REPAIR_STOPPED_NO_GOLD') {
     return contextual('Repair stopped: insufficient gold', 'gold')
+  }
+  if (notification.kind === 'MOVEMENT_BLOCKED') {
+    return contextual(
+      notification.reason === 'UNREACHABLE'
+        ? 'Movement blocked: destination unreachable'
+        : 'Movement blocked by an obstacle',
+      'command'
+    )
   }
   if (notification.kind === 'CONNECTION_LOST') {
     return globalError(notification.message ?? 'Connection to the match was lost.')

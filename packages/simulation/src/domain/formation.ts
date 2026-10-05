@@ -1,8 +1,15 @@
+import type { NavigationGrid } from '@rts/pathfinding'
+import type { EntityId, TileCoordinate } from '@rts/shared'
 import { MAX_UNITS_PER_COMMAND } from '../commands/limits.js'
 
 export interface FormationOffset {
   readonly dx: number
   readonly dy: number
+}
+
+export interface GroupDestination {
+  readonly unitId: EntityId
+  readonly tile: TileCoordinate
 }
 
 export const FORMATION_SPACING = 128
@@ -40,9 +47,39 @@ function buildSpiral(count: number): readonly FormationOffset[] {
 const SPIRAL = buildSpiral(MAX_UNITS_PER_COMMAND)
 
 export function formationOffset(index: number): FormationOffset {
-  const offset = SPIRAL[index] ?? { dx: 0, dy: 0 }
+  const offset = formationTileOffset(index)
   return {
     dx: (offset.dx || 0) * FORMATION_SPACING,
     dy: (offset.dy || 0) * FORMATION_SPACING
   }
+}
+
+export function formationTileOffset(index: number): FormationOffset {
+  return SPIRAL[index] ?? { dx: 0, dy: 0 }
+}
+
+export function resolveGroupDestinations(
+  grid: NavigationGrid,
+  unitIds: readonly EntityId[],
+  target: TileCoordinate
+): readonly GroupDestination[] {
+  const sortedUnitIds = [...new Set(unitIds)].sort((left, right) => left - right)
+  const destinations: GroupDestination[] = []
+  const usedTiles = new Set<number>()
+  let candidateIndex = 0
+  for (const unitId of sortedUnitIds) {
+    while (candidateIndex < SPIRAL.length) {
+      const offset = formationTileOffset(candidateIndex)
+      candidateIndex += 1
+      const tile = { x: target.x + offset.dx, y: target.y + offset.dy }
+      const tileIndex = grid.tileIndex(tile)
+      if (tileIndex === null || !grid.isWalkable(tile) || usedTiles.has(tileIndex)) {
+        continue
+      }
+      usedTiles.add(tileIndex)
+      destinations.push(Object.freeze({ unitId, tile: Object.freeze(tile) }))
+      break
+    }
+  }
+  return Object.freeze(destinations)
 }

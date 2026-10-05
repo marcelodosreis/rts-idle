@@ -20,8 +20,9 @@ packages/pathfinding/src/
 ├── grid.ts
 ├── astar.ts
 ├── heap.ts
-├── geometry.ts
-└── spatial-index.ts
+├── search-geometry.ts
+├── spatial-index.ts
+└── incremental.ts
 ```
 
 ## Code Style

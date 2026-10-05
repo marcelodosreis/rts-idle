@@ -4,6 +4,7 @@ import {
   isOneOf,
   isPlayerId,
   isRecord,
+  MOVEMENT_BLOCK_REASONS,
   REPAIR_STOP_REASONS,
   SIMULATION_EVENT_TYPES
 } from '@rts/shared'
@@ -44,6 +45,13 @@ export function isSimulationEvent(value: unknown): boolean {
         (killerId === null || isInteger(killerId))
       )
     }
+    case 'movementBlocked':
+      return (
+        isInteger(field(value, 'unitId')) &&
+        isInteger(field(value, 'destinationX')) &&
+        isInteger(field(value, 'destinationY')) &&
+        isOneOf(MOVEMENT_BLOCK_REASONS, field(value, 'reason'))
+      )
     default:
       return false
   }

@@ -13,6 +13,7 @@ import { SIMULATION_VERSION } from '../contracts/simulation-version.js'
 import { MAX_SUPPLY_CAPACITY } from '../data/supply-rules.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
+import { readNavigationState, writeNavigationState } from '../navigation/navigation-codec.js'
 import { ResourceCatalog } from '../resources/resource-catalog.js'
 import { ResourceState } from '../resources/resource-state.js'
 import type { GameState, PlayerState } from '../state/state.js'
@@ -245,6 +246,7 @@ export function serializeState(state: GameState): Uint8Array {
   writeRng(writer, state.rng)
   writer.writeU32(state.nextEntityId)
   writeMapBounds(writer, state.mapBounds)
+  writeNavigationState(writer, state.navigation)
   writePlayers(writer, state.players)
   writeResources(writer, state.resources)
   writeWorld(writer, state.world)
@@ -273,6 +275,7 @@ export function deserializeState(bytes: Uint8Array): GameState {
   const rng = readRng(reader)
   const nextEntityId = reader.readU32()
   const mapBounds = readMapBounds(reader)
+  const navigation = readNavigationState(reader)
   const players = readPlayers(reader)
   const resources = readResources(reader)
   const world = readWorld(reader)
@@ -286,6 +289,7 @@ export function deserializeState(bytes: Uint8Array): GameState {
     rng,
     nextEntityId,
     mapBounds,
+    navigation,
     players,
     world,
     resources,

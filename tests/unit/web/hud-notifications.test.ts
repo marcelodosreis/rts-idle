@@ -42,6 +42,13 @@ describe('HUD notification policy', () => {
     })
   })
 
+  it('presents typed movement blocks as command feedback', () => {
+    expect(notificationPresentation({ kind: 'MOVEMENT_BLOCKED', reason: 'UNREACHABLE' })).toEqual({
+      context: { message: 'Movement blocked: destination unreachable', target: 'command' },
+      toast: null
+    })
+  })
+
   it('classifies match request errors as global toast and context feedback', () => {
     const notification = matchErrorNotification('MATCH_REQUEST: invalid scenario')
     expect(notificationPresentation(notification)).toEqual({

@@ -21,8 +21,8 @@ const GOLDEN_SEED = 424242
 // Pins the canonical serialization format (ADR-002/011) and the SHA-256
 // state hash so any accidental drift in ordering, encoding, or the RNG
 // state is caught by the test suite. Economy v0 and P2.11 intentionally changed
-// this vector by appending their ECS components, the pending-command queue, and
-// bumping the simulation version.
+// this vector by appending their ECS components, the pending-command queue,
+// navigation state, and bumping the simulation version.
 function buildGoldenSimulation() {
   const world = createWorld()
   let next = START_ENTITY_ID
@@ -41,14 +41,14 @@ function buildGoldenSimulation() {
 describe('canonical state hash golden', () => {
   it('produces the pinned hash for the characterization fixture', () => {
     const sim = buildGoldenSimulation()
-    expect(sim.hashState()).toBe('8f53070089c467222a9da3f35d1a054c45cb7e9c18593a31f4392b4d74a7bc23')
+    expect(sim.hashState()).toBe('e901ad5aa104ae009d7eb73b9a172f900ea4175bee9e82bb569dd4577e0dbe8c')
   })
 
   it('produces the pinned serialized bytes for the characterization fixture', () => {
     const sim = buildGoldenSimulation()
     const snapshot = sim.exportSnapshot()
     expect(snapshot.tick).toBe(1)
-    expect(snapshot.hash).toBe('8f53070089c467222a9da3f35d1a054c45cb7e9c18593a31f4392b4d74a7bc23')
-    expect(snapshot.bytes.byteLength).toBe(335)
+    expect(snapshot.hash).toBe('e901ad5aa104ae009d7eb73b9a172f900ea4175bee9e82bb569dd4577e0dbe8c')
+    expect(snapshot.bytes.byteLength).toBe(371)
   })
 })

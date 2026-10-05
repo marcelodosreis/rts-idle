@@ -32,6 +32,12 @@ export interface MovementData {
   readonly remainderX: number
   /** Fractional y remainder in sub-units (0..MOVEMENT_SUB-1). */
   readonly remainderY: number
+  /** Planned tile route; null means direct movement has not needed routing. */
+  readonly path: readonly number[] | null
+  /** Current waypoint index in `path`. */
+  readonly pathIndex: number
+  /** Consecutive ticks without accepted movement. */
+  readonly blockedTicks: number
 }
 
 export const Position: ComponentType<PositionData> = {
@@ -69,14 +75,44 @@ export const Movement: ComponentType<MovementData> = {
     writer.writeI32(value.destY)
     writer.writeI32(value.remainderX)
     writer.writeI32(value.remainderY)
+    writer.writeU8(value.path === null ? 0 : 1)
+    if (value.path !== null) {
+      writer.writeLength(value.path.length)
+      for (const tileIndex of value.path) {
+        writer.writeU32(tileIndex)
+      }
+    }
+    writer.writeU32(value.pathIndex)
+    writer.writeU32(value.blockedTicks)
   },
   decode(reader) {
+    const speedTilesPerSecondFixed = reader.readI32()
+    const destX = reader.readI32()
+    const destY = reader.readI32()
+    const remainderX = reader.readI32()
+    const remainderY = reader.readI32()
+    const pathPresent = reader.readU8()
+    if (pathPresent !== 0 && pathPresent !== 1) {
+      throw new Error(`Movement: invalid path presence ${pathPresent}`)
+    }
+    const path = pathPresent === 0 ? null : Array.from({ length: reader.readLength() }, () => reader.readU32())
+    const pathIndex = reader.readU32()
+    const blockedTicks = reader.readU32()
+    if (path === null && pathIndex !== 0) {
+      throw new Error(`Movement: path index ${pathIndex} requires a route`)
+    }
+    if (path !== null && pathIndex > path.length) {
+      throw new Error(`Movement: path index ${pathIndex} exceeds route length ${path.length}`)
+    }
     return {
-      speedTilesPerSecondFixed: reader.readI32(),
-      destX: reader.readI32(),
-      destY: reader.readI32(),
-      remainderX: reader.readI32(),
-      remainderY: reader.readI32()
+      speedTilesPerSecondFixed,
+      destX,
+      destY,
+      remainderX,
+      remainderY,
+      path,
+      pathIndex,
+      blockedTicks
     }
   }
 }

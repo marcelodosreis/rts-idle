@@ -58,3 +58,13 @@ and `docs/master-plan.md` §9.2.
 Behavioral tests that depend on ordering: `tests/integration/move-command.test.ts`
 (command application before tick semantics), simultaneous-death and victory
 ordering tests in Phase 1 (`P1.06`/`P1.07` planned).
+
+## Phase 3 implementation addendum (2026-10-04)
+
+For simulation version `0.20.0`, the authoritative exported pipeline remains
+the existing twelve entries in `packages/simulation/src/systems/pipeline.ts`.
+The navigation budget runs as the first deterministic substep of `orders`,
+before movement, without adding or reordering a pipeline entry. The numbered
+nineteen-stage sequence above remains the long-term target for future systems;
+adopting any of those additional entries requires a separate ADR, version bump,
+golden-hash review, and pipeline test update.

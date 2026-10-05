@@ -35,6 +35,18 @@ export * from './engine/simulation-from-snapshot.js'
 export * from './engine/simulation-host.js'
 export * from './invariants/check-invariants.js'
 export * from './movement/destination.js'
+export type {
+  NavigationGridDefinition,
+  NavigationInitialization,
+  NavigationRequestInput,
+  NavigationRequestState,
+  NavigationState
+} from './navigation/navigation-state.js'
+export {
+  MAX_ACTIVE_NAVIGATION_SEARCHES,
+  NAVIGATION_EXPANSION_BUDGET,
+  NAVIGATION_SEARCH_SLICE
+} from './navigation/navigation-state.js'
 export * from './orders/order-queue.js'
 export * from './placement/index.js'
 export * from './resources/resource-catalog.js'
@@ -42,6 +54,7 @@ export * from './resources/resource-spatial-index.js'
 export * from './resources/resource-state.js'
 export * from './snapshot/hash.js'
 export * from './snapshot/serialize.js'
+export * from './spatial/world-spatial-index.js'
 export * from './state/state.js'
 export * from './systems/events.js'
 export * from './systems/heal-system.js'

@@ -2372,7 +2372,7 @@ equal-distance ties by entity id.
 | P3.03 | Invalidation by footprints | `nav-invalidation`: path does not cross new construction |
 | P3.04 | Group destinations | `group-goals`: stable and distinct destinations |
 | P3.05 | Spatial index | `spatial-query`: equivalent to exhaustive reference |
-| P3.06 | Collision and avoidance | `movement-collision`: walls, encounters, and chokepoints |
+| P3.06 | Collision and avoidance | `regression`: walls, encounters, and chokepoints |
 | P3.07 | Visibility and memory | `vision-memory`: visible/explored/unknown states |
 | P3.08 | Observation and event filtering | `fog-noninterference`: equivalent hidden worlds |
 | P3.09 | Targeting and pursuit | `targeting`: tie-breaks and loss of vision |

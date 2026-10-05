@@ -36,7 +36,7 @@ replays. This document is the operational reference; the math lives in
 
 ## Compatibility
 
-`SIMULATION_VERSION` is the tag on every state. It is `0.13.0` (Castle II,
-Research, modifiers, and fixed-point movement joined the canonical snapshot
-stream). A mismatch in
+`SIMULATION_VERSION` is the tag on every state. It is `0.21.0` (navigation
+definitions, bounded searches, and building-footprint invalidation joined the
+canonical snapshot stream). A mismatch in
 rules identity means the states are not interchangeable.

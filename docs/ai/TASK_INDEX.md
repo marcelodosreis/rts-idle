@@ -78,17 +78,25 @@
 
 ## Phase 3 — Navigation and Combat
 
+Execution plan: `docs/tasks/P3-phase-plan.md`. `P3.05.01` and `P3.06.01` are
+complete and archived. Stop before `P3.07.01`.
+
 | ID | Title | Status | Dependencies | Packages | Validation |
 |----|-------|--------|-------------|----------|------------|
-| P3.01.01 | Navigation grid | pending | — | pathfinding | unit |
-| P3.01.02 | A* pathfinding | pending | P3.01.01 | pathfinding | unit, simulation |
-| P3.03.01 | Collision detection | pending | P3.01.01 | simulation | unit, simulation |
-| P3.04.01 | Group movement | pending | P3.01.02, P3.03.01 | simulation | unit, simulation |
-| P3.07.01 | Vision system | pending | P3.01.01 | simulation | unit, simulation |
-| P3.08.01 | Filtered snapshots | pending | P3.07.01 | simulation, protocol | unit, simulation |
-| P3.08.02 | Fog rendering | pending | P3.08.01 | renderer | e2e |
-| P3.10.01 | Projectile system | pending | P3.01.02 | simulation | unit, simulation |
-| P3.11.01 | AoE damage | pending | P3.10.01 | simulation | unit, simulation |
+| P3.01.01 | Navigation grid | done | — | pathfinding | unit, architecture, build |
+| P3.01.02 | A* pathfinding | done | P3.01.01 | pathfinding | unit, architecture, build |
+| P3.02.01 | Serializable incremental search | done | P3.01.02 | pathfinding, simulation | unit, simulation, determinism |
+| P3.03.01 | Footprint navigation invalidation | done | P3.02.01 | simulation | unit, simulation, integration |
+| P3.04.01 | Group destinations | done | P3.03.01 | simulation | unit, simulation |
+| P3.05.01 | Spatial index | done | P3.01.01 | pathfinding, simulation | unit, simulation |
+| P3.06.01 | Collision and avoidance | done | P3.04.01, P3.05.01 | simulation | unit, simulation, integration, e2e |
+| P3.07.01 | Vision and memory | pending | P3.05.01 | simulation | unit, simulation |
+| P3.08.01 | Filtered observations and events | pending | P3.07.01 | simulation, protocol | unit, simulation, contracts |
+| P3.08.02 | Fog rendering | pending | P3.08.01 | renderer, web | e2e |
+| P3.09.01 | Targeting and pursuit | pending | P3.06.01, P3.07.01 | simulation | unit, simulation, determinism |
+| P3.10.01 | Projectiles | pending | P3.09.01 | simulation | unit, simulation, e2e |
+| P3.11.01 | Area damage | pending | P3.10.01 | simulation | unit, simulation, e2e |
+| P3.12.01 | Combined army/chokepoint stress | pending | P3.06.01, P3.08.02, P3.11.01 | simulation, server, web | simulation, determinism, e2e, benchmark |
 
 ## Phase 4A — M1 Content
 
@@ -207,6 +215,9 @@ RFC: `docs/rfc/RFC-003-cost-scale-and-architecture-comparison.md` (Proposed).
 | QH.25 | E2E gate stratification | done | - | web, renderer, quality | e2e, verify |
 
 ## Quality Hardening
+
+> Deprioritized while Phase 3 is active. Pending quality tasks remain tracked
+> and are not canceled; they must not block the navigation and combat roadmap.
 
 | ID | Title | Status | Dependencies | Packages | Validation |
 |----|-------|--------|--------------|----------|------------|
