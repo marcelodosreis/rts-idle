@@ -1,5 +1,6 @@
 import { type RefObject, useRef } from 'react'
 import { type MatchSessionState, useMatchSession } from '../hooks/use-match-session'
+import type { MatchLaunch } from '../types/match-launch'
 import { MatchHud, type MatchHudProps } from './match-hud'
 
 function buildHudProps(session: MatchSessionState, hostRef: RefObject<HTMLDivElement | null>): MatchHudProps {
@@ -46,8 +47,12 @@ function buildHudProps(session: MatchSessionState, hostRef: RefObject<HTMLDivEle
   }
 }
 
-export function MatchScreen() {
+export interface MatchScreenProps {
+  readonly launch: MatchLaunch
+}
+
+export function MatchScreen({ launch }: MatchScreenProps) {
   const hostRef = useRef<HTMLDivElement | null>(null)
-  const session = useMatchSession(hostRef)
+  const session = useMatchSession(hostRef, launch)
   return <MatchHud {...buildHudProps(session, hostRef)} />
 }

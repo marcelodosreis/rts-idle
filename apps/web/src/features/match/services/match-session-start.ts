@@ -1,4 +1,4 @@
-import { type MatchConfig, PROTOCOL_VERSION, type ScenarioSummary, type SnapshotBuilding } from '@rts/protocol'
+import type { MatchConfig, MatchRequest, ScenarioSummary, SnapshotBuilding } from '@rts/protocol'
 import type { WorldPoint } from '@rts/renderer'
 import { type GameRenderer, type InputProfile, PixiRenderer } from '@rts/renderer'
 import type { CommandIntent, MapDefinition, MatchResult, PlayerResources, ResearchType } from '@rts/shared'
@@ -59,15 +59,15 @@ export interface MatchSessionRefs {
 export interface MatchSessionStartParams {
   readonly host: HTMLDivElement
   readonly playtestMap: MapDefinition | null
+  readonly request: MatchRequest
   readonly commandModes: SessionCommandModes
   readonly refs: MatchSessionRefs
   readonly setters: MatchSessionSetters
   readonly serverUrl: string
-  readonly scenarioId: string
-  readonly aggression: 'offensive' | 'passive'
   readonly spritesEnabled: boolean
   readonly humanPlayer: number
   readonly appendLog: (kind: 'command' | 'event' | 'info' | 'error', message: string) => void
+  readonly onResumeUnavailable: () => void
 }
 
 interface SelectionUpdaters {
@@ -240,17 +240,11 @@ export function startMatchSession(params: MatchSessionStartParams): () => void {
   const handler = createInteraction(params, runtime, updaters, bridge)
   const rendererLifecycle = createRendererView(params, runtime, handler, updaters)
   const handlers = createSessionHandlers(params, runtime, rendererLifecycle, updaters, bridge)
-  const connection = connectMatch(
-    params.serverUrl,
-    {
-      type: 'match_request',
-      protocolVersion: PROTOCOL_VERSION,
-      scenarioId: params.scenarioId,
-      aggression: params.aggression,
-      map: params.playtestMap === null ? { source: 'catalog' } : { source: 'local', definition: params.playtestMap }
-    },
-    handlers
-  )
+  const connection = connectMatch(params.serverUrl, params.request, handlers, {
+    spritesEnabled: params.spritesEnabled,
+    staleResumePolicy: params.request.resumeToken === undefined ? 'fresh' : 'fail',
+    onResumeUnavailable: params.onResumeUnavailable
+  })
   refs.connectionOwnerRef.current.set(connection)
   const removeListeners = installSessionListeners(bridge.cancelPlacement, commandModes.clear)
 

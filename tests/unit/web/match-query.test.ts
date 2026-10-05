@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { parseMatchQuery, updateMatchQuery } from '../../../apps/web/src/features/match/lib/match-query'
+import {
+  isNewMatchQuery,
+  newMatchQuery,
+  parseMatchQuery,
+  updateMatchQuery
+} from '../../../apps/web/src/features/match/lib/match-query'
 
 describe('match query state', () => {
   it('normalizes missing and invalid values to safe defaults', () => {
@@ -20,5 +25,11 @@ describe('match query state', () => {
     expect(params.get('scenario')).toBe('regression')
     expect(params.get('aggression')).toBe('passive')
     expect(params.get('sprites')).toBeNull()
+  })
+
+  it('marks an explicit new-match launch without changing the selected options', () => {
+    const search = newMatchQuery('?scenario=regression&aggression=offensive&sprites=off', { scenario: 'default' })
+    expect(isNewMatchQuery(search)).toBe(true)
+    expect(parseMatchQuery(search)).toEqual({ scenario: 'default', aggression: 'offensive', spritesEnabled: false })
   })
 })

@@ -1,11 +1,23 @@
-import type { BuildCatalogEntry, MatchConfig, ScenarioSummary, SnapshotBuilding } from '@rts/protocol'
+import {
+  type BuildCatalogEntry,
+  type MatchConfig,
+  type MatchRequest,
+  PROTOCOL_VERSION,
+  type ScenarioSummary,
+  type SnapshotBuilding
+} from '@rts/protocol'
 import type { GameRenderer, InputProfile } from '@rts/renderer'
-import type { MatchResult, ResearchType, TrainableUnitKind } from '@rts/shared'
+import type { MapDefinition, MatchResult, ResearchType, TrainableUnitKind } from '@rts/shared'
 import { type RefObject, useCallback, useEffect, useRef, useState } from 'react'
+import { type NavigateFunction, useNavigate } from 'react-router-dom'
 import { readPlaytestMap } from '../../../shared/config/playtest-map'
-import { clearMatchResumeToken, startNewMatch } from '../../../shared/transport/connection'
+import { clearMatchResumeState } from '../../../shared/transport/connection'
+import { matchEntryState } from '../../../shared/transport/match-entry-state'
+import { type MatchReleaseOutcome, releaseMatch } from '../../../shared/transport/match-release'
+import { readStoredMatchSession, saveMatchSession } from '../../../shared/transport/resume-token'
+import { MATCH_SERVER_URL } from '../../../shared/transport/server-url'
 import type { HudNotification } from '../lib/hud-notifications'
-import { parseMatchQuery, updateMatchQuery } from '../lib/match-query'
+import { updateMatchQuery } from '../lib/match-query'
 import { readInputPreferences, writeInputPreferences } from '../services/input-preferences'
 import { createMatchSessionConnectionOwner } from '../services/match-session-connection'
 import type { MatchSessionRuntime } from '../services/match-session-runtime'
@@ -16,12 +28,10 @@ import {
   startMatchSession
 } from '../services/match-session-start'
 import type { HudConstruction, HudResource, HudSelectionUnit } from '../types/hud-types'
+import type { MatchLaunch } from '../types/match-launch'
 import { type CommandMode, useCommandModes } from './use-command-modes'
 import { type MessageLogEntry, useMessageLog } from './use-message-log'
 
-const INITIAL_QUERY = parseMatchQuery(window.location.search)
-const { VITE_SERVER_URL } = import.meta.env
-const SERVER_URL = VITE_SERVER_URL ?? 'ws://localhost:8080'
 const HUMAN_PLAYER = 0
 
 export interface MatchSessionState {
@@ -151,10 +161,69 @@ function useSessionState(): {
   }
 }
 
+function queryForLaunch(launch: MatchLaunch) {
+  if (launch.kind === 'resume') {
+    return {
+      scenario: launch.session.request.scenarioId,
+      aggression: launch.session.request.aggression,
+      spritesEnabled: launch.session.spritesEnabled
+    }
+  }
+  return launch.query
+}
+
+function requestForLaunch(launch: MatchLaunch, playtestMap: MapDefinition | null): MatchRequest {
+  if (launch.kind === 'resume') {
+    return { ...launch.session.request, resumeToken: launch.session.resumeToken }
+  }
+  return {
+    type: 'match_request',
+    protocolVersion: PROTOCOL_VERSION,
+    scenarioId: launch.query.scenario,
+    aggression: launch.query.aggression,
+    map: playtestMap === null ? { source: 'catalog' } : { source: 'local', definition: playtestMap }
+  }
+}
+
+function newMatchPath(launch: MatchLaunch, updates: Partial<ReturnType<typeof queryForLaunch>> = {}): string {
+  const query = queryForLaunch(launch)
+  const params = new URLSearchParams()
+  params.set('new', '1')
+  params.set('scenario', updates.scenario ?? query.scenario)
+  params.set('aggression', updates.aggression ?? query.aggression)
+  if (!(updates.spritesEnabled ?? query.spritesEnabled)) {
+    params.set('sprites', 'off')
+  }
+  return `/match?${params.toString()}`
+}
+
+function replaceCurrentMatch(destination: string, navigate: NavigateFunction): void {
+  const stored = readStoredMatchSession()
+  const finish = (outcome: MatchReleaseOutcome): void => {
+    if (outcome === 'failed') {
+      return
+    }
+    clearMatchResumeState()
+    navigate(destination, { replace: true, state: matchEntryState() })
+  }
+  if (stored === null) {
+    clearMatchResumeState()
+    navigate(destination, { replace: true, state: matchEntryState() })
+    return
+  }
+  void releaseMatch(MATCH_SERVER_URL, stored.resumeToken).then(finish)
+}
+
+function returnToHomeAfterFinishedMatch(navigate: NavigateFunction): void {
+  clearMatchResumeState()
+  navigate('/', { replace: true })
+}
+
 function useSessionConnection(
   hostRef: RefObject<HTMLDivElement | null>,
   commandModes: ReturnType<typeof useCommandModes>,
-  state: ReturnType<typeof useSessionState>
+  state: ReturnType<typeof useSessionState>,
+  launch: MatchLaunch
 ): { readonly refs: MatchSessionRefs; readonly setInputProfileState: (value: InputProfile) => void } {
   const connectionOwnerRef = useRef(createMatchSessionConnectionOwner())
   const runtimeRef = useRef<MatchSessionRuntime | null>(null)
@@ -172,27 +241,33 @@ function useSessionConnection(
     if (host === null) {
       return
     }
+    const playtestMap =
+      launch.kind === 'resume' && launch.session.request.map.source === 'local'
+        ? launch.session.request.map.definition
+        : readPlaytestMap(window.location.search, window.localStorage)
+    const request = requestForLaunch(launch, playtestMap)
     return startMatchSession({
       host,
-      playtestMap: readPlaytestMap(window.location.search, window.localStorage),
+      playtestMap,
+      request,
       commandModes: { modeRef, clear },
       refs: latest.current.refs,
       setters: latest.current.setters,
-      serverUrl: SERVER_URL,
-      scenarioId: INITIAL_QUERY.scenario,
-      aggression: INITIAL_QUERY.aggression,
-      spritesEnabled: INITIAL_QUERY.spritesEnabled,
+      serverUrl: MATCH_SERVER_URL,
+      spritesEnabled: queryForLaunch(launch).spritesEnabled,
       humanPlayer: HUMAN_PLAYER,
-      appendLog
+      appendLog,
+      onResumeUnavailable: () => window.location.assign('/?notice=match-expired')
     })
-  }, [appendLog, hostRef, modeRef, clear])
+  }, [appendLog, hostRef, modeRef, clear, launch])
 
   return { refs, setInputProfileState: state.setters.setInputProfileState }
 }
 
 function useSessionActions(
   refs: MatchSessionRefs,
-  setInputProfileState: (value: InputProfile) => void
+  setInputProfileState: (value: InputProfile) => void,
+  launch: MatchLaunch
 ): Pick<
   MatchSessionState,
   | 'issueOrder'
@@ -209,6 +284,7 @@ function useSessionActions(
   | 'setSpritesEnabled'
   | 'setInputProfile'
 > {
+  const navigate = useNavigate()
   const owner = (): ReturnType<typeof createMatchSessionConnectionOwner> => refs.connectionOwnerRef.current
   const ended = (): boolean => refs.matchEndedRef.current
   return {
@@ -244,17 +320,24 @@ function useSessionActions(
       }
       owner().send({ type: 'TRAIN', payload: { producerId, unitKind } }, ended())
     },
-    newMatch: () => startNewMatch(() => window.location.reload()),
-    changeScenario: (id) => {
-      clearMatchResumeToken()
-      window.location.search = updateMatchQuery(window.location.search, { scenario: id })
+    newMatch: () => {
+      if (ended()) {
+        returnToHomeAfterFinishedMatch(navigate)
+        return
+      }
+      replaceCurrentMatch(newMatchPath(launch), navigate)
     },
-    setAggression: (value) => {
-      clearMatchResumeToken()
-      window.location.search = updateMatchQuery(window.location.search, { aggression: value })
-    },
+    changeScenario: (id) => replaceCurrentMatch(newMatchPath(launch, { scenario: id }), navigate),
+    setAggression: (value) => replaceCurrentMatch(newMatchPath(launch, { aggression: value }), navigate),
     setSpritesEnabled: (value) => {
-      window.location.search = updateMatchQuery(window.location.search, { spritesEnabled: value })
+      const stored = readStoredMatchSession()
+      if (stored !== null) {
+        saveMatchSession({ ...stored, spritesEnabled: value })
+      }
+      navigate(
+        { search: updateMatchQuery(window.location.search, { spritesEnabled: value }) },
+        { replace: true, state: matchEntryState() }
+      )
     },
     setInputProfile: (value) => {
       refs.inputProfileRef.current = value
@@ -278,22 +361,22 @@ function useHudNotificationTimeout(
   }, [notification, setNotification])
 }
 
-export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>): MatchSessionState {
+export function useMatchSession(hostRef: RefObject<HTMLDivElement | null>, launch: MatchLaunch): MatchSessionState {
   const commandModes = useCommandModes()
   const state = useSessionState()
-  const { refs, setInputProfileState } = useSessionConnection(hostRef, commandModes, state)
-  const actions = useSessionActions(refs, setInputProfileState)
+  const { refs, setInputProfileState } = useSessionConnection(hostRef, commandModes, state, launch)
+  const actions = useSessionActions(refs, setInputProfileState, launch)
   useHudNotificationTimeout(state.values.hudNotification, state.setters.setHudNotification)
   return {
     ...state.values,
     commandMode: commandModes.mode,
-    scenario: INITIAL_QUERY.scenario,
+    scenario: queryForLaunch(launch).scenario,
     scenarios: state.values.scenarios.map((scenario) => scenario.id),
     buildings: state.values.matchConfig?.buildings ?? [],
     production: state.values.matchConfig?.production ?? [],
     researchCatalog: state.values.matchConfig?.research ?? [],
-    aggression: INITIAL_QUERY.aggression,
-    spritesEnabled: INITIAL_QUERY.spritesEnabled,
+    aggression: queryForLaunch(launch).aggression,
+    spritesEnabled: queryForLaunch(launch).spritesEnabled,
     arm: commandModes.arm,
     ...actions
   }

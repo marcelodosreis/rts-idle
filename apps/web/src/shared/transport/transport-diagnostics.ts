@@ -1,5 +1,5 @@
 import type { SnapshotDeltaMessage, SnapshotMessage } from '@rts/protocol'
-import type { TransportBaselineTrace, TransportDebug, TransportMessageTrace } from './connection'
+import type { TransportBaselineTrace, TransportDebug, TransportMessageTrace } from './transport-types'
 
 export interface TransportDiagnostics {
   readonly debug: TransportDebug

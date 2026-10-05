@@ -160,6 +160,12 @@ internal shared segment (for example `features/laboratory/shared/`); its
 sub-areas import that segment relatively, because it is not a separate slice and
 must not be reached from other features.
 
+The browser entry lifecycle is explicit: `/` is the session start screen and
+does not open gameplay transport, while `/match` resumes the versioned browser
+session or redirects back to the start screen. `/match?new=1` is the only
+explicit new-match entry and releases a stored runtime before creating its
+replacement.
+
 ## Shared reusable modules
 
 | Concept | Where | Used by |

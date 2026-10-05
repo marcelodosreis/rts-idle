@@ -1,5 +1,6 @@
 import {
   isMatchConfig,
+  isMatchReleaseResult,
   isSnapshotDeltaMessage,
   isSnapshotMessage,
   type MatchConfig,
@@ -11,7 +12,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { RawData } from 'ws'
 import {
   ClientConnection,
-  RECONNECT_GRACE_MS,
   TERMINAL_RETENTION_MS,
   TICK_MS
 } from '../../../apps/server/src/transport/client-connection.js'
@@ -135,7 +135,7 @@ describe('client connection reconnect', () => {
     socket.emit('close')
   })
 
-  it('expires a disconnected match after the reconnect grace window', () => {
+  it('keeps a disconnected match advancing until it is explicitly released', () => {
     vi.useFakeTimers()
     const firstSocket = new FakeSocket()
     const first = new ClientConnection(firstSocket)
@@ -144,14 +144,48 @@ describe('client connection reconnect', () => {
     const config = latestConfig(firstSocket)
     firstSocket.emit('close')
 
-    vi.advanceTimersByTime(RECONNECT_GRACE_MS)
+    vi.advanceTimersByTime(TICK_MS * 4)
+
+    const reconnectSocket = new FakeSocket()
+    const reconnect = new ClientConnection(reconnectSocket)
+    reconnect.start()
+    reconnectSocket.emit('message', JSON.stringify({ ...request(), resumeToken: config.resumeToken }))
+
+    expect(messages(reconnectSocket)).toContainEqual(expect.objectContaining({ type: 'snapshot', tick: 4 }))
+    reconnectSocket.emit('close')
+  })
+
+  it('releases a disconnected match through the lifecycle message', () => {
+    vi.useFakeTimers()
+    const firstSocket = new FakeSocket()
+    const first = new ClientConnection(firstSocket)
+    first.start()
+    firstSocket.emit('message', JSON.stringify(request()))
+    const config = latestConfig(firstSocket)
+    firstSocket.emit('close')
+
+    const releaseSocket = new FakeSocket()
+    const release = new ClientConnection(releaseSocket)
+    release.start()
+    releaseSocket.emit('message', JSON.stringify({ type: 'match_release', resumeToken: config.resumeToken }))
+
+    expect(messages(releaseSocket).some(isMatchReleaseResult)).toBe(true)
+    expect(messages(releaseSocket)).toContainEqual({ type: 'match_release_result', released: true })
 
     const expiredSocket = new FakeSocket()
     const expired = new ClientConnection(expiredSocket)
     expired.start()
     expiredSocket.emit('message', JSON.stringify({ ...request(), resumeToken: config.resumeToken }))
-
     expect(messages(expiredSocket)).toContainEqual({ type: 'error', message: 'unknown resume token' })
+  })
+
+  it('makes releasing an unknown match idempotent', () => {
+    const releaseSocket = new FakeSocket()
+    const release = new ClientConnection(releaseSocket)
+    release.start()
+    releaseSocket.emit('message', JSON.stringify({ type: 'match_release', resumeToken: 'unknown-token' }))
+
+    expect(messages(releaseSocket)).toContainEqual({ type: 'match_release_result', released: false })
   })
 
   it('publishes one terminal snapshot, freezes the session, and expires it while connected', () => {
@@ -228,7 +262,6 @@ describe('client connection reconnect', () => {
     vi.advanceTimersByTime(TERMINAL_RETENTION_MS)
     vi.advanceTimersByTime(TERMINAL_RETENTION_MS * 2)
     socket.emit('close')
-    vi.advanceTimersByTime(RECONNECT_GRACE_MS)
 
     expect(advance).toHaveBeenCalledTimes(1)
     expect(lastPhase(socket)).toBe('FINISHED')
@@ -251,7 +284,7 @@ describe('client connection reconnect', () => {
     expect(advance).toHaveBeenCalledTimes(1)
     expect(submit).toHaveBeenCalledTimes(1)
 
-    vi.advanceTimersByTime(RECONNECT_GRACE_MS - TICK_MS)
+    vi.advanceTimersByTime(TERMINAL_RETENTION_MS - TICK_MS)
     const reconnectSocket = new FakeSocket()
     const reconnect = new ClientConnection(reconnectSocket)
     reconnect.start()

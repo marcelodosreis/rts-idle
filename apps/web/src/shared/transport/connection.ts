@@ -10,15 +10,34 @@ import {
   type SnapshotMessage
 } from '@rts/protocol'
 import type { CommandIntent } from '@rts/shared'
-import { clearMatchResumeToken, saveResumeToken, storedResumeToken } from './resume-token.js'
+import { removeNewMatchMarker } from './match-entry-url'
+import {
+  clearMatchResumeState,
+  clearMatchResumeToken,
+  type StoredMatchSession,
+  saveMatchSession
+} from './resume-token.js'
 import { createTransportDiagnostics, type TransportDiagnostics } from './transport-diagnostics'
+import type { TransportDebug } from './transport-types'
 
+export type {
+  TransportBaselineTrace,
+  TransportDebug,
+  TransportDebugState,
+  TransportMessageTrace
+} from './transport-types'
 export type { SnapshotMessage }
 
 export interface MatchConnection {
   sendCommand(intent: CommandIntent): void
   reconnect(): void
   close(): void
+}
+
+export interface MatchConnectionOptions {
+  readonly spritesEnabled?: boolean
+  readonly staleResumePolicy?: 'fresh' | 'fail'
+  readonly onResumeUnavailable?: () => void
 }
 
 export interface ConnectionHandlers {
@@ -31,52 +50,13 @@ export interface ConnectionHandlers {
   readonly onClose?: () => void
 }
 
-const CONNECTION_STATES = ['connecting', 'open', 'closed'] as const
-type ConnectionState = (typeof CONNECTION_STATES)[number]
-
-export interface TransportMessageTrace {
-  readonly type: 'snapshot' | 'snapshot_delta'
-  readonly tick: number
-  readonly viewSequence: number
-  readonly viewHash: string
-  readonly baseSequence?: number
-  readonly unitCount: number
-  readonly buildingCount: number
-  readonly resourceCount: number
-  readonly playerCount: number
-  readonly resourcesComplete: boolean
-  readonly dropped: boolean
-}
-
-export interface TransportBaselineTrace {
-  readonly tick: number
-  readonly viewSequence: number
-  readonly viewHash: string
-}
-
-export interface TransportDebugState {
-  readonly connectionState: ConnectionState
-  readonly resumeToken: string | null
-  readonly messages: readonly TransportMessageTrace[]
-  readonly acceptedBaseline: TransportBaselineTrace | null
-  readonly resyncRequests: number
-  readonly droppedDeltas: number
-}
-
-export interface TransportDebug {
-  disconnect(): void
-  reconnect(): void
-  dropNextDelta(): void
-  getState(): TransportDebugState
-}
-
 declare global {
   interface Window {
     __rtsTransportDebug?: TransportDebug
   }
 }
 
-export { clearMatchResumeToken, startNewMatch } from './resume-token.js'
+export { clearMatchResumeState, clearMatchResumeToken, startNewMatch } from './resume-token.js'
 
 function e2eTransportHookEnabled(): boolean {
   const { DEV, VITE_E2E_TRANSPORT_HOOK } = import.meta.env
@@ -243,18 +223,19 @@ interface MatchConnectionRuntime {
   snapshotBaseline: SnapshotBaseline | null
   disposed: boolean
   openSocket: () => void
+  readonly options: MatchConnectionOptions
 }
 
-function createMatchConnectionRuntime(request: MatchRequest): MatchConnectionRuntime {
-  const storedToken = request.resumeToken === undefined ? storedResumeToken() : undefined
+function createMatchConnectionRuntime(request: MatchRequest, options: MatchConnectionOptions): MatchConnectionRuntime {
   return {
     ws: null,
-    currentRequest: storedToken === undefined ? request : { ...request, resumeToken: storedToken },
+    currentRequest: request,
     recoveryState: 'ready',
     freshHandshakeRetried: false,
     snapshotBaseline: null,
     disposed: false,
-    openSocket: () => undefined
+    openSocket: () => undefined,
+    options
   }
 }
 
@@ -277,7 +258,15 @@ function updateCurrentRequest(
   }
   runtime.currentRequest = { ...runtime.currentRequest, resumeToken: config.resumeToken }
   diagnostics.setResumeToken(config.resumeToken)
-  saveResumeToken(config.resumeToken)
+  const { resumeToken: _resumeToken, ...request } = runtime.currentRequest
+  const session: StoredMatchSession = {
+    version: 1,
+    resumeToken: config.resumeToken,
+    request,
+    spritesEnabled: runtime.options.spritesEnabled ?? true
+  }
+  saveMatchSession(session)
+  removeNewMatchMarker()
 }
 
 function restartFreshHandshake(runtime: MatchConnectionRuntime): void {
@@ -288,6 +277,12 @@ function restartFreshHandshake(runtime: MatchConnectionRuntime): void {
 }
 
 function handleResumeTokenError(runtime: MatchConnectionRuntime, diagnostics: TransportDiagnostics): boolean {
+  if (runtime.options.staleResumePolicy === 'fail') {
+    clearMatchResumeState()
+    runtime.ws?.close()
+    runtime.options.onResumeUnavailable?.()
+    return true
+  }
   if (runtime.currentRequest.resumeToken === undefined || runtime.freshHandshakeRetried) {
     return false
   }
@@ -357,8 +352,13 @@ function createMatchConnection(runtime: MatchConnectionRuntime, diagnostics: Tra
   }
 }
 
-export function connectMatch(url: string, request: MatchRequest, handlers: ConnectionHandlers): MatchConnection {
-  const runtime = createMatchConnectionRuntime(request)
+export function connectMatch(
+  url: string,
+  request: MatchRequest,
+  handlers: ConnectionHandlers,
+  options: MatchConnectionOptions = {}
+): MatchConnection {
+  const runtime = createMatchConnectionRuntime(request, options)
   const debugEnabled = e2eTransportHookEnabled()
   const diagnostics = createTransportDiagnostics(
     debugEnabled,
