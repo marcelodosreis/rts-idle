@@ -7,9 +7,9 @@
 
 | Status | Count |
 |--------|-------|
-| open | 88 |
+| open | 89 |
 | closed | 21 |
-| **total** | **109** |
+| **total** | **110** |
 
 ## Details
 
@@ -124,6 +124,7 @@
 | 2026-10-04-navigation-runtime-grid-observation | open | serialization | — | 1 test(s) |
 | 2026-10-04-navigation-snapshot-codec-desync | open | serialization | — | 1 test(s) |
 | 2026-10-04-pathfinding-incremental-api-compile | open | serialization | — | 1 test(s) |
+| 2026-10-05-finished-match-new-match-stuck | open | presentation | — | 1 test(s) |
 
 ## Legend
 

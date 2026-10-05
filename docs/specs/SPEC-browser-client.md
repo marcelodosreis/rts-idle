@@ -49,6 +49,11 @@ macro-ui, minimap, client-timeline, match-result, full-match, and first-match.
   was consumed.
 - `/match?new=1` explicitly creates a new match after releasing any stored
   session, but only when entered through Home navigation.
+- A finished match keeps its result overlay until the player chooses `New match`;
+  that action clears the finished browser session and returns to `/` without
+  waiting for `match_release`.
+- Home does not offer `Continue match` for a finished session. Choosing `New
+  match` there starts a fresh session through the normal Home entry flow.
 - Legacy gameplay query parameters on `/` redirect to the explicit `/match?new=1`
   flow without changing their scenario, aggression, sprite, or local-map meaning.
 - A successful handshake stores the versioned session record and removes the

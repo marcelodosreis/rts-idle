@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
-import { settleUnits, waitForStableRead } from '../support/settle.js'
+import { settleUnits, waitForMatchReady, waitForStableRead } from '../support/settle.js'
+import { transportState } from '../support/transport'
 
 interface UnitInfo {
   readonly id: number
@@ -164,6 +165,7 @@ test('left-clicking empty ground cancels an armed attack-move mode', async ({ pa
 test('SURRENDER requires confirmation before ending the match', async ({ page }) => {
   await page.goto('/?scenario=regression&aggression=offensive')
   await settleUnits(page)
+  const initialResumeToken = (await transportState(page)).resumeToken
   await page.getByRole('button', { name: 'Surrender' }).click()
 
   const confirmation = page.getByRole('alertdialog', { name: 'Surrender the match?' })
@@ -178,4 +180,13 @@ test('SURRENDER requires confirmation before ending the match', async ({ page })
 
   await expect(page.getByRole('dialog')).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('dialog').getByText('Defeat')).toBeVisible()
+  await page.getByRole('dialog').getByRole('button', { name: 'New match' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.getByTestId('home-page')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Continue match' })).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'New match' }).click()
+  await waitForMatchReady(page)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  expect((await transportState(page)).resumeToken).not.toBe(initialResumeToken)
 })

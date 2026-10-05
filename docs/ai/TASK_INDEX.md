@@ -39,6 +39,7 @@
 | ARCH.04.07 | Web convention enforcement | done | ARCH.04.06 | web, tests | verify, browser |
 | ARCH.04.08 | Explicit match entry and session lifecycle | done | ARCH.04.07 | protocol, server, web, tests | verify, browser |
 | ARCH.04.09 | Match route entry guard and refresh behavior | done | ARCH.04.08 | web, tests, docs | unit, e2e, verify |
+| ARCH.04.10 | Finished match returns to Home before replacement | done | ARCH.04.09 | web, tests, docs | e2e, verify |
 
 | ID | Title | Status | Dependencies | Packages | Validation |
 |----|-------|--------|-------------|----------|------------|

@@ -214,6 +214,11 @@ function replaceCurrentMatch(destination: string, navigate: NavigateFunction): v
   void releaseMatch(MATCH_SERVER_URL, stored.resumeToken).then(finish)
 }
 
+function returnToHomeAfterFinishedMatch(navigate: NavigateFunction): void {
+  clearMatchResumeState()
+  navigate('/', { replace: true })
+}
+
 function useSessionConnection(
   hostRef: RefObject<HTMLDivElement | null>,
   commandModes: ReturnType<typeof useCommandModes>,
@@ -315,7 +320,13 @@ function useSessionActions(
       }
       owner().send({ type: 'TRAIN', payload: { producerId, unitKind } }, ended())
     },
-    newMatch: () => replaceCurrentMatch(newMatchPath(launch), navigate),
+    newMatch: () => {
+      if (ended()) {
+        returnToHomeAfterFinishedMatch(navigate)
+        return
+      }
+      replaceCurrentMatch(newMatchPath(launch), navigate)
+    },
     changeScenario: (id) => replaceCurrentMatch(newMatchPath(launch, { scenario: id }), navigate),
     setAggression: (value) => replaceCurrentMatch(newMatchPath(launch, { aggression: value }), navigate),
     setSpritesEnabled: (value) => {

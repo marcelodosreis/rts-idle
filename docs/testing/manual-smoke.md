@@ -27,6 +27,9 @@ Open `http://localhost:5173`. The top bar shows
   same stored session.
 - Open `/match` directly in a fresh navigation and verify that it returns to `/`
   without opening gameplay transport.
+- Finish or surrender a match, click **New match** in the result dialog, and
+  verify that the browser returns to `/` without **Continue match**.
+- Click **New match** on Home and verify that a fresh match opens normally.
 - The one-shot Home entry state is required for this behavior. Do not remove it
   without replacing the route contract and the session-entry E2E coverage.
 
