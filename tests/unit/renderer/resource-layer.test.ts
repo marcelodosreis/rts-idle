@@ -95,4 +95,15 @@ describe('ResourceLayer', () => {
     expect(texturesIn(container)).toEqual([TREE_DEPLETED, MINE_DEPLETED])
     expect(layer.resourceAt(1408, 640)).toBe(GOLD_MINE.resourceId)
   })
+
+  it('hides map resources absent from a complete authoritative observation', () => {
+    const container = new Container()
+    const layer = new ResourceLayer(container, mapWith(TREE, GOLD_MINE), FALLBACK_TEXTURES)
+    layer.setViewBounds({ left: 0, right: 2048, top: 0, bottom: 2048 })
+
+    layer.present([{ resourceId: TREE.resourceId, remaining: TREE.initialAmount }], true)
+
+    expect(layer.resourceAt(1280, 640)).toBe(TREE.resourceId)
+    expect(layer.resourceAt(1408, 640)).toBeNull()
+  })
 })

@@ -231,6 +231,7 @@ describe('protocol snapshot message', () => {
     ],
     resources: [{ resourceId: 4, remaining: 3000 }],
     resourcesComplete: true,
+    fog: { width: 2, height: 2, visibleTiles: [0], exploredTiles: [0, 1] },
     players: [
       { id: 0, defeated: false, resources: { GOLD: 0, WOOD: 0 }, usedSupply: 2, reservedSupply: 1, supplyCap: 10 },
       { id: 1, defeated: true, resources: { GOLD: 5, WOOD: 0 }, usedSupply: 0, supplyCap: 0 }
@@ -258,6 +259,7 @@ describe('protocol snapshot message', () => {
       removedBuildingIds: [5],
       resources: [{ resourceId: 4, remaining: 2990 }],
       resourcesComplete: false,
+      fog: valid.fog,
       players: [valid.players[0]],
       events: [] as SnapshotDeltaMessage['events']
     }
@@ -265,6 +267,27 @@ describe('protocol snapshot message', () => {
     expect(isSnapshotDeltaMessage({ ...delta, baseTick: 2 })).toBe(false)
     expect(isSnapshotDeltaMessage({ ...delta, baseSequence: 3 })).toBe(false)
     expect(isSnapshotDeltaMessage({ ...delta, viewHash: 'not-a-hash' })).toBe(false)
+  })
+
+  it('rejects malformed fog projections', () => {
+    expect(
+      isSnapshotMessage({
+        ...valid,
+        fog: { width: 2, height: 2, visibleTiles: [0, 0], exploredTiles: [0, 1] }
+      })
+    ).toBe(false)
+    expect(
+      isSnapshotMessage({
+        ...valid,
+        fog: { width: 2, height: 2, visibleTiles: [3], exploredTiles: [0, 1] }
+      })
+    ).toBe(false)
+    expect(
+      isSnapshotMessage({
+        ...valid,
+        fog: { width: 2, height: 2, visibleTiles: [0, 2], exploredTiles: [0, 1] }
+      })
+    ).toBe(false)
   })
 
   it('accepts distinct identities across snapshot delta collections', () => {

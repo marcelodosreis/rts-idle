@@ -186,6 +186,7 @@ describe('snapshot to frame mapping', () => {
       units: [],
       buildings: [],
       resources: [],
+      resourcesComplete: true,
       events: []
     })
   })

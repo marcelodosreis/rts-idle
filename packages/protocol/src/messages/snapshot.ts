@@ -32,10 +32,19 @@ import {
   type UnitKind
 } from '@rts/shared'
 import { isSimulationEvent } from './simulation-event-guards.js'
+import { isSnapshotFog, type SnapshotFog } from './snapshot-fog.js'
 import { isSnapshotPlayer } from './snapshot-guards.js'
 import { isSnapshotViewHash, isSnapshotViewSequence } from './snapshot-metadata.js'
 
-export { ECONOMY_PHASES, type EconomyPhase, isSimulationEvent, ORDER_STATES, type OrderState }
+export {
+  ECONOMY_PHASES,
+  type EconomyPhase,
+  isSimulationEvent,
+  isSnapshotFog,
+  ORDER_STATES,
+  type OrderState,
+  type SnapshotFog
+}
 
 export interface SnapshotEconomy {
   readonly phase: EconomyPhase
@@ -110,6 +119,7 @@ export interface SnapshotBuilding {
   readonly maxHp?: number
   readonly rallyPoint?: { readonly x: Fixed; readonly y: Fixed } | null
   readonly production?: SnapshotProduction
+  readonly lastSeenTick?: number
 }
 
 export interface SnapshotUnitProductionItem {
@@ -153,6 +163,7 @@ export interface SnapshotMessage {
   readonly resourcesComplete: boolean
   readonly players: readonly SnapshotPlayer[]
   readonly events: readonly SimulationEvent[]
+  readonly fog?: SnapshotFog
 }
 
 function isPositionedEntity(value: unknown): boolean {
@@ -203,6 +214,7 @@ export function isSnapshotBuilding(value: unknown): boolean {
     totalTicks > 0 &&
     isOptionalNonNegativeInteger(field(value, 'hp')) &&
     isOptionalNonNegativeInteger(field(value, 'maxHp')) &&
+    isOptionalNonNegativeInteger(field(value, 'lastSeenTick')) &&
     isOptionalNonNegativeInteger(field(value, 'tier')) &&
     isOptionalNonNegativeInteger(field(value, 'armor')) &&
     (rallyPoint === undefined ||
@@ -266,6 +278,7 @@ export function isSnapshotResource(value: unknown): boolean {
     isNonNegativeInteger(field(value, 'remaining'))
   )
 }
+
 const isSnapshotResourceCost = (value: unknown): boolean => isResourceCost(value, true)
 function isSnapshotEconomy(value: unknown): boolean {
   if (!isRecord(value)) {
@@ -341,6 +354,7 @@ export function isSnapshotMessage(value: unknown): value is SnapshotMessage {
   const players = field(value, 'players')
   const events = field(value, 'events')
   const resourcesComplete = field(value, 'resourcesComplete')
+  const fog = field(value, 'fog')
   return (
     field(value, 'type') === 'snapshot' &&
     isInteger(field(value, 'tick')) &&
@@ -358,6 +372,7 @@ export function isSnapshotMessage(value: unknown): value is SnapshotMessage {
     resources.every(isSnapshotResource) &&
     hasUniqueFieldValues(resources, 'resourceId') &&
     typeof resourcesComplete === 'boolean' &&
+    (fog === undefined || isSnapshotFog(fog)) &&
     Array.isArray(players) &&
     players.every(isSnapshotPlayer) &&
     Array.isArray(events) &&

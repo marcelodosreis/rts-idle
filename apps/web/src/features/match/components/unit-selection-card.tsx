@@ -71,6 +71,9 @@ function orderLabel(unit: HudSelectionUnit): string {
   if (unit.orderState === 'attacking') {
     return 'Attacking'
   }
+  if (unit.orderState === 'lost_target') {
+    return 'Alvo perdido'
+  }
   if (unit.orderState === 'hold') {
     return 'Holding position'
   }

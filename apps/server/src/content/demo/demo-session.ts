@@ -105,6 +105,27 @@ function seedAttacks(context: SeedContext, scenario: DemoScenario, aggression: '
   }
 }
 
+function scheduleScenarioMoves(session: GameSession, context: SeedContext, scenario: DemoScenario): void {
+  for (const [tick, spawnIndex, x, y] of scenario.scheduledMoves ?? []) {
+    const unitId = context.ids[spawnIndex]
+    if (unitId === undefined) {
+      throw new Error(`DemoSession: invalid scheduled move spawn index ${spawnIndex}`)
+    }
+    const owner = context.world.store(Owner).get(unitId)?.owner
+    if (owner === undefined) {
+      throw new Error(`DemoSession: scheduled move spawn ${unitId} is not owned`)
+    }
+    session.submit(owner, [
+      {
+        tick,
+        playerId: owner,
+        sequence: spawnIndex,
+        intent: { type: 'MOVE', payload: { unitIds: [unitId], x, y } }
+      }
+    ])
+  }
+}
+
 /**
  * Hostile demo: enemies spawn in their own spot with combat stats and, in
  * offensive mode, march to attack the player. The player's own units (owner 0)
@@ -123,7 +144,7 @@ export function createDemoSession(
   seedUnits(context, scenario.spawns)
   seedBuildings(context, scenario.buildings ?? [])
   seedAttacks(context, scenario, aggression)
-  return GameSession.create({
+  const session = GameSession.create({
     seed: DEMO_SEED,
     identity,
     mapBounds: placementBoundsFromMap(map),
@@ -136,4 +157,6 @@ export function createDemoSession(
       completedResearch: [] as readonly ResearchType[]
     }))
   })
+  scheduleScenarioMoves(session, context, scenario)
+  return session
 }

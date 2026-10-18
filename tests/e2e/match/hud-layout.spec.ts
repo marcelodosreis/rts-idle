@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { waitForMatchReady } from '../support/settle.js'
+import { revealEnemyUnits, waitForMatchReady } from '../support/settle.js'
 
 interface UnitCatalogEntry {
   readonly id: number
@@ -14,6 +14,7 @@ interface UnitCatalog {
 async function startMatch(page: Page): Promise<UnitCatalog> {
   await page.goto('/?scenario=regression&aggression=passive')
   await waitForMatchReady(page)
+  await revealEnemyUnits(page)
   return page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
     const kinds = window.__rtsDebug?.getUnitKinds() ?? {}
@@ -94,14 +95,19 @@ test('monk and enemy selection preserve commands while explaining disabled actio
 
 test('multiple selection shows every selected unit across three rows', async ({ page }) => {
   const catalog = await startMatch(page)
+  const selectedCount = catalog.units.length
+  const allyCount = catalog.units.filter((unit) => unit.owner === 0).length
+  const enemyCount = catalog.units.filter((unit) => unit.owner !== 0).length
   await select(
     page,
     catalog.units.map((unit) => unit.id)
   )
 
-  await expect(page.getByRole('list', { name: '16 selected units' }).getByRole('button')).toHaveCount(16)
-  await expect(page.getByRole('button', { name: /Ally/ })).toHaveCount(8)
-  await expect(page.getByRole('button', { name: /Enemy/ })).toHaveCount(8)
+  await expect(page.getByRole('list', { name: `${selectedCount} selected units` }).getByRole('button')).toHaveCount(
+    selectedCount
+  )
+  await expect(page.getByRole('button', { name: /Ally/ })).toHaveCount(allyCount)
+  await expect(page.getByRole('button', { name: /Enemy/ })).toHaveCount(enemyCount)
   await expect(page.getByTestId('selection-ownership-legend')).toBeVisible()
   await page.getByRole('button', { name: /Ally/ }).first().hover()
   await expect(page.getByText('Owner: P0', { exact: true })).toBeVisible()

@@ -288,6 +288,7 @@ function createRendererView(
         isPlaytest: playtestMap !== null,
         unitStates: runtime.unitStates,
         buildings: () => runtime.buildings,
+        snapshotFog: () => runtime.snapshot?.fog ?? null,
         setSelection: updaters.updateSelection,
         getTick: () => runtime.lastTick,
         fixedToRenderPixels,

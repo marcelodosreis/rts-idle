@@ -17,6 +17,7 @@ import { readNavigationState, writeNavigationState } from '../navigation/navigat
 import { ResourceCatalog } from '../resources/resource-catalog.js'
 import { ResourceState } from '../resources/resource-state.js'
 import type { GameState, PlayerState } from '../state/state.js'
+import { readVisionState, writeVisionState } from '../vision/vision-codec.js'
 import { compareScheduledCommands, decodeScheduledCommand, encodeScheduledCommand } from './commands.js'
 
 /**
@@ -247,6 +248,7 @@ export function serializeState(state: GameState): Uint8Array {
   writer.writeU32(state.nextEntityId)
   writeMapBounds(writer, state.mapBounds)
   writeNavigationState(writer, state.navigation)
+  writeVisionState(writer, state.vision)
   writePlayers(writer, state.players)
   writeResources(writer, state.resources)
   writeWorld(writer, state.world)
@@ -276,6 +278,7 @@ export function deserializeState(bytes: Uint8Array): GameState {
   const nextEntityId = reader.readU32()
   const mapBounds = readMapBounds(reader)
   const navigation = readNavigationState(reader)
+  const vision = readVisionState(reader)
   const players = readPlayers(reader)
   const resources = readResources(reader)
   const world = readWorld(reader)
@@ -290,6 +293,7 @@ export function deserializeState(bytes: Uint8Array): GameState {
     nextEntityId,
     mapBounds,
     navigation,
+    vision,
     players,
     world,
     resources,

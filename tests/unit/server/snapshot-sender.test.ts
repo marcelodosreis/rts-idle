@@ -5,7 +5,7 @@ import {
   type SnapshotDeltaMessage,
   type SnapshotMessage
 } from '@rts/protocol'
-import { createUnitEntity, createWorld } from '@rts/simulation'
+import { createUnitEntity, createWorld, hashObservation } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { createAuthoritativeMatch } from '../../../apps/server/src/bootstrap/match-bootstrap.js'
 import { GameSession } from '../../../apps/server/src/sessions/session.js'
@@ -80,7 +80,8 @@ function applyDelta(snapshot: SnapshotMessage, delta: SnapshotDeltaMessage): Sna
     resources: mergeResources(snapshot.resources, delta.resources),
     resourcesComplete: true,
     players: delta.players,
-    events: delta.events
+    events: delta.events,
+    ...(delta.fog === undefined ? {} : { fog: delta.fog })
   }
 }
 
@@ -92,7 +93,11 @@ describe('authoritative snapshot sender', () => {
 
     sender.sendSnapshot(game, [])
     const full = message(socket)
-    expect(full).toMatchObject({ type: 'snapshot', viewSequence: 1, viewHash: game.hashState() })
+    expect(full).toMatchObject({
+      type: 'snapshot',
+      viewSequence: 1,
+      viewHash: hashObservation(game.observeForPlayer(0, true))
+    })
     game.advance()
     sender.sendSnapshot(game, [])
 
@@ -104,7 +109,7 @@ describe('authoritative snapshot sender', () => {
       baseHash: full.type === 'snapshot' ? full.viewHash : '',
       tick: 1,
       viewSequence: 2,
-      viewHash: game.hashState(),
+      viewHash: hashObservation(game.observeForPlayer(0, true)),
       units: [],
       buildings: []
     })
@@ -192,10 +197,11 @@ describe('authoritative snapshot sender', () => {
     const socket = new FakeSocket()
     const sender = new SnapshotSender(socket)
     sender.sendSnapshot(game, [])
-    const expectedRemovedUnitIds = game
-      .observe(true)
-      .units.filter((unit) => unit.owner === 0)
-      .map((unit) => unit.id)
+    const baseline = message(socket)
+    if (baseline.type !== 'snapshot') {
+      throw new Error('expected full baseline')
+    }
+    const expectedRemovedUnitIds = baseline.units.map((unit) => unit.id)
     game.submit(0, [{ tick: 1, playerId: 0, sequence: 1, intent: { type: 'SURRENDER', payload: {} } }])
     game.advance()
     sender.sendSnapshot(game, [])
@@ -282,9 +288,9 @@ describe('authoritative snapshot sender', () => {
       view = applyDelta(view, delta)
     }
 
-    const authoritative = game.observe(true)
+    const authoritative = game.observeForPlayer(0, true)
     expect(view.tick).toBe(game.tick())
-    expect(view.viewHash).toBe(game.hashState())
+    expect(view.viewHash).toBe(hashObservation(authoritative))
     expect(view.phase).toBe(game.phase())
     expect(view.units).toEqual(authoritative.units)
     expect(view.buildings).toEqual(authoritative.buildings)

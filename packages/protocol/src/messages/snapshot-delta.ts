@@ -1,11 +1,19 @@
 import type { EntityId, SimulationEvent } from '@rts/shared'
 import { field, isInteger, isNonNegativeInteger, isOneOf, isRecord } from '@rts/shared'
-import type { MatchPhase, SnapshotBuilding, SnapshotPlayer, SnapshotResource, SnapshotUnit } from './snapshot.js'
+import type {
+  MatchPhase,
+  SnapshotBuilding,
+  SnapshotFog,
+  SnapshotPlayer,
+  SnapshotResource,
+  SnapshotUnit
+} from './snapshot.js'
 import {
   hasNoSharedEntityIds,
   hasUniqueFieldValues,
   isSimulationEvent,
   isSnapshotBuilding,
+  isSnapshotFog,
   isSnapshotResource,
   isSnapshotUnit,
   MATCH_PHASES
@@ -30,6 +38,7 @@ export interface SnapshotDeltaMessage {
   readonly resourcesComplete: false
   readonly players: readonly SnapshotPlayer[]
   readonly events: readonly SimulationEvent[]
+  readonly fog?: SnapshotFog
 }
 
 function isSnapshotDelta(value: unknown): value is SnapshotDeltaMessage {
@@ -45,8 +54,10 @@ function isSnapshotDelta(value: unknown): value is SnapshotDeltaMessage {
   const resources = field(value, 'resources')
   const players = field(value, 'players')
   const events = field(value, 'events')
+  const resourcesComplete = field(value, 'resourcesComplete')
   const removedUnitIds = field(value, 'removedUnitIds')
   const removedBuildingIds = field(value, 'removedBuildingIds')
+  const fog = field(value, 'fog')
   return (
     field(value, 'type') === 'snapshot_delta' &&
     isNonNegativeInteger(baseTick) &&
@@ -58,6 +69,18 @@ function isSnapshotDelta(value: unknown): value is SnapshotDeltaMessage {
     isSnapshotViewHash(field(value, 'viewHash')) &&
     baseSequence < viewSequence &&
     isOneOf(MATCH_PHASES, field(value, 'phase')) &&
+    validDeltaEntities(units, removedUnitIds, buildings, removedBuildingIds) &&
+    validDeltaPayload(resources, players, events, fog, resourcesComplete)
+  )
+}
+
+function validDeltaEntities(
+  units: unknown,
+  removedUnitIds: unknown,
+  buildings: unknown,
+  removedBuildingIds: unknown
+): boolean {
+  return (
     Array.isArray(units) &&
     units.every(isSnapshotUnit) &&
     hasUniqueFieldValues(units, 'id') &&
@@ -72,16 +95,28 @@ function isSnapshotDelta(value: unknown): value is SnapshotDeltaMessage {
     Array.isArray(removedBuildingIds) &&
     removedBuildingIds.every(isNonNegativeInteger) &&
     hasUniqueValues(removedBuildingIds) &&
-    hasNoSharedIds(buildings, removedBuildingIds) &&
+    hasNoSharedIds(buildings, removedBuildingIds)
+  )
+}
+
+function validDeltaPayload(
+  resources: unknown,
+  players: unknown,
+  events: unknown,
+  fog: unknown,
+  resourcesComplete: unknown
+): boolean {
+  return (
     Array.isArray(resources) &&
     resources.every(isSnapshotResource) &&
     hasUniqueFieldValues(resources, 'resourceId') &&
-    field(value, 'resourcesComplete') === false &&
+    resourcesComplete === false &&
     Array.isArray(players) &&
     players.every(isSnapshotPlayer) &&
     hasUniqueFieldValues(players, 'id') &&
     Array.isArray(events) &&
-    events.every(isSimulationEvent)
+    events.every(isSimulationEvent) &&
+    (fog === undefined || isSnapshotFog(fog))
   )
 }
 

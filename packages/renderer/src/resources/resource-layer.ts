@@ -46,9 +46,11 @@ function intersects(bounds: ViewBounds, chunk: Rectangle): boolean {
 export class ResourceLayer {
   private readonly definitions = new Map<number, ResourceDefinition>()
   private readonly remaining = new Map<number, number>()
+  private readonly known = new Set<number>()
   private readonly idsByCell = new Map<string, number[]>()
   private readonly chunks = new Map<string, ResourceChunk>()
   private viewBounds: ViewBounds | null = null
+  private hasCompleteObservation = false
 
   constructor(
     private readonly layer: Container,
@@ -65,15 +67,27 @@ export class ResourceLayer {
     }
   }
 
-  present(updates: readonly RenderResource[]): void {
+  present(updates: readonly RenderResource[], resourcesComplete = false): void {
     const changed = new Set<string>()
+    if (resourcesComplete) {
+      this.known.clear()
+      this.hasCompleteObservation = true
+      for (const key of this.chunks.keys()) {
+        changed.add(key)
+      }
+    }
     for (const update of updates) {
       const definition = this.definitions.get(update.resourceId)
-      if (definition === undefined || this.remaining.get(update.resourceId) === update.remaining) {
+      if (definition === undefined) {
         continue
       }
+      const changedAmount = this.remaining.get(update.resourceId) !== update.remaining
+      const wasKnown = this.known.has(update.resourceId)
+      this.known.add(update.resourceId)
       this.remaining.set(update.resourceId, update.remaining)
-      changed.add(chunkKey(definition))
+      if (changedAmount || !wasKnown) {
+        changed.add(chunkKey(definition))
+      }
     }
     for (const key of changed) {
       if (this.chunks.has(key)) {
@@ -90,6 +104,9 @@ export class ResourceLayer {
     for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
       for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
         for (const id of this.idsByCell.get(`${cellX + offsetX},${cellY + offsetY}`) ?? []) {
+          if (!this.isKnown(id)) {
+            continue
+          }
           const definition = this.definitions.get(id)!
           const position = resourcePosition(definition)
           const dx = position.x - x
@@ -183,7 +200,7 @@ export class ResourceLayer {
     const particlesByTexture = new Map<Texture, Particle[]>()
     for (const id of resourceIds) {
       const definition = this.definitions.get(id)
-      if (definition === undefined) {
+      if (definition === undefined || !this.isKnown(id)) {
         continue
       }
       const amount = this.remaining.get(id) ?? 0
@@ -236,5 +253,9 @@ export class ResourceLayer {
       container.destroy()
     }
     this.chunks.delete(key)
+  }
+
+  private isKnown(resourceId: number): boolean {
+    return !this.hasCompleteObservation || this.known.has(resourceId)
   }
 }

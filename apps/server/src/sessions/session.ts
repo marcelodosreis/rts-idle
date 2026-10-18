@@ -80,6 +80,18 @@ export class GameSession {
     return this.simulation.observe(completeResources, entityIds)
   }
 
+  observeForPlayer(
+    playerId: PlayerId,
+    completeResources: boolean,
+    entityIds?: readonly EntityId[]
+  ): SimulationObservation {
+    return this.simulation.observeForPlayer(playerId, completeResources, entityIds)
+  }
+
+  filterEventsForPlayer(playerId: PlayerId, events: readonly SimulationEvent[]): readonly SimulationEvent[] {
+    return this.simulation.filterEventsForPlayer(playerId, events)
+  }
+
   changeCursor(): number {
     return this.simulation.changeCursor()
   }

@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test'
+import { tilesToFixed } from '@rts/shared'
 
 export async function waitForMatchReady(page: Page): Promise<void> {
   await expect
@@ -140,4 +141,45 @@ export async function selectFirstByOwner(page: Page, owner: number): Promise<num
   expect(ids.length).toBeGreaterThan(0)
   await selectByIds(page, [ids[0]!])
   return ids[0]!
+}
+
+export async function revealEnemyUnits(page: Page): Promise<void> {
+  const unitId = await selectFirstByOwner(page, 0)
+  const target = { x: tilesToFixed(20) + 128, y: tilesToFixed(16) + 128 }
+  await page.evaluate(([x, y]) => window.__rtsDebug!.moveCamera(x, y), [target.x, target.y] as const)
+  await waitForStableCamera(page, target.x, target.y)
+  const point = await page.evaluate(
+    ([x, y]) => {
+      const canvas = document.querySelector('canvas')
+      if (canvas === null) {
+        throw new Error('no canvas')
+      }
+      const rect = canvas.getBoundingClientRect()
+      const screen = window.__rtsDebug!.worldToScreen(x, y)
+      return { x: rect.left + screen.x, y: rect.top + screen.y }
+    },
+    [target.x, target.y] as const
+  )
+  await page.mouse.click(point.x, point.y, { button: 'right' })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          ([id, targetX, targetY]) => {
+            const position = window.__rtsDebug?.getPositions()[String(id)]
+            return position === undefined
+              ? Number.POSITIVE_INFINITY
+              : Math.max(Math.abs(position.x - targetX), Math.abs(position.y - targetY))
+          },
+          [unitId, target.x, target.y] as const
+        ),
+      { timeout: 15_000, intervals: [100, 250] }
+    )
+    .toBeLessThan(12)
+  await expect
+    .poll(() => page.evaluate(() => Object.values(window.__rtsDebug?.getUnitOwners() ?? {}).includes(1)))
+    .toBe(true)
+  await expect
+    .poll(() => page.evaluate((id) => window.__rtsDebug?.getSelection().includes(id) ?? false, unitId))
+    .toBe(true)
 }

@@ -17,6 +17,7 @@ import {
   effectiveDamage,
   effectiveMovementSpeed
 } from '../domain/research-effects.js'
+import { AttackTarget } from '../ecs/attack-target-component.js'
 import { Building } from '../ecs/building-component.js'
 import {
   AbilityCooldown,
@@ -89,6 +90,7 @@ export interface ObservationBuilding {
   readonly maxHp?: number
   readonly rallyPoint: { readonly x: Fixed; readonly y: Fixed } | null
   readonly production?: { readonly queue: readonly ProductionItem[] }
+  readonly lastSeenTick?: number
 }
 
 export interface ObservationPlayer {
@@ -110,14 +112,22 @@ export interface SimulationObservation {
   readonly players: readonly ObservationPlayer[]
   readonly resources: readonly ResourceAmount[]
   readonly resourcesComplete: boolean
+  readonly fog: ObservationFog
 }
 
-function orderState(front: Order | undefined, hasMovement: boolean): OrderState {
+export interface ObservationFog {
+  readonly width: number
+  readonly height: number
+  readonly visibleTiles: readonly number[]
+  readonly exploredTiles: readonly number[]
+}
+
+function orderState(front: Order | undefined, hasMovement: boolean, lostTarget: boolean): OrderState {
   switch (front?.type) {
     case 'ATTACK':
-      return 'attacking'
+      return lostTarget ? 'lost_target' : 'attacking'
     case 'ATTACK_MOVE':
-      return 'attack_move'
+      return lostTarget ? 'lost_target' : 'attack_move'
     case 'HOLD':
       return 'hold'
     case 'PATROL':
@@ -185,6 +195,7 @@ function projectUnit(state: GameState, id: EntityId): ObservationUnit | undefine
   const combat = state.world.store(Combat).get(id)
   const cargo = state.world.store(Cargo).get(id)
   const front = state.world.store(Orders).get(id)?.queue[0]
+  const lostTarget = state.world.store(AttackTarget).get(id)?.lostVision === true
   const building = front?.type === 'BUILD' ? state.world.store(Building).get(front.buildingId) : undefined
   const targetPosition =
     front?.type === 'BUILD' || front?.type === 'REPAIR'
@@ -221,7 +232,7 @@ function projectUnit(state: GameState, id: EntityId): ObservationUnit | undefine
     ...(targetPosition === undefined
       ? {}
       : { lookAtX: targetPosition.x + (building === undefined ? 0 : building.footprint.width * 128) }),
-    orderState: orderState(front, state.world.store(Movement).has(id)),
+    orderState: orderState(front, state.world.store(Movement).has(id), lostTarget),
     ...(front?.type === 'REPAIR' ? { repairProgressTicks: front.progressTicks, repairProgressMax: 10 } : {}),
     ...(state.world.store(AbilityCooldown).get(id)?.healCooldownRemaining
       ? { healCooldownRemaining: state.world.store(AbilityCooldown).get(id)!.healCooldownRemaining }
@@ -321,6 +332,16 @@ export function createSimulationObservation(
     }),
     players: state.players.map((player) => projectPlayer(state, player)),
     resources: completeResources ? state.resources.all() : state.resources.changed(),
-    resourcesComplete: completeResources
+    resourcesComplete: completeResources,
+    fog: {
+      width: state.vision.width,
+      height: state.vision.height,
+      visibleTiles: allTileIndexes(state.vision.width * state.vision.height),
+      exploredTiles: allTileIndexes(state.vision.width * state.vision.height)
+    }
   }
+}
+
+function allTileIndexes(count: number): readonly number[] {
+  return Array.from({ length: count }, (_, index) => index)
 }

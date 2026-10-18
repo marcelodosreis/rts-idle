@@ -12,7 +12,9 @@ import { serializeState } from '../snapshot/serialize.js'
 import { cloneGameState } from '../state/clone-state.js'
 import type { GameState, Phase } from '../state/state.js'
 import { runSystems } from '../systems/pipeline.js'
+import { refreshVision } from '../vision/vision-state.js'
 import { createSimulationObservation } from './observation.js'
+import { createPlayerObservation, filterEvents } from './player-observation.js'
 import type { SimulationHost, SimulationSnapshot } from './simulation-host.js'
 
 /**
@@ -63,6 +65,7 @@ export class Simulation implements SimulationHost {
       }
     }
     runSystems(this.state)
+    refreshVision(this.state)
     this.markPlayerDependentEntitiesDirty()
     return { tick: this.state.tick, rejected, events: [...this.state.events] }
   }
@@ -102,6 +105,21 @@ export class Simulation implements SimulationHost {
 
   observe(completeResources: boolean, entityIds?: readonly EntityId[]): ReturnType<typeof createSimulationObservation> {
     return createSimulationObservation(this.state, completeResources, entityIds)
+  }
+
+  observeForPlayer(
+    playerId: PlayerId,
+    completeResources: boolean,
+    entityIds?: readonly EntityId[]
+  ): ReturnType<typeof createPlayerObservation> {
+    return createPlayerObservation(this.state, playerId, completeResources, entityIds)
+  }
+
+  filterEventsForPlayer(
+    playerId: PlayerId,
+    events: readonly import('@rts/shared').SimulationEvent[]
+  ): readonly import('@rts/shared').SimulationEvent[] {
+    return filterEvents(this.state, playerId, events)
   }
 
   changeCursor(): number {

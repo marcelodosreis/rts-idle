@@ -74,7 +74,7 @@ test('passive regression enemies never damage the player', async ({ page }) => {
   expect(hp!.current).toBe(hp!.max)
 })
 
-test('regression projects completed building health', async ({ page }) => {
+test('regression projects visible completed building health', async ({ page }) => {
   await page.goto('/?scenario=regression&aggression=passive')
   await settleUnits(page)
 
@@ -83,9 +83,9 @@ test('regression projects completed building health', async ({ page }) => {
     .map((building) => ({ hp: building.hp, maxHp: building.maxHp }))
     .filter((building): building is { hp: number; maxHp: number } => building.hp !== undefined)
 
-  expect(healthValues).toHaveLength(3)
-  expect(healthValues.map((building) => building.maxHp).sort((left, right) => left - right)).toEqual([250, 500, 500])
-  expect(healthValues.map((building) => building.hp).sort((left, right) => left - right)).toEqual([250, 250, 500])
+  expect(healthValues).toHaveLength(2)
+  expect(healthValues.map((building) => building.maxHp).sort((left, right) => left - right)).toEqual([250, 500])
+  expect(healthValues.map((building) => building.hp).sort((left, right) => left - right)).toEqual([250, 250])
 })
 
 test('offensive regression enemies eventually damage a player pawn', async ({ page }) => {

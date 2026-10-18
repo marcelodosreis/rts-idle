@@ -133,58 +133,90 @@ Real-server Chromium and Firefox E2E are required.
 
 Add player-specific visible, explored, and unknown map state. Visibility is
 derived from authoritative unit/building sources and does not mutate hidden
-world simulation.
+world simulation. The first slice must be playable: the player moves a unit,
+reveals a region, revisits explored terrain, and sees the three states in the
+match screen.
 
 Acceptance: visibility updates deterministically, explored memory persists,
 hidden entities do not become observable through side channels, and equivalent
-hidden worlds do not affect simulation outcomes.
+hidden worlds do not affect simulation outcomes. Real-server Chromium and
+Firefox E2E must cover reveal, retained exploration, and hidden-entity absence.
+Packet: `docs/tasks/done/P3.07.01.md`.
+
+### P3.07.02 - Vision Radius Tuning
+
+Reduce the player-specific vision radius to four tiles while preserving the
+deterministic Euclidean circular mask, explored memory, filtered observations,
+and the real-server player flow. This is a balance adjustment to the completed
+vision slice, not a new fog presentation model.
+
+Acceptance: the authoritative radius and restored snapshots use two tiles, the
+cardinal/diagonal boundary is tested, and all affected Chromium and Firefox
+flows reveal targets through natural movement before interaction. Packet:
+`docs/tasks/done/P3.07.02.md`.
 
 ### P3.08.01 - Filtered Observations and Events
 
 Filter snapshots and events by player visibility while preserving server
 authority and observation immutability. Hidden entities, resources, orders, and
-combat events must not cross the protocol boundary.
+combat events must not cross the protocol boundary. The player-facing slice
+makes a scripted enemy appear when visible and disappear when it leaves vision;
+the client must not receive or render hidden data.
 
 Acceptance: protocol guards reject malformed filtered data; visible data remains
 complete; hidden data is absent; filtered observations do not change the
-authoritative simulation or its determinism.
+authoritative simulation or its determinism. Real-server Chromium and Firefox
+E2E must cover appearance, disappearance, and hidden-event absence.
+Packet: `docs/tasks/done/P3.08.01.md`.
 
 ### P3.08.02 - Fog Rendering
 
 Render visible, explored, and unknown areas in the renderer and match HUD. Fog
 must be a projection of filtered observations, never a second gameplay model.
+The player must be able to move a controlled unit and watch fog transitions.
 
 Acceptance: the player can see current vision, retained explored terrain, and
 hidden terrain feedback through the intended match screen. Browser E2E covers
-visibility changes and absence of hidden entities.
+visibility changes and absence of hidden entities in real-server Chromium and
+Firefox runs. Packet: `docs/tasks/done/P3.08.02.md`.
 
 ### P3.09.01 - Targeting and Pursuit
 
 Make target acquisition and pursuit use visibility, spatial queries, and
 deterministic loss-of-vision rules. Preserve explicit order state and avoid
-automatic access to hidden coordinates.
+automatic access to hidden coordinates. The player-facing slice covers attack
+and attack-move orders, pursuit, and a visible stop or replan result when the
+target leaves vision.
 
 Acceptance: targeting tie-breaks are stable, pursuit stops or replans when a
 target leaves vision, and attack orders cannot reveal hidden entities.
+Real-server Chromium and Firefox E2E must cover acquisition, pursuit, loss of
+vision, and blocked feedback. Packet: `docs/tasks/done/P3.09.01.md`.
 
 ### P3.10.01 - Projectiles
 
 Replace instant ranged damage where applicable with authoritative projectiles.
 Projectiles have deterministic creation, movement, impact, dead-target, and TTL
-behavior, with visible renderer feedback.
+behavior, with visible renderer feedback. The player-facing slice covers a
+ranged attack from command input through launch, travel, impact, and damage.
 
 Acceptance: impacts happen once, dead targets are handled safely, TTL cleanup is
 deterministic, snapshots and replays include the required state, and browser
-coverage shows the player-facing result.
+coverage shows the player-facing result through real-server Chromium and
+Firefox. Packet: `docs/tasks/P3.10.01.md`.
 
 ### P3.11.01 - Area Damage
 
 Add deterministic area damage with explicit radius, falloff, target filtering,
-and friendly-fire rules. Use spatial queries instead of frame-order scans.
+and friendly-fire rules. Use spatial queries instead of frame-order scans. The
+packet must identify one concrete area-capable producer and its natural player
+input before implementation starts; no generic ability framework is implied.
 
 Acceptance: radius boundaries, falloff, dead targets, and friendly-fire absence
 are tested; damage ordering and hashes remain deterministic; browser feedback is
-visible.
+visible. Real-server Chromium and Firefox E2E must cover activation, impact,
+cooldown or cost, affected targets, and rejection states. Packet:
+`docs/tasks/P3.11.01.md`.
 
 ### P3.12.01 - Combined Army/Chokepoint Stress
 
@@ -193,18 +225,23 @@ repeatable multi-unit chokepoint scenario.
 
 Acceptance: the scenario makes progress without overlap or deadlock, produces
 the same result for the same seed and commands, passes performance thresholds,
-and runs through the real server and browser path.
+and runs through the real server and browser path. The player must issue the
+movement and combat commands and see progress, recovery, combat feedback, and
+the final result. Packet: `docs/tasks/P3.12.01.md`.
 
 ## Validation Gates
 
-- Each task: focused unit or simulation tests, typecheck, lint, and relevant
-  architecture barriers.
+- Each task: focused unit or simulation tests, typecheck, lint, relevant
+  architecture barriers, and a player-facing completion checklist.
 - Navigation state changes: simulation, determinism, snapshot/restore, and
   golden-hash review.
 - Protocol or observation changes: contracts, integration, and filtered-data
   tests.
 - Player-facing tasks: focused E2E listed before execution, then Chromium and
   Firefox real-server coverage.
+- Every gameplay task is a vertical slice. Backend-only or simulation-only
+  work remains in progress until its screen, natural interaction, visible
+  success/progress/blocked feedback, and real-server browser E2E are complete.
 - Phase completion: `pnpm run verify`, the complete required browser matrix,
   benchmark evidence for the stress task, and an updated milestone report.
 

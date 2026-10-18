@@ -24,3 +24,10 @@ Do not move pending or in-progress work until its acceptance criteria and
 required validation are complete. A gameplay task is not complete until its
 authoritative behavior, player-facing screen, natural interaction, visible
 feedback, and browser E2E coverage are complete.
+
+This is a permanent vertical-slice rule for every new gameplay task. A task
+must provide a result that can be tested in the running match through the real
+server before it can be marked done. Unit, simulation, or protocol work may be
+implemented first inside the task, but backend-only work remains in progress
+until the playable flow, success/progress/blocked feedback, and Chromium and
+Firefox E2E coverage are complete.

@@ -145,7 +145,10 @@ export class UnitLayer {
     const deltaMoved = last !== undefined && (last.x !== unit.x || last.y !== unit.y)
     const moving =
       unit.orderState === 'moving' ||
-      ((unit.orderState === 'attacking' || unit.orderState === 'attack_move' || unit.orderState === 'patrol') &&
+      ((unit.orderState === 'attacking' ||
+        unit.orderState === 'lost_target' ||
+        unit.orderState === 'attack_move' ||
+        unit.orderState === 'patrol') &&
         deltaMoved) ||
       (unit.orderState === 'repairing' && deltaMoved)
     sprite.setHealth(unit.hp, unit.maxHp)

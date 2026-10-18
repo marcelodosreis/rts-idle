@@ -6,6 +6,7 @@ import { POINTER_COLOR, RALLY_COLOR, SELECTION_COLOR } from '../effects/colors.j
 import { EffectsLayer } from '../effects/layer.js'
 import { CommandPing } from '../effects/ping.js'
 import { SelectionController } from '../effects/selection.js'
+import { FogLayer } from '../fog/layer.js'
 import { createCameraController } from '../input/camera-controller.js'
 import type { WorldInteraction } from '../input/input-types.js'
 import { createWorldHitTester } from '../input/world-hit-tester.js'
@@ -25,6 +26,7 @@ import type {
   RenderFrame,
   UnitSpriteState
 } from './types.js'
+import type { WiredLayers } from './wired-layers.js'
 
 const MIN_ZOOM = 0.05
 const EMPTY_RESOURCE_STATS = {
@@ -38,19 +40,6 @@ const EMPTY_RESOURCE_STATS = {
 } as const
 const MAX_ZOOM = 4
 /** Canvas background is always the water color so no beige ever shows. */
-interface WiredLayers {
-  readonly viewport: Viewport
-  readonly units: UnitLayer
-  readonly selection: SelectionController
-  readonly ping: CommandPing
-  readonly effects: EffectsLayer
-  readonly terrain: TerrainLayer
-  readonly worldObjects: WorldObjectLayer
-  readonly resources: ResourceLayer
-  readonly input: WorldInputAdapter
-  readonly camera: ReturnType<typeof createCameraController>
-}
-
 /**
  * PixiJS renderer orchestrator. Owns the Application and the viewport, and
  * delegates presentation to three cohesive sub-components: the unit sprite
@@ -61,6 +50,7 @@ export class PixiRenderer implements GameRenderer {
   private app: Application | null = null
   private viewport: Viewport | null = null
   private units: UnitLayer | null = null
+  private fog: FogLayer | null = null
   private selection: SelectionController | null = null
   private ping: CommandPing | null = null
   private selectedRallyProducerId: number | null = null
@@ -121,6 +111,7 @@ export class PixiRenderer implements GameRenderer {
       (this.options.map?.resources ?? []).map((resource) => [resource.resourceId, resourceTypeForKind(resource.kind)])
     )
     const units = new UnitLayer(layers.units, this.assets, unitResourceTypes)
+    const fog = new FogLayer(layers.fog, this.options.map?.width, this.options.map?.height)
     const selection = new SelectionController({ selectionLayer: layers.selection, units, selectionRect })
     const ping = new CommandPing(layers.interaction)
     const effects = new EffectsLayer(layers.effects)
@@ -153,7 +144,7 @@ export class PixiRenderer implements GameRenderer {
       onInteraction: (interaction) => this.handleInteraction(interaction, selection),
       dragThresholdPx: 6
     })
-    return { viewport, units, selection, ping, effects, terrain, worldObjects, resources, input, camera }
+    return { viewport, units, fog, selection, ping, effects, terrain, worldObjects, resources, input, camera }
   }
   async mount(host: HTMLElement, callbacks: RendererCallbacks): Promise<void> {
     if (this.app !== null) {
@@ -180,6 +171,7 @@ export class PixiRenderer implements GameRenderer {
     this.app = app
     this.viewport = wired.viewport
     this.units = wired.units
+    this.fog = wired.fog
     this.selection = wired.selection
     this.ping = wired.ping
     this.effects = wired.effects
@@ -199,6 +191,7 @@ export class PixiRenderer implements GameRenderer {
       this.selection === null ||
       this.ping === null ||
       this.effects === null ||
+      this.fog === null ||
       this.worldObjects === null ||
       this.resources === null
     ) {
@@ -206,8 +199,9 @@ export class PixiRenderer implements GameRenderer {
     }
     const now = performance.now()
     this.worldObjects.present(frame.buildings ?? [])
-    this.resources.present(frame.resources ?? [])
+    this.resources.present(frame.resources ?? [], frame.resourcesComplete === true)
     this.units.present(frame.units, now)
+    this.fog.present(frame.fog)
     this.selection.updateRings()
     this.ping.expireIfElapsed(Date.now())
     for (const event of frame.events ?? []) {
@@ -339,6 +333,7 @@ export class PixiRenderer implements GameRenderer {
     this.input?.dispose()
     this.camera?.dispose()
     this.terrain?.dispose()
+    this.fog?.dispose()
     this.assets.destroy()
     if (this.app !== null) {
       this.app.destroy(
@@ -349,6 +344,7 @@ export class PixiRenderer implements GameRenderer {
     }
     this.viewport = null
     this.units = null
+    this.fog = null
     this.selection = null
     this.ping = null
     this.selectedRallyProducerId = null

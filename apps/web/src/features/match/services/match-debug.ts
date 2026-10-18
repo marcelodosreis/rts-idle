@@ -36,6 +36,7 @@ export interface RtsDebug {
     readonly decorations: number
     readonly isPlaytest: boolean
   }
+  getFog(): SnapshotMessage['fog'] | null
   getResources(): Record<
     string,
     {
@@ -87,6 +88,7 @@ export interface MatchDebugOptions {
   readonly isPlaytest: boolean
   readonly unitStates: ReadonlyMap<number, SelectionUnitState>
   readonly buildings: () => SnapshotMessage['buildings']
+  readonly snapshotFog: () => SnapshotMessage['fog'] | null
   readonly setSelection: (ids: readonly number[]) => void
   readonly getTick: () => number
   readonly fixedToRenderPixels: (value: number) => number
@@ -187,6 +189,7 @@ export function createRtsDebug(options: MatchDebugOptions): RtsDebug {
       decorations: config.map.decorations?.length ?? 0,
       isPlaytest
     }),
+    getFog: options.snapshotFog,
     getResources: () => resources(config, resourceAmounts()),
     getResourceRenderStats: () => renderer.getResourceStats()
   }

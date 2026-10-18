@@ -1,4 +1,6 @@
 import { sha256 } from '@noble/hashes/sha256'
+import { utf8Encode } from '../canonical/utf8.js'
+import type { SimulationObservation } from '../engine/observation.js'
 import type { GameState } from '../state/state.js'
 import { serializeState } from './serialize.js'
 
@@ -19,4 +21,9 @@ function bytesToHex(bytes: Uint8Array): string {
 /** Canonical hash of a full game state (serialize then hash). */
 export function hashState(state: GameState): string {
   return hashBytes(serializeState(state))
+}
+
+/** Hashes a player observation without exposing the canonical hidden state. */
+export function hashObservation(observation: SimulationObservation): string {
+  return hashBytes(Uint8Array.from(utf8Encode(JSON.stringify({ ...observation, resourcesComplete: true }))))
 }
