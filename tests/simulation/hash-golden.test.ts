@@ -22,7 +22,7 @@ const GOLDEN_SEED = 424242
 // state hash so any accidental drift in ordering, encoding, or the RNG
 // state is caught by the test suite. Economy v0 and P2.11 intentionally changed
 // this vector by appending their ECS components, the pending-command queue,
-// navigation state, and bumping the simulation version.
+// navigation state, vision state, and bumping the simulation version.
 function buildGoldenSimulation() {
   const world = createWorld()
   let next = START_ENTITY_ID
@@ -41,14 +41,14 @@ function buildGoldenSimulation() {
 describe('canonical state hash golden', () => {
   it('produces the pinned hash for the characterization fixture', () => {
     const sim = buildGoldenSimulation()
-    expect(sim.hashState()).toBe('e901ad5aa104ae009d7eb73b9a172f900ea4175bee9e82bb569dd4577e0dbe8c')
+    expect(sim.hashState()).toBe('a427d4de61df470e6490a178801ed83d5bcbcf46a38da9abcf8ccd7a852702d5')
   })
 
   it('produces the pinned serialized bytes for the characterization fixture', () => {
     const sim = buildGoldenSimulation()
     const snapshot = sim.exportSnapshot()
     expect(snapshot.tick).toBe(1)
-    expect(snapshot.hash).toBe('e901ad5aa104ae009d7eb73b9a172f900ea4175bee9e82bb569dd4577e0dbe8c')
-    expect(snapshot.bytes.byteLength).toBe(371)
+    expect(snapshot.hash).toBe('a427d4de61df470e6490a178801ed83d5bcbcf46a38da9abcf8ccd7a852702d5')
+    expect(snapshot.bytes.byteLength).toBe(8651)
   })
 })

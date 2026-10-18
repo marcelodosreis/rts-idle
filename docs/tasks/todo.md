@@ -192,7 +192,8 @@ deliverables through `P2.12` are complete.
 ## Phase 3 — Navigation, full combat, and fog
 
 Execution plan: `docs/tasks/P3-phase-plan.md`. `P3.05.01` and `P3.06.01` are
-complete. Stop before `P3.07.01`.
+complete. Every pending gameplay task is a vertical slice and remains open
+until its player-facing flow and real-server browser E2E pass.
 
 - [x] P3.01.01 — Navigation grid (`docs/tasks/done/P3.01.01.md`)
 - [x] P3.01.02 — A* pathfinding (`docs/tasks/done/P3.01.02.md`)
@@ -201,17 +202,21 @@ complete. Stop before `P3.07.01`.
 - [x] P3.04.01 — Group destinations (`docs/tasks/done/P3.04.01.md`)
 - [x] P3.05.01 — Spatial index (`docs/tasks/done/P3.05.01.md`)
 - [x] P3.06.01 — Collision and avoidance (`docs/tasks/done/P3.06.01.md`)
-- [ ] P3.07.01 — Vision and memory
-- [ ] P3.08.01 — Filtered observations and events
-- [ ] P3.08.02 — Fog rendering
-- [ ] P3.09.01 — Targeting and pursuit
-- [ ] P3.10.01 — Projectiles
-- [ ] P3.11.01 — Area damage
-- [ ] P3.12.01 — Combined army/chokepoint stress
+- [x] P3.07.01 — Vision and memory (`docs/tasks/done/P3.07.01.md`)
+- [x] P3.07.02 — Vision radius tuning (`docs/tasks/done/P3.07.02.md`)
+- [x] P3.08.01 — Filtered observations and events (`docs/tasks/done/P3.08.01.md`)
+- [x] P3.08.02 — Fog rendering (`docs/tasks/done/P3.08.02.md`)
+- [x] P3.09.01 — Targeting and pursuit (`docs/tasks/done/P3.09.01.md`)
+- [ ] P3.10.01 — Projectiles (`docs/tasks/P3.10.01.md`)
+- [ ] P3.11.01 — Area damage (`docs/tasks/P3.11.01.md`)
+- [ ] P3.12.01 — Combined army/chokepoint stress (`docs/tasks/P3.12.01.md`)
 
 The first technical slice is the pathfinding package. The first complete
 player-facing navigation slice is only complete after A*, authoritative MOVE
-integration, blocked/unreachable feedback, and real-server browser E2E.
+integration, blocked/unreachable feedback, and real-server browser E2E. The
+vision, filtered-observation, fog-rendering, radius-tuning, and targeting slice
+are now archived after their full validation gates; `P3.10.01` is the next
+active gameplay packet.
 
 ## Phase 4A — M1 content
 - [ ] P4.01–P4.07 (see `docs/master-plan.md`)

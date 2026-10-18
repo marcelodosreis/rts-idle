@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
-import { waitForMatchReady } from '../support/settle.js'
+import { waitForMatchReady, waitForStableCamera } from '../support/settle.js'
 
 async function canvasRect(page: Page) {
   return page.evaluate(() => {
@@ -42,6 +42,44 @@ async function ready(page: Page): Promise<void> {
   await waitForMatchReady(page)
 }
 
+async function movePlayerUnit(page: Page, x: number, y: number): Promise<void> {
+  const workerId = await page.evaluate(() => {
+    const owners = window.__rtsDebug?.getUnitOwners() ?? {}
+    const worker = Object.entries(owners).find(([, owner]) => owner === 0)
+    return worker === undefined ? null : Number(worker[0])
+  })
+  if (workerId === null) {
+    throw new Error('missing player unit for visibility reveal')
+  }
+  const target = { x: tilesToFixed(x) + 128, y: tilesToFixed(y) + 128 }
+  await page.evaluate((id) => window.__rtsDebug?.setSelection([id]), workerId)
+  await focusFixed(page, target.x, target.y)
+  const targetPoint = await fixedToPage(page, target.x, target.y)
+  await page.mouse.click(targetPoint.x, targetPoint.y, { button: 'right' })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          ([id, targetX, targetY]) => {
+            const position = window.__rtsDebug?.getPositions()[String(id)]
+            return position === undefined
+              ? Number.POSITIVE_INFINITY
+              : Math.max(Math.abs(position.x - targetX), Math.abs(position.y - targetY))
+          },
+          [workerId, target.x, target.y] as const
+        ),
+      { timeout: 15_000, intervals: [100, 250] }
+    )
+    .toBeLessThan(12)
+}
+
+async function revealEnemyBase(page: Page): Promise<void> {
+  await movePlayerUnit(page, 22, 23)
+  await expect
+    .poll(() => page.evaluate(() => Object.keys(window.__rtsDebug?.getConstructionStates() ?? {}).length))
+    .toBe(3)
+}
+
 test('box-selecting a construction shows it in the current context', async ({ page }) => {
   await ready(page)
   await focusFixed(page, tilesToFixed(8), tilesToFixed(8))
@@ -55,8 +93,10 @@ test('box-selecting a construction shows it in the current context', async ({ pa
 
 test('selecting an enemy construction shows its commands as locked', async ({ page }) => {
   await ready(page)
+  await revealEnemyBase(page)
   await focusFixed(page, tilesToFixed(24), tilesToFixed(24))
-  const from = await fixedToPage(page, tilesToFixed(22), tilesToFixed(22))
+  await waitForStableCamera(page, tilesToFixed(24), tilesToFixed(24))
+  const from = await fixedToPage(page, tilesToFixed(23), tilesToFixed(22))
   const to = await fixedToPage(page, tilesToFixed(26), tilesToFixed(26))
   await dragBox(page, from, to)
 
@@ -70,7 +110,12 @@ test('selecting an enemy construction shows its commands as locked', async ({ pa
 
 test('box-selecting a tree shows it in the current context', async ({ page }) => {
   await ready(page)
+  await movePlayerUnit(page, 5, 21)
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getResourceRenderStats().activeVisuals ?? 0))
+    .toBeGreaterThan(0)
   await focusFixed(page, tilesToFixed(5), tilesToFixed(23))
+  await waitForStableCamera(page, tilesToFixed(5), tilesToFixed(23))
   const from = await fixedToPage(page, tilesToFixed(4), tilesToFixed(22))
   const to = await fixedToPage(page, tilesToFixed(6), tilesToFixed(24))
   await dragBox(page, from, to)
@@ -81,6 +126,10 @@ test('box-selecting a tree shows it in the current context', async ({ page }) =>
 
 test('box-selecting the gold mine shows it in the current context', async ({ page }) => {
   await ready(page)
+  await movePlayerUnit(page, 22, 8)
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getFog()?.visibleTiles.includes(8 * 32 + 24) ?? false))
+    .toBe(true)
   await focusFixed(page, tilesToFixed(24), tilesToFixed(8.5))
   const from = await fixedToPage(page, tilesToFixed(23), tilesToFixed(8))
   const to = await fixedToPage(page, tilesToFixed(25), tilesToFixed(9))

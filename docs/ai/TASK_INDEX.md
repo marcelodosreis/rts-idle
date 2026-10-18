@@ -82,7 +82,9 @@
 ## Phase 3 — Navigation and Combat
 
 Execution plan: `docs/tasks/P3-phase-plan.md`. `P3.05.01` and `P3.06.01` are
-complete and archived. Stop before `P3.07.01`.
+complete and archived. Pending gameplay tasks are vertical slices; their
+packets remain active until the player-facing flow and real-server browser gate
+pass.
 
 | ID | Title | Status | Dependencies | Packages | Validation |
 |----|-------|--------|-------------|----------|------------|
@@ -93,12 +95,13 @@ complete and archived. Stop before `P3.07.01`.
 | P3.04.01 | Group destinations | done | P3.03.01 | simulation | unit, simulation |
 | P3.05.01 | Spatial index | done | P3.01.01 | pathfinding, simulation | unit, simulation |
 | P3.06.01 | Collision and avoidance | done | P3.04.01, P3.05.01 | simulation | unit, simulation, integration, e2e |
-| P3.07.01 | Vision and memory | pending | P3.05.01 | simulation | unit, simulation |
-| P3.08.01 | Filtered observations and events | pending | P3.07.01 | simulation, protocol | unit, simulation, contracts |
-| P3.08.02 | Fog rendering | pending | P3.08.01 | renderer, web | e2e |
-| P3.09.01 | Targeting and pursuit | pending | P3.06.01, P3.07.01 | simulation | unit, simulation, determinism |
-| P3.10.01 | Projectiles | pending | P3.09.01 | simulation | unit, simulation, e2e |
-| P3.11.01 | Area damage | pending | P3.10.01 | simulation | unit, simulation, e2e |
+| P3.07.01 | Vision and memory | done | P3.05.01 | simulation, protocol, server, renderer, web | unit, simulation, contracts, determinism, e2e chromium/firefox |
+| P3.07.02 | Vision radius tuning | done | P3.07.01 | simulation, tests, docs | simulation, determinism, e2e chromium/firefox, verify |
+| P3.08.01 | Filtered observations and events | done | P3.07.01 | simulation, protocol, server, renderer, web | unit, simulation, contracts, determinism, e2e chromium/firefox |
+| P3.08.02 | Fog rendering | done | P3.08.01 | renderer, web | renderer, e2e chromium/firefox |
+| P3.09.01 | Targeting and pursuit | done | P3.06.01, P3.07.01 | simulation, protocol, server, renderer, web | unit, simulation, determinism, e2e chromium/firefox, verify |
+| P3.10.01 | Projectiles | pending | P3.09.01 | game-data, shared, protocol, simulation, server, renderer, web | unit, simulation, determinism, contracts, e2e chromium/firefox |
+| P3.11.01 | Area damage | pending | P3.10.01 | game-data, shared, protocol, simulation, server, renderer, web | unit, simulation, determinism, contracts, e2e chromium/firefox |
 | P3.12.01 | Combined army/chokepoint stress | pending | P3.06.01, P3.08.02, P3.11.01 | simulation, server, web | simulation, determinism, e2e, benchmark |
 
 ## Phase 4A — M1 Content

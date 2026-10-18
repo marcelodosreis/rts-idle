@@ -1,7 +1,9 @@
 import { BUILDING_DEFINITIONS } from '@rts/game-data'
 import { tilesToFixed, type UnitKind } from '@rts/shared'
 import {
+  AttackTarget,
   Building,
+  Combat,
   createSimulation,
   Health,
   Kind,
@@ -115,7 +117,7 @@ describe('basic combat (P1.05)', () => {
   it('ATTACK out of range chases the target', () => {
     const { sim, ids } = combatSim([
       { owner: 0, x: 0, y: 0 },
-      { owner: 1, x: tilesToFixed(8), y: 0 }
+      { owner: 1, x: tilesToFixed(4), y: 0 }
     ])
     const [attacker, target] = ids
 
@@ -129,8 +131,159 @@ describe('basic combat (P1.05)', () => {
     ])
 
     const movement = sim.inspectState().world.store(Movement).get(attacker)!
-    expect(movement.destX).toBe(tilesToFixed(8))
+    expect(movement.destX).toBe(tilesToFixed(4))
     expect(movement.destY).toBe(0)
+  })
+
+  it('rejects ATTACK orders for targets outside the issuing player vision', () => {
+    const { sim, ids } = combatSim([
+      { owner: 0, x: 0, y: 0 },
+      { owner: 1, x: tilesToFixed(8), y: 0 }
+    ])
+    const [attacker, target] = ids
+
+    const result = sim.step([
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'ATTACK', payload: { unitIds: [attacker], targetId: target } }
+      }
+    ])
+
+    expect(result.rejected[0]?.code).toBe('ENTITY_UNAVAILABLE')
+    expect(result.rejected[0]?.message).toContain('not visible')
+    expect(sim.inspectState().world.store(Orders).get(attacker)).toBeUndefined()
+  })
+
+  it('does not auto-acquire an enemy outside the issuing player vision', () => {
+    const { sim, ids } = combatSim([
+      { owner: 0, x: 0, y: 0 },
+      { owner: 1, x: tilesToFixed(8), y: 0 }
+    ])
+    const [defender, enemy] = ids
+
+    const result = sim.step([
+      { tick: 1, playerId: 0, sequence: 1, intent: { type: 'HOLD', payload: { unitIds: [defender] } } }
+    ])
+
+    expect(sim.inspectState().world.store(Health).get(enemy)!.current).toBe(100)
+    expect(result.events.some((event) => event.type === 'attackFired' && event.attackerId === defender)).toBe(false)
+  })
+
+  it('auto-acquires combatants before workers and then breaks ties by distance', () => {
+    const world = worldWithCombatUnits([0, 1, 1, 1])
+    const ids = world.aliveIds()
+    world.store(Position).set(ids[0]!, { x: 0, y: 0 })
+    world.store(Position).set(ids[1]!, { x: tilesToFixed(2), y: 0 })
+    world.store(Position).set(ids[2]!, { x: tilesToFixed(1), y: 0 })
+    world.store(Position).set(ids[3]!, { x: tilesToFixed(1), y: 0 })
+    world.store(Kind).set(ids[0]!, 'archer')
+    world.store(Kind).set(ids[1]!, 'warrior')
+    world.store(Kind).set(ids[2]!, 'pawn')
+    world.store(Kind).set(ids[3]!, 'warrior')
+    world.store(Combat).set(ids[0]!, { armor: 0, damage: 8, rangeTiles: 3, cooldownTicks: 20, cooldownRemaining: 0 })
+    const sim = createSimulation({ seed: SEEDS.simulation.fixedTick, identity: TEST_IDENTITY, initialWorld: world })
+
+    sim.step([{ tick: 1, playerId: 0, sequence: 1, intent: { type: 'HOLD', payload: { unitIds: [ids[0]!] } } }])
+
+    const after = sim.inspectState()
+    expect(after.world.store(Health).get(ids[1]!)!.current).toBe(100)
+    expect(after.world.store(Health).get(ids[2]!)!.current).toBe(100)
+    expect(after.world.store(Health).get(ids[3]!)!.current).toBe(92)
+  })
+
+  it('pursues the last known position after losing vision and then stops', () => {
+    const { sim, ids } = combatSim(
+      [
+        { owner: 0, x: 0, y: 0 },
+        { owner: 1, x: tilesToFixed(3), y: 0 }
+      ],
+      ['pawn', 'lancer']
+    )
+    const [attacker, target] = ids
+
+    sim.step([
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'ATTACK', payload: { unitIds: [attacker], targetId: target } }
+      }
+    ])
+    sim.step([
+      {
+        tick: 2,
+        playerId: 1,
+        sequence: 1,
+        intent: { type: 'MOVE', payload: { unitIds: [target], x: tilesToFixed(20), y: 0 } }
+      }
+    ])
+
+    let lostVision = false
+    for (let tick = 0; tick < 160; tick += 1) {
+      sim.step()
+      lostVision = sim.inspectState().world.store(AttackTarget).get(attacker)?.lostVision === true
+      if (lostVision) {
+        break
+      }
+    }
+
+    expect(lostVision).toBe(true)
+    const known = sim.inspectState().world.store(AttackTarget).get(attacker)!
+    expect(known.lastKnownX).not.toBeNull()
+    expect(known.lastKnownY).toBe(0)
+
+    for (let tick = 0; tick < 160; tick += 1) {
+      sim.step()
+    }
+
+    const after = sim.inspectState()
+    expect(after.world.store(Movement).get(attacker)).toBeUndefined()
+    expect(after.world.store(Position).get(attacker)).toEqual({ x: known.lastKnownX, y: known.lastKnownY })
+    expect(after.world.store(Position).get(target)!.x).toBeGreaterThan(known.lastKnownX!)
+    expect(sim.observe(true).units.find((unit) => unit.id === attacker)?.orderState).toBe('lost_target')
+  })
+
+  it('keeps the loss-of-vision state when a scheduled move starts after combat begins', () => {
+    const { sim, ids } = combatSim(
+      [
+        { owner: 0, x: 0, y: 0 },
+        { owner: 1, x: tilesToFixed(2), y: 0 }
+      ],
+      ['archer', 'lancer']
+    )
+    const [attacker, target] = ids
+    sim.step([
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'ATTACK', payload: { unitIds: [attacker], targetId: target } }
+      }
+    ])
+    for (let tick = 2; tick <= 30; tick += 1) {
+      sim.step(
+        tick === 30
+          ? [
+              {
+                tick,
+                playerId: 1,
+                sequence: 1,
+                intent: { type: 'MOVE', payload: { unitIds: [target], x: tilesToFixed(22), y: 0 } }
+              }
+            ]
+          : []
+      )
+    }
+    for (let tick = 0; tick < 180; tick += 1) {
+      sim.step()
+      if (sim.inspectState().world.store(AttackTarget).get(attacker)?.lostVision === true) {
+        break
+      }
+    }
+
+    expect(sim.inspectState().world.store(AttackTarget).get(attacker)?.lostVision).toBe(true)
   })
 
   it('HOLD auto-attacks the nearest enemy in range without moving', () => {
@@ -164,6 +317,36 @@ describe('basic combat (P1.05)', () => {
     ])
 
     expect(sim.inspectState().world.store(Health).get(enemy)!.current).toBe(90)
+  })
+
+  it('ATTACK_MOVE resumes its route when a visible tracked target leaves range', () => {
+    const { sim, ids } = combatSim(
+      [
+        { owner: 0, x: 0, y: 0 },
+        { owner: 1, x: tilesToFixed(1), y: 0 }
+      ],
+      ['archer', 'lancer']
+    )
+    const [mover, enemy] = ids
+
+    sim.step([
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'ATTACK_MOVE', payload: { unitIds: [mover], x: tilesToFixed(8), y: 0 } }
+      }
+    ])
+    sim.step([
+      {
+        tick: 2,
+        playerId: 1,
+        sequence: 1,
+        intent: { type: 'MOVE', payload: { unitIds: [enemy], x: tilesToFixed(2), y: 0 } }
+      }
+    ])
+
+    expect(sim.inspectState().world.store(Movement).get(mover)?.destX).toBe(tilesToFixed(8))
   })
 
   it('respects the attack cooldown between shots', () => {

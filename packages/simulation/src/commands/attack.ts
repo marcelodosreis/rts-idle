@@ -1,9 +1,11 @@
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { CommandRejectedError } from '../contracts/commands.js'
+import { AttackTarget } from '../ecs/attack-target-component.js'
 import { Owner } from '../ecs/components.js'
 import { clearMovement } from '../movement/destination.js'
 import { setOrders } from '../orders/order-queue.js'
 import type { GameState } from '../state/state.js'
+import { isEntityVisible } from '../vision/vision-state.js'
 import { validateAttackCapableUnits } from './validate-units.js'
 
 /**
@@ -33,8 +35,21 @@ export function applyAttack(state: GameState, command: ScheduledCommand): void {
       `ATTACK: target ${payload.targetId} belongs to the issuing player`
     )
   }
+  if (!isEntityVisible(state, command.playerId, payload.targetId)) {
+    throw new CommandRejectedError(
+      'ENTITY_UNAVAILABLE',
+      command,
+      `ATTACK: target ${payload.targetId} is not visible to player ${command.playerId}`
+    )
+  }
   for (const unitId of payload.unitIds) {
     setOrders(state, unitId, [{ type: 'ATTACK', targetId: payload.targetId }])
+    state.world.store(AttackTarget).set(unitId, {
+      targetId: payload.targetId,
+      lastKnownX: null,
+      lastKnownY: null,
+      lostVision: false
+    })
     clearMovement(state, unitId)
   }
 }

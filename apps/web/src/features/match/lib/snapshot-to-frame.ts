@@ -21,12 +21,15 @@ export function snapshotToFrame(message: SnapshotMessage): RenderFrame {
       progressTicks: construction.progressTicks,
       totalTicks: construction.totalTicks,
       ...(construction.hp === undefined ? {} : { hp: construction.hp, maxHp: construction.maxHp }),
+      ...(construction.lastSeenTick === undefined ? {} : { lastSeenTick: construction.lastSeenTick }),
       ...(construction.production === undefined ? {} : { production: construction.production })
     })),
     resources: message.resources.map((resource) => ({
       resourceId: resource.resourceId,
       remaining: resource.remaining
     })),
-    events: message.events
+    resourcesComplete: message.resourcesComplete,
+    events: message.events,
+    ...(message.fog === undefined ? {} : { fog: message.fog })
   }
 }

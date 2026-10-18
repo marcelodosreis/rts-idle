@@ -1,5 +1,6 @@
 import { START_ENTITY_ID, tilesToFixed } from '@rts/shared'
 import {
+  AttackTarget,
   Building,
   Cargo,
   createSimulation,
@@ -73,6 +74,38 @@ describe('state serialization roundtrip', () => {
       original.step()
       restored.step()
     }
+  })
+
+  it('persists authoritative attack target memory without exposing it in observations', () => {
+    const world = worldWithCombatUnits([0, 1])
+    const [attacker, target] = world.aliveIds()
+    world.store(Position).set(attacker!, { x: 0, y: 0 })
+    world.store(Position).set(target!, { x: tilesToFixed(1), y: 0 })
+    const simulation = createSimulation({
+      seed: SEEDS.simulation.snapshotContinue,
+      identity: TEST_IDENTITY,
+      initialWorld: world
+    })
+
+    simulation.step([
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'ATTACK', payload: { unitIds: [attacker!], targetId: target! } }
+      }
+    ])
+
+    const before = simulation.inspectState().world.store(AttackTarget).get(attacker!)
+    const restored = simulationFromSnapshot(simulation.exportSnapshot())
+    const after = restored.inspectState()
+
+    expect(before).toEqual({ targetId: target, lastKnownX: tilesToFixed(1), lastKnownY: 0, lostVision: false })
+    expect(after.world.store(AttackTarget).get(attacker!)).toEqual(before)
+    const observedAttacker = restored.observeForPlayer(0, true).units.find((unit) => unit.id === attacker)
+    expect(observedAttacker?.orderState).toBe('attacking')
+    expect(observedAttacker).not.toHaveProperty('targetId')
+    expect(observedAttacker).not.toHaveProperty('lastKnownX')
   })
 
   it('canonicalizes future command ordering independently of ingress order', () => {

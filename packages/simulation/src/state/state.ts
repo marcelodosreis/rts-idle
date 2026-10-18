@@ -6,6 +6,7 @@ import type { NavigationState } from '../navigation/navigation-state.js'
 import type { PlacementMapBounds } from '../placement/building-placement.js'
 import type { ResourceState } from '../resources/resource-state.js'
 import type { SimulationEvent } from '../systems/events.js'
+import type { VisionState } from '../vision/vision-state.js'
 
 export type Phase = 'RUNNING' | 'FINISHED'
 
@@ -47,6 +48,8 @@ export interface GameState {
   readonly resources: ResourceState
   /** Canonical grid definition and bounded path searches. */
   readonly navigation: NavigationState
+  /** Player-specific visibility and explored-memory state. */
+  readonly vision: VisionState
   readonly world: World
   /** Future commands are authoritative state and survive snapshot/restore. */
   readonly pendingCommands: ScheduledCommand[]

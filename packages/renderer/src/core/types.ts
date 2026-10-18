@@ -76,6 +76,7 @@ export interface RenderBuilding {
   readonly maxHp?: number
   readonly rallyPoint?: { readonly x: number; readonly y: number } | null
   readonly production?: RenderProduction
+  readonly lastSeenTick?: number
 }
 
 export interface RenderUnitProductionItem {
@@ -138,6 +139,13 @@ export interface RenderResource {
   readonly remaining: number
 }
 
+export interface RenderFog {
+  readonly width: number
+  readonly height: number
+  readonly visibleTiles: readonly number[]
+  readonly exploredTiles: readonly number[]
+}
+
 export interface RenderBuildPreview {
   readonly x: number
   readonly y: number
@@ -154,6 +162,8 @@ export interface RenderFrame {
   readonly units: readonly RenderUnit[]
   readonly buildings?: readonly RenderBuilding[]
   readonly resources?: readonly RenderResource[]
+  readonly resourcesComplete?: boolean
+  readonly fog?: RenderFog
   /** Per-tick deterministic events that drive combat feedback. */
   readonly events?: readonly SimulationEvent[]
 }

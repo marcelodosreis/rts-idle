@@ -1,3 +1,4 @@
+import { AttackTarget } from './attack-target-component.js'
 import { Building } from './building-component.js'
 import {
   AbilityCooldown,
@@ -23,6 +24,7 @@ export function createWorld(options: WorldOptions = {}): World {
   world.registerComponent(Owner)
   world.registerComponent(Movement)
   world.registerComponent(Orders)
+  world.registerComponent(AttackTarget)
   world.registerComponent(Health)
   world.registerComponent(Combat)
   world.registerComponent(AbilityCooldown)

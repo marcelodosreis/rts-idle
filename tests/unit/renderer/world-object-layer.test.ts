@@ -90,6 +90,27 @@ describe('WorldObjectLayer construction anchors', () => {
     expect(barracks.getLocalBounds().height).toBe(fixedToRenderPixels(BUILDING_GEOMETRY.BARRACKS.visualSize.height) + 4)
   })
 
+  it('does not make a remembered building interactive', () => {
+    const layers = layerContainers()
+    const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
+    layer.present([
+      {
+        id: 11,
+        buildingType: 'BARRACKS',
+        x: 0,
+        y: 0,
+        owner: 1,
+        footprint: BARRACKS_BUILDING.footprint,
+        status: 'COMPLETED',
+        progressTicks: 100,
+        totalTicks: 100,
+        lastSeenTick: 4
+      }
+    ])
+
+    expect(layer.buildingAt(32, 32)).toBeNull()
+  })
+
   it('draws the training progress bar above a completed producer', () => {
     const layers = layerContainers()
     const layer = new WorldObjectLayer(layers.worldObjects, layers.interaction)
