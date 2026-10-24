@@ -20,6 +20,8 @@ export interface RtsDebug {
   getAnimationFrame(id: number): number | null
   getUnitHealth(id: number): { readonly current: number; readonly max: number } | null
   getSpriteState(id: number): ReturnType<GameRenderer['getUnitSpriteState']>
+  getProjectilePresentation(id: number): ReturnType<GameRenderer['getProjectilePresentation']>
+  getProjectileFeedback(): ReturnType<GameRenderer['getProjectileFeedback']>
   getSelection(): readonly number[]
   getSelectionBoxState(): ReturnType<GameRenderer['getSelectionBoxState']>
   setSelection(ids: readonly number[]): void
@@ -173,6 +175,8 @@ export function createRtsDebug(options: MatchDebugOptions): RtsDebug {
     getAnimationFrame: (id) => renderer.getUnitAnimationFrame(id),
     getUnitHealth: (id) => renderer.getUnitHealth(id),
     getSpriteState: (id) => renderer.getUnitSpriteState(id),
+    getProjectilePresentation: (id) => renderer.getProjectilePresentation(id),
+    getProjectileFeedback: () => renderer.getProjectileFeedback(),
     getSelection: () => renderer.getSelection(),
     getSelectionBoxState: () => renderer.getSelectionBoxState(),
     setSelection,

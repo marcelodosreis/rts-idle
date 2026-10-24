@@ -1,4 +1,4 @@
-import { BUILDING_DEFINITIONS } from '@rts/game-data'
+import { BUILDING_DEFINITIONS, unitDefinitionFor } from '@rts/game-data'
 import { tilesToFixed, type UnitKind } from '@rts/shared'
 import {
   AttackTarget,
@@ -27,6 +27,14 @@ function combatSim(
     const kind = kinds[i]
     if (kind !== undefined) {
       world.store(Kind).set(ids[i]!, kind)
+      const definition = unitDefinitionFor(kind)
+      const combat = world.store(Combat).get(ids[i]!)
+      if (combat !== undefined) {
+        world.store(Combat).set(ids[i]!, {
+          ...combat,
+          damage: definition.damage
+        })
+      }
     }
   }
   const sim = createSimulation({ seed: SEEDS.simulation.fixedTick, identity: TEST_IDENTITY, initialWorld: world })
@@ -178,7 +186,7 @@ describe('basic combat (P1.05)', () => {
     world.store(Position).set(ids[1]!, { x: tilesToFixed(2), y: 0 })
     world.store(Position).set(ids[2]!, { x: tilesToFixed(1), y: 0 })
     world.store(Position).set(ids[3]!, { x: tilesToFixed(1), y: 0 })
-    world.store(Kind).set(ids[0]!, 'archer')
+    world.store(Kind).set(ids[0]!, 'warrior')
     world.store(Kind).set(ids[1]!, 'warrior')
     world.store(Kind).set(ids[2]!, 'pawn')
     world.store(Kind).set(ids[3]!, 'warrior')

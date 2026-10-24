@@ -229,6 +229,7 @@ describe('protocol snapshot message', () => {
         maxHp: 500
       }
     ],
+    projectiles: [],
     resources: [{ resourceId: 4, remaining: 3000 }],
     resourcesComplete: true,
     fog: { width: 2, height: 2, visibleTiles: [0], exploredTiles: [0, 1] },
@@ -241,6 +242,13 @@ describe('protocol snapshot message', () => {
 
   it('accepts a valid snapshot message', () => {
     expect(isSnapshotMessage(valid)).toBe(true)
+  })
+
+  it('validates the public projectile projection without private target fields', () => {
+    const projectile = { id: 9, kind: 'arrow', owner: 0, x: 256, y: 512 }
+    expect(isSnapshotMessage({ ...valid, projectiles: [projectile] })).toBe(true)
+    expect(isSnapshotMessage({ ...valid, projectiles: [{ ...projectile, owner: 4 }] })).toBe(false)
+    expect(isSnapshotMessage({ ...valid, projectiles: [projectile, projectile] })).toBe(false)
   })
 
   it('accepts a valid snapshot delta and rejects a non-forward base tick', () => {
@@ -257,6 +265,8 @@ describe('protocol snapshot message', () => {
       removedUnitIds: [2],
       buildings: [] as SnapshotDeltaMessage['buildings'],
       removedBuildingIds: [5],
+      projectiles: [],
+      removedProjectileIds: [],
       resources: [{ resourceId: 4, remaining: 2990 }],
       resourcesComplete: false,
       fog: valid.fog,
@@ -305,6 +315,8 @@ describe('protocol snapshot message', () => {
         removedUnitIds: [3],
         buildings: valid.buildings,
         removedBuildingIds: [6],
+        projectiles: [],
+        removedProjectileIds: [],
         resources: [...valid.resources, { resourceId: 7, remaining: 1500 }],
         resourcesComplete: false,
         players: valid.players,
@@ -327,6 +339,8 @@ describe('protocol snapshot message', () => {
       removedUnitIds: [2],
       buildings: [] as SnapshotDeltaMessage['buildings'],
       removedBuildingIds: [5],
+      projectiles: [],
+      removedProjectileIds: [],
       resources: valid.resources,
       resourcesComplete: false,
       players: valid.players.slice(0, 1),
@@ -499,6 +513,7 @@ describe('protocol snapshot message', () => {
         phase: 'RUNNING',
         units: [],
         buildings: [],
+        projectiles: [],
         resources: [],
         resourcesComplete: true,
         players: [],
@@ -532,6 +547,7 @@ describe('protocol snapshot message', () => {
         phase: 'RUNNING',
         units: [{ id: 1, x: 0, y: 0, owner: 0, kind: 'pawn' }],
         buildings: [],
+        projectiles: [],
         resources: [],
         resourcesComplete: true,
         players: [],

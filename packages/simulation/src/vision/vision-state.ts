@@ -245,7 +245,7 @@ function buildingCenterTile(building: {
   }
 }
 
-function tileOfFixed(x: Fixed, y: Fixed): Tile {
+export function tileOfFixed(x: Fixed, y: Fixed): Tile {
   return { x: Math.floor(x / FIXED_SCALE), y: Math.floor(y / FIXED_SCALE) }
 }
 

@@ -1,6 +1,7 @@
 import { createPlayerResources, type PlayerId, type SimulationEvent, START_ENTITY_ID, tilesToFixed } from '@rts/shared'
 import {
   createSimulation,
+  createUnitEntity,
   createWorld,
   hashObservation,
   isVisibleTile,
@@ -142,5 +143,64 @@ describe('player vision and memory', () => {
     ] satisfies readonly SimulationEvent[]
 
     expect(simulation.filterEventsForPlayer(0, events)).toEqual([events[0]])
+  })
+
+  it('filters projectile observations and lifecycle events by current visibility', () => {
+    const world = createWorld()
+    createUnitEntity(world, {
+      id: START_ENTITY_ID,
+      owner: 0,
+      kind: 'archer',
+      x: tilesToFixed(8),
+      y: tilesToFixed(8)
+    })
+    createUnitEntity(world, {
+      id: START_ENTITY_ID + 1,
+      owner: 1,
+      kind: 'warrior',
+      x: tilesToFixed(10),
+      y: tilesToFixed(8)
+    })
+    createUnitEntity(world, {
+      id: START_ENTITY_ID + 2,
+      owner: 1,
+      kind: 'archer',
+      x: tilesToFixed(24),
+      y: tilesToFixed(24)
+    })
+    createUnitEntity(world, {
+      id: START_ENTITY_ID + 3,
+      owner: 2,
+      kind: 'warrior',
+      x: tilesToFixed(26),
+      y: tilesToFixed(24)
+    })
+    const simulation = simulationForWorld(world)
+    const result = simulation.step([
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'ATTACK', payload: { unitIds: [START_ENTITY_ID], targetId: START_ENTITY_ID + 1 } }
+      },
+      {
+        tick: 1,
+        playerId: 1,
+        sequence: 1,
+        intent: { type: 'ATTACK', payload: { unitIds: [START_ENTITY_ID + 2], targetId: START_ENTITY_ID + 3 } }
+      }
+    ])
+
+    const observation = simulation.observeForPlayer(0, true)
+    expect(observation.projectiles).toEqual([
+      { id: 1, kind: 'arrow', owner: 0, x: tilesToFixed(8), y: tilesToFixed(8) }
+    ])
+    expect(Object.keys(observation.projectiles[0]!)).toEqual(['id', 'kind', 'owner', 'x', 'y'])
+    expect(
+      simulation
+        .filterEventsForPlayer(0, result.events)
+        .filter((event) => event.type === 'projectileLaunched')
+        .map((event) => event.projectileId)
+    ).toEqual([1])
   })
 })

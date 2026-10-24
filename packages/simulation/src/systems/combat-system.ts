@@ -1,4 +1,4 @@
-import { unitCanAttack } from '@rts/game-data'
+import { unitCanAttack, unitDefinitionFor } from '@rts/game-data'
 import type { SpatialBounds } from '@rts/pathfinding'
 import { distSquaredFixed, type EntityId, FIXED_SCALE, type PlayerId } from '@rts/shared'
 import type { Order } from '../contracts/orders.js'
@@ -8,6 +8,7 @@ import { Building } from '../ecs/building-component.js'
 import { Combat, Kind, Orders, Owner, Position } from '../ecs/components.js'
 import { clearMovement, setMovementDestination } from '../movement/destination.js'
 import { clearOrders } from '../orders/order-queue.js'
+import { advanceProjectiles, launchProjectile } from '../projectiles/projectile-system.js'
 import { createWorldSpatialIndex } from '../spatial/world-spatial-index.js'
 import type { GameState } from '../state/state.js'
 import { isEntityVisible } from '../vision/vision-state.js'
@@ -267,8 +268,23 @@ function applyCombatTarget(action: CombatTargetAction): void {
     clearMovement(state, id)
     if (cooldownRemaining === 0) {
       const damage = effectiveDamage(state, id)
-      const armor = effectiveArmor(state, target.id)
-      accumulateDamage(state, target.id, id, Math.max(1, damage - armor))
+      const projectile = unitDefinitionFor(state.world.store(Kind).get(id)!).projectile
+      if (projectile === null) {
+        const armor = effectiveArmor(state, target.id)
+        accumulateDamage(state, target.id, id, Math.max(1, damage - armor))
+      } else {
+        const owner = state.world.store(Owner).get(id)
+        if (owner === undefined) {
+          return
+        }
+        launchProjectile(state, {
+          sourceId: id,
+          targetId: target.id,
+          owner: owner.owner,
+          kind: projectile.kind,
+          damage
+        })
+      }
       state.world.store(Combat).set(id, { ...combat, cooldownRemaining: combat.cooldownTicks })
     }
     return
@@ -323,6 +339,7 @@ function processCombatUnit(state: GameState, index: ReturnType<typeof createWorl
  * Emits `attackFired` for every attack performed.
  */
 export function combatSystem(state: GameState): void {
+  advanceProjectiles(state)
   const index = createWorldSpatialIndex(state)
   for (const id of state.world.query(Combat)) {
     processCombatUnit(state, index, id)

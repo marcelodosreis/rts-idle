@@ -36,5 +36,7 @@
  * 0.24.0: the player-specific vision radius changed from two to four tiles.
  * 0.25.0: attack targeting persists the last known position and loss-of-vision
  * state in canonical snapshots.
+ * 0.26.0: Archer projectiles, TTL state, and projectile identity joined
+ * canonical snapshots.
  */
-export const SIMULATION_VERSION = '0.25.0'
+export const SIMULATION_VERSION = '0.26.0'

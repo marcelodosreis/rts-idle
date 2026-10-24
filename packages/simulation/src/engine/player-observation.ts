@@ -2,6 +2,8 @@ import { createPlayerResources, type EntityId, type PlayerId, type SimulationEve
 import type { GameState } from '../state/state.js'
 import {
   isEntityVisible,
+  isVisibleTile,
+  tileOfFixed,
   type VisionBuildingMemory,
   visibleTileIndexes,
   visionForPlayer
@@ -30,6 +32,10 @@ export function createPlayerObservation(
     phase: full.phase,
     units: visibleUnits,
     buildings: [...visibleBuildings, ...memoryBuildings].sort((left, right) => left.id - right.id),
+    projectiles: full.projectiles.filter((projectile) => {
+      const tile = tileOfFixed(projectile.x, projectile.y)
+      return isVisibleTile(vision, state.vision.width, tile.x, tile.y)
+    }),
     players,
     resources: [...vision.resources.values()]
       .sort((left, right) => left.resourceId - right.resourceId)
@@ -44,7 +50,18 @@ export function filterEvents(
   playerId: PlayerId,
   events: readonly SimulationEvent[]
 ): readonly SimulationEvent[] {
-  return events.filter((event) => eventEntityIds(event).every((id) => isEntityVisible(state, playerId, id)))
+  const vision = visionForPlayer(state, playerId)
+  return events.filter((event) => {
+    if (
+      event.type === 'projectileLaunched' ||
+      event.type === 'projectileImpacted' ||
+      event.type === 'projectileExpired'
+    ) {
+      const tile = tileOfFixed(event.x, event.y)
+      return isVisibleTile(vision, state.vision.width, tile.x, tile.y)
+    }
+    return eventEntityIds(event).every((id) => isEntityVisible(state, playerId, id))
+  })
 }
 
 function fogForPlayer(state: GameState, vision: ReturnType<typeof visionForPlayer>): ObservationFog {
@@ -105,6 +122,10 @@ function eventEntityIds(event: SimulationEvent): readonly EntityId[] {
       return [event.entityId]
     case 'movementBlocked':
       return [event.unitId]
+    case 'projectileLaunched':
+    case 'projectileImpacted':
+    case 'projectileExpired':
+      return []
     default:
       return []
   }

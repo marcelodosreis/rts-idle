@@ -5,6 +5,7 @@ import type {
   MapDefinition,
   OrderState,
   ProductionItemStatus,
+  ProjectileKind,
   ResearchType,
   ResourceCost,
   ResourceType,
@@ -13,7 +14,9 @@ import type {
   UnitKind
 } from '@rts/shared'
 import type { PointData } from 'pixi.js'
+import type { ProjectileFeedbackState } from '../effects/layer.js'
 import type { InputProfile, WorldInteraction } from '../input/input-types.js'
+import type { ProjectilePresentationState } from '../projectiles/layer.js'
 
 export type { UnitKind } from '@rts/shared'
 
@@ -139,6 +142,14 @@ export interface RenderResource {
   readonly remaining: number
 }
 
+export interface RenderProjectile {
+  readonly id: number
+  readonly kind: ProjectileKind
+  readonly owner: number
+  readonly x: number
+  readonly y: number
+}
+
 export interface RenderFog {
   readonly width: number
   readonly height: number
@@ -160,6 +171,7 @@ export interface RenderFrame {
   /** Diagnostic frame number retained for renderer performance tooling. */
   readonly tick: number
   readonly units: readonly RenderUnit[]
+  readonly projectiles?: readonly RenderProjectile[]
   readonly buildings?: readonly RenderBuilding[]
   readonly resources?: readonly RenderResource[]
   readonly resourcesComplete?: boolean
@@ -204,6 +216,8 @@ export interface GameRenderer {
     readonly height: number
   }
   getUnitPositions(): ReadonlyMap<number, { readonly x: number; readonly y: number }>
+  getProjectilePresentation(id: number): ProjectilePresentationState | null
+  getProjectileFeedback(): readonly ProjectileFeedbackState[]
   /** Current animation frame of a unit's sprite, or `null` when in fallback. */
   getUnitAnimationFrame(id: number): number | null
   /** Last reported health of a unit (drives the overhead HP bar), or `null`. */
