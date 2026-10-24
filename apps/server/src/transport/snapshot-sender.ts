@@ -14,10 +14,21 @@ interface EntityDelta {
   readonly observation: ReturnType<GameSession['observeForPlayer']>
   readonly units: SnapshotMessage['units']
   readonly buildings: SnapshotMessage['buildings']
+  readonly projectiles: SnapshotMessage['projectiles']
   readonly resources: SnapshotMessage['resources']
   readonly players: SnapshotMessage['players']
   readonly removedUnitIds: readonly number[]
   readonly removedBuildingIds: readonly number[]
+  readonly removedProjectileIds: readonly number[]
+}
+
+interface EntityDeltaInput {
+  readonly session: GameSession
+  readonly playerId: PlayerId
+  readonly cursor: number
+  readonly unitIds: Set<number>
+  readonly buildingIds: Set<number>
+  readonly projectileIds: Set<number>
 }
 
 export class SnapshotSender {
@@ -30,6 +41,7 @@ export class SnapshotSender {
   private deltasSinceFull = 0
   private readonly unitIds = new Set<number>()
   private readonly buildingIds = new Set<number>()
+  private readonly projectileIds = new Set<number>()
   private readonly resourceAmounts = new Map<number, number>()
   constructor(
     private readonly ws: SnapshotSocket,
@@ -62,6 +74,7 @@ export class SnapshotSender {
     this.deltasSinceFull = 0
     this.unitIds.clear()
     this.buildingIds.clear()
+    this.projectileIds.clear()
     this.resourceAmounts.clear()
   }
 
@@ -77,11 +90,15 @@ export class SnapshotSender {
     this.deltasSinceFull = 0
     this.unitIds.clear()
     this.buildingIds.clear()
+    this.projectileIds.clear()
     for (const unit of observation.units) {
       this.unitIds.add(unit.id)
     }
     for (const building of observation.buildings) {
       this.buildingIds.add(building.id)
+    }
+    for (const projectile of observation.projectiles) {
+      this.projectileIds.add(projectile.id)
     }
     this.resourceAmounts.clear()
     for (const resource of observation.resources) {
@@ -95,6 +112,7 @@ export class SnapshotSender {
       phase: session.phase(),
       units: observation.units,
       buildings: observation.buildings,
+      projectiles: observation.projectiles,
       resources: observation.resources,
       resourcesComplete: true,
       players: observation.players,
@@ -116,7 +134,14 @@ export class SnapshotSender {
     const baseTick = this.lastSentTick
     const baseSequence = this.lastSentViewSequence
     const baseHash = this.lastSentViewHash
-    const entityDelta = collectEntityDelta(session, this.playerId, cursor, this.unitIds, this.buildingIds)
+    const entityDelta = collectEntityDelta({
+      session,
+      playerId: this.playerId,
+      cursor,
+      unitIds: this.unitIds,
+      buildingIds: this.buildingIds,
+      projectileIds: this.projectileIds
+    })
     this.cursor = entityDelta.cursor
     this.lastSentTick = session.tick()
     const viewSequence = this.nextViewSequence
@@ -139,6 +164,8 @@ export class SnapshotSender {
       removedUnitIds: entityDelta.removedUnitIds,
       buildings: entityDelta.buildings,
       removedBuildingIds: entityDelta.removedBuildingIds,
+      projectiles: entityDelta.projectiles,
+      removedProjectileIds: entityDelta.removedProjectileIds,
       resources: changedResources(fullObservation.resources, this.resourceAmounts),
       resourcesComplete: false,
       // There are four fixed player slots; sending these small projections is
@@ -171,13 +198,8 @@ export class SnapshotSender {
   }
 }
 
-function collectEntityDelta(
-  session: GameSession,
-  playerId: PlayerId,
-  cursor: number,
-  unitIds: Set<number>,
-  buildingIds: Set<number>
-): EntityDelta {
+function collectEntityDelta(input: EntityDeltaInput): EntityDelta {
+  const { session, playerId, cursor, unitIds, buildingIds, projectileIds } = input
   const changes = session.changesSince(cursor)
   const changedIds = [...changes.createdIds, ...changes.dirtyIds]
   const observation = session.observeForPlayer(playerId, false, changedIds)
@@ -186,6 +208,8 @@ function collectEntityDelta(
   const observedBuildingIds = new Set(visible.buildings.map((building) => building.id))
   const removedUnitIds = removedEntityIds(unitIds, observedUnitIds)
   const removedBuildingIds = removedEntityIds(buildingIds, observedBuildingIds)
+  const observedProjectileIds = new Set(visible.projectiles.map((projectile) => projectile.id))
+  const removedProjectileIds = removedEntityIds(projectileIds, observedProjectileIds)
   const units = includeNewEntities(observation.units, visible.units, unitIds)
   const buildings = includeNewEntities(observation.buildings, visible.buildings, buildingIds)
   for (const id of removedUnitIds) {
@@ -194,16 +218,24 @@ function collectEntityDelta(
   for (const id of removedBuildingIds) {
     buildingIds.delete(id)
   }
+  for (const id of removedProjectileIds) {
+    projectileIds.delete(id)
+  }
+  for (const projectile of visible.projectiles) {
+    projectileIds.add(projectile.id)
+  }
   updateKnownEntityIds(unitIds, buildingIds, units, buildings)
   return {
     cursor: changes.cursor,
     observation: visible,
     units,
     buildings,
+    projectiles: visible.projectiles,
     resources: observation.resources,
     players: visible.players,
     removedUnitIds,
-    removedBuildingIds
+    removedBuildingIds,
+    removedProjectileIds
   }
 }
 

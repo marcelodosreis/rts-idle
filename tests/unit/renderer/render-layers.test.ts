@@ -11,6 +11,7 @@ describe('RenderLayers', () => {
       layers.terrain,
       layers.worldObjects,
       layers.units,
+      layers.projectiles,
       layers.fog,
       layers.selection,
       layers.effects,

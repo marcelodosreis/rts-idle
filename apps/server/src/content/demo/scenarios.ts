@@ -181,6 +181,20 @@ function targetingScenario(): DemoScenario {
   }
 }
 
+function projectilesScenario(): DemoScenario {
+  return {
+    id: 'projectiles',
+    label: 'Projectiles',
+    spawns: [
+      { owner: 0, kind: ARCHER, ...tile(8, 8) },
+      { owner: 0, kind: WARRIOR, ...tile(9, 10) },
+      { owner: 1, kind: LANCER, initialHp: 20, ...tile(10, 8) },
+      { owner: 1, kind: WARRIOR, initialHp: 15, ...tile(10, 10) }
+    ],
+    attacks: []
+  }
+}
+
 /**
  * Demo scenario catalog. Each faction spawns in its own spot near the camera
  * home, so the whole opening is visible; in offensive mode the enemy side
@@ -192,6 +206,7 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
   regressionScenario(),
   monkHealScenario(),
   targetingScenario(),
+  projectilesScenario(),
   eightVsEightScenario(),
   {
     id: 'ffa',

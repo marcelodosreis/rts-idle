@@ -207,16 +207,12 @@ until its player-facing flow and real-server browser E2E pass.
 - [x] P3.08.01 — Filtered observations and events (`docs/tasks/done/P3.08.01.md`)
 - [x] P3.08.02 — Fog rendering (`docs/tasks/done/P3.08.02.md`)
 - [x] P3.09.01 — Targeting and pursuit (`docs/tasks/done/P3.09.01.md`)
-- [ ] P3.10.01 — Projectiles (`docs/tasks/P3.10.01.md`)
+- [x] P3.10.01 — Projectiles (`docs/tasks/done/P3.10.01.md`)
 - [ ] P3.11.01 — Area damage (`docs/tasks/P3.11.01.md`)
 - [ ] P3.12.01 — Combined army/chokepoint stress (`docs/tasks/P3.12.01.md`)
 
-The first technical slice is the pathfinding package. The first complete
-player-facing navigation slice is only complete after A*, authoritative MOVE
-integration, blocked/unreachable feedback, and real-server browser E2E. The
-vision, filtered-observation, fog-rendering, radius-tuning, and targeting slice
-are now archived after their full validation gates; `P3.10.01` is the next
-active gameplay packet.
+The navigation, vision, targeting, and projectile slices are complete after
+their full validation gates. `P3.11.01` is the next active gameplay packet.
 
 ## Phase 4A — M1 content
 - [ ] P4.01–P4.07 (see `docs/master-plan.md`)

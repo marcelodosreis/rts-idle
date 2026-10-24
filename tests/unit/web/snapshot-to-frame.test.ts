@@ -11,6 +11,7 @@ describe('snapshot to frame mapping', () => {
       phase: 'RUNNING',
       units: [{ id: 1, x: 0, y: 0, owner: 0, kind: 'pawn', carrying: true, cargoType: 'WOOD', canAttack: true }],
       buildings: [],
+      projectiles: [],
       resources: [],
       resourcesComplete: true,
       players: [],
@@ -73,6 +74,7 @@ describe('snapshot to frame mapping', () => {
           }
         }
       ],
+      projectiles: [],
       resources: [{ resourceId: 4, remaining: 25 }],
       resourcesComplete: true,
       players: [
@@ -154,6 +156,7 @@ describe('snapshot to frame mapping', () => {
           totalTicks: 100
         }
       ],
+      projectiles: [],
       resources: [],
       resourcesComplete: true,
       players: [],
@@ -176,6 +179,7 @@ describe('snapshot to frame mapping', () => {
         phase: 'FINISHED',
         units: [],
         buildings: [],
+        projectiles: [],
         resources: [],
         resourcesComplete: true,
         players: [],
@@ -184,6 +188,7 @@ describe('snapshot to frame mapping', () => {
     ).toEqual({
       tick: 0,
       units: [],
+      projectiles: [],
       buildings: [],
       resources: [],
       resourcesComplete: true,

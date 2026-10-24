@@ -1,13 +1,33 @@
 import {
   field,
   isInteger,
+  isNonNegativeInteger,
   isOneOf,
   isPlayerId,
   isRecord,
   MOVEMENT_BLOCK_REASONS,
+  PROJECTILE_EXPIRATION_REASONS,
+  PROJECTILE_KINDS,
   REPAIR_STOP_REASONS,
   SIMULATION_EVENT_TYPES
 } from '@rts/shared'
+
+type UnknownObject = { [key: string]: unknown }
+
+function isProjectileEvent(value: UnknownObject, type: string): boolean {
+  const common =
+    isNonNegativeInteger(field(value, 'projectileId')) &&
+    isOneOf(PROJECTILE_KINDS, field(value, 'kind')) &&
+    isInteger(field(value, 'x')) &&
+    isInteger(field(value, 'y'))
+  if (type === 'projectileExpired') {
+    return common && isOneOf(PROJECTILE_EXPIRATION_REASONS, field(value, 'reason'))
+  }
+  if (type === 'projectileLaunched') {
+    return common && isPlayerId(field(value, 'owner'))
+  }
+  return common
+}
 
 export function isSimulationEvent(value: unknown): boolean {
   if (!isRecord(value)) {
@@ -52,6 +72,10 @@ export function isSimulationEvent(value: unknown): boolean {
         isInteger(field(value, 'destinationY')) &&
         isOneOf(MOVEMENT_BLOCK_REASONS, field(value, 'reason'))
       )
+    case 'projectileImpacted':
+    case 'projectileLaunched':
+    case 'projectileExpired':
+      return isProjectileEvent(value, type)
     default:
       return false
   }

@@ -3,6 +3,7 @@ import { CanonicalWriter } from '../canonical/writer.js'
 import type { ComponentType } from '../ecs/components.js'
 import { World } from '../ecs/world.js'
 import { cloneNavigationState } from '../navigation/navigation-state.js'
+import { cloneProjectileStore } from '../projectiles/projectile-state.js'
 import { decodeScheduledCommand, encodeScheduledCommand } from '../snapshot/commands.js'
 import { cloneVisionState } from '../vision/vision-state.js'
 import type { GameState, PlayerState } from './state.js'
@@ -79,6 +80,7 @@ export function cloneGameState(state: GameState): GameState {
     resources: state.resources.clone(),
     navigation: cloneNavigationState(state.navigation),
     vision: cloneVisionState(state.vision),
+    projectiles: cloneProjectileStore(state.projectiles),
     world: cloneWorld(state.world),
     pendingCommands: state.pendingCommands.map(cloneCommand),
     events: [],

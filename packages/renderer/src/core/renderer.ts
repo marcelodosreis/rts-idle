@@ -7,17 +7,20 @@ import { EffectsLayer } from '../effects/layer.js'
 import { CommandPing } from '../effects/ping.js'
 import { SelectionController } from '../effects/selection.js'
 import { FogLayer } from '../fog/layer.js'
-import { createCameraController } from '../input/camera-controller.js'
+import type { createCameraController } from '../input/camera-controller.js'
 import type { WorldInteraction } from '../input/input-types.js'
 import { createWorldHitTester } from '../input/world-hit-tester.js'
 import { inputCanvasFrom, WorldInputAdapter } from '../input/world-input-adapter.js'
+import { ProjectileLayer } from '../projectiles/layer.js'
 import { createResourceFallbackTextures } from '../resources/resource-fallback.js'
 import { ResourceLayer } from '../resources/resource-layer.js'
 import { TerrainLayer } from '../terrain/layer.js'
 import { WATER_BG } from '../terrain/palette.js'
 import { UnitLayer } from '../units/layer.js'
 import { WorldObjectLayer } from '../world/object-layer.js'
+import { createRendererCamera } from './create-camera.js'
 import { RenderLayers } from './render-layers.js'
+import { EMPTY_RESOURCE_STATS } from './resource-stats.js'
 import type {
   GameRenderer,
   RenderBuildPreview,
@@ -26,30 +29,13 @@ import type {
   RenderFrame,
   UnitSpriteState
 } from './types.js'
-import type { WiredLayers } from './wired-layers.js'
+import { disposeUnwiredLayers, type WiredLayers } from './wired-layers.js'
 
-const MIN_ZOOM = 0.05
-const EMPTY_RESOURCE_STATS = {
-  definitions: 0,
-  active: 0,
-  depleted: 0,
-  visibleChunks: 0,
-  materializedChunks: 0,
-  activeVisuals: 0,
-  stumps: 0
-} as const
-const MAX_ZOOM = 4
-/** Canvas background is always the water color so no beige ever shows. */
-/**
- * PixiJS renderer orchestrator. Owns the Application and the viewport, and
- * delegates presentation to three cohesive sub-components: the unit sprite
- * layer, the selection controller, and the command ping. The visual loop is
- * driven externally via `present` (never by the simulation).
- */
 export class PixiRenderer implements GameRenderer {
   private app: Application | null = null
   private viewport: Viewport | null = null
   private units: UnitLayer | null = null
+  private projectiles: ProjectileLayer | null = null
   private fog: FogLayer | null = null
   private selection: SelectionController | null = null
   private ping: CommandPing | null = null
@@ -63,7 +49,6 @@ export class PixiRenderer implements GameRenderer {
   private mountId = 0
   private readonly options: RendererOptions
   private callbacks!: RendererCallbacks
-  /** Presentation asset library; null when the manifest/art is unavailable. */
   readonly assets: AssetLibrary
 
   constructor(options: RendererOptions) {
@@ -85,32 +70,15 @@ export class PixiRenderer implements GameRenderer {
     app.canvas.style.overscrollBehavior = 'contain'
     return app
   }
-  private createCamera(app: Application): ReturnType<typeof createCameraController> {
-    const zoom = this.options.initialZoom ?? 1
-    const center = this.options.initialCenter ?? {
-      x: this.options.worldWidth / 2,
-      y: this.options.worldHeight / 2
-    }
-    return createCameraController(app, {
-      worldWidth: this.options.worldWidth,
-      worldHeight: this.options.worldHeight,
-      initialCenter: center,
-      initialZoom: zoom,
-      input: { profile: this.options.inputProfile ?? 'mouse', minZoom: MIN_ZOOM, maxZoom: MAX_ZOOM }
-    })
-  }
   private async wire(app: Application, viewport: Viewport, mountId: number): Promise<WiredLayers | null> {
     const layers = new RenderLayers(viewport)
     app.ticker.add((ticker) => this.tick(ticker))
-    const selectionRect = new Graphics()
-    selectionRect.visible = false
-    selectionRect.eventMode = 'none'
-    app.stage.addChild(selectionRect)
-
+    const selectionRect = this.createSelectionRect(app)
     const unitResourceTypes = new Map<number, ResourceType>(
       (this.options.map?.resources ?? []).map((resource) => [resource.resourceId, resourceTypeForKind(resource.kind)])
     )
     const units = new UnitLayer(layers.units, this.assets, unitResourceTypes)
+    const projectiles = new ProjectileLayer(layers.projectiles, this.assets)
     const fog = new FogLayer(layers.fog, this.options.map?.width, this.options.map?.height)
     const selection = new SelectionController({ selectionLayer: layers.selection, units, selectionRect })
     const ping = new CommandPing(layers.interaction)
@@ -127,7 +95,7 @@ export class PixiRenderer implements GameRenderer {
       await terrain.build(this.options.map)
     }
     if (mountId !== this.mountId) {
-      terrain.dispose()
+      disposeUnwiredLayers(projectiles, terrain)
       this.destroyApplication(app, false)
       return null
     }
@@ -144,7 +112,27 @@ export class PixiRenderer implements GameRenderer {
       onInteraction: (interaction) => this.handleInteraction(interaction, selection),
       dragThresholdPx: 6
     })
-    return { viewport, units, fog, selection, ping, effects, terrain, worldObjects, resources, input, camera }
+    return {
+      viewport,
+      units,
+      projectiles,
+      fog,
+      selection,
+      ping,
+      effects,
+      terrain,
+      worldObjects,
+      resources,
+      input,
+      camera
+    }
+  }
+  private createSelectionRect(app: Application): Graphics {
+    const selectionRect = new Graphics()
+    selectionRect.visible = false
+    selectionRect.eventMode = 'none'
+    app.stage.addChild(selectionRect)
+    return selectionRect
   }
   async mount(host: HTMLElement, callbacks: RendererCallbacks): Promise<void> {
     if (this.app !== null) {
@@ -160,7 +148,7 @@ export class PixiRenderer implements GameRenderer {
     if (app === null) {
       return
     }
-    const camera = this.createCamera(app)
+    const camera = createRendererCamera(app, this.options)
     this.camera = camera
     const wired = await this.wire(app, camera.viewport, mountId)
     if (wired === null) {
@@ -171,6 +159,7 @@ export class PixiRenderer implements GameRenderer {
     this.app = app
     this.viewport = wired.viewport
     this.units = wired.units
+    this.projectiles = wired.projectiles
     this.fog = wired.fog
     this.selection = wired.selection
     this.ping = wired.ping
@@ -191,6 +180,7 @@ export class PixiRenderer implements GameRenderer {
       this.selection === null ||
       this.ping === null ||
       this.effects === null ||
+      this.projectiles === null ||
       this.fog === null ||
       this.worldObjects === null ||
       this.resources === null
@@ -201,6 +191,7 @@ export class PixiRenderer implements GameRenderer {
     this.worldObjects.present(frame.buildings ?? [])
     this.resources.present(frame.resources ?? [], frame.resourcesComplete === true)
     this.units.present(frame.units, now)
+    this.projectiles.present(frame.projectiles ?? [], now)
     this.fog.present(frame.fog)
     this.selection.updateRings()
     this.ping.expireIfElapsed(Date.now())
@@ -258,7 +249,6 @@ export class PixiRenderer implements GameRenderer {
     this.callbacks.onInteraction(interaction)
   }
 
-  /** Visual-loop tick: advances animations and eases interpolated positions. */
   private tick(ticker: Ticker): void {
     if (
       this.units === null ||
@@ -272,6 +262,7 @@ export class PixiRenderer implements GameRenderer {
     const now = performance.now()
     this.units.advanceAnimations(ticker)
     this.units.interpolate(now)
+    this.projectiles?.interpolate(now)
     this.selection.updateRings()
     this.ping.expireIfElapsed(now)
     this.effects.tick(now)
@@ -334,6 +325,7 @@ export class PixiRenderer implements GameRenderer {
     this.camera?.dispose()
     this.terrain?.dispose()
     this.fog?.dispose()
+    this.projectiles?.dispose()
     this.assets.destroy()
     if (this.app !== null) {
       this.app.destroy(
@@ -344,6 +336,7 @@ export class PixiRenderer implements GameRenderer {
     }
     this.viewport = null
     this.units = null
+    this.projectiles = null
     this.fog = null
     this.selection = null
     this.ping = null
@@ -360,6 +353,14 @@ export class PixiRenderer implements GameRenderer {
     return this.units?.fixedPositions() ?? new Map()
   }
 
+  getProjectilePresentation(id: number): ReturnType<GameRenderer['getProjectilePresentation']> {
+    return this.projectiles?.presentationState(id) ?? null
+  }
+
+  getProjectileFeedback(): ReturnType<GameRenderer['getProjectileFeedback']> {
+    return this.effects?.projectileFeedback() ?? []
+  }
+
   getUnitAnimationFrame(id: number): number | null {
     return this.units?.animationFrame(id) ?? null
   }
@@ -369,7 +370,6 @@ export class PixiRenderer implements GameRenderer {
     return this.units?.health(id) ?? null
   }
 
-  /** Debug: whether the unit's sprite body is visible and its current frame. */
   getUnitSpriteState(id: number): UnitSpriteState | null {
     return this.units?.spriteState(id) ?? null
   }

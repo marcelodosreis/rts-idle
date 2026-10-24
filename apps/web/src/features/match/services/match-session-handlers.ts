@@ -127,6 +127,7 @@ function expandSnapshotDelta(runtime: MatchSessionRuntime, delta: SnapshotDeltaM
     phase: delta.phase,
     units: mergeById(previous.units, delta.units, delta.removedUnitIds),
     buildings: mergeById(previous.buildings, delta.buildings, delta.removedBuildingIds),
+    projectiles: mergeById(previous.projectiles, delta.projectiles, delta.removedProjectileIds),
     resources: mergeResources(previous.resources, delta.resources),
     resourcesComplete: false,
     players: mergeById(previous.players, delta.players, []),
@@ -160,6 +161,12 @@ function logSnapshotEvents(
   for (const event of events) {
     if (event.type === 'attackFired') {
       appendLog('event', `attackFired: ${event.attackerId} → ${event.targetId}`)
+    } else if (event.type === 'projectileLaunched') {
+      appendLog('event', `projectileLaunched: ${event.kind} ${event.projectileId}`)
+    } else if (event.type === 'projectileImpacted') {
+      appendLog('event', `projectileImpacted: ${event.kind} ${event.projectileId}`)
+    } else if (event.type === 'projectileExpired') {
+      appendLog('event', `projectileExpired: ${event.kind} ${event.projectileId} (${event.reason})`)
     } else if (event.type === 'damageDealt') {
       appendLog('event', `damageDealt: ${event.targetId} -${event.amount} HP (${event.targetHp} left)`)
     } else if (event.type === 'repairStopped') {

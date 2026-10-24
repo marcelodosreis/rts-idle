@@ -7,9 +7,9 @@
 
 | Status | Count |
 |--------|-------|
-| open | 101 |
+| open | 111 |
 | closed | 21 |
-| **total** | **122** |
+| **total** | **132** |
 
 ## Details
 
@@ -136,6 +136,16 @@
 | 2026-10-05-fog-selection-box-unit-overlap | open | coverage | — | 1 test(s) |
 | 2026-10-06-economy-e2e-budget-under-radius-four | open | completion-gate | — | 1 test(s) |
 | 2026-10-06-vision-radius-too-small | open | coverage | — | 1 test(s) |
+| 2026-10-18-projectile-snapshot-codec | open | serialization | QH.19 | 1 test(s) |
+| 2026-10-19-projectile-presentation-speed | open | presentation | QH.19 | 2 test(s) |
+| 2026-10-24-projectile-attack-feedback | open | presentation | QH.19 | 1 test(s) |
+| 2026-10-24-projectile-dead-target-position | open | coverage | QH.19 | 1 test(s) |
+| 2026-10-24-projectile-e2e-camera-frame | open | input-geometry | QH.27.01 | 1 test(s) |
+| 2026-10-24-projectile-expiry-scenario-range | open | coverage | QH.27.01 | 1 test(s) |
+| 2026-10-24-projectile-full-snapshot-baseline | open | coverage | QH.19 | 1 test(s) |
+| 2026-10-24-projectile-homing-remainder-coverage | open | coverage | QH.19 | 1 test(s) |
+| 2026-10-24-projectile-layer-late-asset-disposal | open | presentation | QH.19 | 1 test(s) |
+| 2026-10-24-projectile-visibility-delta-boundary | open | coverage | QH.19 | 1 test(s) |
 | 2026-11-02-offensive-attack-orders-never-march | open | formation | — | none |
 
 ## Legend
