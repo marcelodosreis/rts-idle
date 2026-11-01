@@ -235,7 +235,7 @@ RFC: `docs/rfc/RFC-003-cost-scale-and-architecture-comparison.md` (Proposed).
 | QH.05 | Gesture matrix | pending | QH.04 | web, quality | e2e |
 | QH.06 | WebKit/touch | pending | QH.05 | web, quality | e2e |
 | QH.07 | Barrier input | pending | QH.04 | web, quality | unit |
-| QH.08 | Dynamic geometry | pending | QH.02 | renderer, quality | unit |
+| QH.08 | Dynamic geometry | done | QH.02 (reduced scope approved) | web, quality | e2e chromium/firefox, verify |
 | QH.09 | Concurrent isolation | done | QH.00 (reduced scope approved) | quality | integration |
 | QH.10 | Barrier singleton | pending | QH.00 | quality | unit |
 | QH.11 | Toggle CI parallelism | done | QH.09, QH.10 | quality, infra | CI |

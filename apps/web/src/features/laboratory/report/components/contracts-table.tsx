@@ -7,9 +7,11 @@ interface ContractsTableProps {
 
 export function ContractsTable({ contracts }: ContractsTableProps) {
   return (
-    <div>
-      <p className="mb-1 text-xs text-muted-foreground">Game contracts (keys the renderer/HUD resolve today):</p>
-      <div className="max-h-72 overflow-y-auto rounded border">
+    <div className="flex min-h-0 flex-col">
+      <p className="mb-1 shrink-0 text-xs text-muted-foreground">
+        Game contracts (keys the renderer/HUD resolve today):
+      </p>
+      <div className="min-h-0 flex-1 overflow-auto rounded border">
         <Table>
           <TableHeader>
             <TableRow>

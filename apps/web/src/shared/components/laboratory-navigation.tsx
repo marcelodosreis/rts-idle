@@ -9,10 +9,10 @@ const LABORATORY_PAGES = [
 
 export function LaboratoryNavigation() {
   return (
-    <div className="border-b border-border/50 bg-card/50">
+    <div className="shrink-0 border-b border-border/50 bg-card/50">
       <nav
         aria-label="Laboratory pages"
-        className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-1 px-4 py-2 sm:px-6"
+        className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-1 px-3 py-1 sm:px-4"
       >
         {LABORATORY_PAGES.map((page) => (
           <NavLink

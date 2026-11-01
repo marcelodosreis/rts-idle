@@ -30,7 +30,7 @@ function NewMatchEntry({ stored, search }: { readonly stored: StoredMatchSession
 
   if (error !== null) {
     return (
-      <main className="grid min-h-screen place-items-center bg-background p-6 text-foreground">
+      <main className="grid h-dvh min-h-0 place-items-center overflow-hidden bg-background p-4 text-foreground">
         <p role="alert" className="max-w-md text-center text-sm text-destructive">
           {error}
         </p>
@@ -38,7 +38,7 @@ function NewMatchEntry({ stored, search }: { readonly stored: StoredMatchSession
     )
   }
   return (
-    <main className="grid min-h-screen place-items-center bg-background p-6 text-foreground">
+    <main className="grid h-dvh min-h-0 place-items-center overflow-hidden bg-background p-4 text-foreground">
       <p role="status" className="text-sm text-muted-foreground">
         Preparing a new match...
       </p>

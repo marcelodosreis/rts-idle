@@ -155,7 +155,7 @@ export function SidebarNav({ catalog, selection, filteredKeys, onPatch, onSelect
 
   return (
     <aside
-      className="flex h-full flex-col overflow-hidden rounded-xl border border-border/50 bg-card"
+      className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border/50 bg-card"
       aria-label="Asset browser"
     >
       <SearchBox query={selection.query} onQuery={(query) => onPatch({ query })} />

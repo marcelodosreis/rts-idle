@@ -1,4 +1,5 @@
 import { Container, Graphics, Sprite } from 'pixi.js'
+import type { VisibleBounds } from '../../shared/lib/crop'
 import { croppedFrames, nativeScale } from '../../shared/lib/crop'
 import { drawAnchor, drawCenteredCell, drawTileGrid } from '../../shared/lib/draw-context'
 import { trackTexture } from '../../shared/services/section-app'
@@ -19,6 +20,7 @@ export interface BuildContext {
   readonly ctx: SectionContext
   readonly content: Container
   setSliceTextures(textures: readonly import('pixi.js').Texture[], active: number): void
+  setCropBounds(bounds: VisibleBounds | null): void
 }
 
 /** Simple ticker driver so animations advance without per-sprite callbacks. */
@@ -37,8 +39,10 @@ export async function buildUnit(c: BuildContext, key: string, options: RenderOpt
   const { ctx, content, app } = c
   const cropped = await croppedFrames(ctx.assets, key)
   if (cropped === null) {
+    c.setCropBounds(null)
     return { player: null, destroy: () => undefined }
   }
+  c.setCropBounds(cropped.bounds)
   c.setSliceTextures(cropped.textures, options.variant)
   const scale = nativeScale(cropped.bounds.w, cropped.bounds.h, app.screen.width - 80)
   const spriteH = cropped.bounds.h * scale
@@ -94,8 +98,10 @@ export async function buildStrip(
   const { ctx, content, app } = c
   const cropped = await croppedFrames(ctx.assets, key)
   if (cropped === null) {
+    c.setCropBounds(null)
     return { player: null, destroy: () => undefined }
   }
+  c.setCropBounds(cropped.bounds)
   c.setSliceTextures(cropped.textures, options.variant)
   const loop = !key.startsWith('fx.explosion_')
   const isFire = key.startsWith('fx.fire_')
@@ -138,8 +144,10 @@ export async function buildTileset(c: BuildContext, key: string, options: Render
   const tiles = await ctx.assets.tileTextures(key)
   const count = tiles?.length ?? 0
   if (count === 0) {
+    c.setCropBounds(null)
     return { player: null, destroy: () => undefined }
   }
+  c.setCropBounds(null)
   const active = Math.min(options.variant, count - 1)
   c.setSliceTextures(tiles ?? [], active)
   const texture = tiles?.[active]
@@ -170,6 +178,7 @@ export async function buildTileset(c: BuildContext, key: string, options: Render
 export async function buildGrid(c: BuildContext, key: string): Promise<Active> {
   const { ctx, content, app } = c
   const tiles = await ctx.assets.tileTextures(key)
+  c.setCropBounds(null)
   c.setSliceTextures(tiles ?? [], 0)
   const DISPLAY = 64
   const GRID_GAP = 2
@@ -198,8 +207,10 @@ export async function buildStatic(c: BuildContext, key: string, options: RenderO
   const { ctx, content, app } = c
   const cropped = await croppedFrames(ctx.assets, key)
   if (cropped === null) {
+    c.setCropBounds(null)
     return { player: null, destroy: () => undefined }
   }
+  c.setCropBounds(cropped.bounds)
   c.setSliceTextures(cropped.textures.slice(0, 1), 0)
   const frame = cropped.textures[0]
   if (frame === undefined) {

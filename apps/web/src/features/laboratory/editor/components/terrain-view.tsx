@@ -48,7 +48,7 @@ export function TerrainView({
   const fileActions = useTerrainFileActions(controllerRef, setReadout, fileInputRef, setModal)
 
   return (
-    <div className="mt-3 flex flex-col gap-3 md:h-[calc(100vh-140px)] md:flex-row">
+    <div className="mt-2 flex min-h-0 flex-1 flex-col gap-2 overflow-hidden md:flex-row">
       <TerrainToolbar
         state={state}
         controller={controllerRef.current}
@@ -64,13 +64,13 @@ export function TerrainView({
         onClearSaved={fileActions.handleClearSaved}
         onReset={selection.onReset}
       />
-      <div className="flex h-[55vh] min-h-[420px] min-w-0 flex-1 flex-col gap-2 md:h-auto md:min-h-0">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
         <StatusBar state={state} readout={readout} cursor={cursor} onPatch={selection.onPatch} />
         <div
           ref={hostRef}
           data-testid="terrain-canvas-host"
           data-controller-ready={ready ? 'true' : 'false'}
-          className="min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border border-border/50 bg-background"
+          className="min-h-0 min-w-0 flex-1 w-full overflow-hidden rounded-xl border border-border/50 bg-background md:max-h-[calc(100vw-252px)] md:self-start"
         />
       </div>
       {modal !== null && (

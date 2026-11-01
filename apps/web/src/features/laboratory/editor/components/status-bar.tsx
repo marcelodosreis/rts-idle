@@ -103,7 +103,9 @@ export function StatusBar({
         </span>
       </div>
       <div className="flex-1" />
-      <span className="max-w-[300px] truncate text-muted-foreground/70">{readout}</span>
+      <span className="hidden max-w-[220px] min-w-0 truncate whitespace-nowrap text-muted-foreground/70 xl:block">
+        {readout}
+      </span>
     </div>
   )
 }

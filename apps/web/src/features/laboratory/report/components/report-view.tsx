@@ -161,9 +161,9 @@ export function ReportView() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid h-full min-h-0 grid-rows-[auto_auto_minmax(0,1fr)_minmax(0,0.7fr)] gap-2 overflow-hidden">
       <ReportToolbar checking={checking} filter={filter} onRun={() => void startDeepCheck()} onFilter={applyFilter} />
-      <pre className="whitespace-pre-wrap rounded border bg-muted p-3 font-mono text-xs" aria-live="polite">
+      <pre className="whitespace-pre-wrap rounded border bg-muted px-3 py-2 font-mono text-xs" aria-live="polite">
         {statusLine}
       </pre>
       <ReportTable rows={visible} sortKey={sortKey} sortAsc={sortAsc} onToggleSort={toggleSort} />
