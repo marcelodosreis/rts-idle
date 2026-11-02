@@ -11,7 +11,7 @@ import { type ArmyChokepointFixture, armyChokepointCommands, createArmyChokepoin
 const COLLISION_DIAMETER = UNIT_COLLISION_RADIUS_FIXED * 2
 const DEADLOCK_TICKS = 80
 const FINISHED_TICK = 470
-const FINISHED_HASH = '546a200710fff2f329ba84b3126eca06eda1c49395a4512fab1f73648c269652'
+const FINISHED_HASH = 'dc60afca7e720c547d3449cc6e3532cb80d097cae996669a78ed12b74f516273'
 
 function tileOf(fixed: number): number {
   return Math.floor(fixed / FIXED_SCALE)

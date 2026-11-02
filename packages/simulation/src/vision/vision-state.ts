@@ -180,7 +180,10 @@ function revealCircle(visionState: VisionState, vision: PlayerVisionState, cente
     for (let x = center.x - radius; x <= center.x + radius; x += 1) {
       const dx = x - center.x
       const dy = y - center.y
-      if (dx * dx + dy * dy <= radiusSquared) {
+      // Exclusive boundary: the four cardinal tiles at exactly `radius` are
+      // isolated tips that make the fog silhouette look spiky, so they are
+      // excluded while every tile strictly inside the circle is revealed.
+      if (dx * dx + dy * dy < radiusSquared) {
         const index = tileIndex(visionState.width, visionState.height, x, y)
         if (index !== null) {
           vision.visibleTiles[index] = 1

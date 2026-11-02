@@ -24,7 +24,9 @@ const GOLDEN_SEED = 424242
 // this vector by appending their ECS components, the pending-command queue,
 // navigation state, vision state, and bumping the simulation version.
 // P3.11.01 bumps the simulation version to 0.27.0 for the explosive-shot
-// cooldown and projectile impact mode; the pinned vector is updated deliberately.
+// cooldown and projectile impact mode; P3.12 finalization changes the vision
+// radius to seven tiles with an exclusive boundary (0.28.0). The pinned vector
+// is updated deliberately.
 function buildGoldenSimulation() {
   const world = createWorld()
   let next = START_ENTITY_ID
@@ -43,14 +45,14 @@ function buildGoldenSimulation() {
 describe('canonical state hash golden', () => {
   it('produces the pinned hash for the characterization fixture', () => {
     const sim = buildGoldenSimulation()
-    expect(sim.hashState()).toBe('0e093fc0494d8252f687736f414f79da8e9d514172c749944e81a6cc7fda27b5')
+    expect(sim.hashState()).toBe('563ef2c5166676bfa2f382b0877065fcee49ebe5dc4e8da353c21e2bd5f6d637')
   })
 
   it('produces the pinned serialized bytes for the characterization fixture', () => {
     const sim = buildGoldenSimulation()
     const snapshot = sim.exportSnapshot()
     expect(snapshot.tick).toBe(1)
-    expect(snapshot.hash).toBe('0e093fc0494d8252f687736f414f79da8e9d514172c749944e81a6cc7fda27b5')
+    expect(snapshot.hash).toBe('563ef2c5166676bfa2f382b0877065fcee49ebe5dc4e8da353c21e2bd5f6d637')
     expect(snapshot.bytes.byteLength).toBe(8659)
   })
 })

@@ -26,7 +26,8 @@ function defaultRendererFactory(config: MatchConfig): GameRenderer {
     initialZoom: 1,
     initialCenter: { x: 64, y: 64 },
     assetsUrl: '',
-    map: config.map
+    map: config.map,
+    clampToWorld: true
   })
 }
 

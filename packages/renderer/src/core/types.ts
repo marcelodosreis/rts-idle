@@ -197,6 +197,8 @@ export interface RendererOptions {
   readonly map?: MapDefinition
   /** Camera gesture profile; defaults to the mouse contract. */
   readonly inputProfile?: InputProfile
+  /** Keep the camera inside the map and prevent zoom-out past its cover. */
+  readonly clampToWorld?: boolean
 }
 
 /** Public renderer contract: mount/present/resize/dispose plus camera and selection access. */

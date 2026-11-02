@@ -1,11 +1,12 @@
 import { assertNever, type ResourceType, resourceTypeForKind } from '@rts/shared'
-import { Application, Graphics, type Ticker } from 'pixi.js'
+import { Application, type Ticker } from 'pixi.js'
 import type { Viewport } from 'pixi-viewport'
 import { AssetLibrary } from '../assets/asset-library.js'
 import { POINTER_COLOR, RALLY_COLOR, SELECTION_COLOR } from '../effects/colors.js'
 import { EffectsLayer } from '../effects/layer.js'
 import { CommandPing } from '../effects/ping.js'
 import { SelectionController } from '../effects/selection.js'
+import { createFogBackdrop, type FogBackdrop } from '../fog/backdrop.js'
 import { FogLayer } from '../fog/layer.js'
 import type { createCameraController } from '../input/camera-controller.js'
 import type { WorldInteraction } from '../input/input-types.js'
@@ -21,6 +22,7 @@ import { WorldObjectLayer } from '../world/object-layer.js'
 import { createRendererCamera } from './create-camera.js'
 import { RenderLayers } from './render-layers.js'
 import { EMPTY_RESOURCE_STATS } from './resource-stats.js'
+import { createSelectionRect } from './selection-rect.js'
 import type {
   GameRenderer,
   RenderBuildPreview,
@@ -46,6 +48,7 @@ export class PixiRenderer implements GameRenderer {
   private resources: ResourceLayer | null = null
   private input: WorldInputAdapter | null = null
   private camera: ReturnType<typeof createCameraController> | null = null
+  private backdrop: FogBackdrop | null = null
   private mountId = 0
   private readonly options: RendererOptions
   private callbacks!: RendererCallbacks
@@ -73,7 +76,7 @@ export class PixiRenderer implements GameRenderer {
   private async wire(app: Application, viewport: Viewport, mountId: number): Promise<WiredLayers | null> {
     const layers = new RenderLayers(viewport)
     app.ticker.add((ticker) => this.tick(ticker))
-    const selectionRect = this.createSelectionRect(app)
+    const selectionRect = createSelectionRect(app)
     const unitResourceTypes = new Map<number, ResourceType>(
       (this.options.map?.resources ?? []).map((resource) => [resource.resourceId, resourceTypeForKind(resource.kind)])
     )
@@ -127,13 +130,6 @@ export class PixiRenderer implements GameRenderer {
       camera
     }
   }
-  private createSelectionRect(app: Application): Graphics {
-    const selectionRect = new Graphics()
-    selectionRect.visible = false
-    selectionRect.eventMode = 'none'
-    app.stage.addChild(selectionRect)
-    return selectionRect
-  }
   async mount(host: HTMLElement, callbacks: RendererCallbacks): Promise<void> {
     if (this.app !== null) {
       throw new Error('PixiRenderer: already mounted')
@@ -150,8 +146,11 @@ export class PixiRenderer implements GameRenderer {
     }
     const camera = createRendererCamera(app, this.options)
     this.camera = camera
+    this.backdrop = this.options.clampToWorld === true ? createFogBackdrop(app) : null
     const wired = await this.wire(app, camera.viewport, mountId)
     if (wired === null) {
+      this.backdrop?.dispose()
+      this.backdrop = null
       camera.dispose()
       this.camera = null
       return
@@ -322,6 +321,8 @@ export class PixiRenderer implements GameRenderer {
   dispose(): void {
     this.mountId += 1
     this.input?.dispose()
+    this.backdrop?.dispose()
+    this.backdrop = null
     this.camera?.dispose()
     this.terrain?.dispose()
     this.fog?.dispose()

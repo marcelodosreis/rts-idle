@@ -46,7 +46,12 @@ function projectileSession(): GameSession {
 function boundedSession(): GameSession {
   const world = createWorld({ changeHistoryLimit: 4 })
   createUnitEntity(world, { id: 1, x: 0, y: 0, owner: 0, kind: 'pawn', worker: true })
-  return GameSession.create({ seed: SEEDS.simulation.fixedTick, identity: TEST_IDENTITY, initialWorld: world })
+  return GameSession.create({
+    seed: SEEDS.simulation.fixedTick,
+    identity: TEST_IDENTITY,
+    initialWorld: world,
+    visionRadiusTiles: 4
+  })
 }
 
 function projectileVisibilitySession(): GameSession {
@@ -55,7 +60,12 @@ function projectileVisibilitySession(): GameSession {
   createUnitEntity(world, { id: 2, x: tilesToFixed(14), y: tilesToFixed(8), owner: 0, kind: 'pawn' })
   createUnitEntity(world, { id: 3, x: tilesToFixed(13), y: tilesToFixed(8), owner: 1, kind: 'warrior' })
   world.store(Combat).set(1, { ...world.store(Combat).get(1)!, rangeTiles: 20 })
-  return GameSession.create({ seed: SEEDS.simulation.fixedTick, identity: TEST_IDENTITY, initialWorld: world })
+  return GameSession.create({
+    seed: SEEDS.simulation.fixedTick,
+    identity: TEST_IDENTITY,
+    initialWorld: world,
+    visionRadiusTiles: 4
+  })
 }
 
 function message(socket: FakeSocket): SnapshotMessage | SnapshotDeltaMessage {

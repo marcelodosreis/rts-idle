@@ -97,7 +97,8 @@ describe('player vision and memory', () => {
 
     expect(radius).toBe(VISION_RADIUS_TILES)
     expect(isVisibleTile(vision, state.vision.width, 8, 8)).toBe(true)
-    expect(isVisibleTile(vision, state.vision.width, 8 + radius, 8)).toBe(true)
+    expect(isVisibleTile(vision, state.vision.width, 8 + radius - 1, 8)).toBe(true)
+    expect(isVisibleTile(vision, state.vision.width, 8 + radius, 8)).toBe(false)
     expect(isVisibleTile(vision, state.vision.width, 8 + radius + 1, 8)).toBe(false)
     expect(isVisibleTile(vision, state.vision.width, 10, 10)).toBe(true)
   })
@@ -108,7 +109,8 @@ describe('player vision and memory', () => {
     const vision = visionForPlayer(state, 0)
 
     expect(state.vision.radiusTiles).toBe(6)
-    expect(isVisibleTile(vision, state.vision.width, 14, 8)).toBe(true)
+    expect(isVisibleTile(vision, state.vision.width, 13, 8)).toBe(true)
+    expect(isVisibleTile(vision, state.vision.width, 14, 8)).toBe(false)
     expect(isVisibleTile(vision, state.vision.width, 15, 8)).toBe(false)
     expect(isVisibleTile(vision, state.vision.width, 12, 12)).toBe(true)
     expect(isVisibleTile(vision, state.vision.width, 13, 13)).toBe(false)

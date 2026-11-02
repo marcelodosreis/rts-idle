@@ -8,8 +8,9 @@ Browser-first competitive RTS with deterministic simulation, server authority, a
 
 ## Current Milestone
 
-**Phase 3 in progress.** Phase 2 economy and production are complete. The active
-milestone is navigation, collision, complete combat, and fog of war.
+**Phase 3 complete.** Phase 2 economy and production are complete, and the
+navigation, collision, complete combat, fog, and combined-stress phase is
+closed. The active milestone is Phase 4A (M1 content).
 
 See `docs/tasks/todo.md` for full phase list.
 
@@ -70,8 +71,10 @@ See `docs/tasks/todo.md` for full phase list.
 - Player-specific circular vision, explored memory, filtered snapshot/delta
   observations, hidden-event filtering, and a PixiJS fog projection with
   real-server Chromium/Firefox reveal, memory, and visibility-transition coverage;
-  the radius is a `@rts/game-data` balance tunable with a per-simulation
-  `visionRadiusTiles` override, and snapshots keep their authored radius
+  the radius defaults to seven tiles in `@rts/game-data`, is a tunable with a
+  per-simulation `visionRadiusTiles` override, and uses an exclusive circular
+  boundary so the cardinal extremities have no isolated tip tiles; snapshots
+  keep their authored radius
 - Authoritative Archer projectiles with deterministic travel, impact, dead-target
   and TTL expiry, private homing state, filtered observations, interpolated Arrow
   presentation, and real-server Chromium/Firefox lifecycle coverage
@@ -122,15 +125,15 @@ non-performance Chromium/Firefox E2E gate is recorded as 275 tests passing and
 one performance test skipped. `P3.09.01` Targeting and Pursuit, `P3.10.01`
 Projectiles, and `P3.11.01` Area Damage are complete with their simulation,
 protocol, server, renderer, HUD, and focused Chromium/Firefox E2E gates;
-`P3.12.01` Combined Army/Chokepoint Stress is implemented through the
-deterministic simulation fixture, integration composition pin, and real-server
-Chromium/Firefox stress flow. Its only open acceptance item is the 500-entity
-performance gate: the local headless benchmark reports median p95 116.17 ms
-against the 10 ms threshold.
+`P3.12.01` Combined Army/Chokepoint Stress is complete with the deterministic
+simulation fixture, integration composition pin, real-server Chromium/Firefox
+stress flow, and recorded performance evidence: the 16-unit stress sustains p95
+4.31 ms and the 500-entity stress ceiling measures median p95 around 229-316 ms
+under its 500 ms limit. Phase 3 is complete; Phase 4A (M1 content) is next.
 
 The first navigation/collision slice is complete: navigation is integrated with
 authoritative movement, visible blocked/unreachable feedback, and real-server
-browser coverage. Later Phase 3 work now continues with area damage.
+browser coverage. Phase 3 is closed; the next milestone is Phase 4A (M1 content).
 
 ### Latest Worktree Validation
 
@@ -141,9 +144,11 @@ browser coverage. Later Phase 3 work now continues with area damage.
 - The focused P3.11.01 real-server Blast flow passes in Chromium and Firefox,
   covering doubled radius damage, cost, cooldown feedback, and range rejection.
 - The P3.12.01 regression army stress flow passes in Chromium and Firefox, and
-  the integration test pins the regression army and initial hidden enemies.
-- The P3.12.01 headless 500-entity benchmark reports median p95 116.17 ms, so
-  the 10 ms gate remains open.
+  the integration test pins the regression army and its initial fog state.
+- The camera bounds and fog overscan/backdrop pass in Chromium and Firefox, so
+  zoom/pan cannot reveal unfogged space beyond the map.
+- The 16-unit stress benchmark measures p95 4.31 ms, and the 500-entity stress
+  ceiling measures median p95 229-316 ms under its 500 ms limit.
 - The focused six-test Chromium/Firefox matrix for vision, filtered
   observations, and targeting passes.
 - `pnpm run test:e2e:prepare -- --output=tmp/e2e-plan-validation.json` passes.

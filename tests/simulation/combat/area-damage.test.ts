@@ -101,6 +101,7 @@ function createAreaSimulation(options: AreaSimulationOptions) {
     seed: SEEDS.simulation.fixedTick,
     identity: TEST_IDENTITY,
     initialWorld: world,
+    visionRadiusTiles: 4,
     initialPlayers: [0, 1, 2, 3].map((id) => ({
       id: id as PlayerId,
       defeated: false,

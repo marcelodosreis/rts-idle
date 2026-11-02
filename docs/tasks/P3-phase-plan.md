@@ -227,7 +227,7 @@ Acceptance: the scenario makes progress without overlap or deadlock, produces
 the same result for the same seed and commands, passes performance thresholds,
 and runs through the real server and browser path. The player must issue the
 movement and combat commands and see progress, recovery, combat feedback, and
-the final result. Packet: `docs/tasks/P3.12.01.md`.
+the final result. Packet: `docs/tasks/done/P3.12.01.md`.
 
 ## Validation Gates
 

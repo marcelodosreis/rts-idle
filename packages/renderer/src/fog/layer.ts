@@ -2,13 +2,16 @@ import { type Container, Graphics } from 'pixi.js'
 import type { RenderFog } from '../core/types.js'
 
 const TILE_PIXELS = 64
-const FOG_COLOR = 0x101827
+export const FOG_COLOR = 0x101827
 const EXPLORED_ALPHA = 0.46
-const UNKNOWN_ALPHA = 0.88
+export const UNKNOWN_ALPHA = 0.88
+/** Extra always-unknown fog around the map, covering transient camera edges. */
+const FOG_OVERSCAN_TILES = 2
 
 /** Presents server-provided visibility without calculating gameplay state. */
 export class FogLayer {
   private readonly tiles = new Map<number, Graphics>()
+  private readonly overscan: Graphics[] = []
   private width = 0
   private height = 0
 
@@ -54,6 +57,10 @@ export class FogLayer {
       tile.destroy()
     }
     this.tiles.clear()
+    for (const strip of this.overscan) {
+      strip.destroy()
+    }
+    this.overscan.length = 0
     this.layer.removeChildren()
     this.width = 0
     this.height = 0
@@ -72,6 +79,26 @@ export class FogLayer {
         this.tiles.set(index, tile)
         this.layer.addChild(tile)
       }
+    }
+    this.createOverscan(width, height)
+  }
+
+  private createOverscan(width: number, height: number): void {
+    const margin = FOG_OVERSCAN_TILES * TILE_PIXELS
+    const mapWidth = width * TILE_PIXELS
+    const mapHeight = height * TILE_PIXELS
+    const strips = [
+      { x: -margin, y: -margin, width: mapWidth + margin * 2, height: margin },
+      { x: -margin, y: mapHeight, width: mapWidth + margin * 2, height: margin },
+      { x: -margin, y: 0, width: margin, height: mapHeight },
+      { x: mapWidth, y: 0, width: margin, height: mapHeight }
+    ]
+    for (const bounds of strips) {
+      const strip = new Graphics().rect(bounds.x, bounds.y, bounds.width, bounds.height).fill(FOG_COLOR)
+      strip.alpha = UNKNOWN_ALPHA
+      strip.eventMode = 'none'
+      this.overscan.push(strip)
+      this.layer.addChild(strip)
     }
   }
 

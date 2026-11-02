@@ -65,7 +65,7 @@ async function rightClickUntilFeedback(
       return
     }
   }
-  throw new Error('no ' + kind + ' projectile feedback after retries')
+  throw new Error(`no ${kind} projectile feedback after retries`)
 }
 
 test('player attack produces visible projectile lifecycle feedback', async ({ page }) => {

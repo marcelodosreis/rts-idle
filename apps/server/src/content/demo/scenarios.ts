@@ -29,6 +29,8 @@ export interface DemoScenario {
   readonly attacks: readonly (readonly [number, number])[]
   /** Deterministic commands submitted to the authored player's session at bootstrap. */
   readonly scheduledMoves?: readonly (readonly [number, number, Fixed, Fixed])[]
+  /** Optional fog-radius override for fixtures whose assertions depend on it. */
+  readonly visionRadiusTiles?: number
   /**
    * When true (default), the player's own units (owner 0) spawn idle and never
    * move until ordered; only enemies march/attack.
@@ -177,7 +179,8 @@ function targetingScenario(): DemoScenario {
       { owner: 1, kind: LANCER, ...tile(10, 8) }
     ],
     attacks: [],
-    scheduledMoves: [[120, 1, tilesToFixed(22), tilesToFixed(8)]]
+    scheduledMoves: [[120, 1, tilesToFixed(22), tilesToFixed(8)]],
+    visionRadiusTiles: 4
   }
 }
 

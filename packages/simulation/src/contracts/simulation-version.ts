@@ -39,5 +39,7 @@
  * 0.26.0: Archer projectiles, TTL state, and projectile identity joined
  * canonical snapshots.
  * 0.27.0: Explosive Shot cooldown and projectile impact mode joined canonical snapshots.
+ * 0.28.0: the player-specific vision radius changed from four to seven tiles and
+ * the circular mask uses an exclusive boundary (no isolated cardinal tips).
  */
-export const SIMULATION_VERSION = '0.27.0'
+export const SIMULATION_VERSION = '0.28.0'
