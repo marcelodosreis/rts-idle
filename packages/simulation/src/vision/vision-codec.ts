@@ -1,7 +1,12 @@
 import { BUILDING_STATUSES, BUILDING_TYPES, PLAYER_IDS, type PlayerId } from '@rts/shared'
 import type { CanonicalReader } from '../canonical/reader.js'
 import type { CanonicalWriter } from '../canonical/writer.js'
-import { createVisionState, type PlayerVisionState, VISION_RADIUS_TILES, type VisionState } from './vision-state.js'
+import {
+  createVisionState,
+  isValidVisionRadiusTiles,
+  type PlayerVisionState,
+  type VisionState
+} from './vision-state.js'
 
 export function writeVisionState(writer: CanonicalWriter, state: VisionState): void {
   writer.writeU32(state.radiusTiles)
@@ -25,10 +30,10 @@ export function readVisionState(reader: CanonicalReader): VisionState {
   const radiusTiles = reader.readU32()
   const width = reader.readU32()
   const height = reader.readU32()
-  if (radiusTiles !== VISION_RADIUS_TILES || width === 0 || height === 0) {
+  if (!isValidVisionRadiusTiles(radiusTiles) || width === 0 || height === 0) {
     throw new Error('readVisionState: invalid dimensions or vision radius')
   }
-  const state = createVisionState(width, height)
+  const state = createVisionState(width, height, radiusTiles)
   const count = reader.readLength()
   if (count !== PLAYER_IDS.length) {
     throw new Error(`readVisionState: expected ${PLAYER_IDS.length} players`)

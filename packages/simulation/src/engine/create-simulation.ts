@@ -88,7 +88,7 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
     mapBounds,
     resources: createResourceState(options.resources),
     navigation: createNavigationState(mapBounds, navigation),
-    vision: createVisionState(mapBounds.width, mapBounds.height),
+    vision: createVisionState(mapBounds.width, mapBounds.height, options.visionRadiusTiles),
     projectiles: createProjectileStore(),
     world,
     pendingCommands: [],

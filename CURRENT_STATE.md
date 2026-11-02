@@ -67,9 +67,11 @@ See `docs/tasks/todo.md` for full phase list.
   building segment collision, unit avoidance, shared work/formation destinations,
   `movementBlocked` feedback, HUD presentation, and real-server Chromium/Firefox
   coverage
-- Player-specific four-tile circular vision, explored memory, filtered snapshot/delta
+- Player-specific circular vision, explored memory, filtered snapshot/delta
   observations, hidden-event filtering, and a PixiJS fog projection with
-  real-server Chromium/Firefox reveal, memory, and visibility-transition coverage
+  real-server Chromium/Firefox reveal, memory, and visibility-transition coverage;
+  the radius is a `@rts/game-data` balance tunable with a per-simulation
+  `visionRadiusTiles` override, and snapshots keep their authored radius
 - Authoritative Archer projectiles with deterministic travel, impact, dead-target
   and TTL expiry, private homing state, filtered observations, interpolated Arrow
   presentation, and real-server Chromium/Firefox lifecycle coverage

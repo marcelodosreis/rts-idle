@@ -9,6 +9,7 @@ import {
   Owner,
   Position,
   simulationFromSnapshot,
+  VISION_RADIUS_TILES,
   visionForPlayer
 } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
@@ -28,8 +29,9 @@ function worldAt(placements: readonly { readonly owner: PlayerId; readonly x: nu
   return world
 }
 
-function simulationForWorld(world: ReturnType<typeof worldAt>, hiddenEnemyX = 24) {
+function simulationForWorld(world: ReturnType<typeof worldAt>, hiddenEnemyX = 24, visionRadiusTiles?: number) {
   return createSimulation({
+    ...(visionRadiusTiles === undefined ? {} : { visionRadiusTiles }),
     seed: 9,
     identity: TEST_IDENTITY,
     mapBounds: MAP_BOUNDS,
@@ -87,17 +89,33 @@ describe('player vision and memory', () => {
     expect(playerZero.players.find((player) => player.id === 1)?.resources).toEqual({ GOLD: 0, WOOD: 0 })
   })
 
-  it('uses a four-tile circular visibility radius', () => {
+  it('uses the configured circular visibility radius', () => {
     const simulation = simulationForWorld(worldAt([{ owner: 0, x: 8, y: 8 }]))
     const state = simulation.inspectState()
     const vision = visionForPlayer(state, 0)
+    const radius = state.vision.radiusTiles
 
-    expect(state.vision.radiusTiles).toBe(4)
+    expect(radius).toBe(VISION_RADIUS_TILES)
     expect(isVisibleTile(vision, state.vision.width, 8, 8)).toBe(true)
-    expect(isVisibleTile(vision, state.vision.width, 12, 8)).toBe(true)
+    expect(isVisibleTile(vision, state.vision.width, 8 + radius, 8)).toBe(true)
+    expect(isVisibleTile(vision, state.vision.width, 8 + radius + 1, 8)).toBe(false)
     expect(isVisibleTile(vision, state.vision.width, 10, 10)).toBe(true)
-    expect(isVisibleTile(vision, state.vision.width, 11, 11)).toBe(false)
-    expect(isVisibleTile(vision, state.vision.width, 13, 8)).toBe(false)
+  })
+
+  it('accepts a balance override and restores it from a snapshot', () => {
+    const simulation = simulationForWorld(worldAt([{ owner: 0, x: 8, y: 8 }]), 24, 6)
+    const state = simulation.inspectState()
+    const vision = visionForPlayer(state, 0)
+
+    expect(state.vision.radiusTiles).toBe(6)
+    expect(isVisibleTile(vision, state.vision.width, 14, 8)).toBe(true)
+    expect(isVisibleTile(vision, state.vision.width, 15, 8)).toBe(false)
+    expect(isVisibleTile(vision, state.vision.width, 12, 12)).toBe(true)
+    expect(isVisibleTile(vision, state.vision.width, 13, 13)).toBe(false)
+
+    const restored = simulationFromSnapshot(simulation.exportSnapshot())
+    expect(restored.inspectState().vision.radiusTiles).toBe(6)
+    expect(restored.observeForPlayer(0, true).fog).toEqual(simulation.observeForPlayer(0, true).fog)
   })
 
   it('keeps explored memory and restores it deterministically', () => {
