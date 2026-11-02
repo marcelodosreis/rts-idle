@@ -156,7 +156,7 @@ export class MatchInteractionController {
     }
     if (this.context.mode() === 'explosive_shot') {
       const archers = this.selectedExplosiveArchers()
-      if (isEnemy && archers.length === 1) {
+      if (archers.length === 1) {
         this.context.sendCommand({ type: 'EXPLOSIVE_SHOT', payload: { unitIds: archers, targetId: id } })
       }
       this.context.clearMode()
@@ -335,7 +335,7 @@ export class MatchInteractionController {
 
   private explosiveShotBuilding(id: number, building: SnapshotBuilding): void {
     const archers = this.selectedExplosiveArchers()
-    if (building.owner !== this.context.humanPlayer && building.status === 'COMPLETED' && archers.length === 1) {
+    if (archers.length === 1 && building.status === 'COMPLETED') {
       this.context.sendCommand({ type: 'EXPLOSIVE_SHOT', payload: { unitIds: archers, targetId: id } })
     }
     this.context.clearMode()

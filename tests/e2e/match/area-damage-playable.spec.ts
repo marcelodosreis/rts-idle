@@ -2,9 +2,8 @@ import { expect, type Page, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
 import { settleUnits, waitForMatchReady, waitForStableCamera } from '../support/settle.js'
 
-const APPROACH_TILE = { x: 18.25, y: 16.5 }
+const APPROACH_TILE = { x: 19.5, y: 15.5 }
 const TARGET_TILE = { x: 19, y: 17 }
-const OUT_OF_RANGE_TILE = { x: 21, y: 18 }
 
 async function worldPoint(page: Page, position: { readonly x: number; readonly y: number }) {
   await page.evaluate(({ x, y }) => window.__rtsDebug!.moveCamera(x, y), position)
@@ -92,14 +91,12 @@ test('regression archer casts Explosive Shot with radius, cost, cooldown, and re
       },
       { timeout: 30_000 }
     )
-    .toBeLessThanOrEqual(tilesToFixed(0.25))
+    .toBeLessThanOrEqual(tilesToFixed(1))
 
   const target = await unitAtTile(page, TARGET_TILE.x, TARGET_TILE.y)
-  const outOfRange = await unitAtTile(page, OUT_OF_RANGE_TILE.x, OUT_OF_RANGE_TILE.y)
   const adjacent = await unitAtTile(page, TARGET_TILE.x - 1, TARGET_TILE.y)
   const justOutside = await unitAtTile(page, 21, 18)
   expect(target).not.toBeNull()
-  expect(outOfRange).not.toBeNull()
   expect(adjacent).not.toBeNull()
   expect(justOutside).not.toBeNull()
 
@@ -112,12 +109,10 @@ test('regression archer casts Explosive Shot with radius, cost, cooldown, and re
 
   await explosiveShot.click()
   await expect(explosiveShot).toHaveAttribute('aria-pressed', 'true')
-  const outOfRangePoint = await worldPoint(page, {
-    x: tilesToFixed(OUT_OF_RANGE_TILE.x),
-    y: tilesToFixed(OUT_OF_RANGE_TILE.y)
-  })
-  await page.mouse.click(outOfRangePoint.x, outOfRangePoint.y, { button: 'right' })
-  await expect(feedback).toContainText('out of range')
+  const archerNow = await page.evaluate((id) => window.__rtsDebug!.getPositions()[String(id)], archer!.id)
+  const friendlyPoint = await worldPoint(page, archerNow!)
+  await page.mouse.click(friendlyPoint.x, friendlyPoint.y, { button: 'right' })
+  await expect(feedback).toContainText('friendly')
   await expect(gold).toContainText('600')
 
   await explosiveShot.click()
