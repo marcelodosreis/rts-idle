@@ -1,4 +1,5 @@
 import { parseArgs } from './args.js'
+import { formatArmyChokepoint, runArmyChokepointBenchmark } from './army-chokepoint.js'
 import { runEcsQueryBenchmark } from './ecs-query.js'
 import { formatRow, renderHeader } from './format.js'
 import { measureResourceRow } from './resources.js'
@@ -94,9 +95,15 @@ export async function main(): Promise<void> {
     runSnapshotDelta(options)
     return
   }
+  if (options.suite === 'army-chokepoint') {
+    for (const line of formatArmyChokepoint(runArmyChokepointBenchmark())) {
+      console.log(line)
+    }
+    return
+  }
   if (options.suite !== 'simulation') {
     throw new Error(
-      `unknown suite "${options.suite}" (use "simulation", "resources", "ecs-query", or "snapshot-delta")`
+      `unknown suite "${options.suite}" (use "simulation", "resources", "ecs-query", "snapshot-delta", or "army-chokepoint")`
     )
   }
   runSimulation(options)
