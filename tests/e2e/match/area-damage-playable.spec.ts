@@ -2,7 +2,7 @@ import { expect, type Page, test } from '@playwright/test'
 import { tilesToFixed } from '@rts/shared'
 import { settleUnits, waitForMatchReady, waitForStableCamera } from '../support/settle.js'
 
-const APPROACH_TILE = { x: 19.5, y: 15.5 }
+const APPROACH_TILE = { x: 20, y: 16 }
 const TARGET_TILE = { x: 19, y: 17 }
 
 async function worldPoint(page: Page, position: { readonly x: number; readonly y: number }) {
@@ -91,7 +91,7 @@ test('regression archer casts Explosive Shot with radius, cost, cooldown, and re
       },
       { timeout: 30_000 }
     )
-    .toBeLessThanOrEqual(tilesToFixed(1))
+    .toBeLessThanOrEqual(tilesToFixed(0.5))
 
   const target = await unitAtTile(page, TARGET_TILE.x, TARGET_TILE.y)
   const adjacent = await unitAtTile(page, TARGET_TILE.x - 1, TARGET_TILE.y)
