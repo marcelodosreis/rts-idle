@@ -23,6 +23,8 @@ const GOLDEN_SEED = 424242
 // state is caught by the test suite. Economy v0 and P2.11 intentionally changed
 // this vector by appending their ECS components, the pending-command queue,
 // navigation state, vision state, and bumping the simulation version.
+// P3.11.01 bumps the simulation version to 0.27.0 for the explosive-shot
+// cooldown and projectile impact mode; the pinned vector is updated deliberately.
 function buildGoldenSimulation() {
   const world = createWorld()
   let next = START_ENTITY_ID
@@ -41,14 +43,14 @@ function buildGoldenSimulation() {
 describe('canonical state hash golden', () => {
   it('produces the pinned hash for the characterization fixture', () => {
     const sim = buildGoldenSimulation()
-    expect(sim.hashState()).toBe('e9bcf256966154dda9ac27d507fdc5e0354d60619fceb466fa2462a73a8682fd')
+    expect(sim.hashState()).toBe('0e093fc0494d8252f687736f414f79da8e9d514172c749944e81a6cc7fda27b5')
   })
 
   it('produces the pinned serialized bytes for the characterization fixture', () => {
     const sim = buildGoldenSimulation()
     const snapshot = sim.exportSnapshot()
     expect(snapshot.tick).toBe(1)
-    expect(snapshot.hash).toBe('e9bcf256966154dda9ac27d507fdc5e0354d60619fceb466fa2462a73a8682fd')
+    expect(snapshot.hash).toBe('0e093fc0494d8252f687736f414f79da8e9d514172c749944e81a6cc7fda27b5')
     expect(snapshot.bytes.byteLength).toBe(8659)
   })
 })

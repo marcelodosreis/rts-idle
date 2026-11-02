@@ -38,5 +38,6 @@
  * state in canonical snapshots.
  * 0.26.0: Archer projectiles, TTL state, and projectile identity joined
  * canonical snapshots.
+ * 0.27.0: Explosive Shot cooldown and projectile impact mode joined canonical snapshots.
  */
-export const SIMULATION_VERSION = '0.26.0'
+export const SIMULATION_VERSION = '0.27.0'

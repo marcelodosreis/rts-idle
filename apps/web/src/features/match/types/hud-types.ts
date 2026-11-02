@@ -34,6 +34,7 @@ export interface HudSelectionUnit {
   readonly repairProgressTicks?: number
   readonly repairProgressMax?: number
   readonly healCooldownRemaining?: number
+  readonly explosiveShotCooldownRemaining?: number
   readonly economy?: {
     readonly phase: EconomyPhase
     readonly cargoAmount: number

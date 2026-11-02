@@ -83,6 +83,9 @@ function commandHint(mode: CommandMode, buildHint: string | null): string | null
   if (mode === 'heal') {
     return 'Choose a damaged allied unit · Esc to cancel'
   }
+  if (mode === 'explosive_shot') {
+    return 'Right-click a visible enemy target · Esc to cancel'
+  }
   if (mode === 'gather') {
     return 'Right-click a resource to gather · Esc to cancel'
   }

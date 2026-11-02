@@ -216,7 +216,7 @@ Acceptance: radius boundaries, falloff, dead targets, and friendly-fire absence
 are tested; damage ordering and hashes remain deterministic; browser feedback is
 visible. Real-server Chromium and Firefox E2E must cover activation, impact,
 cooldown or cost, affected targets, and rejection states. Packet:
-`docs/tasks/P3.11.01.md`.
+`docs/tasks/done/P3.11.01.md`.
 
 ### P3.12.01 - Combined Army/Chokepoint Stress
 

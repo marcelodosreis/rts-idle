@@ -50,4 +50,28 @@ describe('EffectsLayer', () => {
     effects.tick(551)
     expect(effects.projectileFeedback()).toEqual([])
   })
+
+  it('presents and expires area impact feedback at the event position', () => {
+    const layer = new Container()
+    const effects = new EffectsLayer(layer)
+
+    effects.handleEvents(
+      [
+        {
+          type: 'areaDamageImpacted',
+          projectileId: 3,
+          kind: 'arrow',
+          x: 512,
+          y: 768,
+          innerRadius: 128,
+          totalRadius: 384
+        }
+      ],
+      0
+    )
+
+    expect(effects.projectileFeedback()).toEqual([{ type: 'area', x: 128, y: 192 }])
+    effects.tick(800)
+    expect(effects.projectileFeedback()).toEqual([])
+  })
 })

@@ -74,6 +74,7 @@ export interface SnapshotUnit {
   readonly repairProgressTicks?: number
   readonly repairProgressMax?: number
   readonly healCooldownRemaining?: number
+  readonly explosiveShotCooldownRemaining?: number
   readonly economy?: SnapshotEconomy
   readonly carrying?: boolean
   /** Carried resource type, so the renderer can show wood vs gold after the order is gone. */
@@ -332,6 +333,7 @@ export function isSnapshotUnit(value: unknown): boolean {
     isOptionalNonNegativeInteger(field(value, 'repairProgressTicks')) &&
     isOptionalNonNegativeInteger(field(value, 'repairProgressMax')) &&
     isOptionalNonNegativeInteger(field(value, 'healCooldownRemaining')) &&
+    isOptionalNonNegativeInteger(field(value, 'explosiveShotCooldownRemaining')) &&
     (field(value, 'canGather') === undefined || typeof field(value, 'canGather') === 'boolean') &&
     (field(value, 'canBuild') === undefined || typeof field(value, 'canBuild') === 'boolean') &&
     (field(value, 'canRepair') === undefined || typeof field(value, 'canRepair') === 'boolean') &&

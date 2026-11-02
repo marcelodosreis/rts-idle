@@ -8,6 +8,10 @@ const POPUP_LIFETIME_MS = 700
 const POPUP_RISE_PX = 26
 const EXPLOSION_LIFETIME_MS = 450
 const EXPLOSION_COLOR = 0xff7043
+const AREA_IMPACT_LIFETIME_MS = 700
+const AREA_IMPACT_FILL = 0xff8f2e
+const AREA_IMPACT_INNER = 0xffd166
+const AREA_IMPACT_RING = 0xffb74d
 
 interface Point {
   readonly x: number
@@ -22,7 +26,7 @@ interface ActiveEffect {
 }
 
 export interface ProjectileFeedbackState {
-  readonly type: 'impact' | 'expiry'
+  readonly type: 'impact' | 'expiry' | 'area'
   readonly x: number
   readonly y: number
 }
@@ -66,6 +70,9 @@ export class EffectsLayer {
           break
         case 'projectileImpacted':
           this.spawnProjectileMarker('impact', event.x, event.y, 0xffd54f, now)
+          break
+        case 'areaDamageImpacted':
+          this.spawnAreaImpact(event.x, event.y, event.innerRadius, event.totalRadius, now)
           break
         case 'projectileExpired':
           this.spawnProjectileMarker('expiry', event.x, event.y, 0x94a3b8, now)
@@ -220,6 +227,36 @@ export class EffectsLayer {
         graphics.stroke({ color: EXPLOSION_COLOR, width: 3, alpha: 1 - progress })
         graphics.circle(0, 0, radius * (0.4 + progress * 0.6))
         graphics.fill({ color: EXPLOSION_COLOR, alpha: 1 - progress })
+        graphics.position.set(position.x, position.y)
+      }
+    })
+  }
+
+  private spawnAreaImpact(x: number, y: number, innerRadius: number, totalRadius: number, now: number): void {
+    const position = toRenderPixels({ x, y })
+    const inner = fixedToRenderPixels(innerRadius)
+    const total = fixedToRenderPixels(totalRadius)
+    const graphics = new Graphics()
+    graphics.eventMode = 'none'
+    this.effectsLayer.addChild(graphics)
+    this.active.push({
+      display: graphics,
+      expiresAt: now + AREA_IMPACT_LIFETIME_MS,
+      projectileFeedback: { type: 'area', x: position.x, y: position.y },
+      update: (current) => {
+        const progress = Math.min(1, (current - now) / AREA_IMPACT_LIFETIME_MS)
+        const fade = 1 - progress
+        graphics.clear()
+        graphics.circle(0, 0, total)
+        graphics.fill({ color: AREA_IMPACT_FILL, alpha: 0.22 * fade })
+        graphics.circle(0, 0, inner)
+        graphics.fill({ color: AREA_IMPACT_INNER, alpha: 0.55 * fade })
+        graphics.circle(0, 0, total)
+        graphics.stroke({ color: AREA_IMPACT_RING, width: 4, alpha: fade })
+        graphics.circle(0, 0, total * (1 + progress * 0.3))
+        graphics.stroke({ color: AREA_IMPACT_RING, width: 2, alpha: 0.7 * fade })
+        graphics.circle(0, 0, 6 * fade + 2)
+        graphics.fill({ color: 0xfff3e0, alpha: fade })
         graphics.position.set(position.x, position.y)
       }
     })

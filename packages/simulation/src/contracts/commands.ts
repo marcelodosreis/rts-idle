@@ -7,6 +7,7 @@ export type {
   BuildPayload,
   CancelConstructionPayload,
   CommandIntent,
+  ExplosiveShotPayload,
   GatherPayload,
   HoldPayload,
   MovePayload,

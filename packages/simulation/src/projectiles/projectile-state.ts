@@ -11,6 +11,7 @@ export interface ProjectileState {
   readonly lastKnownX: Fixed
   readonly lastKnownY: Fixed
   readonly damage: number
+  readonly explosive: boolean
   readonly remainingTtl: number
   readonly movementRemainder: number
 }

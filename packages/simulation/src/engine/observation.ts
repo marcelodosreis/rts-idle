@@ -62,6 +62,7 @@ export interface ObservationUnit {
   readonly repairProgressTicks?: number
   readonly repairProgressMax?: number
   readonly healCooldownRemaining?: number
+  readonly explosiveShotCooldownRemaining?: number
   readonly economy?: ObservationEconomy
   readonly carrying?: boolean
   readonly cargoType?: ResourceType
@@ -194,6 +195,22 @@ function unitCapabilities(
   }
 }
 
+function projectAbilityCooldowns(
+  state: GameState,
+  id: EntityId
+): Pick<ObservationUnit, 'healCooldownRemaining' | 'explosiveShotCooldownRemaining'> {
+  const cooldown = state.world.store(AbilityCooldown).get(id)
+  if (cooldown === undefined) {
+    return {}
+  }
+  return {
+    ...(cooldown.healCooldownRemaining > 0 ? { healCooldownRemaining: cooldown.healCooldownRemaining } : {}),
+    ...(cooldown.explosiveShotCooldownRemaining > 0
+      ? { explosiveShotCooldownRemaining: cooldown.explosiveShotCooldownRemaining }
+      : {})
+  }
+}
+
 function projectUnit(state: GameState, id: EntityId): ObservationUnit | undefined {
   const position = state.world.store(Position).get(id)
   const owner = state.world.store(Owner).get(id)
@@ -244,9 +261,7 @@ function projectUnit(state: GameState, id: EntityId): ObservationUnit | undefine
       : { lookAtX: targetPosition.x + (building === undefined ? 0 : building.footprint.width * 128) }),
     orderState: orderState(front, state.world.store(Movement).has(id), lostTarget),
     ...(front?.type === 'REPAIR' ? { repairProgressTicks: front.progressTicks, repairProgressMax: 10 } : {}),
-    ...(state.world.store(AbilityCooldown).get(id)?.healCooldownRemaining
-      ? { healCooldownRemaining: state.world.store(AbilityCooldown).get(id)!.healCooldownRemaining }
-      : {}),
+    ...projectAbilityCooldowns(state, id),
     ...(unitEconomy === undefined ? {} : { economy: unitEconomy })
   }
 }

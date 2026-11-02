@@ -19,6 +19,7 @@ export const SIMULATION_EVENT_TYPES = [
   'movementBlocked',
   'projectileLaunched',
   'projectileImpacted',
+  'areaDamageImpacted',
   'projectileExpired'
 ] as const
 export const REPAIR_STOP_REASONS = ['NO_GOLD'] as const
@@ -80,6 +81,15 @@ export type SimulationEvent =
       readonly kind: ProjectileKind
       readonly x: Fixed
       readonly y: Fixed
+    }
+  | {
+      readonly type: 'areaDamageImpacted'
+      readonly projectileId: number
+      readonly kind: ProjectileKind
+      readonly x: Fixed
+      readonly y: Fixed
+      readonly innerRadius: Fixed
+      readonly totalRadius: Fixed
     }
   | {
       readonly type: 'projectileExpired'

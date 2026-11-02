@@ -16,7 +16,10 @@ export function healSystem(state: GameState): void {
   for (const id of state.world.query(AbilityCooldown)) {
     const cooldown = cooldowns.get(id)
     if (cooldown !== undefined) {
-      cooldowns.set(id, { healCooldownRemaining: Math.max(0, cooldown.healCooldownRemaining - 1) })
+      cooldowns.set(id, {
+        healCooldownRemaining: Math.max(0, cooldown.healCooldownRemaining - 1),
+        explosiveShotCooldownRemaining: Math.max(0, cooldown.explosiveShotCooldownRemaining - 1)
+      })
     }
   }
   for (const id of state.world.query(Orders, Kind)) {
@@ -52,7 +55,7 @@ export function healSystem(state: GameState): void {
     const amount = Math.min(MONK_HEAL_AMOUNT, targetHealth.max - targetHealth.current)
     const targetHp = targetHealth.current + amount
     healths.set(order.targetId, { ...targetHealth, current: targetHp })
-    cooldowns.set(id, { healCooldownRemaining: MONK_HEAL_COOLDOWN_TICKS })
+    cooldowns.set(id, { ...cooldowns.get(id)!, healCooldownRemaining: MONK_HEAL_COOLDOWN_TICKS })
     state.events.push({ type: 'healCast', healerId: id, targetId: order.targetId, amount, targetHp })
     clearOrders(state, id)
   }

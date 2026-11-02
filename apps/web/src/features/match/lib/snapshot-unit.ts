@@ -20,6 +20,7 @@ export type ProjectedSnapshotUnit = Pick<
   | 'repairProgressTicks'
   | 'repairProgressMax'
   | 'healCooldownRemaining'
+  | 'explosiveShotCooldownRemaining'
   | 'canGather'
   | 'canBuild'
   | 'canRepair'
@@ -49,6 +50,9 @@ export function projectSnapshotUnit(unit: SnapshotUnit): ProjectedSnapshotUnit {
       ? {}
       : { repairProgressTicks: unit.repairProgressTicks, repairProgressMax: unit.repairProgressMax }),
     ...(unit.healCooldownRemaining === undefined ? {} : { healCooldownRemaining: unit.healCooldownRemaining }),
+    ...(unit.explosiveShotCooldownRemaining === undefined
+      ? {}
+      : { explosiveShotCooldownRemaining: unit.explosiveShotCooldownRemaining }),
     ...(unit.canGather === undefined ? {} : { canGather: unit.canGather }),
     ...(unit.canBuild === undefined ? {} : { canBuild: unit.canBuild }),
     ...(unit.canRepair === undefined ? {} : { canRepair: unit.canRepair }),

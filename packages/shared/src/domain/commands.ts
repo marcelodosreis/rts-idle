@@ -55,6 +55,11 @@ export interface HealPayload {
   readonly targetId: EntityId
 }
 
+export interface ExplosiveShotPayload {
+  readonly unitIds: readonly EntityId[]
+  readonly targetId: EntityId
+}
+
 export interface ResearchPayload {
   readonly monasteryId: EntityId
   readonly researchType: ResearchType
@@ -90,6 +95,7 @@ export const COMMAND_TYPES = [
   'DEPOSIT',
   'REPAIR',
   'HEAL',
+  'EXPLOSIVE_SHOT',
   'BUILD',
   'UPGRADE_CASTLE',
   'CANCEL_CONSTRUCTION',
@@ -151,6 +157,7 @@ export type CommandIntent =
   | { readonly type: 'DEPOSIT'; readonly payload: DepositPayload }
   | { readonly type: 'REPAIR'; readonly payload: RepairPayload }
   | { readonly type: 'HEAL'; readonly payload: HealPayload }
+  | { readonly type: 'EXPLOSIVE_SHOT'; readonly payload: ExplosiveShotPayload }
   | { readonly type: 'BUILD'; readonly payload: BuildPayload }
   | { readonly type: 'UPGRADE_CASTLE'; readonly payload: UpgradeCastlePayload }
   | { readonly type: 'CANCEL_CONSTRUCTION'; readonly payload: CancelConstructionPayload }

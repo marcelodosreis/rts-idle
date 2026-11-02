@@ -73,8 +73,8 @@ function isCommandIntent(value: unknown): boolean {
     case 'DEPOSIT':
       return isIntegerArray(field(payload, 'unitIds')) && isInteger(field(payload, 'buildingId'))
     case 'REPAIR':
-      return isIntegerArray(field(payload, 'unitIds')) && isInteger(field(payload, 'targetId'))
     case 'HEAL':
+    case 'EXPLOSIVE_SHOT':
       return isIntegerArray(field(payload, 'unitIds')) && isInteger(field(payload, 'targetId'))
     case 'BUILD':
       return isBuildIntent(payload)

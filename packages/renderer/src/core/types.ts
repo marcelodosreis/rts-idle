@@ -49,6 +49,7 @@ export interface RenderUnit {
   readonly repairProgressTicks?: number
   readonly repairProgressMax?: number
   readonly healCooldownRemaining?: number
+  readonly explosiveShotCooldownRemaining?: number
   readonly economy?: RenderEconomy
   /** True while the worker holds cargo, independent of its current order. */
   readonly carrying?: boolean

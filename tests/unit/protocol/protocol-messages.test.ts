@@ -152,6 +152,7 @@ describe('protocol command message', () => {
       { type: 'command', intent: { type: 'ATTACK_MOVE', payload: { unitIds: [1], x: 100, y: 200 } } },
       { type: 'command', intent: { type: 'REPAIR', payload: { unitIds: [1, 2], targetId: 5 } } },
       { type: 'command', intent: { type: 'HEAL', payload: { unitIds: [1], targetId: 5 } } },
+      { type: 'command', intent: { type: 'EXPLOSIVE_SHOT', payload: { unitIds: [1], targetId: 5 } } },
       { type: 'command', intent: { type: 'CANCEL_CONSTRUCTION', payload: { buildingId: 5 } } },
       { type: 'command', intent: { type: 'TRAIN', payload: { producerId: 5, unitKind: 'warrior' } } },
       { type: 'command', intent: { type: 'RALLY', payload: { producerId: 5, x: 100, y: 200 } } },
@@ -180,6 +181,12 @@ describe('protocol command message', () => {
     ).toBe(false)
     expect(
       isCommandMessage({ type: 'command', intent: { type: 'HEAL', payload: { unitIds: [1], targetId: 2.5 } } })
+    ).toBe(false)
+    expect(
+      isCommandMessage({
+        type: 'command',
+        intent: { type: 'EXPLOSIVE_SHOT', payload: { unitIds: [1], targetId: 2.5 } }
+      })
     ).toBe(false)
     expect(isCommandMessage({ type: 'command', intent: { type: 'SURRENDER', payload: { unitIds: [1] } } })).toBe(false)
     expect(
@@ -409,6 +416,38 @@ describe('protocol snapshot message', () => {
       isSnapshotResyncRequest({ type: 'snapshot_resync_request', baseSequence: 1.5, baseHash: 'd'.repeat(64) })
     ).toBe(false)
     expect(isSnapshotResyncRequest({ type: 'snapshot_resync_request', baseSequence: 4, baseHash: 'bad' })).toBe(false)
+  })
+
+  it('accepts Archer explosive-shot cooldown state and area impacts', () => {
+    expect(
+      isSnapshotMessage({
+        ...valid,
+        units: [{ ...valid.units[0], kind: 'archer', explosiveShotCooldownRemaining: 159 }, valid.units[1]],
+        events: [
+          {
+            type: 'areaDamageImpacted',
+            projectileId: 7,
+            kind: 'arrow',
+            x: 256,
+            y: 512,
+            innerRadius: 128,
+            totalRadius: 384
+          }
+        ]
+      })
+    ).toBe(true)
+    expect(
+      isSnapshotMessage({
+        ...valid,
+        units: [{ ...valid.units[0], explosiveShotCooldownRemaining: -1 }, valid.units[1]]
+      })
+    ).toBe(false)
+    expect(
+      isSnapshotMessage({
+        ...valid,
+        events: [{ type: 'areaDamageImpacted', projectileId: 7, kind: 'arrow', x: 0, y: 0, innerRadius: 128 }]
+      })
+    ).toBe(false)
   })
 
   it('accepts Monk heal state and events', () => {
