@@ -6,11 +6,10 @@ export function explosiveShotAction(props: CommandBarProps, blockedReason?: stri
   const cooldown = props.selection[0]?.explosiveShotCooldownRemaining ?? 0
   return {
     id: 'contextual',
-    label: 'Explosive Shot',
-    description: 'Fire an area-damage shot at a visible enemy for 25 Gold.',
+    label: 'Blast',
+    description: 'Blast a visible enemy and nearby foes for 25 Gold.',
     icon: Flame,
-    blockedReason:
-      blockedReason ?? (cooldown > 0 ? `Explosive Shot ready in ${Math.ceil(cooldown / 20)}s.` : undefined),
+    blockedReason: blockedReason ?? (cooldown > 0 ? `Blast ready in ${Math.ceil(cooldown / 20)}s.` : undefined),
     active: props.mode === 'explosive_shot',
     feedbackKind: 'arm',
     onActivate: () => props.onArm('explosive_shot')

@@ -73,7 +73,7 @@ See `docs/tasks/todo.md` for full phase list.
 - Authoritative Archer projectiles with deterministic travel, impact, dead-target
   and TTL expiry, private homing state, filtered observations, interpolated Arrow
   presentation, and real-server Chromium/Firefox lifecycle coverage
-- Archer Explosive Shot: 25-Gold, 160-tick-cooldown area projectile with a
+- Archer Blast (`EXPLOSIVE_SHOT`): 25-Gold, 160-tick-cooldown area projectile with double damage, a
   three-tile cast range, 1.5-tile radius, inner/falloff/armor rules, enemy-only
   filtering, deterministic spatial resolution, filtered area-impact feedback,
   HUD targeting/cooldown states, and real-server Chromium/Firefox coverage
@@ -94,7 +94,7 @@ The top bar shows authoritative `used / cap` supply and updates on House complet
 Completed Castle/Barracks/Monastery producers accept rally points; trained units wait at a
 blocked exit without overlap and follow the latest authoritative rally point
 after spawning.
-A selected Archer can arm Explosive Shot from the command bar and right-click a
+A selected Archer can arm Blast from the command bar and right-click a
 visible enemy to spend 25 Gold and detonate an authoritative area projectile;
 impact radius, affected targets, cooldown, and rejections are visible, and
 Escape cancels targeting.

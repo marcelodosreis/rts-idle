@@ -71,7 +71,7 @@ describe('EffectsLayer', () => {
     )
 
     expect(effects.projectileFeedback()).toEqual([{ type: 'area', x: 128, y: 192 }])
-    effects.tick(500)
+    effects.tick(800)
     expect(effects.projectileFeedback()).toEqual([])
   })
 })

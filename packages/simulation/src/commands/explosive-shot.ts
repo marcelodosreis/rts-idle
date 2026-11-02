@@ -1,4 +1,9 @@
-import { EXPLOSIVE_SHOT_COOLDOWN_TICKS, EXPLOSIVE_SHOT_COST, EXPLOSIVE_SHOT_RANGE_FIXED } from '@rts/game-data'
+import {
+  EXPLOSIVE_SHOT_COOLDOWN_TICKS,
+  EXPLOSIVE_SHOT_COST,
+  EXPLOSIVE_SHOT_DAMAGE_MULTIPLIER,
+  EXPLOSIVE_SHOT_RANGE_FIXED
+} from '@rts/game-data'
 import { applyResourceCost, canAfford, distSquaredFixed, type EntityId } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import { effectiveDamage } from '../domain/research-effects.js'
@@ -69,7 +74,7 @@ export function applyExplosiveShot(state: GameState, command: ScheduledCommand):
     targetId,
     owner: command.playerId,
     kind: 'arrow',
-    damage: effectiveDamage(state, archerId),
+    damage: effectiveDamage(state, archerId) * EXPLOSIVE_SHOT_DAMAGE_MULTIPLIER,
     explosive: true
   })
 }

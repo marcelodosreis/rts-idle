@@ -107,7 +107,7 @@ test('regression archer casts Explosive Shot with radius, cost, cooldown, and re
   const adjacentHealth = await health(page, adjacent!.id)
   const justOutsideHealth = await health(page, justOutside!.id)
 
-  const explosiveShot = page.getByRole('button', { name: 'Explosive Shot' })
+  const explosiveShot = page.getByRole('button', { name: 'Blast' })
   const feedback = page.getByTestId('hud-context-feedback')
 
   await explosiveShot.click()
@@ -134,11 +134,11 @@ test('regression archer casts Explosive Shot with radius, cost, cooldown, and re
   await expect
     .poll(() => page.evaluate((id) => window.__rtsDebug?.getExplosiveShotCooldown(id) ?? null, archer!.id))
     .toBeGreaterThan(0)
-  await expect.poll(() => health(page, target!.id)).toBe((targetHealth ?? 0) - 8)
-  await expect.poll(() => health(page, adjacent!.id)).toBe((adjacentHealth ?? 0) - 4)
+  await expect.poll(() => health(page, target!.id)).toBe((targetHealth ?? 0) - 16)
+  await expect.poll(() => health(page, adjacent!.id)).toBe((adjacentHealth ?? 0) - 8)
   await expect.poll(() => health(page, justOutside!.id)).toBe(justOutsideHealth)
 
   await expect(explosiveShot).toHaveAttribute('aria-disabled', 'true')
   await explosiveShot.hover()
-  await expect(page.getByText('Explosive Shot ready in')).toBeVisible()
+  await expect(page.getByText('Blast ready in')).toBeVisible()
 })

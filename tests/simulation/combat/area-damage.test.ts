@@ -181,16 +181,16 @@ describe('Archer Explosive Shot (P3.11.01)', () => {
       totalRadius: tilesToFixed(1.5)
     })
 
-    expect(healthOf(simulation, target!)).toBe(142)
-    expect(healthOf(simulation, inner!)).toBe(92)
-    expect(healthOf(simulation, half!)).toBe(96)
-    expect(healthOf(simulation, outerEdge!)).toBe(96)
+    expect(healthOf(simulation, target!)).toBe(134)
+    expect(healthOf(simulation, inner!)).toBe(84)
+    expect(healthOf(simulation, half!)).toBe(92)
+    expect(healthOf(simulation, outerEdge!)).toBe(92)
     expect(healthOf(simulation, justOutside!)).toBe(100)
-    expect(healthOf(simulation, armorHalf!)).toBe(149)
-    expect(healthOf(simulation, armorFull!)).toBe(145)
+    expect(healthOf(simulation, armorHalf!)).toBe(145)
+    expect(healthOf(simulation, armorFull!)).toBe(137)
     expect(healthOf(simulation, friendly!)).toBe(150)
     expect(healthOf(simulation, distantAlly!)).toBe(distantAllyHealth)
-    expect(healthOf(simulation, completedBuilding!)).toBe(496)
+    expect(healthOf(simulation, completedBuilding!)).toBe(492)
     expect(healthOf(simulation, unfinishedBuilding!)).toBe(500)
   })
 
@@ -265,7 +265,7 @@ describe('Archer Explosive Shot (P3.11.01)', () => {
     const events = stepUntilAreaImpact(simulation, launched.events)
     expect(events.filter((event) => event.type === 'areaDamageImpacted')).toHaveLength(1)
     expect(events.some((event) => event.type === 'projectileExpired')).toBe(false)
-    expect(healthOf(simulation, bystander!)).toBe(92)
+    expect(healthOf(simulation, bystander!)).toBe(84)
   })
 
   it('expires at TTL without detonating or refunding the cost', () => {
@@ -318,7 +318,7 @@ describe('Archer Explosive Shot (P3.11.01)', () => {
     expect(simulation.inspectState().world.hasEntity(archer!)).toBe(false)
     const events = stepUntilAreaImpact(simulation, launched.events)
     expect(events.some((event) => event.type === 'areaDamageImpacted')).toBe(true)
-    expect(healthOf(simulation, bystander!)).toBe(92)
+    expect(healthOf(simulation, bystander!)).toBe(84)
   })
 
   it('processes affected entity ids in ascending order with deterministic hashes', () => {
@@ -368,7 +368,7 @@ describe('Archer Explosive Shot (P3.11.01)', () => {
       expect(restored.step()).toEqual(simulation.step())
       expect(restored.hashState()).toBe(simulation.hashState())
     }
-    expect(healthOf(restored, target!)).toBe(142)
-    expect(healthOf(restored, bystander!)).toBe(92)
+    expect(healthOf(restored, target!)).toBe(134)
+    expect(healthOf(restored, bystander!)).toBe(84)
   })
 })

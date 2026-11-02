@@ -8,6 +8,10 @@ const POPUP_LIFETIME_MS = 700
 const POPUP_RISE_PX = 26
 const EXPLOSION_LIFETIME_MS = 450
 const EXPLOSION_COLOR = 0xff7043
+const AREA_IMPACT_LIFETIME_MS = 700
+const AREA_IMPACT_FILL = 0xff8f2e
+const AREA_IMPACT_INNER = 0xffd166
+const AREA_IMPACT_RING = 0xffb74d
 
 interface Point {
   readonly x: number
@@ -237,15 +241,22 @@ export class EffectsLayer {
     this.effectsLayer.addChild(graphics)
     this.active.push({
       display: graphics,
-      expiresAt: now + EXPLOSION_LIFETIME_MS,
+      expiresAt: now + AREA_IMPACT_LIFETIME_MS,
       projectileFeedback: { type: 'area', x: position.x, y: position.y },
       update: (current) => {
-        const progress = (current - now) / EXPLOSION_LIFETIME_MS
+        const progress = Math.min(1, (current - now) / AREA_IMPACT_LIFETIME_MS)
+        const fade = 1 - progress
         graphics.clear()
-        graphics.circle(0, 0, total * (0.65 + progress * 0.35))
-        graphics.stroke({ color: 0xffa726, width: 3, alpha: 1 - progress })
+        graphics.circle(0, 0, total)
+        graphics.fill({ color: AREA_IMPACT_FILL, alpha: 0.22 * fade })
         graphics.circle(0, 0, inner)
-        graphics.fill({ color: EXPLOSION_COLOR, alpha: 0.35 * (1 - progress) })
+        graphics.fill({ color: AREA_IMPACT_INNER, alpha: 0.55 * fade })
+        graphics.circle(0, 0, total)
+        graphics.stroke({ color: AREA_IMPACT_RING, width: 4, alpha: fade })
+        graphics.circle(0, 0, total * (1 + progress * 0.3))
+        graphics.stroke({ color: AREA_IMPACT_RING, width: 2, alpha: 0.7 * fade })
+        graphics.circle(0, 0, 6 * fade + 2)
+        graphics.fill({ color: 0xfff3e0, alpha: fade })
         graphics.position.set(position.x, position.y)
       }
     })
