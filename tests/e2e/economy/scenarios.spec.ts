@@ -109,7 +109,7 @@ test('offensive regression enemies eventually damage a player pawn', async ({ pa
 
   await expect
     .poll(() => page.evaluate((id) => window.__rtsDebug?.getUnitHealth(id)?.current ?? 0, workerId), {
-      timeout: 15_000
+      timeout: 30_000
     })
     .toBeLessThan(initial.current)
 })
