@@ -4,6 +4,7 @@ import type { RulesIdentity } from '../contracts/simulation.js'
 import type { World } from '../ecs/world.js'
 import type { NavigationState } from '../navigation/navigation-state.js'
 import type { PlacementMapBounds } from '../placement/building-placement.js'
+import type { ProjectileStore } from '../projectiles/projectile-state.js'
 import type { ResourceState } from '../resources/resource-state.js'
 import type { SimulationEvent } from '../systems/events.js'
 import type { VisionState } from '../vision/vision-state.js'
@@ -50,6 +51,8 @@ export interface GameState {
   readonly navigation: NavigationState
   /** Player-specific visibility and explored-memory state. */
   readonly vision: VisionState
+  /** Active homing projectiles and the monotonic public projectile cursor. */
+  readonly projectiles: ProjectileStore
   readonly world: World
   /** Future commands are authoritative state and survive snapshot/restore. */
   readonly pendingCommands: ScheduledCommand[]

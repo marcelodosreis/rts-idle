@@ -70,6 +70,9 @@ See `docs/tasks/todo.md` for full phase list.
 - Player-specific four-tile circular vision, explored memory, filtered snapshot/delta
   observations, hidden-event filtering, and a PixiJS fog projection with
   real-server Chromium/Firefox reveal, memory, and visibility-transition coverage
+- Authoritative Archer projectiles with deterministic travel, impact, dead-target
+  and TTL expiry, private homing state, filtered observations, interpolated Arrow
+  presentation, and real-server Chromium/Firefox lifecycle coverage
 
 ## Current Gameplay
 
@@ -106,19 +109,21 @@ complete, including the spatial index, collision/avoidance player slice, and
 the player-specific vision, filtered-observation, fog-rendering, and radius
 tuning slice. Their packets are archived in `docs/tasks/done/`. The full
 non-performance Chromium/Firefox E2E gate is recorded as 275 tests passing and
-one performance test skipped. `P3.09.01` Targeting and Pursuit is also complete
-with its simulation, protocol, server, HUD, and focused Chromium/Firefox E2E
-gate; `P3.10.01` Projectiles is the next active gameplay packet.
+one performance test skipped. `P3.09.01` Targeting and Pursuit and `P3.10.01`
+Projectiles are complete with their simulation, protocol, server, renderer, HUD,
+and focused Chromium/Firefox E2E gates; `P3.11.01` Area Damage is the next active
+gameplay packet.
 
 The first navigation/collision slice is complete: navigation is integrated with
 authoritative movement, visible blocked/unreachable feedback, and real-server
-browser coverage. Later Phase 3 work now continues with projectiles.
+browser coverage. Later Phase 3 work now continues with area damage.
 
 ### Latest Worktree Validation
 
 - Node `v24.21.0` and pnpm `10.33.2` are active.
 - `pnpm run verify` passes: typecheck, lint, unit, integration, simulation,
   contracts, orders, determinism, architecture, invariants, and build.
+- The focused P3.10.01 real-server projectile flow passes in Chromium and Firefox.
 - The focused six-test Chromium/Firefox matrix for vision, filtered
   observations, and targeting passes.
 - `pnpm run test:e2e:prepare -- --output=tmp/e2e-plan-validation.json` passes.

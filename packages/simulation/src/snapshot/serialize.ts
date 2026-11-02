@@ -14,6 +14,7 @@ import { MAX_SUPPLY_CAPACITY } from '../data/supply-rules.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
 import { readNavigationState, writeNavigationState } from '../navigation/navigation-codec.js'
+import { readProjectileStore, writeProjectileStore } from '../projectiles/projectile-codec.js'
 import { ResourceCatalog } from '../resources/resource-catalog.js'
 import { ResourceState } from '../resources/resource-state.js'
 import type { GameState, PlayerState } from '../state/state.js'
@@ -249,6 +250,7 @@ export function serializeState(state: GameState): Uint8Array {
   writeMapBounds(writer, state.mapBounds)
   writeNavigationState(writer, state.navigation)
   writeVisionState(writer, state.vision)
+  writeProjectileStore(writer, state.projectiles)
   writePlayers(writer, state.players)
   writeResources(writer, state.resources)
   writeWorld(writer, state.world)
@@ -279,6 +281,7 @@ export function deserializeState(bytes: Uint8Array): GameState {
   const mapBounds = readMapBounds(reader)
   const navigation = readNavigationState(reader)
   const vision = readVisionState(reader)
+  const projectiles = readProjectileStore(reader)
   const players = readPlayers(reader)
   const resources = readResources(reader)
   const world = readWorld(reader)
@@ -294,6 +297,7 @@ export function deserializeState(bytes: Uint8Array): GameState {
     mapBounds,
     navigation,
     vision,
+    projectiles,
     players,
     world,
     resources,

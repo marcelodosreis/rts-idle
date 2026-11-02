@@ -5,6 +5,7 @@ import type {
   SnapshotBuilding,
   SnapshotFog,
   SnapshotPlayer,
+  SnapshotProjectile,
   SnapshotResource,
   SnapshotUnit
 } from './snapshot.js'
@@ -14,6 +15,7 @@ import {
   isSimulationEvent,
   isSnapshotBuilding,
   isSnapshotFog,
+  isSnapshotProjectile,
   isSnapshotResource,
   isSnapshotUnit,
   MATCH_PHASES
@@ -34,6 +36,8 @@ export interface SnapshotDeltaMessage {
   readonly removedUnitIds: readonly EntityId[]
   readonly buildings: readonly SnapshotBuilding[]
   readonly removedBuildingIds: readonly EntityId[]
+  readonly projectiles: readonly SnapshotProjectile[]
+  readonly removedProjectileIds: readonly EntityId[]
   readonly resources: readonly SnapshotResource[]
   readonly resourcesComplete: false
   readonly players: readonly SnapshotPlayer[]
@@ -57,6 +61,8 @@ function isSnapshotDelta(value: unknown): value is SnapshotDeltaMessage {
   const resourcesComplete = field(value, 'resourcesComplete')
   const removedUnitIds = field(value, 'removedUnitIds')
   const removedBuildingIds = field(value, 'removedBuildingIds')
+  const projectiles = field(value, 'projectiles')
+  const removedProjectileIds = field(value, 'removedProjectileIds')
   const fog = field(value, 'fog')
   return (
     field(value, 'type') === 'snapshot_delta' &&
@@ -70,6 +76,7 @@ function isSnapshotDelta(value: unknown): value is SnapshotDeltaMessage {
     baseSequence < viewSequence &&
     isOneOf(MATCH_PHASES, field(value, 'phase')) &&
     validDeltaEntities(units, removedUnitIds, buildings, removedBuildingIds) &&
+    validDeltaProjectiles(projectiles, removedProjectileIds) &&
     validDeltaPayload(resources, players, events, fog, resourcesComplete)
   )
 }
@@ -96,6 +103,18 @@ function validDeltaEntities(
     removedBuildingIds.every(isNonNegativeInteger) &&
     hasUniqueValues(removedBuildingIds) &&
     hasNoSharedIds(buildings, removedBuildingIds)
+  )
+}
+
+function validDeltaProjectiles(projectiles: unknown, removedProjectileIds: unknown): boolean {
+  return (
+    Array.isArray(projectiles) &&
+    projectiles.every(isSnapshotProjectile) &&
+    hasUniqueFieldValues(projectiles, 'id') &&
+    Array.isArray(removedProjectileIds) &&
+    removedProjectileIds.every(isNonNegativeInteger) &&
+    hasUniqueValues(removedProjectileIds) &&
+    hasNoSharedIds(projectiles, removedProjectileIds)
   )
 }
 

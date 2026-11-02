@@ -5,7 +5,8 @@ import {
   type SnapshotDeltaMessage,
   type SnapshotMessage
 } from '@rts/protocol'
-import { createUnitEntity, createWorld, hashObservation } from '@rts/simulation'
+import { tilesToFixed } from '@rts/shared'
+import { Combat, createUnitEntity, createWorld, hashObservation } from '@rts/simulation'
 import { describe, expect, it } from 'vitest'
 import { createAuthoritativeMatch } from '../../../apps/server/src/bootstrap/match-bootstrap.js'
 import { GameSession } from '../../../apps/server/src/sessions/session.js'
@@ -32,9 +33,28 @@ function session(): GameSession {
   }).session
 }
 
+function projectileSession(): GameSession {
+  return createAuthoritativeMatch({
+    type: 'match_request',
+    protocolVersion: PROTOCOL_VERSION,
+    scenarioId: 'projectiles',
+    aggression: 'passive',
+    map: { source: 'catalog' }
+  }).session
+}
+
 function boundedSession(): GameSession {
   const world = createWorld({ changeHistoryLimit: 4 })
   createUnitEntity(world, { id: 1, x: 0, y: 0, owner: 0, kind: 'pawn', worker: true })
+  return GameSession.create({ seed: SEEDS.simulation.fixedTick, identity: TEST_IDENTITY, initialWorld: world })
+}
+
+function projectileVisibilitySession(): GameSession {
+  const world = createWorld()
+  createUnitEntity(world, { id: 1, x: tilesToFixed(2), y: tilesToFixed(8), owner: 0, kind: 'archer' })
+  createUnitEntity(world, { id: 2, x: tilesToFixed(14), y: tilesToFixed(8), owner: 0, kind: 'pawn' })
+  createUnitEntity(world, { id: 3, x: tilesToFixed(13), y: tilesToFixed(8), owner: 1, kind: 'warrior' })
+  world.store(Combat).set(1, { ...world.store(Combat).get(1)!, rangeTiles: 20 })
   return GameSession.create({ seed: SEEDS.simulation.fixedTick, identity: TEST_IDENTITY, initialWorld: world })
 }
 
@@ -77,6 +97,7 @@ function applyDelta(snapshot: SnapshotMessage, delta: SnapshotDeltaMessage): Sna
     phase: delta.phase,
     units: mergeEntities(snapshot.units, delta.units, delta.removedUnitIds),
     buildings: mergeEntities(snapshot.buildings, delta.buildings, delta.removedBuildingIds),
+    projectiles: mergeEntities(snapshot.projectiles, delta.projectiles, delta.removedProjectileIds),
     resources: mergeResources(snapshot.resources, delta.resources),
     resourcesComplete: true,
     players: delta.players,
@@ -240,6 +261,76 @@ describe('authoritative snapshot sender', () => {
     }
 
     expect(message(socket)).toMatchObject({ type: 'snapshot', tick: 40 })
+  })
+
+  it('clears known projectile IDs when refreshing the full baseline', () => {
+    const game = projectileSession()
+    const socket = new FakeSocket()
+    const sender = new SnapshotSender(socket)
+    sender.sendSnapshot(game, [])
+    const units = game.observeForPlayer(0, true).units
+    const archer = units.find((unit) => unit.owner === 0 && unit.kind === 'archer')!
+    const target = units.find((unit) => unit.owner === 1)!
+    game.submit(0, [
+      {
+        tick: 1,
+        playerId: 0,
+        sequence: 1,
+        intent: { type: 'ATTACK', payload: { unitIds: [archer.id], targetId: target.id } }
+      },
+      { tick: 2, playerId: 0, sequence: 2, intent: { type: 'STOP', payload: { unitIds: [archer.id] } } }
+    ])
+    game.advance()
+    sender.sendSnapshot(game, [])
+    expect(message(socket)).toMatchObject({ type: 'snapshot_delta', projectiles: [{ id: 1 }] })
+
+    for (let tick = 2; tick <= 40; tick += 1) {
+      game.advance()
+      sender.sendSnapshot(game, [])
+    }
+    expect(message(socket)).toMatchObject({ type: 'snapshot', tick: 40, projectiles: [] })
+
+    game.advance()
+    sender.sendSnapshot(game, [])
+    expect(message(socket)).toMatchObject({ type: 'snapshot_delta', removedProjectileIds: [] })
+  })
+
+  it('removes a hidden projectile and safely upserts only public fields when it reappears', () => {
+    const game = projectileVisibilitySession()
+    const socket = new FakeSocket()
+    const sender = new SnapshotSender(socket)
+    sender.sendSnapshot(game, [])
+    game.submit(0, [
+      { tick: 1, playerId: 0, sequence: 1, intent: { type: 'ATTACK', payload: { unitIds: [1], targetId: 3 } } }
+    ])
+    let result = game.advance()
+    sender.sendSnapshot(game, result.events)
+    expect(message(socket)).toMatchObject({ type: 'snapshot_delta', projectiles: [{ id: 1 }] })
+
+    let hidden: SnapshotDeltaMessage | null = null
+    let reappeared: SnapshotDeltaMessage | null = null
+    for (let tick = 2; tick <= 20 && reappeared === null; tick += 1) {
+      result = game.advance()
+      sender.sendSnapshot(game, result.events)
+      const delta = message(socket)
+      if (delta.type !== 'snapshot_delta') {
+        throw new Error('expected projectile visibility delta')
+      }
+      if (delta.removedProjectileIds.includes(1)) {
+        hidden = delta
+      } else if (hidden !== null && delta.projectiles.some((projectile) => projectile.id === 1)) {
+        reappeared = delta
+      }
+    }
+
+    expect(hidden).toMatchObject({ projectiles: [], removedProjectileIds: [1], events: [] })
+    expect(reappeared).not.toBeNull()
+    expect(reappeared?.removedProjectileIds).toEqual([])
+    expect(reappeared?.events).toEqual([])
+    expect(reappeared?.projectiles).toEqual([
+      expect.objectContaining({ id: 1, kind: 'arrow', owner: 0, x: expect.any(Number), y: expect.any(Number) })
+    ])
+    expect(Object.keys(reappeared!.projectiles[0]!)).toEqual(['id', 'kind', 'owner', 'x', 'y'])
   })
 
   it('gives a new connection a full authoritative state and then deltas', () => {

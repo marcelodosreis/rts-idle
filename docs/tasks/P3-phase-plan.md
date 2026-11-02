@@ -203,7 +203,7 @@ ranged attack from command input through launch, travel, impact, and damage.
 Acceptance: impacts happen once, dead targets are handled safely, TTL cleanup is
 deterministic, snapshots and replays include the required state, and browser
 coverage shows the player-facing result through real-server Chromium and
-Firefox. Packet: `docs/tasks/P3.10.01.md`.
+Firefox. Packet: `docs/tasks/done/P3.10.01.md`.
 
 ### P3.11.01 - Area Damage
 

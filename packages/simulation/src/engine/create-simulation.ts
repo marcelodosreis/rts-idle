@@ -10,6 +10,7 @@ import type { SimulationOptions } from '../contracts/simulation.js'
 import { createWorld } from '../ecs/create-world.js'
 import type { World } from '../ecs/world.js'
 import { createNavigationState } from '../navigation/navigation-state.js'
+import { createProjectileStore } from '../projectiles/projectile-state.js'
 import { createResourceState } from '../resources/resource-state.js'
 import { cloneWorld } from '../state/clone-state.js'
 import type { GameState, PlayerState } from '../state/state.js'
@@ -88,6 +89,7 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
     resources: createResourceState(options.resources),
     navigation: createNavigationState(mapBounds, navigation),
     vision: createVisionState(mapBounds.width, mapBounds.height),
+    projectiles: createProjectileStore(),
     world,
     pendingCommands: [],
     events: [],

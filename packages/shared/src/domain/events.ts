@@ -1,5 +1,7 @@
+import type { Fixed } from '../primitives/fixed.js'
 import type { EntityId } from '../primitives/ids.js'
 import type { PlayerId } from '../primitives/players.js'
+import type { ProjectileExpirationReason, ProjectileKind } from './projectiles.js'
 
 /**
  * Deterministic per-tick simulation events (master plan §23.2, ADR-015).
@@ -14,7 +16,10 @@ export const SIMULATION_EVENT_TYPES = [
   'healCast',
   'repairStopped',
   'unitDied',
-  'movementBlocked'
+  'movementBlocked',
+  'projectileLaunched',
+  'projectileImpacted',
+  'projectileExpired'
 ] as const
 export const REPAIR_STOP_REASONS = ['NO_GOLD'] as const
 export const MOVEMENT_BLOCK_REASONS = ['COLLISION', 'UNREACHABLE'] as const
@@ -60,4 +65,27 @@ export type SimulationEvent =
       readonly destinationX: number
       readonly destinationY: number
       readonly reason: MovementBlockReason
+    }
+  | {
+      readonly type: 'projectileLaunched'
+      readonly projectileId: number
+      readonly kind: ProjectileKind
+      readonly owner: PlayerId
+      readonly x: Fixed
+      readonly y: Fixed
+    }
+  | {
+      readonly type: 'projectileImpacted'
+      readonly projectileId: number
+      readonly kind: ProjectileKind
+      readonly x: Fixed
+      readonly y: Fixed
+    }
+  | {
+      readonly type: 'projectileExpired'
+      readonly projectileId: number
+      readonly kind: ProjectileKind
+      readonly x: Fixed
+      readonly y: Fixed
+      readonly reason: ProjectileExpirationReason
     }

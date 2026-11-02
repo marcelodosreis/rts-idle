@@ -1,6 +1,7 @@
 import { fixedToRenderPixels, type SimulationEvent } from '@rts/shared'
 import { Container, Graphics, Text } from 'pixi.js'
 
+const BEAM_LIFETIME_MS = 120
 const STREAK_LIFETIME_MS = 120
 const STREAK_COLOR = 0xffd54f
 const POPUP_LIFETIME_MS = 700
@@ -16,7 +17,14 @@ interface Point {
 interface ActiveEffect {
   readonly display: Container
   readonly expiresAt: number
+  readonly projectileFeedback?: ProjectileFeedbackState
   update(now: number): void
+}
+
+export interface ProjectileFeedbackState {
+  readonly type: 'impact' | 'expiry'
+  readonly x: number
+  readonly y: number
 }
 
 function toRenderPixels(point: Point): Point {
@@ -24,8 +32,8 @@ function toRenderPixels(point: Point): Point {
 }
 
 /**
- * Combat feedback effects (master plan §23.2, V9): attack streaks, floating
- * damage numbers, and death explosions. Everything is wall-clock driven and
+ * Combat feedback effects (master plan §23.2, V9): floating damage numbers,
+ * healing beams, and death explosions. Everything is wall-clock driven and
  * presentation-only — never deterministic, never fed back into the simulation.
  */
 export class EffectsLayer {
@@ -39,10 +47,13 @@ export class EffectsLayer {
 
   /** Records the frame's unit positions and spawns effects for its events. */
   handleEvents(events: readonly SimulationEvent[], now: number): void {
-    for (const event of events) {
+    for (let index = 0; index < events.length; index += 1) {
+      const event = events[index]!
       switch (event.type) {
         case 'attackFired':
-          this.spawnStreak(event.attackerId, event.targetId, now)
+          if (events[index + 1]?.type !== 'projectileLaunched') {
+            this.spawnStreak(event.attackerId, event.targetId, now)
+          }
           break
         case 'damageDealt':
           this.spawnPopup(event.targetId, event.amount, now)
@@ -52,6 +63,12 @@ export class EffectsLayer {
           break
         case 'unitDied':
           this.spawnExplosion(event.entityId, now)
+          break
+        case 'projectileImpacted':
+          this.spawnProjectileMarker('impact', event.x, event.y, 0xffd54f, now)
+          break
+        case 'projectileExpired':
+          this.spawnProjectileMarker('expiry', event.x, event.y, 0x94a3b8, now)
           break
       }
     }
@@ -78,6 +95,10 @@ export class EffectsLayer {
         index += 1
       }
     }
+  }
+
+  projectileFeedback(): readonly ProjectileFeedbackState[] {
+    return this.active.flatMap((effect) => (effect.projectileFeedback === undefined ? [] : [effect.projectileFeedback]))
   }
 
   private spawnStreak(attackerId: number, targetId: number, now: number): void {
@@ -144,9 +165,9 @@ export class EffectsLayer {
     this.effectsLayer.addChild(beam)
     this.active.push({
       display: beam,
-      expiresAt: now + STREAK_LIFETIME_MS * 4,
+      expiresAt: now + BEAM_LIFETIME_MS * 4,
       update: (current) => {
-        beam.alpha = 0.9 * (1 - (current - now) / (STREAK_LIFETIME_MS * 4))
+        beam.alpha = 0.9 * (1 - (current - now) / (BEAM_LIFETIME_MS * 4))
       }
     })
     this.spawnPositivePopup(targetId, amount, now)
@@ -199,6 +220,31 @@ export class EffectsLayer {
         graphics.stroke({ color: EXPLOSION_COLOR, width: 3, alpha: 1 - progress })
         graphics.circle(0, 0, radius * (0.4 + progress * 0.6))
         graphics.fill({ color: EXPLOSION_COLOR, alpha: 1 - progress })
+        graphics.position.set(position.x, position.y)
+      }
+    })
+  }
+
+  private spawnProjectileMarker(
+    type: ProjectileFeedbackState['type'],
+    x: number,
+    y: number,
+    color: number,
+    now: number
+  ): void {
+    const position = toRenderPixels({ x, y })
+    const graphics = new Graphics()
+    graphics.eventMode = 'none'
+    this.effectsLayer.addChild(graphics)
+    this.active.push({
+      display: graphics,
+      expiresAt: now + EXPLOSION_LIFETIME_MS,
+      projectileFeedback: { type, x: position.x, y: position.y },
+      update: (current) => {
+        const progress = (current - now) / EXPLOSION_LIFETIME_MS
+        graphics.clear()
+        graphics.circle(0, 0, 5 + progress * 12)
+        graphics.stroke({ color, width: 2, alpha: 1 - progress })
         graphics.position.set(position.x, position.y)
       }
     })

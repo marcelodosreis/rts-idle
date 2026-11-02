@@ -1,4 +1,4 @@
-import type { UnitKind } from '@rts/shared'
+import type { ProjectileKind, UnitKind } from '@rts/shared'
 import { MECHANICAL_REPAIR, type RepairDefinition } from './repair.js'
 
 export interface UnitCapabilities {
@@ -11,6 +11,12 @@ export interface UnitCapabilities {
   readonly acceptsDeposit: boolean
   readonly cargoCapacity: number | null
   readonly repairProfile: RepairDefinition | null
+}
+
+export interface ProjectileDefinition {
+  readonly kind: ProjectileKind
+  readonly speedTilesPerSecond: number
+  readonly ttlTicks: number
 }
 
 export interface UnitDefinition extends UnitCapabilities {
@@ -26,6 +32,17 @@ export interface UnitDefinition extends UnitCapabilities {
   readonly militaryDefenseUpgrade: boolean
   readonly economyUpgrade: boolean
   readonly movementUpgrade: boolean
+  readonly projectile: ProjectileDefinition | null
+}
+
+const ARCHER_PROJECTILE: ProjectileDefinition = {
+  kind: 'arrow',
+  speedTilesPerSecond: 10,
+  ttlTicks: 20
+}
+
+const PROJECTILE_DEFINITIONS: Readonly<{ [K in ProjectileKind]: ProjectileDefinition }> = {
+  arrow: ARCHER_PROJECTILE
 }
 
 const PAWN: UnitDefinition = {
@@ -41,6 +58,7 @@ const PAWN: UnitDefinition = {
   militaryDefenseUpgrade: false,
   economyUpgrade: true,
   movementUpgrade: true,
+  projectile: null,
   canGather: true,
   canBuild: true,
   canRepair: true,
@@ -67,7 +85,14 @@ const WARRIOR: UnitDefinition = {
   cargoCapacity: null
 }
 
-const ARCHER: UnitDefinition = { ...WARRIOR, kind: 'archer', maxHp: 60, damage: 8, rangeTiles: 3 }
+const ARCHER: UnitDefinition = {
+  ...WARRIOR,
+  kind: 'archer',
+  maxHp: 60,
+  damage: 8,
+  rangeTiles: 3,
+  projectile: ARCHER_PROJECTILE
+}
 const LANCER: UnitDefinition = { ...WARRIOR, kind: 'lancer', maxHp: 120, rangeTiles: 2, movementSpeedTilesPerSecond: 5 }
 const MONK: UnitDefinition = {
   ...PAWN,
@@ -101,4 +126,8 @@ export function unitDefinitionFor(kind: UnitKind): UnitDefinition {
 
 export function unitCanAttack(kind: UnitKind | undefined): boolean {
   return kind === undefined || unitDefinitionFor(kind).canAttack
+}
+
+export function projectileDefinitionFor(kind: ProjectileKind): ProjectileDefinition {
+  return PROJECTILE_DEFINITIONS[kind]!
 }

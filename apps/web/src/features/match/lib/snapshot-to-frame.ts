@@ -7,6 +7,13 @@ export function snapshotToFrame(message: SnapshotMessage): RenderFrame {
   return {
     tick: message.tick,
     units: message.units.map((unit) => ({ id: unit.id, x: unit.x, y: unit.y, ...projectSnapshotUnit(unit) })),
+    projectiles: message.projectiles.map((projectile) => ({
+      id: projectile.id,
+      kind: projectile.kind,
+      owner: projectile.owner,
+      x: projectile.x,
+      y: projectile.y
+    })),
     buildings: message.buildings.map((construction) => ({
       id: construction.id,
       buildingType: construction.buildingType,

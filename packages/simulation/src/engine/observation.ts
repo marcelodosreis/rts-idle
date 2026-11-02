@@ -7,6 +7,7 @@ import {
   type OrderState,
   type PlayerId,
   type PlayerResources,
+  type ProjectileKind,
   type ResourceType,
   type UnitKind
 } from '@rts/shared'
@@ -93,6 +94,14 @@ export interface ObservationBuilding {
   readonly lastSeenTick?: number
 }
 
+export interface ObservationProjectile {
+  readonly id: number
+  readonly kind: ProjectileKind
+  readonly owner: PlayerId
+  readonly x: Fixed
+  readonly y: Fixed
+}
+
 export interface ObservationPlayer {
   readonly id: PlayerId
   readonly defeated: boolean
@@ -109,6 +118,7 @@ export interface SimulationObservation {
   readonly phase: Phase
   readonly units: readonly ObservationUnit[]
   readonly buildings: readonly ObservationBuilding[]
+  readonly projectiles: readonly ObservationProjectile[]
   readonly players: readonly ObservationPlayer[]
   readonly resources: readonly ResourceAmount[]
   readonly resourcesComplete: boolean
@@ -330,6 +340,9 @@ export function createSimulationObservation(
       const building = projectBuilding(state, id)
       return building === undefined ? [] : [building]
     }),
+    projectiles: [...state.projectiles.active.values()]
+      .sort((left, right) => left.id - right.id)
+      .map(({ id, kind, owner, x, y }) => ({ id, kind, owner, x, y })),
     players: state.players.map((player) => projectPlayer(state, player)),
     resources: completeResources ? state.resources.all() : state.resources.changed(),
     resourcesComplete: completeResources,

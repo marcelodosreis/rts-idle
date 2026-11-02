@@ -35,7 +35,9 @@ import { isSimulationEvent } from './simulation-event-guards.js'
 import { isSnapshotFog, type SnapshotFog } from './snapshot-fog.js'
 import { isSnapshotPlayer } from './snapshot-guards.js'
 import { isSnapshotViewHash, isSnapshotViewSequence } from './snapshot-metadata.js'
+import { isSnapshotProjectile, type SnapshotProjectile } from './snapshot-projectile.js'
 
+export { isSnapshotProjectile, type SnapshotProjectile } from './snapshot-projectile.js'
 export {
   ECONOMY_PHASES,
   type EconomyPhase,
@@ -159,6 +161,7 @@ export interface SnapshotMessage {
   readonly phase: MatchPhase
   readonly units: readonly SnapshotUnit[]
   readonly buildings: readonly SnapshotBuilding[]
+  readonly projectiles: readonly SnapshotProjectile[]
   readonly resources: readonly SnapshotResource[]
   readonly resourcesComplete: boolean
   readonly players: readonly SnapshotPlayer[]
@@ -354,6 +357,7 @@ export function isSnapshotMessage(value: unknown): value is SnapshotMessage {
   const players = field(value, 'players')
   const events = field(value, 'events')
   const resourcesComplete = field(value, 'resourcesComplete')
+  const projectiles = field(value, 'projectiles')
   const fog = field(value, 'fog')
   return (
     field(value, 'type') === 'snapshot' &&
@@ -368,6 +372,9 @@ export function isSnapshotMessage(value: unknown): value is SnapshotMessage {
     buildings.every(isSnapshotBuilding) &&
     hasUniqueFieldValues(buildings, 'id') &&
     hasNoSharedEntityIds(units, buildings) &&
+    Array.isArray(projectiles) &&
+    projectiles.every(isSnapshotProjectile) &&
+    hasUniqueFieldValues(projectiles, 'id') &&
     Array.isArray(resources) &&
     resources.every(isSnapshotResource) &&
     hasUniqueFieldValues(resources, 'resourceId') &&
