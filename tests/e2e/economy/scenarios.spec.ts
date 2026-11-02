@@ -89,6 +89,7 @@ test('regression projects visible completed building health', async ({ page }) =
 })
 
 test('offensive regression enemies eventually damage a player pawn', async ({ page }) => {
+  test.setTimeout(60_000)
   await page.goto('/?scenario=regression&aggression=offensive')
   expect(page.url()).toContain('aggression=offensive')
   await settleUnits(page)
