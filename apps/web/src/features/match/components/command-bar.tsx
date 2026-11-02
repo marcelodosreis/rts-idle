@@ -2,13 +2,13 @@ import type { SnapshotProductionItem } from '@rts/protocol'
 import { useEffect, useRef, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { useTimedValue } from '../hooks/use-timed-value'
+import { explosiveShotAction, healAction } from '../lib/ability-actions'
 import {
   backAction,
   buildingRootActions,
   commonUnitActions,
   constructionAction,
   groupedSubmenu,
-  healAction,
   submenuActions,
   workerActions
 } from '../lib/command-actions'
@@ -246,6 +246,9 @@ function unitSlots(props: CommandBarProps, setMenu: (menu: MenuState) => void) {
     : [...commonUnitActions(props, blocked)]
   if (props.selection.length === 1 && selectedUnit?.canHeal === true) {
     actions.push(healAction(props, blocked))
+  }
+  if (props.selection.length === 1 && selectedUnit?.kind === 'archer') {
+    actions.push(explosiveShotAction(props, blocked))
   }
   return mapLayout(worker ? COMMAND_LAYOUTS.worker : COMMAND_LAYOUTS.unit, actions)
 }

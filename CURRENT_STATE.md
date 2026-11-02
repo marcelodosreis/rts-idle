@@ -73,6 +73,10 @@ See `docs/tasks/todo.md` for full phase list.
 - Authoritative Archer projectiles with deterministic travel, impact, dead-target
   and TTL expiry, private homing state, filtered observations, interpolated Arrow
   presentation, and real-server Chromium/Firefox lifecycle coverage
+- Archer Explosive Shot: 25-Gold, 160-tick-cooldown area projectile with a
+  three-tile cast range, 1.5-tile radius, inner/falloff/armor rules, enemy-only
+  filtering, deterministic spatial resolution, filtered area-impact feedback,
+  HUD targeting/cooldown states, and real-server Chromium/Firefox coverage
 
 ## Current Gameplay
 
@@ -90,6 +94,10 @@ The top bar shows authoritative `used / cap` supply and updates on House complet
 Completed Castle/Barracks/Monastery producers accept rally points; trained units wait at a
 blocked exit without overlap and follow the latest authoritative rally point
 after spawning.
+A selected Archer can arm Explosive Shot from the command bar and right-click a
+visible enemy to spend 25 Gold and detonate an authoritative area projectile;
+impact radius, affected targets, cooldown, and rejections are visible, and
+Escape cancels targeting.
 
 No real AI or multiplayer. Resource tiles remain permanently reserved for
 construction; resources marked as non-blocking remain traversable.
@@ -109,10 +117,10 @@ complete, including the spatial index, collision/avoidance player slice, and
 the player-specific vision, filtered-observation, fog-rendering, and radius
 tuning slice. Their packets are archived in `docs/tasks/done/`. The full
 non-performance Chromium/Firefox E2E gate is recorded as 275 tests passing and
-one performance test skipped. `P3.09.01` Targeting and Pursuit and `P3.10.01`
-Projectiles are complete with their simulation, protocol, server, renderer, HUD,
-and focused Chromium/Firefox E2E gates; `P3.11.01` Area Damage is the next active
-gameplay packet.
+one performance test skipped. `P3.09.01` Targeting and Pursuit, `P3.10.01`
+Projectiles, and `P3.11.01` Area Damage are complete with their simulation,
+protocol, server, renderer, HUD, and focused Chromium/Firefox E2E gates;
+`P3.12.01` Combined Army/Chokepoint Stress is the next active gameplay packet.
 
 The first navigation/collision slice is complete: navigation is integrated with
 authoritative movement, visible blocked/unreachable feedback, and real-server
@@ -124,6 +132,8 @@ browser coverage. Later Phase 3 work now continues with area damage.
 - `pnpm run verify` passes: typecheck, lint, unit, integration, simulation,
   contracts, orders, determinism, architecture, invariants, and build.
 - The focused P3.10.01 real-server projectile flow passes in Chromium and Firefox.
+- The focused P3.11.01 real-server Explosive Shot flow passes in Chromium and
+  Firefox, covering radius damage, cost, cooldown feedback, and range rejection.
 - The focused six-test Chromium/Firefox matrix for vision, filtered
   observations, and targeting passes.
 - `pnpm run test:e2e:prepare -- --output=tmp/e2e-plan-validation.json` passes.

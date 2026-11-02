@@ -22,7 +22,7 @@ interface ActiveEffect {
 }
 
 export interface ProjectileFeedbackState {
-  readonly type: 'impact' | 'expiry'
+  readonly type: 'impact' | 'expiry' | 'area'
   readonly x: number
   readonly y: number
 }
@@ -66,6 +66,9 @@ export class EffectsLayer {
           break
         case 'projectileImpacted':
           this.spawnProjectileMarker('impact', event.x, event.y, 0xffd54f, now)
+          break
+        case 'areaDamageImpacted':
+          this.spawnAreaImpact(event.x, event.y, event.innerRadius, event.totalRadius, now)
           break
         case 'projectileExpired':
           this.spawnProjectileMarker('expiry', event.x, event.y, 0x94a3b8, now)
@@ -220,6 +223,29 @@ export class EffectsLayer {
         graphics.stroke({ color: EXPLOSION_COLOR, width: 3, alpha: 1 - progress })
         graphics.circle(0, 0, radius * (0.4 + progress * 0.6))
         graphics.fill({ color: EXPLOSION_COLOR, alpha: 1 - progress })
+        graphics.position.set(position.x, position.y)
+      }
+    })
+  }
+
+  private spawnAreaImpact(x: number, y: number, innerRadius: number, totalRadius: number, now: number): void {
+    const position = toRenderPixels({ x, y })
+    const inner = fixedToRenderPixels(innerRadius)
+    const total = fixedToRenderPixels(totalRadius)
+    const graphics = new Graphics()
+    graphics.eventMode = 'none'
+    this.effectsLayer.addChild(graphics)
+    this.active.push({
+      display: graphics,
+      expiresAt: now + EXPLOSION_LIFETIME_MS,
+      projectileFeedback: { type: 'area', x: position.x, y: position.y },
+      update: (current) => {
+        const progress = (current - now) / EXPLOSION_LIFETIME_MS
+        graphics.clear()
+        graphics.circle(0, 0, total * (0.65 + progress * 0.35))
+        graphics.stroke({ color: 0xffa726, width: 3, alpha: 1 - progress })
+        graphics.circle(0, 0, inner)
+        graphics.fill({ color: EXPLOSION_COLOR, alpha: 0.35 * (1 - progress) })
         graphics.position.set(position.x, position.y)
       }
     })

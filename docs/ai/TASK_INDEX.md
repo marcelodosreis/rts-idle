@@ -101,7 +101,7 @@ pass.
 | P3.08.02 | Fog rendering | done | P3.08.01 | renderer, web | renderer, e2e chromium/firefox |
 | P3.09.01 | Targeting and pursuit | done | P3.06.01, P3.07.01 | simulation, protocol, server, renderer, web | unit, simulation, determinism, e2e chromium/firefox, verify |
 | P3.10.01 | Projectiles | done | P3.09.01 | game-data, shared, protocol, simulation, server, renderer, web | unit, simulation, determinism, contracts, e2e chromium/firefox, verify |
-| P3.11.01 | Area damage | pending | P3.10.01 | game-data, shared, protocol, simulation, server, renderer, web | unit, simulation, determinism, contracts, e2e chromium/firefox |
+| P3.11.01 | Area damage | done | P3.10.01 | game-data, shared, protocol, simulation, server, renderer, web | unit, simulation, determinism, contracts, e2e chromium/firefox, verify |
 | P3.12.01 | Combined army/chokepoint stress | pending | P3.06.01, P3.08.02, P3.11.01 | simulation, server, web | simulation, determinism, e2e, benchmark |
 
 ## Phase 4A — M1 Content

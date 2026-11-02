@@ -19,6 +19,7 @@ export interface RtsDebug {
   >
   getAnimationFrame(id: number): number | null
   getUnitHealth(id: number): { readonly current: number; readonly max: number } | null
+  getExplosiveShotCooldown(id: number): number | null
   getSpriteState(id: number): ReturnType<GameRenderer['getUnitSpriteState']>
   getProjectilePresentation(id: number): ReturnType<GameRenderer['getProjectilePresentation']>
   getProjectileFeedback(): ReturnType<GameRenderer['getProjectileFeedback']>
@@ -174,6 +175,7 @@ export function createRtsDebug(options: MatchDebugOptions): RtsDebug {
     getConstructionStates: () => constructionStates(buildings()),
     getAnimationFrame: (id) => renderer.getUnitAnimationFrame(id),
     getUnitHealth: (id) => renderer.getUnitHealth(id),
+    getExplosiveShotCooldown: (id) => unitStates.get(id)?.explosiveShotCooldownRemaining ?? null,
     getSpriteState: (id) => renderer.getUnitSpriteState(id),
     getProjectilePresentation: (id) => renderer.getProjectilePresentation(id),
     getProjectileFeedback: () => renderer.getProjectileFeedback(),

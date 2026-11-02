@@ -86,7 +86,7 @@ export class MatchInteractionController {
     if (unitIds.length === 0) {
       return
     }
-    if (this.context.mode() === 'heal') {
+    if (this.context.mode() === 'heal' || this.context.mode() === 'explosive_shot') {
       this.context.clearMode()
       return
     }
@@ -154,6 +154,14 @@ export class MatchInteractionController {
     if (this.autoHealTarget(id)) {
       return
     }
+    if (this.context.mode() === 'explosive_shot') {
+      const archers = this.selectedExplosiveArchers()
+      if (isEnemy && archers.length === 1) {
+        this.context.sendCommand({ type: 'EXPLOSIVE_SHOT', payload: { unitIds: archers, targetId: id } })
+      }
+      this.context.clearMode()
+      return
+    }
     if (this.context.mode() === 'heal') {
       const healers = this.selectedHealers()
       if (target !== undefined && !isEnemy && this.isDamaged(target.hp, target.maxHp) && healers.length === 1) {
@@ -190,6 +198,10 @@ export class MatchInteractionController {
     }
     const building = this.context.buildings().find((candidate) => candidate.id === id)
     if (building === undefined) {
+      return
+    }
+    if (this.context.mode() === 'explosive_shot') {
+      this.explosiveShotBuilding(id, building)
       return
     }
     const ownedPawns = this.selectedWorkers()
@@ -312,6 +324,21 @@ export class MatchInteractionController {
       .selectedUnitIds()
       .filter((id) => this.context.unitStates.get(id)?.canHeal === true)
       .filter((id) => this.context.unitStates.get(id)?.owner === this.context.humanPlayer)
+  }
+
+  private selectedExplosiveArchers(): number[] {
+    return this.context
+      .selectedUnitIds()
+      .filter((id) => this.context.unitStates.get(id)?.kind === 'archer')
+      .filter((id) => this.context.unitStates.get(id)?.owner === this.context.humanPlayer)
+  }
+
+  private explosiveShotBuilding(id: number, building: SnapshotBuilding): void {
+    const archers = this.selectedExplosiveArchers()
+    if (building.owner !== this.context.humanPlayer && building.status === 'COMPLETED' && archers.length === 1) {
+      this.context.sendCommand({ type: 'EXPLOSIVE_SHOT', payload: { unitIds: archers, targetId: id } })
+    }
+    this.context.clearMode()
   }
 
   private autoHealTarget(id: number): boolean {

@@ -9,6 +9,7 @@ export type CommandMode =
   | 'attack'
   | 'attack_move'
   | 'heal'
+  | 'explosive_shot'
   | 'gather'
   | 'repair'
   | 'deposit'

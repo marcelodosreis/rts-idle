@@ -170,20 +170,6 @@ export function workerActions(
   ]
 }
 
-export function healAction(props: CommandBarProps, blockedReason?: string): HudCommandAction {
-  const cooldown = props.selection[0]?.healCooldownRemaining ?? 0
-  return {
-    id: 'contextual',
-    label: 'Heal',
-    description: 'Heal a damaged allied unit.',
-    icon: HeartPulse,
-    blockedReason: blockedReason ?? (cooldown > 0 ? `Heal ready in ${Math.ceil(cooldown / 20)}s.` : undefined),
-    active: props.mode === 'heal',
-    feedbackKind: 'arm',
-    onActivate: () => props.onArm('heal')
-  }
-}
-
 export function buildingRootActions(
   props: CommandBarProps,
   open: (kind: SubmenuKind) => void,
