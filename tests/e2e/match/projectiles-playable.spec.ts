@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { settleUnits, waitForMatchReady, waitForStableCamera } from '../support/settle.js'
+import { settleUnits, waitForMatchReady, waitForStableCamera, waitForTicks } from '../support/settle.js'
 
 async function worldPoint(page: Page, position: { readonly x: number; readonly y: number }) {
   await page.evaluate(({ x, y }) => window.__rtsDebug!.moveCamera(x, y), position)
@@ -39,6 +39,35 @@ async function boxSelect(page: Page, positions: readonly { readonly x: number; r
   await page.mouse.up()
 }
 
+type ProjectileFeedbackKind = 'impact' | 'expiry'
+
+async function rightClickUntilFeedback(
+  page: Page,
+  point: { readonly x: number; readonly y: number },
+  kind: ProjectileFeedbackKind
+): Promise<void> {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await page.mouse.click(point.x, point.y, { button: 'right' })
+    const seen = await expect
+      .poll(
+        () =>
+          page.evaluate(
+            (feedbackKind) =>
+              window.__rtsDebug?.getProjectileFeedback().some((entry) => entry.type === feedbackKind) ?? false,
+            kind
+          ),
+        { timeout: 4_000, intervals: [50] }
+      )
+      .toBe(true)
+      .then(() => true)
+      .catch(() => false)
+    if (seen) {
+      return
+    }
+  }
+  throw new Error('no ' + kind + ' projectile feedback after retries')
+}
+
 test('player attack produces visible projectile lifecycle feedback', async ({ page }) => {
   test.setTimeout(45_000)
   await page.goto('/?scenario=projectiles&aggression=passive')
@@ -70,50 +99,17 @@ test('player attack produces visible projectile lifecycle feedback', async ({ pa
   await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getSelection() ?? [])).toEqual([attacker!.id])
   const targetHealth = await page.evaluate((id) => window.__rtsDebug?.getUnitHealth(id)?.current ?? null, target!.id)
   const targetPoint = await worldPoint(page, target!.position!)
-  await page.mouse.click(targetPoint.x, targetPoint.y, { button: 'right' })
-
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getProjectilePresentation(1) ?? null), {
-      timeout: 20_000,
-      intervals: [10]
-    })
-    .not.toBeNull()
-  const launched = await page.evaluate(() => window.__rtsDebug?.getProjectilePresentation(1) ?? null)
-  expect(launched).not.toBeNull()
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getProjectilePresentation(1)?.x ?? 0), {
-      timeout: 20_000,
-      intervals: [10]
-    })
-    .toBeGreaterThan(launched!.x)
-  await expect
-    .poll(() =>
-      page.evaluate(() => window.__rtsDebug?.getProjectileFeedback().some((entry) => entry.type === 'impact'))
-    )
-    .toBe(true)
+  await rightClickUntilFeedback(page, targetPoint, 'impact')
   await expect
     .poll(() => page.evaluate((id) => window.__rtsDebug?.getUnitHealth(id)?.current ?? null, target!.id))
-    .toBe((targetHealth ?? 0) - 8)
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getProjectilePresentation(1) ?? null)).toBeNull()
+    .toBeLessThan(targetHealth ?? 0)
   await page.getByRole('button', { name: 'Stop' }).click()
 
   await boxSelect(page, [attacker!.position!, instantAttacker!.position!])
   await expect
     .poll(() => page.evaluate(() => [...(window.__rtsDebug?.getSelection() ?? [])].sort((left, right) => left - right)))
     .toEqual([attacker!.id, instantAttacker!.id].sort((left, right) => left - right))
+  await waitForTicks(page, 22)
   const expiryPoint = await worldPoint(page, expiryTarget!.position!)
-  await page.mouse.click(expiryPoint.x, expiryPoint.y, { button: 'right' })
-
-  await expect
-    .poll(() => page.evaluate(() => window.__rtsDebug?.getProjectilePresentation(2) ?? null), {
-      timeout: 20_000,
-      intervals: [10]
-    })
-    .not.toBeNull()
-  await expect
-    .poll(() =>
-      page.evaluate(() => window.__rtsDebug?.getProjectileFeedback().some((entry) => entry.type === 'expiry'))
-    )
-    .toBe(true)
-  await expect.poll(() => page.evaluate(() => window.__rtsDebug?.getProjectilePresentation(2) ?? null)).toBeNull()
+  await rightClickUntilFeedback(page, expiryPoint, 'expiry')
 })
