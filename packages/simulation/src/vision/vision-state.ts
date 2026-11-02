@@ -1,3 +1,4 @@
+import { VISION_RADIUS_TILES } from '@rts/game-data'
 import {
   type BuildingStatus,
   type BuildingType,
@@ -12,7 +13,14 @@ import { Building } from '../ecs/building-component.js'
 import { Kind, Owner, Position } from '../ecs/components.js'
 import type { GameState } from '../state/state.js'
 
-export const VISION_RADIUS_TILES = 4
+export { VISION_RADIUS_TILES }
+export const MIN_VISION_RADIUS_TILES = 1
+export const MAX_VISION_RADIUS_TILES = 64
+
+/** Balance-independent validation for an authored or restored radius. */
+export function isValidVisionRadiusTiles(value: number): boolean {
+  return Number.isInteger(value) && value >= MIN_VISION_RADIUS_TILES && value <= MAX_VISION_RADIUS_TILES
+}
 
 export interface VisionBuildingMemory {
   readonly id: EntityId
@@ -46,7 +54,10 @@ export interface VisionState {
   readonly players: Map<PlayerId, PlayerVisionState>
 }
 
-export function createVisionState(width: number, height: number): VisionState {
+export function createVisionState(width: number, height: number, radiusTiles = VISION_RADIUS_TILES): VisionState {
+  if (!isValidVisionRadiusTiles(radiusTiles)) {
+    throw new Error(`createVisionState: invalid vision radius ${radiusTiles}`)
+  }
   const tileCount = width * height
   const players = new Map<PlayerId, PlayerVisionState>()
   for (const playerId of PLAYER_IDS) {
@@ -57,7 +68,7 @@ export function createVisionState(width: number, height: number): VisionState {
       resources: new Map()
     })
   }
-  return { radiusTiles: VISION_RADIUS_TILES, width, height, players }
+  return { radiusTiles, width, height, players }
 }
 
 export function cloneVisionState(vision: VisionState): VisionState {

@@ -35,4 +35,6 @@ export interface SimulationOptions {
   readonly mapBounds?: PlacementMapBounds
   readonly resources?: readonly ResourceDefinition[]
   readonly navigation?: NavigationInitialization
+  /** Balance override for fog size; defaults to `@rts/game-data`'s radius. */
+  readonly visionRadiusTiles?: number
 }
