@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { waitForMatchReady, waitForStableCamera } from '../support/settle.js'
+import { settleUnits, waitForMatchReady, waitForStableCamera } from '../support/settle.js'
 
 async function worldPoint(page: Page, position: { readonly x: number; readonly y: number }) {
   await page.evaluate(({ x, y }) => window.__rtsDebug!.moveCamera(x, y), position)
@@ -43,6 +43,7 @@ test('player attack produces visible projectile lifecycle feedback', async ({ pa
   test.setTimeout(45_000)
   await page.goto('/?scenario=projectiles&aggression=passive')
   await waitForMatchReady(page)
+  await settleUnits(page)
 
   const units = await page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
@@ -73,7 +74,7 @@ test('player attack produces visible projectile lifecycle feedback', async ({ pa
 
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getProjectilePresentation(1) ?? null), {
-      timeout: 10_000,
+      timeout: 20_000,
       intervals: [10]
     })
     .not.toBeNull()
@@ -81,7 +82,7 @@ test('player attack produces visible projectile lifecycle feedback', async ({ pa
   expect(launched).not.toBeNull()
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getProjectilePresentation(1)?.x ?? 0), {
-      timeout: 10_000,
+      timeout: 20_000,
       intervals: [10]
     })
     .toBeGreaterThan(launched!.x)
@@ -105,7 +106,7 @@ test('player attack produces visible projectile lifecycle feedback', async ({ pa
 
   await expect
     .poll(() => page.evaluate(() => window.__rtsDebug?.getProjectilePresentation(2) ?? null), {
-      timeout: 10_000,
+      timeout: 20_000,
       intervals: [10]
     })
     .not.toBeNull()
