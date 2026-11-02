@@ -122,7 +122,11 @@ non-performance Chromium/Firefox E2E gate is recorded as 275 tests passing and
 one performance test skipped. `P3.09.01` Targeting and Pursuit, `P3.10.01`
 Projectiles, and `P3.11.01` Area Damage are complete with their simulation,
 protocol, server, renderer, HUD, and focused Chromium/Firefox E2E gates;
-`P3.12.01` Combined Army/Chokepoint Stress is the next active gameplay packet.
+`P3.12.01` Combined Army/Chokepoint Stress is implemented through the
+deterministic simulation fixture, integration composition pin, and real-server
+Chromium/Firefox stress flow. Its only open acceptance item is the 500-entity
+performance gate: the local headless benchmark reports median p95 116.17 ms
+against the 10 ms threshold.
 
 The first navigation/collision slice is complete: navigation is integrated with
 authoritative movement, visible blocked/unreachable feedback, and real-server
@@ -134,8 +138,12 @@ browser coverage. Later Phase 3 work now continues with area damage.
 - `pnpm run verify` passes: typecheck, lint, unit, integration, simulation,
   contracts, orders, determinism, architecture, invariants, and build.
 - The focused P3.10.01 real-server projectile flow passes in Chromium and Firefox.
-- The focused P3.11.01 real-server Explosive Shot flow passes in Chromium and
-  Firefox, covering radius damage, cost, cooldown feedback, and range rejection.
+- The focused P3.11.01 real-server Blast flow passes in Chromium and Firefox,
+  covering doubled radius damage, cost, cooldown feedback, and range rejection.
+- The P3.12.01 regression army stress flow passes in Chromium and Firefox, and
+  the integration test pins the regression army and initial hidden enemies.
+- The P3.12.01 headless 500-entity benchmark reports median p95 116.17 ms, so
+  the 10 ms gate remains open.
 - The focused six-test Chromium/Firefox matrix for vision, filtered
   observations, and targeting passes.
 - `pnpm run test:e2e:prepare -- --output=tmp/e2e-plan-validation.json` passes.
