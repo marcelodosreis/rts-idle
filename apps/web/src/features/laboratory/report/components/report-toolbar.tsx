@@ -15,7 +15,7 @@ export function ReportToolbar({ checking, filter, onRun, onFilter }: ReportToolb
     ['fail', 2]
   ] as const
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center gap-2">
       <Button variant="outline" size="sm" disabled={checking} onClick={onRun}>
         {checking ? 'checking…' : 'run deep check (loads all assets)'}
       </Button>

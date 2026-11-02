@@ -3,7 +3,7 @@ export function RouteLoading() {
     <div
       data-testid="route-loading"
       role="status"
-      className="flex min-h-screen items-center justify-center text-sm text-muted-foreground"
+      className="flex h-full min-h-0 items-center justify-center bg-background text-sm text-muted-foreground"
     >
       Loading…
     </div>

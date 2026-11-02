@@ -7,7 +7,7 @@ export function MapEditorFeature() {
 
   if (ctx === null) {
     return (
-      <div className="flex min-h-[calc(100vh-3rem)] items-center justify-center text-sm text-muted-foreground">
+      <div className="flex h-full min-h-0 items-center justify-center text-sm text-muted-foreground">
         Loading assets…
       </div>
     )

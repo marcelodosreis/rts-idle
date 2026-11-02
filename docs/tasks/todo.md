@@ -307,7 +307,7 @@ and the remaining Quality Hardening tasks stay pending without blocking it.
 - [ ] QH.04 Input helper (deps: QH.00)
 - [ ] QH.07 Barrier input (deps: QH.04)
 - [x] QH.12 expectAnim + barrier (`docs/tasks/done/QH.12.md`; reduced scope, deps: QH.00)
-- [ ] QH.08 Dynamic geometry (deps: QH.02)
+- [x] QH.08 Dynamic geometry (`docs/tasks/done/QH.08.md`; responsive viewport shell + always-dark root, deps: QH.02 reduced scope)
 - [ ] QH.15 Branch baseline (deps: none)
 
 ### Core

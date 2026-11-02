@@ -1,6 +1,6 @@
 import type { AssetKind } from '@rts/shared'
 import { Container, Graphics, type Texture } from 'pixi.js'
-import { croppedFrames, croppedTiles } from '../../shared/lib/crop'
+import { croppedFrames, croppedTiles, type VisibleBounds } from '../../shared/lib/crop'
 import { checkerboard, drawGridLines } from '../../shared/lib/draw-context'
 import { createSectionApp, disposeSectionApp } from '../../shared/services/section-app'
 import type { SectionContext } from '../../shared/types/section-context'
@@ -16,6 +16,11 @@ import {
   buildUnit
 } from './canvas-builders'
 
+interface LoadedSlices {
+  readonly bounds: VisibleBounds | null
+  readonly textures: readonly Texture[]
+}
+
 export interface CanvasRendererHandle {
   readonly render: (key: string, options: RenderOptions) => Promise<CanvasResult>
   readonly selectSlice: (index: number) => void
@@ -25,6 +30,7 @@ export interface CanvasRendererHandle {
 /** One render generation with a detached container; nothing commits until current. */
 interface RenderTarget {
   readonly container: Container
+  cropBounds: VisibleBounds | null
   sliceTextures: readonly Texture[]
   sliceActive: number
 }
@@ -34,6 +40,13 @@ interface RebuildOutcome {
   readonly active: Active | null
   readonly sliceTextures: readonly Texture[]
   readonly sliceActive: number
+}
+
+function cropSummary(bounds: VisibleBounds | null): string {
+  if (bounds === null) {
+    return ''
+  }
+  return `\ncrop: ${bounds.minX},${bounds.minY} ${bounds.w}x${bounds.h}px`
 }
 
 /**
@@ -48,6 +61,7 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
   private active: Active | null = null
   private sliceTextures: readonly Texture[] = []
   private sliceActive = 0
+  private cropBounds: VisibleBounds | null = null
   private lastKey = ''
   private lastOptions: RenderOptions = { ...DEFAULT_OPTIONS }
   private renderSeq = 0
@@ -80,6 +94,9 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
       app: this.app,
       ctx: this.ctx,
       content: target.container,
+      setCropBounds: (bounds) => {
+        target.cropBounds = bounds
+      },
       setSliceTextures: (textures, activeSlice) => {
         target.sliceTextures = textures
         target.sliceActive = activeSlice
@@ -90,6 +107,7 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
   private clear(): void {
     this.active?.destroy()
     this.active = null
+    this.cropBounds = null
     this.sliceTextures = []
     const children = [...this.content.children]
     this.content.removeChildren(0, this.content.children.length)
@@ -99,18 +117,18 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
   }
 
   /** Loads the cropped slice textures for a key (frames or tiles). */
-  private async loadSlices(key: string): Promise<readonly Texture[]> {
+  private async loadSlices(key: string): Promise<LoadedSlices> {
     const entry = this.ctx.assets.entry(key)
     if (entry === null) {
-      return []
+      return { bounds: null, textures: [] }
     }
     if (entry.kind === 'tileset') {
       const tiles = await croppedTiles(this.ctx.assets, key)
-      return tiles?.textures ?? []
+      return { bounds: tiles?.bounds ?? null, textures: tiles?.textures ?? [] }
     }
     const cropped = await croppedFrames(this.ctx.assets, key)
     const textures = cropped?.textures ?? []
-    return entry.kind === 'strip' ? textures : textures.slice(0, 1)
+    return { bounds: cropped?.bounds ?? null, textures: entry.kind === 'strip' ? textures : textures.slice(0, 1) }
   }
 
   selectSlice(index: number): void {
@@ -144,7 +162,8 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
     const entry = this.ctx.assets.entry(this.lastKey)
     this.onSummary(
       `${this.lastKey}\nfile: ${entry?.file ?? '?'}\nframe ${this.sliceActive + 1}/${this.sliceTextures.length}` +
-        (this.sliceTextures.length > 1 ? ' selected' : '')
+        (this.sliceTextures.length > 1 ? ' selected' : '') +
+        cropSummary(this.cropBounds)
     )
   }
 
@@ -183,7 +202,9 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
     entry: { file: string; kind: AssetKind; cellW: number; cellH: number },
     options: RenderOptions
   ): Promise<RebuildOutcome> {
-    const slices = await this.loadSlices(key)
+    const loaded = await this.loadSlices(key)
+    const slices = loaded.textures
+    target.cropBounds = loaded.bounds
     target.sliceTextures = slices
     target.sliceActive = Math.min(options.variant, Math.max(0, slices.length - 1))
     const active = await buildSlicesGrid(context, slices, target.sliceActive, (index) => this.selectSlice(index))
@@ -194,9 +215,10 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
     const summary =
       `${key}\nfile: ${entry.file}\n${entry.kind} ${entry.cellW}×${entry.cellH}px` +
       (slices.length > 1 ? ` · ${slices.length} slices` : '') +
-      `\nselected: slice ${target.sliceActive + 1}/${slices.length}`
+      `\nselected: slice ${target.sliceActive + 1}/${slices.length}` +
+      cropSummary(target.cropBounds)
     return {
-      result: { kind, summary, slices: slices.length, active: target.sliceActive },
+      result: { kind, summary, crop: target.cropBounds, slices: slices.length, active: target.sliceActive },
       active,
       sliceTextures: slices,
       sliceActive: target.sliceActive
@@ -212,7 +234,7 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
     const entry = this.ctx.assets.entry(key)
     if (entry === null) {
       return {
-        result: { kind: 'static', summary: `${key}\nno entry for ${key}`, slices: 0, active: 0 },
+        result: { kind: 'static', summary: `${key}\nno entry for ${key}`, crop: null, slices: 0, active: 0 },
         active: null,
         sliceTextures: [],
         sliceActive: 0
@@ -230,9 +252,16 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
     const summary =
       `${key} · ${entry.kind} ${entry.cellW}×${entry.cellH}px` +
       (entry.kind === 'strip' ? ` · ${entry.frames} frames` : '') +
-      (slices.length > 1 ? ` · slice ${target.sliceActive + 1}/${slices.length}` : '')
+      (slices.length > 1 ? ` · slice ${target.sliceActive + 1}/${slices.length}` : '') +
+      cropSummary(target.cropBounds)
     return {
-      result: { kind, summary: `${key}\n${summary}`, slices: slices.length, active: target.sliceActive },
+      result: {
+        kind,
+        summary: `${key}\n${summary}`,
+        crop: target.cropBounds,
+        slices: slices.length,
+        active: target.sliceActive
+      },
       active,
       sliceTextures: slices,
       sliceActive: target.sliceActive
@@ -243,7 +272,7 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
     this.lastKey = key
     this.lastOptions = options
     if (this.destroyed) {
-      return { kind: 'static', summary: `${key}\nrenderer disposed`, slices: 0, active: 0 }
+      return { kind: 'static', summary: `${key}\nrenderer disposed`, crop: null, slices: 0, active: 0 }
     }
     const seq = ++this.renderSeq
     // Preserve a manual strip selection across re-renders (fps/overlay toggles);
@@ -254,6 +283,7 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
     }
     const target: RenderTarget = {
       container: new Container(),
+      cropBounds: null,
       sliceTextures: this.sliceTextures,
       sliceActive: this.sliceActive
     }
@@ -274,6 +304,7 @@ export class SpriteBrowserCanvas implements CanvasRendererHandle {
     }
     target.container.destroy()
     this.active = outcome.active
+    this.cropBounds = outcome.result.crop
     this.sliceTextures = outcome.sliceTextures
     this.sliceActive = outcome.sliceActive
     this.onSummary(outcome.result.summary)

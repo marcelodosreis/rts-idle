@@ -62,13 +62,13 @@ export function InspectorPanel({
 
   return (
     <aside
-      className="flex h-full flex-col overflow-hidden rounded-xl border border-border/50 bg-card"
+      className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-border/50 bg-card"
       aria-label="Asset inspector"
     >
       {/* Readout */}
-      <div className="border-b border-border/50 p-3">
+      <div className="shrink-0 border-b border-border/50 p-2">
         <pre
-          className="min-h-10 whitespace-pre-wrap rounded-lg bg-muted/30 p-2.5 font-mono text-[11px] leading-relaxed"
+          className="min-h-8 whitespace-pre-wrap rounded-lg bg-muted/30 p-2 font-mono text-[11px] leading-relaxed"
           aria-live="polite"
         >
           {summary}
@@ -77,7 +77,7 @@ export function InspectorPanel({
 
       <ScrollArea className="flex-1">
         {/* Playback - always visible */}
-        <div className="border-b border-border/50 p-3">
+        <div className="border-b border-border/50 p-2">
           <div className="mb-2 flex items-center gap-2">
             <span className="text-sm">🎬</span>
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Playback</span>
@@ -97,14 +97,14 @@ export function InspectorPanel({
             </div>
           </div>
 
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-1 flex items-center gap-2">
             <Toggle label="Paused" checked={options.paused} onChange={(c) => onPatchOptions({ paused: c })} />
           </div>
         </div>
 
         {/* Slices - only for multi-frame assets */}
         {slices >= 1 && (
-          <div className="border-b border-border/50 p-3">
+          <div className="border-b border-border/50 p-2">
             <div className="mb-2 flex items-center gap-2">
               <span className="text-sm">🔲</span>
               <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Slices</span>
@@ -182,7 +182,7 @@ export function InspectorPanel({
         )}
 
         {/* Validate */}
-        <div className="p-3">
+        <div className="p-2">
           <Button variant="secondary" size="sm" onClick={handleValidate} className="w-full">
             Validate asset
           </Button>

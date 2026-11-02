@@ -32,8 +32,8 @@ export function BrowseView({ onSelectReady, requestedBrowse, onBrowseHandled }: 
   })
 
   return (
-    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-[240px_1fr] lg:h-[calc(100vh-140px)] lg:grid-cols-[220px_1fr_260px] xl:grid-cols-[260px_1fr_300px]">
-      <div className="order-2 h-[45vh] min-h-[320px] min-w-0 md:order-none md:h-[60vh] lg:h-auto lg:min-h-0">
+    <div className="mt-2 grid min-h-0 flex-1 grid-cols-1 grid-rows-[repeat(3,minmax(0,1fr))] gap-2 overflow-hidden md:grid-cols-[240px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)_260px] lg:grid-rows-1 xl:grid-cols-[260px_minmax(0,1fr)_300px]">
+      <div className="order-2 min-h-0 min-w-0 md:order-none">
         <SidebarNav
           catalog={browse.catalog}
           selection={browse.selection}
@@ -43,7 +43,7 @@ export function BrowseView({ onSelectReady, requestedBrowse, onBrowseHandled }: 
         />
       </div>
 
-      <div className="order-1 flex h-[55vh] min-h-[360px] min-w-0 flex-col gap-2 md:order-none md:h-[60vh] lg:h-auto lg:min-h-0">
+      <div className="order-1 flex min-h-0 min-w-0 flex-col gap-2 overflow-hidden md:order-none">
         <BrowseBreadcrumb
           parts={controller.crumbParts}
           keys={controller.crumbKeys}
@@ -59,7 +59,7 @@ export function BrowseView({ onSelectReady, requestedBrowse, onBrowseHandled }: 
         />
       </div>
 
-      <div className="order-3 min-w-0 md:order-none md:col-span-2 lg:col-span-1">
+      <div className="order-3 min-h-0 min-w-0 overflow-hidden md:order-none md:col-span-2 lg:col-span-1">
         <InspectorPanel
           key={browse.selection.key}
           kind={controller.kind}

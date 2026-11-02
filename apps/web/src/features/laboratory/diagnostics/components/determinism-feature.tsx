@@ -120,10 +120,10 @@ export function DeterminismFeature() {
   }
 
   return (
-    <section className="space-y-5 rounded-lg border border-border/60 bg-card p-6">
+    <section className="space-y-3 rounded-lg border border-border/60 bg-card p-3">
       <div>
-        <h2 className="text-lg font-semibold">Determinism browser harness</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <h2 className="text-base font-semibold">Determinism browser harness</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
           Run the same fixture twice in the browser and compare every state hash.
         </p>
       </div>

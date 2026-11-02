@@ -24,7 +24,7 @@ function Chevron({ points }: { readonly points: string }) {
 /** Prev/next asset navigation strip below the canvas. */
 export function BrowseCanvasNav({ position, hasSelection, onStep }: BrowseCanvasNavProps) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border/50 bg-card px-3 py-2">
+    <div className="flex shrink-0 items-center justify-between rounded-lg border border-border/50 bg-card px-2 py-1.5">
       <Button variant="ghost" size="sm" onClick={() => onStep(-1)} disabled={!hasSelection} className="gap-1 text-xs">
         <Chevron points="15 18 9 12 15 6" />
         Prev

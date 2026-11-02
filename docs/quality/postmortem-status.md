@@ -7,9 +7,9 @@
 
 | Status | Count |
 |--------|-------|
-| open | 111 |
+| open | 112 |
 | closed | 21 |
-| **total** | **132** |
+| **total** | **133** |
 
 ## Details
 
@@ -146,6 +146,7 @@
 | 2026-10-24-projectile-homing-remainder-coverage | open | coverage | QH.19 | 1 test(s) |
 | 2026-10-24-projectile-layer-late-asset-disposal | open | presentation | QH.19 | 1 test(s) |
 | 2026-10-24-projectile-visibility-delta-boundary | open | coverage | QH.19 | 1 test(s) |
+| 2026-11-01-dark-mode-root-class-removed | open | presentation | — | none |
 | 2026-11-02-offensive-attack-orders-never-march | open | formation | — | none |
 
 ## Legend

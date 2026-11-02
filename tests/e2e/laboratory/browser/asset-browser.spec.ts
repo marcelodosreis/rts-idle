@@ -50,7 +50,9 @@ test('browse: selecting an asset renders the canvas and inspector', async ({ pag
   await page.getByPlaceholder('Search…').fill('units.blue.pawn.pawn_idle')
   await page.getByRole('option', { name: /pawn_idle$/ }).click()
   await expect(page.getByText('units.blue.pawn.pawn_idle', { exact: false }).first()).toBeVisible()
-  await expect(page.getByRole('complementary', { name: 'Asset inspector' })).toContainText('units.blue.pawn.pawn_idle')
+  const inspector = page.getByRole('complementary', { name: 'Asset inspector' })
+  await expect(inspector).toContainText('units.blue.pawn.pawn_idle')
+  await expect(inspector).toContainText(/crop: \d+,\d+ \d+x\d+px/)
 })
 
 test('browse: selecting a scrolled asset preserves the asset list position', async ({ page }) => {

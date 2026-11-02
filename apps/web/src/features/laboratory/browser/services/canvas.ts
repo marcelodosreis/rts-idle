@@ -1,4 +1,5 @@
 import type { AssetKind } from '@rts/shared'
+import type { VisibleBounds } from '../../shared/lib/crop'
 import type { BlendChoice } from '../../shared/services/strip-player'
 import type { SectionContext } from '../../shared/types/section-context'
 import { type CanvasRendererHandle, SpriteBrowserCanvas } from './canvas-renderer'
@@ -38,6 +39,7 @@ export type BuildKind = 'unit' | 'fx' | 'tileset' | 'grid' | 'static'
 export interface CanvasResult {
   readonly kind: BuildKind
   readonly summary: string
+  readonly crop: VisibleBounds | null
   /** Number of selectable slices (strip frames / tileset tiles), 0 if none. */
   readonly slices: number
   /** Currently selected slice index. */

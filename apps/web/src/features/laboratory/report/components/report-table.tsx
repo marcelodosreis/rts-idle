@@ -17,7 +17,7 @@ export function ReportTable({ rows, sortKey, sortAsc, onToggleSort }: ReportTabl
     return sortAsc ? '↑' : '↓'
   }
   return (
-    <div className="max-h-96 overflow-y-auto rounded border">
+    <div className="min-h-0 overflow-auto rounded border">
       <Table>
         <TableHeader>
           <TableRow>

@@ -128,11 +128,11 @@ function ToolbarFooter({
 
 export function TerrainToolbar(props: TerrainToolbarProps) {
   return (
-    <div className="flex w-full shrink-0 flex-col gap-2 rounded-xl border border-border/50 bg-card p-2 md:w-[200px]">
+    <div className="flex min-h-0 max-h-[45%] w-full shrink-0 flex-col gap-2 overflow-hidden rounded-xl border border-border/50 bg-card p-2 md:h-full md:max-h-none md:w-[200px]">
       <Tabs
         value={props.state.editorTab}
         onValueChange={(value) => props.onPatch({ editorTab: value as EditorTab })}
-        className="flex flex-1 flex-col gap-2"
+        className="flex min-h-0 flex-1 flex-col gap-2"
       >
         <TabsList className="w-full">
           <Tooltip>

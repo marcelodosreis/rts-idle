@@ -33,8 +33,8 @@ export function StressView({
   useReadoutLoop(sceneRef, setReadout)
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-4">
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Label>sprites</Label>
         <div className="flex min-w-52 max-w-64 flex-1 items-center gap-2">
           <Slider min={1} max={MAX} step={50} value={[count]} onValueChange={([value]) => setCount(value ?? count)} />
@@ -47,9 +47,9 @@ export function StressView({
       <div
         ref={hostRef}
         data-testid="stress-canvas-host"
-        className="h-[340px] min-w-0 overflow-hidden rounded border bg-background"
+        className="h-[min(340px,32dvh)] min-h-[180px] min-w-0 overflow-hidden rounded border bg-background"
       />
-      <pre role="status" className="whitespace-pre-wrap rounded border bg-muted p-3 font-mono text-xs">
+      <pre role="status" className="whitespace-pre-wrap rounded border bg-muted p-2 font-mono text-xs">
         {readout}
       </pre>
     </div>

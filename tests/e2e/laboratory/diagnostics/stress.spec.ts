@@ -32,9 +32,11 @@ test('stress: renderer host keeps a stable viewport height', async ({ page }) =>
   const host = page.getByTestId('stress-canvas-host')
   await expect(host).toBeVisible()
   await expect(host.locator('canvas')).toBeVisible()
-  await expect.poll(async () => (await host.boundingBox())?.height ?? 0, { timeout: 10_000 }).toBe(340)
+  await expect.poll(async () => (await host.boundingBox())?.height ?? 0, { timeout: 10_000 }).toBeGreaterThan(0)
   const initial = await host.boundingBox()
   expect(initial).not.toBeNull()
+  const viewportHeight = page.viewportSize()?.height ?? 0
+  expect(initial!.height).toBeLessThanOrEqual(viewportHeight)
   await expect.poll(async () => (await host.boundingBox())?.height ?? 0, { timeout: 5000 }).toBe(initial!.height)
 })
 

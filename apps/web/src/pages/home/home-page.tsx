@@ -97,8 +97,8 @@ interface HomeSessionCardProps {
 
 function HomeSessionCard({ session, releaseError, onContinue, onNewMatch }: HomeSessionCardProps) {
   return (
-    <Card className="max-w-2xl border-border/70 bg-card/80 shadow-xl">
-      <CardHeader>
+    <Card className="max-w-2xl gap-4 border-border/70 bg-card/80 py-4 shadow-sm">
+      <CardHeader className="py-4">
         <CardTitle>{session === null ? 'Ready when you are' : 'A match is waiting'}</CardTitle>
         <CardDescription>
           {session === null
@@ -106,7 +106,7 @@ function HomeSessionCard({ session, releaseError, onContinue, onNewMatch }: Home
             : `Scenario: ${session.request.scenarioId} · ${session.request.aggression} aggression`}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3 sm:flex-row">
+      <CardContent className="flex flex-col gap-2 pb-4 sm:flex-row">
         {session !== null ? (
           <Button type="button" size="lg" className="flex-1" onClick={onContinue}>
             Continue match
@@ -123,7 +123,7 @@ function HomeSessionCard({ session, releaseError, onContinue, onNewMatch }: Home
         </Button>
       </CardContent>
       {releaseError !== null ? (
-        <p role="alert" className="px-6 pb-5 text-sm text-destructive">
+        <p role="alert" className="px-6 pb-4 text-sm text-destructive">
           {releaseError}
         </p>
       ) : null}
@@ -167,15 +167,18 @@ export function HomePage() {
   }
 
   return (
-    <main data-testid="home-page" className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-8 sm:py-12">
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl flex-col justify-center gap-8">
-        <header className="max-w-2xl space-y-4">
+    <main
+      data-testid="home-page"
+      className="flex h-dvh min-h-0 items-center overflow-hidden bg-background px-4 py-4 text-foreground sm:px-6"
+    >
+      <div className="mx-auto flex w-full max-w-5xl flex-col justify-center gap-4">
+        <header className="max-w-2xl space-y-2">
           <Badge variant="outline" className="tracking-[0.2em] uppercase">
             RTS Idle
           </Badge>
-          <div className="space-y-3">
-            <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">Command the next move.</h1>
-            <p className="max-w-xl text-base leading-7 text-muted-foreground sm:text-lg">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-5xl">Command the next move.</h1>
+            <p className="max-w-xl text-sm leading-6 text-muted-foreground sm:text-base">
               Continue the match already running in this browser, or deliberately start a new one.
             </p>
           </div>
@@ -184,7 +187,7 @@ export function HomePage() {
         {notice !== null ? (
           <div
             role="status"
-            className="max-w-2xl rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm"
+            className="max-w-2xl rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm"
           >
             {notice}
           </div>

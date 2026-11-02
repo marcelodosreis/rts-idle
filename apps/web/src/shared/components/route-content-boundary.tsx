@@ -26,7 +26,7 @@ export class RouteContentBoundary extends Component<RouteContentBoundaryProps, R
         <div
           data-testid="route-content-error"
           role="alert"
-          className="grid min-h-[calc(100vh-8rem)] place-content-center gap-3 text-center"
+          className="grid h-full min-h-0 place-content-center gap-3 text-center"
         >
           <p className="text-sm font-semibold">This page could not be loaded.</p>
           <p className="text-xs text-muted-foreground">Reload the page to try again.</p>

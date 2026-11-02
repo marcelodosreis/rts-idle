@@ -149,10 +149,10 @@ export function RendererPerformanceFeature() {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const benchmark = useRendererBenchmark(hostRef)
   return (
-    <section className="space-y-5 rounded-lg border border-border/60 bg-card p-6">
+    <section className="space-y-3 rounded-lg border border-border/60 bg-card p-3">
       <div>
-        <h2 className="text-lg font-semibold">Renderer performance harness</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <h2 className="text-base font-semibold">Renderer performance harness</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
           Render a controlled number of units and measure frame time. Results are diagnostic, not a hard CI gate.
         </p>
       </div>
@@ -177,7 +177,7 @@ export function RendererPerformanceFeature() {
         data-testid="performance-canvas-host"
         role="img"
         aria-label="Performance renderer preview"
-        className="h-64 min-w-0 overflow-hidden rounded-md border border-border/60 bg-background sm:h-80"
+        className="h-[min(220px,24dvh)] min-h-[140px] min-w-0 overflow-hidden rounded-md border border-border/60 bg-background"
       />
       {benchmark.error !== null && (
         <p
