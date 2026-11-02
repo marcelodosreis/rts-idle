@@ -136,7 +136,7 @@
 | 2026-10-05-fog-selection-box-unit-overlap | open | coverage | — | 1 test(s) |
 | 2026-10-06-economy-e2e-budget-under-radius-four | open | completion-gate | — | 1 test(s) |
 | 2026-10-06-vision-radius-too-small | open | coverage | — | 1 test(s) |
-| 2026-11-02-offensive-attack-orders-never-march | open | formation | tests/e2e/economy/scenarios.spec.ts | none |
+| 2026-11-02-offensive-attack-orders-never-march | open | formation | — | none |
 
 ## Legend
 

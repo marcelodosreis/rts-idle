@@ -1,7 +1,7 @@
 ---
 status: open
 classe: formation
-barreira: tests/e2e/economy/scenarios.spec.ts
+barreira: null
 regressao: tests/e2e/economy/scenarios.spec.ts
 ---
 
