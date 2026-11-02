@@ -18,7 +18,8 @@ import { SEEDS, TEST_IDENTITY, worldWithCombatUnits } from '../../fixtures/index
 
 function combatSim(
   ownerPositions: { readonly owner: 0 | 1 | 2 | 3; readonly x: number; readonly y: number }[],
-  kinds: readonly UnitKind[] = []
+  kinds: readonly UnitKind[] = [],
+  visionRadiusTiles?: number
 ) {
   const world = worldWithCombatUnits(ownerPositions.map((entry) => entry.owner))
   const ids = world.aliveIds()
@@ -37,7 +38,12 @@ function combatSim(
       }
     }
   }
-  const sim = createSimulation({ seed: SEEDS.simulation.fixedTick, identity: TEST_IDENTITY, initialWorld: world })
+  const sim = createSimulation({
+    seed: SEEDS.simulation.fixedTick,
+    identity: TEST_IDENTITY,
+    initialWorld: world,
+    ...(visionRadiusTiles === undefined ? {} : { visionRadiusTiles })
+  })
   return { sim, ids }
 }
 
@@ -259,7 +265,8 @@ describe('basic combat (P1.05)', () => {
         { owner: 0, x: 0, y: 0 },
         { owner: 1, x: tilesToFixed(2), y: 0 }
       ],
-      ['archer', 'lancer']
+      ['archer', 'lancer'],
+      4
     )
     const [attacker, target] = ids
     sim.step([

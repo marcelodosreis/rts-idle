@@ -6,4 +6,4 @@
  * (fixtures, scenarios, or balance experiments). Snapshots keep the radius they
  * were created with, so retuning never invalidates existing saves/replays.
  */
-export const VISION_RADIUS_TILES = 4
+export const VISION_RADIUS_TILES = 7

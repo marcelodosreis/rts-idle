@@ -278,7 +278,8 @@ function createRendererView(
         initialCenter: { x: fixedToRenderPixels(2048), y: fixedToRenderPixels(2048) },
         assetsUrl: spritesEnabled ? '/assets' : '',
         map: config.map,
-        inputProfile: refs.inputProfileRef.current
+        inputProfile: refs.inputProfileRef.current,
+        clampToWorld: true
       }),
     onReady: (renderer, config) => {
       refs.rendererRef.current = renderer

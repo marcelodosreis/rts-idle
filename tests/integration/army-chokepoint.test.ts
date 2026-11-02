@@ -13,7 +13,7 @@ function regressionSession() {
 }
 
 describe('regression army chokepoint composition (P3.12.01)', () => {
-  it('pins the army, buildings, wallet, and initial hidden enemies', () => {
+  it('pins the army, buildings, wallet, and initial fog state', () => {
     const session = regressionSession()
     const complete = session.observe(true)
     const playerUnits = complete.units.filter((unit) => unit.owner === 0)
@@ -34,8 +34,8 @@ describe('regression army chokepoint composition (P3.12.01)', () => {
     expect(player?.resources.GOLD).toBe(600)
 
     const playerView = session.observeForPlayer(0, false)
-    expect(playerView.units.every((unit) => unit.owner === 0)).toBe(true)
-    expect(playerView.fog.visibleTiles).not.toContain(18 + 17 * 32)
-    expect(playerView.fog.visibleTiles).not.toContain(21 + 18 * 32)
+    expect(playerView.units.some((unit) => unit.owner === 1)).toBe(true)
+    expect(playerView.fog.visibleTiles).toContain(18 + 17 * 32)
+    expect(playerView.fog.visibleTiles).not.toContain(23 + 24 * 32)
   })
 })

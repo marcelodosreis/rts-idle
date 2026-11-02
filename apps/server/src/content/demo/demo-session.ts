@@ -150,6 +150,7 @@ export function createDemoSession(
   seedAttacks(context, scenario, aggression)
   const session = GameSession.create({
     seed: DEMO_SEED,
+    ...(scenario.visionRadiusTiles === undefined ? {} : { visionRadiusTiles: scenario.visionRadiusTiles }),
     identity,
     mapBounds: placementBoundsFromMap(map),
     resources: map.resources,

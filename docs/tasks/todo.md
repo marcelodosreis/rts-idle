@@ -209,10 +209,10 @@ until its player-facing flow and real-server browser E2E pass.
 - [x] P3.09.01 — Targeting and pursuit (`docs/tasks/done/P3.09.01.md`)
 - [x] P3.10.01 — Projectiles (`docs/tasks/done/P3.10.01.md`)
 - [x] P3.11.01 — Area damage (`docs/tasks/done/P3.11.01.md`)
-- [ ] P3.12.01 — Combined army/chokepoint stress (`docs/tasks/P3.12.01.md`)
+- [x] P3.12.01 — Combined army/chokepoint stress (`docs/tasks/done/P3.12.01.md`)
 
 The navigation, vision, targeting, and projectile slices are complete after
-their full validation gates. `P3.12.01` Combined army/chokepoint stress is the next active gameplay packet.
+their full validation gates. Phase 3 is complete; Phase 4A (M1 content) is next.
 
 ## Phase 4A — M1 content
 - [ ] P4.01–P4.07 (see `docs/master-plan.md`)
