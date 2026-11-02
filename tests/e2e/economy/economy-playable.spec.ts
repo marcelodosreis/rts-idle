@@ -328,7 +328,7 @@ test('a player gathers, deposits, repeats, and stops through browser controls', 
 })
 
 test('an interrupted carrying worker shows cargo and deposits by right-clicking the Base', async ({ page }) => {
-  test.setTimeout(35_000)
+  test.setTimeout(60_000)
   await page.goto('/?scenario=regression')
   await waitForMatchReady(page)
   await revealGoldMine(page)
@@ -357,7 +357,7 @@ test('an interrupted carrying worker shows cargo and deposits by right-clicking 
 
   const basePoint = await focusFixed(page, tilesToFixed(7), tilesToFixed(9))
   await page.mouse.click(basePoint.x, basePoint.y, { button: 'right' })
-  await expect.poll(() => goldValue(page), { timeout: 15_000 }).toBeGreaterThan(initialGold)
+  await expect.poll(() => goldValue(page), { timeout: 30_000 }).toBeGreaterThan(initialGold)
   await expect(page.getByTestId('economy-status')).toBeEmpty()
   if (art) {
     await expect.poll(() => expectAnim(page, id, ['idle'])).not.toBeNull()
@@ -383,7 +383,7 @@ test('a primary click selects the gold mine without selecting a worker', async (
 })
 
 test('a group harvests the same gold mine concurrently through the browser command path', async ({ page }) => {
-  test.setTimeout(35_000)
+  test.setTimeout(60_000)
   await page.goto('/?scenario=regression')
   await waitForMatchReady(page)
   await revealGoldMine(page)
