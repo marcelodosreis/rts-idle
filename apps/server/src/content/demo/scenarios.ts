@@ -27,6 +27,8 @@ export interface DemoScenario {
   readonly buildings?: readonly DemoBaseSpawn[]
   /** Engagement pairs: index of the attacking spawn → index of its target. */
   readonly attacks: readonly (readonly [number, number])[]
+  /** Deterministic commands submitted to the authored player's session at bootstrap. */
+  readonly scheduledMoves?: readonly (readonly [number, number, Fixed, Fixed])[]
   /**
    * When true (default), the player's own units (owner 0) spawn idle and never
    * move until ordered; only enemies march/attack.
@@ -166,6 +168,19 @@ function monkHealScenario(): DemoScenario {
   }
 }
 
+function targetingScenario(): DemoScenario {
+  return {
+    id: 'targeting',
+    label: 'Targeting',
+    spawns: [
+      { owner: 0, kind: ARCHER, ...tile(8, 8) },
+      { owner: 1, kind: LANCER, ...tile(10, 8) }
+    ],
+    attacks: [],
+    scheduledMoves: [[120, 1, tilesToFixed(22), tilesToFixed(8)]]
+  }
+}
+
 /**
  * Demo scenario catalog. Each faction spawns in its own spot near the camera
  * home, so the whole opening is visible; in offensive mode the enemy side
@@ -176,6 +191,7 @@ export const DEMO_SCENARIOS: readonly DemoScenario[] = [
   defaultScenario(),
   regressionScenario(),
   monkHealScenario(),
+  targetingScenario(),
   eightVsEightScenario(),
   {
     id: 'ffa',

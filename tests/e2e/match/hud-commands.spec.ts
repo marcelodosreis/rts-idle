@@ -1,5 +1,11 @@
 import { expect, type Page, test } from '@playwright/test'
-import { settleUnits, waitForMatchReady, waitForStableRead } from '../support/settle.js'
+import {
+  revealEnemyUnits,
+  settleUnits,
+  waitForMatchReady,
+  waitForStableCamera,
+  waitForStableRead
+} from '../support/settle.js'
 import { transportState } from '../support/transport'
 
 interface UnitInfo {
@@ -46,7 +52,11 @@ interface UnitHealth {
 
 async function healths(page: Page, ids: readonly number[]): Promise<readonly UnitHealth[]> {
   return page.evaluate(
-    (unitIds) => unitIds.map((id) => ({ id, health: window.__rtsDebug?.getUnitHealth(id)?.current ?? 0 })),
+    (unitIds) =>
+      unitIds.flatMap((id) => {
+        const health = window.__rtsDebug?.getUnitHealth(id)
+        return health === null || health === undefined ? [] : [{ id, health: health.current }]
+      }),
     ids
   )
 }
@@ -62,11 +72,13 @@ async function anyHealthBelow(page: Page, baseline: readonly UnitHealth[]): Prom
   )
 }
 
-async function healthiestRed(page: Page): Promise<{ readonly x: number; readonly y: number } | null> {
+async function healthiestRed(
+  page: Page
+): Promise<{ readonly id: number; readonly x: number; readonly y: number } | null> {
   return page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
     const positions = window.__rtsDebug?.getPositions() ?? {}
-    let best: { readonly x: number; readonly y: number; readonly health: number } | null = null
+    let best: { readonly id: number; readonly x: number; readonly y: number; readonly health: number } | null = null
     for (const [id, owner] of Object.entries(owners)) {
       const position = positions[id]
       if (owner !== 1 || position === undefined) {
@@ -74,11 +86,15 @@ async function healthiestRed(page: Page): Promise<{ readonly x: number; readonly
       }
       const health = window.__rtsDebug?.getUnitHealth(Number(id))?.current ?? 0
       if (best === null || health > best.health) {
-        best = { x: position.x, y: position.y, health }
+        best = { id: Number(id), x: position.x, y: position.y, health }
       }
     }
     return best
   })
+}
+
+async function unitPosition(page: Page, id: number): Promise<{ readonly x: number; readonly y: number } | null> {
+  return page.evaluate((unitId) => window.__rtsDebug?.getPositions()[String(unitId)] ?? null, id)
 }
 
 test('STOP cancels an issued order and an armed ATTACK re-engages the target', async ({ page }) => {
@@ -86,6 +102,7 @@ test('STOP cancels an issued order and an armed ATTACK re-engages the target', a
   // instead of racing the auto-battle and dying mid-assertion.
   await page.goto('/?scenario=regression&aggression=passive')
   await settleUnits(page)
+  await revealEnemyUnits(page)
   const units = await unitsByOwner(page)
   const blueIds = await page.evaluate(() => {
     const owners = window.__rtsDebug?.getUnitOwners() ?? {}
@@ -111,8 +128,13 @@ test('STOP cancels an issued order and an armed ATTACK re-engages the target', a
   await page.getByRole('button', { name: 'Attack', exact: true }).click()
   const firstTarget = reds[0]!
   const healthBefore = await healths(page, redIds)
-  await page.evaluate(({ x, y }) => window.__rtsDebug?.moveCamera(x, y), firstTarget)
-  const firstPoint = await worldToPage(page, firstTarget.x, firstTarget.y)
+  const stableFirstTarget = await waitForStableRead(() => unitPosition(page, firstTarget.id))
+  if (stableFirstTarget === null) {
+    throw new Error('first attack target disappeared before selection')
+  }
+  await page.evaluate(({ x, y }) => window.__rtsDebug?.moveCamera(x, y), stableFirstTarget)
+  await waitForStableCamera(page, stableFirstTarget.x, stableFirstTarget.y)
+  const firstPoint = await worldToPage(page, stableFirstTarget.x, stableFirstTarget.y)
   await page.mouse.click(firstPoint.x, firstPoint.y, { button: 'right' })
   await expect.poll(() => anyHealthBelow(page, healthBefore), { timeout: 15_000 }).toBe(true)
 
@@ -135,9 +157,18 @@ test('STOP cancels an issued order and an armed ATTACK re-engages the target', a
   if (target === null) {
     throw new Error('regression fixture has no living enemy target')
   }
+  const stableTarget = await waitForStableRead(() => unitPosition(page, target.id))
+  if (stableTarget === null) {
+    throw new Error('second attack target disappeared before selection')
+  }
   await page.getByRole('button', { name: 'Attack', exact: true }).click()
-  await page.evaluate(({ x, y }) => window.__rtsDebug?.moveCamera(x, y), target)
-  const targetScreen = await worldToPage(page, target.x, target.y)
+  await page.evaluate(({ x, y }) => window.__rtsDebug?.moveCamera(x, y), stableTarget)
+  await waitForStableCamera(page, stableTarget.x, stableTarget.y)
+  const currentTarget = await unitPosition(page, target.id)
+  if (currentTarget === null) {
+    throw new Error('second attack target disappeared after camera focus')
+  }
+  const targetScreen = await worldToPage(page, currentTarget.x, currentTarget.y)
   await page.mouse.click(targetScreen.x, targetScreen.y, { button: 'right' })
 
   await expect.poll(() => anyHealthBelow(page, baselines), { timeout: 15_000 }).toBe(true)
@@ -164,7 +195,7 @@ test('left-clicking empty ground cancels an armed attack-move mode', async ({ pa
 
 test('SURRENDER requires confirmation before ending the match', async ({ page }) => {
   await page.goto('/?scenario=regression&aggression=offensive')
-  await settleUnits(page)
+  await waitForMatchReady(page)
   const initialResumeToken = (await transportState(page)).resumeToken
   await page.getByRole('button', { name: 'Surrender' }).click()
 

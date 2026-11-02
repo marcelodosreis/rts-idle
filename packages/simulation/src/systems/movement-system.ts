@@ -1,6 +1,8 @@
-import type { EntityId, MovementBlockReason } from '@rts/shared'
+import type { EntityId, MovementBlockReason, PlayerId } from '@rts/shared'
+import type { Order } from '../contracts/orders.js'
 import { FORMATION_SPACING } from '../domain/formation.js'
 import { effectiveMovementSpeed } from '../domain/research-effects.js'
+import { AttackTarget } from '../ecs/attack-target-component.js'
 import { Kind, Movement, type MovementData, Orders, Owner, Position, type PositionData } from '../ecs/components.js'
 import { AVOIDANCE_OFFSETS, type MovementSegment, segmentHitsBuilding, segmentIsClear } from '../movement/collision.js'
 import {
@@ -83,17 +85,68 @@ function cooperativeMovement(state: GameState, id: EntityId): boolean {
   return order === undefined || order.type === 'GATHER' || order.type === 'DEPOSIT' || order.type === 'BUILD'
 }
 
+interface SharedMovementCandidate {
+  readonly currentOrder: Order | undefined
+  readonly movement: MovementData
+  readonly candidateMovement: MovementData | undefined
+  readonly candidateOrder: Order | undefined
+  readonly candidatePosition: PositionData | undefined
+  readonly currentOwner: PlayerId | undefined
+  readonly candidateOwner: PlayerId | undefined
+}
+
+function isSharedMovementCandidate(options: SharedMovementCandidate): boolean {
+  const { currentOrder, movement, candidateMovement, candidateOrder, candidatePosition, currentOwner, candidateOwner } =
+    options
+  const closeFormationDestinations =
+    movement.path === null &&
+    candidateMovement?.path === null &&
+    Math.abs((candidateMovement?.destX ?? 0) - movement.destX) <= FORMATION_SPACING * 2 &&
+    Math.abs((candidateMovement?.destY ?? 0) - movement.destY) <= FORMATION_SPACING * 2
+  const sharedDestination =
+    candidateMovement?.destX === movement.destX &&
+    candidateMovement.destY === movement.destY &&
+    (candidateOrder?.type === 'GATHER' || candidateOrder?.type === 'DEPOSIT')
+  const formationMovement = candidateOrder === undefined && closeFormationDestinations
+  const formationDestination =
+    currentOrder === undefined &&
+    candidateOrder === undefined &&
+    candidateMovement === undefined &&
+    candidatePosition !== undefined &&
+    ((Math.abs(candidatePosition.x - movement.destX) === FORMATION_SPACING && candidatePosition.y === movement.destY) ||
+      (candidatePosition.x === movement.destX &&
+        Math.abs(candidatePosition.y - movement.destY) === FORMATION_SPACING) ||
+      (Math.abs(candidatePosition.x - movement.destX) === FORMATION_SPACING &&
+        Math.abs(candidatePosition.y - movement.destY) === FORMATION_SPACING))
+  const buildWorkArea =
+    currentOrder?.type === 'BUILD' &&
+    candidateOrder === undefined &&
+    candidateMovement === undefined &&
+    candidatePosition !== undefined &&
+    (candidatePosition.x - movement.destX) ** 2 + (candidatePosition.y - movement.destY) ** 2 <=
+      BUILD_WORK_AREA_RADIUS_FIXED ** 2 &&
+    currentOwner !== undefined &&
+    candidateOwner === currentOwner
+  return sharedDestination || formationMovement || formationDestination || buildWorkArea
+}
+
+function ignoredAttackTarget(state: GameState, id: EntityId, order: Order | undefined): ReadonlySet<EntityId> {
+  const attackTarget = state.world.store(AttackTarget).get(id)
+  return order?.type === 'ATTACK' && attackTarget?.lostVision === true ? new Set([order.targetId]) : new Set()
+}
+
 function cooperativeUnitIds(state: GameState, id: EntityId, movement: MovementData): ReadonlySet<EntityId> {
   const orders = state.world.store(Orders)
   const currentOrder = orders.get(id)?.queue[0]
+  const ignored = new Set(ignoredAttackTarget(state, id, currentOrder))
   if (!cooperativeMovement(state, id)) {
-    return new Set()
+    return ignored
   }
   const movements = state.world.store(Movement)
   const positions = state.world.store(Position)
   const owners = state.world.store(Owner)
   const currentOwner = owners.get(id)?.owner
-  const shared = new Set<EntityId>()
+  const shared = ignored
   for (const candidateId of state.world.query(Position, Owner, Kind)) {
     if (candidateId === id) {
       continue
@@ -101,37 +154,17 @@ function cooperativeUnitIds(state: GameState, id: EntityId, movement: MovementDa
     const candidateMovement = movements.get(candidateId)
     const candidateOrder = orders.get(candidateId)?.queue[0]
     const candidatePosition = positions.get(candidateId)
-    const closeFormationDestinations =
-      movement.path === null &&
-      candidateMovement?.path === null &&
-      Math.abs((candidateMovement?.destX ?? 0) - movement.destX) <= FORMATION_SPACING * 2 &&
-      Math.abs((candidateMovement?.destY ?? 0) - movement.destY) <= FORMATION_SPACING * 2
-    const sharedDestination =
-      candidateMovement?.destX === movement.destX &&
-      candidateMovement.destY === movement.destY &&
-      (candidateOrder?.type === 'GATHER' || candidateOrder?.type === 'DEPOSIT')
-    const formationMovement = candidateOrder === undefined && closeFormationDestinations
-    const formationDestination =
-      currentOrder === undefined &&
-      candidateOrder === undefined &&
-      candidateMovement === undefined &&
-      candidatePosition !== undefined &&
-      ((Math.abs(candidatePosition.x - movement.destX) === FORMATION_SPACING &&
-        candidatePosition.y === movement.destY) ||
-        (candidatePosition.x === movement.destX &&
-          Math.abs(candidatePosition.y - movement.destY) === FORMATION_SPACING) ||
-        (Math.abs(candidatePosition.x - movement.destX) === FORMATION_SPACING &&
-          Math.abs(candidatePosition.y - movement.destY) === FORMATION_SPACING))
-    const buildWorkArea =
-      currentOrder?.type === 'BUILD' &&
-      candidateOrder === undefined &&
-      candidateMovement === undefined &&
-      candidatePosition !== undefined &&
-      (candidatePosition.x - movement.destX) ** 2 + (candidatePosition.y - movement.destY) ** 2 <=
-        BUILD_WORK_AREA_RADIUS_FIXED ** 2 &&
-      currentOwner !== undefined &&
-      owners.get(candidateId)?.owner === currentOwner
-    if (sharedDestination || formationMovement || formationDestination || buildWorkArea) {
+    if (
+      isSharedMovementCandidate({
+        currentOrder,
+        movement,
+        candidateMovement,
+        candidateOrder,
+        candidatePosition,
+        currentOwner,
+        candidateOwner: owners.get(candidateId)?.owner
+      })
+    ) {
       shared.add(candidateId)
     }
   }

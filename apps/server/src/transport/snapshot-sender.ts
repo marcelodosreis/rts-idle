@@ -1,6 +1,6 @@
 import type { ErrorMessage, SnapshotDeltaMessage, SnapshotMessage } from '@rts/protocol'
-import type { SimulationEvent } from '@rts/shared'
-import { WorldChangeCursorExpiredError } from '@rts/simulation'
+import type { PlayerId, SimulationEvent } from '@rts/shared'
+import { hashObservation, WorldChangeCursorExpiredError } from '@rts/simulation'
 import type { GameSession } from '../sessions/session.js'
 
 export interface SnapshotSocket {
@@ -11,6 +11,7 @@ export interface SnapshotSocket {
 
 interface EntityDelta {
   readonly cursor: number
+  readonly observation: ReturnType<GameSession['observeForPlayer']>
   readonly units: SnapshotMessage['units']
   readonly buildings: SnapshotMessage['buildings']
   readonly resources: SnapshotMessage['resources']
@@ -29,7 +30,11 @@ export class SnapshotSender {
   private deltasSinceFull = 0
   private readonly unitIds = new Set<number>()
   private readonly buildingIds = new Set<number>()
-  constructor(private readonly ws: SnapshotSocket) {}
+  private readonly resourceAmounts = new Map<number, number>()
+  constructor(
+    private readonly ws: SnapshotSocket,
+    private readonly playerId: PlayerId = 0
+  ) {}
 
   sendError(message: string): void {
     this.sendErrorMessage({ type: 'error', message })
@@ -57,15 +62,16 @@ export class SnapshotSender {
     this.deltasSinceFull = 0
     this.unitIds.clear()
     this.buildingIds.clear()
+    this.resourceAmounts.clear()
   }
 
   private fullMessage(session: GameSession, events: readonly SimulationEvent[]): SnapshotMessage {
-    const observation = session.observe(true)
+    const observation = session.observeForPlayer(this.playerId, true)
     this.cursor = session.changeCursor()
     this.lastSentTick = session.tick()
     const viewSequence = this.nextViewSequence
     this.nextViewSequence += 1
-    const viewHash = session.hashState()
+    const viewHash = hashObservation(observation)
     this.lastSentViewSequence = viewSequence
     this.lastSentViewHash = viewHash
     this.deltasSinceFull = 0
@@ -76,6 +82,10 @@ export class SnapshotSender {
     }
     for (const building of observation.buildings) {
       this.buildingIds.add(building.id)
+    }
+    this.resourceAmounts.clear()
+    for (const resource of observation.resources) {
+      this.resourceAmounts.set(resource.resourceId, resource.remaining)
     }
     return {
       type: 'snapshot',
@@ -88,7 +98,8 @@ export class SnapshotSender {
       resources: observation.resources,
       resourcesComplete: true,
       players: observation.players,
-      events
+      events: session.filterEventsForPlayer(this.playerId, events),
+      fog: observation.fog
     }
   }
 
@@ -105,12 +116,13 @@ export class SnapshotSender {
     const baseTick = this.lastSentTick
     const baseSequence = this.lastSentViewSequence
     const baseHash = this.lastSentViewHash
-    const entityDelta = collectEntityDelta(session, cursor, this.unitIds, this.buildingIds)
+    const entityDelta = collectEntityDelta(session, this.playerId, cursor, this.unitIds, this.buildingIds)
     this.cursor = entityDelta.cursor
     this.lastSentTick = session.tick()
     const viewSequence = this.nextViewSequence
     this.nextViewSequence += 1
-    const viewHash = session.hashState()
+    const fullObservation = session.observeForPlayer(this.playerId, true)
+    const viewHash = hashObservation(fullObservation)
     this.lastSentViewSequence = viewSequence
     this.lastSentViewHash = viewHash
     this.deltasSinceFull += 1
@@ -127,12 +139,13 @@ export class SnapshotSender {
       removedUnitIds: entityDelta.removedUnitIds,
       buildings: entityDelta.buildings,
       removedBuildingIds: entityDelta.removedBuildingIds,
-      resources: entityDelta.resources,
+      resources: changedResources(fullObservation.resources, this.resourceAmounts),
       resourcesComplete: false,
       // There are four fixed player slots; sending these small projections is
       // cheaper and safer than maintaining a second mutable player journal.
       players: entityDelta.players,
-      events
+      events: session.filterEventsForPlayer(this.playerId, events),
+      fog: entityDelta.observation.fog
     }
   }
 
@@ -160,40 +173,52 @@ export class SnapshotSender {
 
 function collectEntityDelta(
   session: GameSession,
+  playerId: PlayerId,
   cursor: number,
   unitIds: Set<number>,
   buildingIds: Set<number>
 ): EntityDelta {
   const changes = session.changesSince(cursor)
   const changedIds = [...changes.createdIds, ...changes.dirtyIds]
-  const observation = session.observe(false, changedIds)
-  const observedUnitIds = new Set(observation.units.map((unit) => unit.id))
-  const observedBuildingIds = new Set(observation.buildings.map((building) => building.id))
-  const removedIds = new Set(changes.removedIds)
-  const removedUnitIds = removedEntityIds(changes.removedIds, changedIds, removedIds, observedUnitIds, unitIds)
-  const removedBuildingIds = removedEntityIds(
-    changes.removedIds,
-    changedIds,
-    removedIds,
-    observedBuildingIds,
-    buildingIds
-  )
+  const observation = session.observeForPlayer(playerId, false, changedIds)
+  const visible = session.observeForPlayer(playerId, false)
+  const observedUnitIds = new Set(visible.units.map((unit) => unit.id))
+  const observedBuildingIds = new Set(visible.buildings.map((building) => building.id))
+  const removedUnitIds = removedEntityIds(unitIds, observedUnitIds)
+  const removedBuildingIds = removedEntityIds(buildingIds, observedBuildingIds)
+  const units = includeNewEntities(observation.units, visible.units, unitIds)
+  const buildings = includeNewEntities(observation.buildings, visible.buildings, buildingIds)
   for (const id of removedUnitIds) {
     unitIds.delete(id)
   }
   for (const id of removedBuildingIds) {
     buildingIds.delete(id)
   }
-  updateKnownEntityIds(unitIds, buildingIds, observation.units, observation.buildings)
+  updateKnownEntityIds(unitIds, buildingIds, units, buildings)
   return {
     cursor: changes.cursor,
-    units: observation.units,
-    buildings: observation.buildings,
+    observation: visible,
+    units,
+    buildings,
     resources: observation.resources,
-    players: observation.players,
+    players: visible.players,
     removedUnitIds,
     removedBuildingIds
   }
+}
+
+function includeNewEntities<T extends { readonly id: number }>(
+  changed: readonly T[],
+  visible: readonly T[],
+  knownIds: ReadonlySet<number>
+): readonly T[] {
+  const byId = new Map(changed.map((entity) => [entity.id, entity]))
+  for (const entity of visible) {
+    if (!knownIds.has(entity.id)) {
+      byId.set(entity.id, entity)
+    }
+  }
+  return [...byId.values()].sort((left, right) => left.id - right.id)
 }
 
 function updateKnownEntityIds(
@@ -212,18 +237,17 @@ function updateKnownEntityIds(
   }
 }
 
-function removedEntityIds(
-  removedIds: readonly number[],
-  changedIds: readonly number[],
-  removedIdSet: ReadonlySet<number>,
-  observedIds: ReadonlySet<number>,
-  knownIds: ReadonlySet<number>
-): readonly number[] {
-  const result = removedIds.filter((id) => knownIds.has(id))
-  for (const id of changedIds) {
-    if (!removedIdSet.has(id) && knownIds.has(id) && !observedIds.has(id)) {
-      result.push(id)
-    }
+function changedResources(
+  resources: SnapshotMessage['resources'],
+  knownAmounts: Map<number, number>
+): SnapshotMessage['resources'] {
+  const changed = resources.filter((resource) => knownAmounts.get(resource.resourceId) !== resource.remaining)
+  for (const resource of resources) {
+    knownAmounts.set(resource.resourceId, resource.remaining)
   }
-  return result.sort((first, second) => first - second)
+  return changed
+}
+
+function removedEntityIds(knownIds: ReadonlySet<number>, observedIds: ReadonlySet<number>): readonly number[] {
+  return [...knownIds].filter((id) => !observedIds.has(id)).sort((first, second) => first - second)
 }

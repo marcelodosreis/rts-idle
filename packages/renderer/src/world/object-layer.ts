@@ -111,12 +111,14 @@ export class WorldObjectLayer {
     const overlay = this.buildingOverlays.get(building.id)!
     this.drawBuildingOverlay(overlay, building, style.kind === 'foundation', visualSize)
     graphic.position.set(fixedToRenderPixels(building.x), fixedToRenderPixels(building.y))
-    this.constructionHitboxes.set(building.id, {
-      x: fixedToRenderPixels(building.x),
-      y: fixedToRenderPixels(building.y),
-      width: visualSize.width,
-      height: visualSize.height
-    })
+    if (building.lastSeenTick === undefined) {
+      this.constructionHitboxes.set(building.id, {
+        x: fixedToRenderPixels(building.x),
+        y: fixedToRenderPixels(building.y),
+        width: visualSize.width,
+        height: visualSize.height
+      })
+    }
   }
 
   private getBuildingContainer(building: RenderBuilding): Container {

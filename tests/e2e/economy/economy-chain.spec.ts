@@ -123,6 +123,27 @@ test('completes gather, deposit, Castle II, Monk production, and Economy researc
   }
   await selectWorker(page, worker)
 
+  const revealPoint = await focusFixed(page, tilesToFixed(22) + 128, tilesToFixed(8) + 128)
+  await page.mouse.click(revealPoint.x, revealPoint.y, { button: 'right' })
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          ([id, expected]) => {
+            const position = window.__rtsDebug?.getPositions()[String(id)]
+            return position === undefined
+              ? Number.POSITIVE_INFINITY
+              : Math.max(Math.abs(position.x - expected.x), Math.abs(position.y - expected.y))
+          },
+          [worker, { x: tilesToFixed(22) + 128, y: tilesToFixed(8) + 128 }] as const
+        ),
+      { timeout: 15_000, intervals: [100, 250] }
+    )
+    .toBeLessThan(12)
+  await expect
+    .poll(() => page.evaluate(() => window.__rtsDebug?.getFog()?.visibleTiles.includes(8 * 32 + 24) ?? false))
+    .toBe(true)
+
   const minePoint = await focusFixed(page, tilesToFixed(GOLD_MINE_TILE.x), tilesToFixed(GOLD_MINE_TILE.y))
   await page.mouse.click(minePoint.x, minePoint.y, { button: 'right' })
   await expect(page.getByTestId('economy-status')).toContainText('Harvesting', { timeout: 30_000 })

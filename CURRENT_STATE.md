@@ -67,6 +67,9 @@ See `docs/tasks/todo.md` for full phase list.
   building segment collision, unit avoidance, shared work/formation destinations,
   `movementBlocked` feedback, HUD presentation, and real-server Chromium/Firefox
   coverage
+- Player-specific four-tile circular vision, explored memory, filtered snapshot/delta
+  observations, hidden-event filtering, and a PixiJS fog projection with
+  real-server Chromium/Firefox reveal, memory, and visibility-transition coverage
 
 ## Current Gameplay
 
@@ -77,18 +80,20 @@ buildings, avoid mobile-unit collisions, and show blocked/unreachable feedback.
 In the regression scenario, the player can also place Castle/Barracks/Monastery/House
 construction, pause it by stopping the worker, and resume it by assigning another
 worker through the construction HUD.
+The match now projects player-specific vision: moving a controlled unit reveals
+unknown terrain, explored terrain remains dimmed after the unit leaves, and
+hidden enemy units/resources are absent from the observation until revealed.
 The top bar shows authoritative `used / cap` supply and updates on House completion.
 Completed Castle/Barracks/Monastery producers accept rally points; trained units wait at a
 blocked exit without overlap and follow the latest authoritative rally point
 after spawning.
 
-No real AI, vision/fog of war, or multiplayer. Resource tiles remain permanently
-reserved for construction; resources marked as non-blocking remain traversable.
+No real AI or multiplayer. Resource tiles remain permanently reserved for
+construction; resources marked as non-blocking remain traversable.
 
 ## Current Limitations
 
 - No AI (enemies are pre-scripted)
-- No fog of war
 - No minimap
 - No multiplayer rooms
 - No audio
@@ -96,14 +101,30 @@ reserved for construction; resources marked as non-blocking remain traversable.
 ## Active Task
 
 The project has returned to Phase 3. Quality Hardening remains a deferred
-backlog and is not blocking gameplay work. `P3.01.01` through `P3.06.01` are
-complete, including the spatial index and collision/avoidance player slice.
-Their packets are archived in `docs/tasks/done/`. The next task is `P3.07.01`
-Vision and Memory; do not start it in this slice.
+backlog and is not blocking gameplay work. `P3.01.01` through `P3.08.02` are
+complete, including the spatial index, collision/avoidance player slice, and
+the player-specific vision, filtered-observation, fog-rendering, and radius
+tuning slice. Their packets are archived in `docs/tasks/done/`. The full
+non-performance Chromium/Firefox E2E gate is recorded as 275 tests passing and
+one performance test skipped. `P3.09.01` Targeting and Pursuit is also complete
+with its simulation, protocol, server, HUD, and focused Chromium/Firefox E2E
+gate; `P3.10.01` Projectiles is the next active gameplay packet.
 
 The first navigation/collision slice is complete: navigation is integrated with
 authoritative movement, visible blocked/unreachable feedback, and real-server
-browser coverage. Later Phase 3 work begins with player-specific vision.
+browser coverage. Later Phase 3 work now continues with projectiles.
+
+### Latest Worktree Validation
+
+- Node `v24.21.0` and pnpm `10.33.2` are active.
+- `pnpm run verify` passes: typecheck, lint, unit, integration, simulation,
+  contracts, orders, determinism, architecture, invariants, and build.
+- The focused six-test Chromium/Firefox matrix for vision, filtered
+  observations, and targeting passes.
+- `pnpm run test:e2e:prepare -- --output=tmp/e2e-plan-validation.json` passes.
+- A fresh unscoped `pnpm run test:e2e:fast` run was not completed within the
+  local ten-minute command limit; it is not treated as new full-matrix evidence.
+- `git diff --check` passes.
 
 The repository physical reorganization is complete. Server transport, match
 bootstrap, session projections, quality tooling, fixtures, unit tests,

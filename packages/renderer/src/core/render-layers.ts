@@ -4,6 +4,7 @@ export const RENDER_LAYER_ORDER = [
   'terrain',
   'worldObjects',
   'units',
+  'fog',
   'selection',
   'effects',
   'interaction',
@@ -17,6 +18,7 @@ export class RenderLayers {
   readonly terrain = new Container()
   readonly worldObjects = new Container()
   readonly units = new Container()
+  readonly fog = new Container()
   readonly selection = new Container()
   readonly effects = new Container()
   readonly interaction = new Container()

@@ -118,6 +118,7 @@ function expandSnapshotDelta(runtime: MatchSessionRuntime, delta: SnapshotDeltaM
   ) {
     return null
   }
+  const fog = delta.fog ?? previous.fog
   return {
     type: 'snapshot',
     tick: delta.tick,
@@ -129,7 +130,8 @@ function expandSnapshotDelta(runtime: MatchSessionRuntime, delta: SnapshotDeltaM
     resources: mergeResources(previous.resources, delta.resources),
     resourcesComplete: false,
     players: mergeById(previous.players, delta.players, []),
-    events: delta.events
+    events: delta.events,
+    ...(fog === undefined ? {} : { fog })
   }
 }
 

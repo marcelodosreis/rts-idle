@@ -3,6 +3,7 @@ export const ORDER_STATES = [
   'moving',
   'building',
   'attacking',
+  'lost_target',
   'healing',
   'repairing',
   'hold',

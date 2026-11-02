@@ -23,6 +23,11 @@ For gameplay work, include the screen, natural interaction, visible feedback,
 blocked/error states, route, and E2E target. Backend-only gameplay delivery is
 not an acceptable completion scope.
 
+Every gameplay packet is a vertical slice. The packet must identify the
+smallest result the player can test in the running match through the real
+server. Simulation, protocol, or renderer foundations are implementation steps,
+not completion criteria by themselves.
+
 ## Design
 
 State how the change respects clean code and SOLID
@@ -48,12 +53,13 @@ Expected E2E count: `[record the --list total here, if applicable]`
 - [ ] The player can reach the feature through the intended screen.
 - [ ] The player can perform the natural interaction.
 - [ ] Progress, success, and blocked/error states are visible.
-- [ ] The real server path is covered by browser E2E.
+- [ ] The real server path is covered by browser E2E in Chromium and Firefox.
 
 ## Acceptance and stop conditions
 
 - [ ] Each objective behavior is verified.
 - [ ] Player-facing gameplay flow is complete, when applicable.
+- [ ] No backend-only gameplay work is reported as complete.
 - [ ] Required tests and validation pass.
 - [ ] No public API, architecture boundary, or deterministic contract regressed.
 - [ ] Scope is complete; stop without unrelated cleanup or future features.

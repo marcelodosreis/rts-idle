@@ -54,7 +54,10 @@ without a written justification; fix the code instead.
 - Do not turn an existing requirement into a non-goal without explicit user approval.
 - Gameplay tasks must be delivered as vertical slices: authoritative behavior,
   protocol/server path, player-facing screen, natural interaction, visible
-  feedback, and browser E2E. Backend-only gameplay work remains in-progress.
+  feedback, and browser E2E in Chromium and Firefox. Backend-only gameplay work
+  remains in-progress. This rule applies to every new gameplay task, regardless
+  of whether its first implementation step is simulation, protocol, server, or
+  renderer work.
 - New task IDs must include their phase or cross-cutting track and stage, using
   `P<phase>.<stage>[.<substage>]` or `<TRACK>.<stage>[.<substage>]`; do not create
   new opaque IDs such as `NAV-001` or `QUAL-001`.

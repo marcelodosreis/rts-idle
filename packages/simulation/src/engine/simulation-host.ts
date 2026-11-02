@@ -1,4 +1,4 @@
-import type { EntityId } from '@rts/shared'
+import type { EntityId, PlayerId, SimulationEvent } from '@rts/shared'
 import type { ScheduledCommand } from '../contracts/commands.js'
 import type { RulesIdentity, TickResult } from '../contracts/simulation.js'
 import type { WorldChangeSet } from '../ecs/world.js'
@@ -33,6 +33,12 @@ export interface SimulationHost {
    */
   resources(complete: boolean): readonly ResourceAmount[]
   observe(completeResources: boolean, entityIds?: readonly EntityId[]): SimulationObservation
+  observeForPlayer(
+    playerId: PlayerId,
+    completeResources: boolean,
+    entityIds?: readonly EntityId[]
+  ): SimulationObservation
+  filterEventsForPlayer(playerId: PlayerId, events: readonly SimulationEvent[]): readonly SimulationEvent[]
   changeCursor(): number
   changesSince(cursor: number): WorldChangeSet
 }

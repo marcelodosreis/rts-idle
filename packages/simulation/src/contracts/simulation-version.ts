@@ -30,5 +30,11 @@
  * invalidation joined canonical snapshots.
  * 0.21.0: movement routes and deterministic blockage state joined canonical
  * movement snapshots.
+ * 0.22.0: player-specific vision, explored memory, and visibility state joined
+ * canonical snapshots.
+ * 0.23.0: the player-specific vision radius changed from eight to two tiles.
+ * 0.24.0: the player-specific vision radius changed from two to four tiles.
+ * 0.25.0: attack targeting persists the last known position and loss-of-vision
+ * state in canonical snapshots.
  */
-export const SIMULATION_VERSION = '0.21.0'
+export const SIMULATION_VERSION = '0.25.0'

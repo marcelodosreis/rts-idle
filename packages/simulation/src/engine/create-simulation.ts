@@ -14,6 +14,7 @@ import { createResourceState } from '../resources/resource-state.js'
 import { cloneWorld } from '../state/clone-state.js'
 import type { GameState, PlayerState } from '../state/state.js'
 import { updateSupply } from '../systems/supply-system.js'
+import { createVisionState, refreshVision } from '../vision/vision-state.js'
 import { Simulation } from './simulation.js'
 import type { SimulationHost } from './simulation-host.js'
 
@@ -86,11 +87,13 @@ export function createSimulation(options: SimulationOptions): SimulationHost {
     mapBounds,
     resources: createResourceState(options.resources),
     navigation: createNavigationState(mapBounds, navigation),
+    vision: createVisionState(mapBounds.width, mapBounds.height),
     world,
     pendingCommands: [],
     events: [],
     pendingDamage: new Map()
   }
+  refreshVision(state)
   updateSupply(state)
   return new Simulation(state)
 }
