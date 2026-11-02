@@ -99,9 +99,13 @@ function seedAttacks(context: SeedContext, scenario: DemoScenario, aggression: '
     if ((scenario.playerIdle !== false && scenario.spawns[attacker]!.owner === 0) || aggression === 'passive') {
       continue
     }
-    context.world
-      .store(Orders)
-      .set(context.ids[attacker]!, { queue: [{ type: 'ATTACK', targetId: context.ids[target]! }] })
+    const targetPosition = context.world.store(Position).get(context.ids[target]!)
+    if (targetPosition === undefined) {
+      throw new Error('DemoSession: attack target has no position')
+    }
+    context.world.store(Orders).set(context.ids[attacker]!, {
+      queue: [{ type: 'ATTACK_MOVE', x: targetPosition.x, y: targetPosition.y }]
+    })
   }
 }
 
