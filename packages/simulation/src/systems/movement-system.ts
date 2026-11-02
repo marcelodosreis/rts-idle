@@ -234,6 +234,7 @@ function stepCandidate(options: StepCandidateOptions): MovementCandidate | null 
   const segment = { fromX: position.x, fromY: position.y, toX: step.x, toY: step.y }
   const allowedDestination = allowDestinationOverlap && offset.x === 0 && offset.y === 0 ? target : undefined
   if (
+    segmentHitsStaticObstacle(state, segment) ||
     !segmentIsClear(index, positions, {
       movingId: id,
       segment,
