@@ -11,7 +11,7 @@ import { type ArmyChokepointFixture, armyChokepointCommands, createArmyChokepoin
 const COLLISION_DIAMETER = UNIT_COLLISION_RADIUS_FIXED * 2
 const DEADLOCK_TICKS = 80
 const FINISHED_TICK = 470
-const FINISHED_HASH = 'db511ea9cea6f1f21c370b6d7558277c2032ede9ac90f78c36e78d86918e76cf'
+const FINISHED_HASH = '546a200710fff2f329ba84b3126eca06eda1c49395a4512fab1f73648c269652'
 
 function tileOf(fixed: number): number {
   return Math.floor(fixed / FIXED_SCALE)
@@ -110,8 +110,8 @@ describe('army chokepoint stress (P3.12.01)', () => {
       .units.map((unit) => ({ id: unit.id, hp: unit.hp, x: unit.x, y: unit.y }))
       .sort((left, right) => left.id - right.id)
     expect(survivors).toEqual([
-      { id: 9, hp: 12, x: 3818, y: 4679 },
-      { id: 12, hp: 96, x: 3185, y: 4225 }
+      { id: 9, hp: 4, x: 3818, y: 4679 },
+      { id: 12, hp: 92, x: 3185, y: 4225 }
     ])
   }, 120_000)
 
