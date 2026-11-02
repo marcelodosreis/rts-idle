@@ -28,7 +28,7 @@ export function createUnitEntity(world: World, options: CreateUnitOptions): void
     cooldownTicks: stats.cooldownTicks,
     cooldownRemaining: 0
   })
-  world.store(AbilityCooldown).set(options.id, { healCooldownRemaining: 0 })
+  world.store(AbilityCooldown).set(options.id, { healCooldownRemaining: 0, explosiveShotCooldownRemaining: 0 })
   world.store(Orders).set(options.id, { queue: [] })
   if (stats.cargoCapacity !== null) {
     world.store(Cargo).set(options.id, {

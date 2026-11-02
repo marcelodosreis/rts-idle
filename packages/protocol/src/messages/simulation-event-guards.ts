@@ -29,6 +29,17 @@ function isProjectileEvent(value: UnknownObject, type: string): boolean {
   return common
 }
 
+function isAreaDamageEvent(value: UnknownObject): boolean {
+  return (
+    isNonNegativeInteger(field(value, 'projectileId')) &&
+    isOneOf(PROJECTILE_KINDS, field(value, 'kind')) &&
+    isInteger(field(value, 'x')) &&
+    isInteger(field(value, 'y')) &&
+    isNonNegativeInteger(field(value, 'innerRadius')) &&
+    isNonNegativeInteger(field(value, 'totalRadius'))
+  )
+}
+
 export function isSimulationEvent(value: unknown): boolean {
   if (!isRecord(value)) {
     return false
@@ -76,6 +87,8 @@ export function isSimulationEvent(value: unknown): boolean {
     case 'projectileLaunched':
     case 'projectileExpired':
       return isProjectileEvent(value, type)
+    case 'areaDamageImpacted':
+      return isAreaDamageEvent(value)
     default:
       return false
   }

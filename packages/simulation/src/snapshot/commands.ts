@@ -5,6 +5,7 @@ import {
   COMMAND_TYPES,
   type CommandIntent,
   type EntityId,
+  type Fixed,
   RESEARCH_TYPES,
   type ResearchType,
   TRAINABLE_UNIT_KINDS,
@@ -131,6 +132,7 @@ function writeCommandPayload(writer: CanonicalWriter, intent: CommandIntent): vo
       return
     case 'REPAIR':
     case 'HEAL':
+    case 'EXPLOSIVE_SHOT':
       writeUnitTarget(writer, intent.payload)
       return
     default:
@@ -167,35 +169,36 @@ function readResearchType(reader: CanonicalReader): ResearchType {
   return value
 }
 
+function readUnitCoordinates(reader: CanonicalReader): {
+  readonly unitIds: readonly EntityId[]
+  readonly x: Fixed
+  readonly y: Fixed
+} {
+  return { unitIds: readEntityIds(reader), ...readCoordinates(reader) }
+}
+
 function readCommandIntent(reader: CanonicalReader): CommandIntent {
   const type = COMMAND_TYPES[reader.readU8()]
   if (type === undefined) {
     throw new Error('readCommandIntent: invalid command type')
   }
   switch (type) {
-    case 'MOVE': {
-      const ids = readEntityIds(reader)
-      const coordinates = readCoordinates(reader)
-      return { type, payload: { unitIds: ids, ...coordinates } }
-    }
+    case 'MOVE':
+    case 'PATROL':
+    case 'ATTACK_MOVE':
+      return { type, payload: readUnitCoordinates(reader) }
     case 'STOP':
     case 'HOLD':
       return { type, payload: { unitIds: readEntityIds(reader) } }
-    case 'PATROL':
-    case 'ATTACK_MOVE': {
-      const ids = readEntityIds(reader)
-      const coordinates = readCoordinates(reader)
-      return { type, payload: { unitIds: ids, ...coordinates } }
-    }
     case 'ATTACK':
+    case 'REPAIR':
+    case 'HEAL':
+    case 'EXPLOSIVE_SHOT':
       return { type, payload: { unitIds: readEntityIds(reader), targetId: reader.readU32() } }
     case 'GATHER':
       return { type, payload: { unitIds: readEntityIds(reader), resourceId: reader.readU32() } }
     case 'DEPOSIT':
       return { type, payload: { unitIds: readEntityIds(reader), buildingId: reader.readU32() } }
-    case 'REPAIR':
-    case 'HEAL':
-      return { type, payload: { unitIds: readEntityIds(reader), targetId: reader.readU32() } }
     case 'BUILD': {
       const unitId = reader.readU32()
       const buildingType = readBuildingType(reader)

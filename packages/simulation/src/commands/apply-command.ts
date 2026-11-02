@@ -7,6 +7,7 @@ import { applyBuild } from './build.js'
 import { applyCancelConstruction } from './cancel-construction.js'
 import { applyCancelProduction } from './cancel-production.js'
 import { applyDeposit } from './deposit.js'
+import { applyExplosiveShot } from './explosive-shot.js'
 import { applyGather } from './gather.js'
 import { applyHeal } from './heal.js'
 import { applyHold } from './hold.js'
@@ -124,6 +125,9 @@ function dispatchSecondaryCommand(state: GameState, command: SecondaryCommand): 
       return
     case 'REPAIR':
       applyRepair(state, command)
+      return
+    case 'EXPLOSIVE_SHOT':
+      applyExplosiveShot(state, command)
       return
     case 'SURRENDER':
       applySurrender(state, command)

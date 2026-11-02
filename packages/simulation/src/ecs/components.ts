@@ -334,15 +334,17 @@ export const Combat: ComponentType<CombatData> = {
 
 export interface AbilityCooldownData {
   readonly healCooldownRemaining: number
+  readonly explosiveShotCooldownRemaining: number
 }
 
 export const AbilityCooldown: ComponentType<AbilityCooldownData> = {
   name: 'abilityCooldown',
   encode(writer, value) {
     writer.writeI32(value.healCooldownRemaining)
+    writer.writeI32(value.explosiveShotCooldownRemaining)
   },
   decode(reader) {
-    return { healCooldownRemaining: reader.readI32() }
+    return { healCooldownRemaining: reader.readI32(), explosiveShotCooldownRemaining: reader.readI32() }
   }
 }
 

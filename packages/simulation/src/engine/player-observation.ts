@@ -55,7 +55,8 @@ export function filterEvents(
     if (
       event.type === 'projectileLaunched' ||
       event.type === 'projectileImpacted' ||
-      event.type === 'projectileExpired'
+      event.type === 'projectileExpired' ||
+      event.type === 'areaDamageImpacted'
     ) {
       const tile = tileOfFixed(event.x, event.y)
       return isVisibleTile(vision, state.vision.width, tile.x, tile.y)
@@ -125,6 +126,7 @@ function eventEntityIds(event: SimulationEvent): readonly EntityId[] {
     case 'projectileLaunched':
     case 'projectileImpacted':
     case 'projectileExpired':
+    case 'areaDamageImpacted':
       return []
     default:
       return []

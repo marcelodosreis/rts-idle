@@ -35,7 +35,7 @@ function healWorld(
   world.store(Health).set(2, { current: options.targetFull === true ? 150 : 100, max: 150 })
   world.store(Combat).set(1, { armor: 0, damage: 8, rangeTiles: 3, cooldownTicks: 20, cooldownRemaining: 0 })
   world.store(Combat).set(2, { armor: 0, damage: 15, rangeTiles: 1, cooldownTicks: 20, cooldownRemaining: 0 })
-  world.store(AbilityCooldown).set(1, { healCooldownRemaining: 0 })
+  world.store(AbilityCooldown).set(1, { healCooldownRemaining: 0, explosiveShotCooldownRemaining: 0 })
   world.store(Orders).set(1, { queue: [] })
   world.store(Orders).set(2, { queue: [] })
   if (options.targetBuilding === true) {
@@ -65,7 +65,10 @@ describe('Monk Heal', () => {
 
     expect(sim.inspectState().world.store(Health).get(2)).toEqual({ current: 125, max: 150 })
     expect(result.events).toContainEqual({ type: 'healCast', healerId: 1, targetId: 2, amount: 25, targetHp: 125 })
-    expect(sim.inspectState().world.store(AbilityCooldown).get(1)).toEqual({ healCooldownRemaining: 160 })
+    expect(sim.inspectState().world.store(AbilityCooldown).get(1)).toEqual({
+      healCooldownRemaining: 160,
+      explosiveShotCooldownRemaining: 0
+    })
   })
 
   it('can heal itself, caps at max health, and rejects buildings and enemies', () => {

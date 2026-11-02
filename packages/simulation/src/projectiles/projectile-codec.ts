@@ -16,6 +16,7 @@ function writeProjectile(writer: CanonicalWriter, projectile: ProjectileState): 
   writer.writeI32(projectile.lastKnownX)
   writer.writeI32(projectile.lastKnownY)
   writer.writeI32(projectile.damage)
+  writer.writeU8(projectile.explosive ? 1 : 0)
   writer.writeU32(projectile.remainingTtl)
   writer.writeU32(projectile.movementRemainder)
 }
@@ -30,7 +31,7 @@ function readProjectile(reader: CanonicalReader): ProjectileState {
   if (!isPlayerId(owner)) {
     throw new Error(`readProjectile: invalid projectile owner ${owner}`)
   }
-  return {
+  const projectile = {
     id,
     kind: PROJECTILE_KINDS[ARROW_TAG],
     owner,
@@ -41,9 +42,14 @@ function readProjectile(reader: CanonicalReader): ProjectileState {
     lastKnownX: reader.readI32(),
     lastKnownY: reader.readI32(),
     damage: reader.readI32(),
+    explosive: reader.readU8(),
     remainingTtl: reader.readU32(),
     movementRemainder: reader.readU32()
   }
+  if (projectile.explosive !== 0 && projectile.explosive !== 1) {
+    throw new Error(`readProjectile: invalid explosive flag ${projectile.explosive}`)
+  }
+  return { ...projectile, explosive: projectile.explosive === 1 }
 }
 
 export function writeProjectileStore(writer: CanonicalWriter, store: ProjectileStore): void {

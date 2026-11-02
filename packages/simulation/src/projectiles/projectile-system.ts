@@ -1,4 +1,8 @@
-import { projectileDefinitionFor } from '@rts/game-data'
+import {
+  EXPLOSIVE_SHOT_INNER_RADIUS_FIXED,
+  EXPLOSIVE_SHOT_TOTAL_RADIUS_FIXED,
+  projectileDefinitionFor
+} from '@rts/game-data'
 import {
   distSquaredFixed,
   type EntityId,
@@ -9,7 +13,9 @@ import {
   type ProjectileKind
 } from '@rts/shared'
 import { effectiveArmor } from '../domain/research-effects.js'
-import { Health, Position } from '../ecs/components.js'
+import { Building } from '../ecs/building-component.js'
+import { Health, Kind, Owner, Position } from '../ecs/components.js'
+import { createWorldSpatialIndex } from '../spatial/world-spatial-index.js'
 import type { GameState } from '../state/state.js'
 import { TICKS_PER_SECOND } from '../systems/movement-step.js'
 import type { ProjectileState, ProjectileStore } from './projectile-state.js'
@@ -88,6 +94,10 @@ function emitExpired(state: GameState, projectile: ProjectileState, reason: 'TTL
 }
 
 function resolveImpact(state: GameState, projectile: ProjectileState): void {
+  if (projectile.explosive) {
+    resolveAreaImpact(state, projectile)
+    return
+  }
   const damage = Math.max(1, projectile.damage - effectiveArmor(state, projectile.targetId))
   const existing = state.pendingDamage.get(projectile.targetId)
   state.pendingDamage.set(projectile.targetId, {
@@ -103,13 +113,72 @@ function resolveImpact(state: GameState, projectile: ProjectileState): void {
   })
 }
 
+function resolveAreaImpact(state: GameState, projectile: ProjectileState): void {
+  const index = createWorldSpatialIndex(state)
+  const radius = EXPLOSIVE_SHOT_TOTAL_RADIUS_FIXED
+  const bounds = {
+    minX: projectile.x - radius,
+    minY: projectile.y - radius,
+    maxX: projectile.x + radius,
+    maxY: projectile.y + radius
+  }
+  const candidates = new Set([...index.units.query(bounds), ...index.buildings.query(bounds)])
+  const ids = [...candidates].sort((left, right) => left - right)
+  for (const targetId of ids) {
+    accumulateAreaDamage(state, projectile, targetId)
+  }
+  state.events.push({
+    type: 'areaDamageImpacted',
+    projectileId: projectile.id,
+    kind: projectile.kind,
+    x: projectile.x,
+    y: projectile.y,
+    innerRadius: EXPLOSIVE_SHOT_INNER_RADIUS_FIXED,
+    totalRadius: EXPLOSIVE_SHOT_TOTAL_RADIUS_FIXED
+  })
+}
+
+function accumulateAreaDamage(state: GameState, projectile: ProjectileState, targetId: EntityId): void {
+  const owner = state.world.store(Owner).get(targetId)
+  const position = state.world.store(Position).get(targetId)
+  const health = state.world.store(Health).get(targetId)
+  const building = state.world.store(Building).get(targetId)
+  const isUnit = state.world.store(Kind).has(targetId)
+  if (
+    owner === undefined ||
+    owner.owner === projectile.owner ||
+    position === undefined ||
+    health === undefined ||
+    health.current <= 0 ||
+    (!isUnit && building?.status !== 'COMPLETED')
+  ) {
+    return
+  }
+  const distance = distSquaredFixed(projectile.x, projectile.y, position.x, position.y)
+  if (distance > EXPLOSIVE_SHOT_TOTAL_RADIUS_FIXED ** 2) {
+    return
+  }
+  const baseDamage =
+    distance <= EXPLOSIVE_SHOT_INNER_RADIUS_FIXED ** 2 ? projectile.damage : Math.floor(projectile.damage / 2)
+  const damage = Math.max(1, baseDamage - effectiveArmor(state, targetId))
+  const existing = state.pendingDamage.get(targetId)
+  state.pendingDamage.set(targetId, {
+    amount: (existing?.amount ?? 0) + damage,
+    attackerId: projectile.sourceId
+  })
+}
+
 function advanceOne(state: GameState, store: ProjectileStore, projectile: ProjectileState): void {
   const target = targetFor(state, projectile)
   const step = nextMovementStep(projectile)
   if (!target.alive && reachedTarget(projectile, target, step.distance)) {
     const atTarget = movedProjectile(projectile, target, step.distance, step.remainder)
     store.active.delete(projectile.id)
-    emitExpired(state, atTarget, 'TARGET_DEAD')
+    if (projectile.explosive) {
+      resolveImpact(state, atTarget)
+    } else {
+      emitExpired(state, atTarget, 'TARGET_DEAD')
+    }
     return
   }
   if (target.alive && reachedTarget(projectile, target, step.distance)) {
@@ -143,10 +212,11 @@ interface ProjectileLaunch {
   readonly owner: PlayerId
   readonly kind: ProjectileKind
   readonly damage: number
+  readonly explosive?: boolean
 }
 
 export function launchProjectile(state: GameState, launch: ProjectileLaunch): void {
-  const { sourceId, targetId, owner, kind, damage } = launch
+  const { sourceId, targetId, owner, kind, damage, explosive = false } = launch
   const sourcePosition = state.world.store(Position).get(sourceId)
   const targetPosition = state.world.store(Position).get(targetId)
   if (sourcePosition === undefined || targetPosition === undefined) {
@@ -166,6 +236,7 @@ export function launchProjectile(state: GameState, launch: ProjectileLaunch): vo
     lastKnownX: targetPosition.x,
     lastKnownY: targetPosition.y,
     damage,
+    explosive,
     remainingTtl: definition.ttlTicks,
     movementRemainder: 0
   })
